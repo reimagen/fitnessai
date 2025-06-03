@@ -27,9 +27,10 @@ const goalSchema = z.object({
     .refine(val => {
       if (!val || val.trim() === "") return true; // Empty is allowed
       const date = new Date(val);
-      return !isNaN(date.getTime()) && val.length >= 8 && val.includes('/'); // Basic check for MM/DD/YYYY like format
+      // Check if the date is valid and the input string looks like a date (e.g., contains / and has reasonable length)
+      return !isNaN(date.getTime()) && val.length >= 8 && (val.includes('/') || val.includes('-'));
     }, {
-      message: "Invalid date. Please use MM/DD/YYYY or similar.",
+      message: "Invalid date. Please use MM/DD/YYYY or similar format.",
     }),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
@@ -54,24 +55,26 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
   });
 
   useEffect(() => {
-    form.reset({
-        goals: initialGoals.map(g => {
-        let displayDateString = "";
-        if (g.targetDate) {
-            const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
-            if (!isNaN(dateObj.getTime())) {
-                displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
-            }
-        }
-        return {
-            description: g.description,
-            targetDate: displayDateString,
-            achieved: g.achieved,
-            isPrimary: g.isPrimary || false,
-        };
-      })
-    });
-  }, [initialGoals, form.reset]);
+    if (initialGoals) {
+      form.reset({
+          goals: initialGoals.map(g => {
+          let displayDateString = "";
+          if (g.targetDate) {
+              const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
+              if (!isNaN(dateObj.getTime())) {
+                  displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
+              }
+          }
+          return {
+              description: g.description,
+              targetDate: displayDateString,
+              achieved: g.achieved || false,
+              isPrimary: g.isPrimary || false,
+          };
+        })
+      });
+    }
+  }, [initialGoals, form]);
 
 
   const { fields, append, remove } = useFieldArray({
@@ -84,17 +87,21 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     });
-    form.trigger("goals"); 
+    form.trigger("goals");
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
-    const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => ({
-        id: initialGoals[index]?.id || `new-${Date.now()}-${index}`,
-        description: g.description,
-        targetDate: g.targetDate && g.targetDate.trim() !== "" ? new Date(g.targetDate) : undefined,
-        achieved: g.achieved,
-        isPrimary: g.isPrimary,
-    }));
+    const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => {
+        const originalGoal = initialGoals?.find((og, i) => i === index || og.id === (fields[index] as any).actualId) || initialGoals?.[index];
+
+        return {
+            id: originalGoal?.id || `new-${Date.now()}-${index}`,
+            description: g.description,
+            targetDate: g.targetDate && g.targetDate.trim() !== "" ? new Date(g.targetDate) : undefined,
+            achieved: g.achieved,
+            isPrimary: g.isPrimary,
+        }
+    });
     onGoalsChange(updatedGoals);
   }
 
@@ -105,7 +112,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
             <Target className="h-6 w-6 text-primary"/>
             Your Fitness Goals
         </CardTitle>
-        <CardDescription>Define what you want to achieve and track your progress.</CardDescription>
+        <CardDescription>Define what you want to achieve: set up to 3 goals.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -202,4 +209,3 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     </Card>
   );
 }
-
