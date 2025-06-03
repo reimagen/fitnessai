@@ -26,9 +26,10 @@ const goalSchema = z.object({
   targetDate: z.string().optional()
     .refine(val => {
       if (!val || val.trim() === "") return true; // Empty is allowed
-      return !isNaN(new Date(val).getTime());
+      const date = new Date(val);
+      return !isNaN(date.getTime()) && val.length >= 8 && val.includes('/'); // Basic check for MM/DD/YYYY like format
     }, {
-      message: "Invalid date. Please use a common format (e.g., MM/DD/YYYY).",
+      message: "Invalid date. Please use MM/DD/YYYY or similar.",
     }),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
@@ -70,7 +71,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         };
       })
     });
-  }, [initialGoals, form]); // form is stable, effect primarily depends on initialGoals
+  }, [initialGoals, form.reset]);
 
 
   const { fields, append, remove } = useFieldArray({
@@ -83,7 +84,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     });
-    form.trigger("goals");
+    form.trigger("goals"); 
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
@@ -109,79 +110,82 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {fields.map((field, index) => (
-              <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
-                <FormField
-                  control={form.control}
-                  name={`goals.${index}.description`}
-                  render={({ field }) => (
-                    <FormItem className="mb-2">
-                      <FormLabel>Goal Description</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Run 5km without stopping" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <FormField
+            {fields.map((field, index) => {
+              const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
+              return (
+                <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
+                  <FormField
                     control={form.control}
-                    name={`goals.${index}.targetDate`}
+                    name={`goals.${index}.description`}
                     render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Target Date (Optional)</FormLabel>
+                      <FormItem className="mb-2">
+                        <FormLabel>Goal Description</FormLabel>
                         <FormControl>
-                            <Input type="text" placeholder="MM/DD/YYYY" {...field} />
+                          <Input placeholder="e.g., Run 5km without stopping" {...field} />
                         </FormControl>
                         <FormMessage />
-                        </FormItem>
+                      </FormItem>
                     )}
-                    />
-                    <Button
-                        type="button"
-                        variant={form.getValues(`goals.${index}.isPrimary`) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleSetPrimary(index)}
-                        disabled={form.getValues(`goals.${index}.isPrimary`)}
-                        className="w-full md:w-auto whitespace-nowrap"
-                    >
-                        {form.getValues(`goals.${index}.isPrimary`) ? (
-                            <>
-                                <Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal
-                            </>
-                        ) : (
-                           "Set as Primary"
-                        )}
-                    </Button>
-                    <FormField
-                    control={form.control}
-                    name={`goals.${index}.achieved`}
-                    render={({ field: checkboxField }) => ( 
-                        <FormItem className="flex flex-row items-center space-x-2 pb-1 justify-self-start md:justify-self-end">
-                        <FormControl>
-                            <Checkbox
-                            checked={checkboxField.value}
-                            onCheckedChange={checkboxField.onChange}
-                            />
-                        </FormControl>
-                        <FormLabel className="font-normal">Achieved</FormLabel>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => remove(index)}
-                  className="mt-3 text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
-                </Button>
-              </Card>
-            ))}
+                  />
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                      <FormField
+                      control={form.control}
+                      name={`goals.${index}.targetDate`}
+                      render={({ field }) => (
+                          <FormItem>
+                          <FormLabel>Target Date (Optional)</FormLabel>
+                          <FormControl>
+                              <Input type="text" placeholder="MM/DD/YYYY" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                      <Button
+                          type="button"
+                          variant={isCurrentGoalPrimary ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleSetPrimary(index)}
+                          disabled={isCurrentGoalPrimary}
+                          className="w-full md:w-auto whitespace-nowrap"
+                      >
+                          {isCurrentGoalPrimary ? (
+                              <>
+                                  <Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal
+                              </>
+                          ) : (
+                             "Set as Primary"
+                          )}
+                      </Button>
+                      <FormField
+                      control={form.control}
+                      name={`goals.${index}.achieved`}
+                      render={({ field: checkboxField }) => ( 
+                          <FormItem className="flex flex-row items-center space-x-2 pb-1 justify-self-start md:justify-self-end">
+                          <FormControl>
+                              <Checkbox
+                              checked={checkboxField.value}
+                              onCheckedChange={checkboxField.onChange}
+                              />
+                          </FormControl>
+                          <FormLabel className="font-normal">Achieved</FormLabel>
+                          <FormMessage />
+                          </FormItem>
+                      )}
+                      />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(index)}
+                    className="mt-3 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
+                  </Button>
+                </Card>
+              );
+            })}
             <div className="flex justify-between items-center">
                 <Button
                 type="button"
@@ -198,3 +202,4 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     </Card>
   );
 }
+
