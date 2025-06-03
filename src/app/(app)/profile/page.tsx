@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Initial mock user data, now managed by the page
 const initialMockUser: UserProfile = {
   id: "user123",
   name: "Alex Fitness",
@@ -23,9 +22,36 @@ const initialMockUser: UserProfile = {
   ],
 };
 
+const LOCAL_STORAGE_KEY = "fitnessAppUserProfile";
+
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserProfile>(initialMockUser);
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    if (typeof window !== "undefined") {
+      const savedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedProfile) {
+        try {
+          const parsedProfile = JSON.parse(savedProfile);
+          // Dates need to be re-hydrated from strings
+          parsedProfile.fitnessGoals = parsedProfile.fitnessGoals.map((goal: FitnessGoal) => ({
+            ...goal,
+            targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
+          }));
+          return parsedProfile;
+        } catch (error) {
+          console.error("Error parsing user profile from localStorage", error);
+          // Fallback to initial mock user if parsing fails
+        }
+      }
+    }
+    return initialMockUser;
+  });
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userProfile));
+    }
+  }, [userProfile]);
 
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     setUserProfile(prevProfile => ({
