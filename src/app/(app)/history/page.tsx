@@ -1,6 +1,8 @@
+
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation"; // Added
 import { ScreenshotParserForm } from "@/components/history/screenshot-parser-form";
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
 import { WorkoutList } from "@/components/history/workout-list";
@@ -15,6 +17,11 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function HistoryPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const validTabs = ['log', 'screenshot', 'upload'];
+  const defaultTabValue = initialTab && validTabs.includes(initialTab) ? initialTab : 'log';
+
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([
     // Sample initial data
     {
@@ -94,7 +101,7 @@ export default function HistoryPage() {
         <p className="text-muted-foreground">Log your sessions and review your past performance.</p>
       </header>
 
-      <Tabs defaultValue="log" className="w-full">
+      <Tabs defaultValue={defaultTabValue} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-6">
           <TabsTrigger value="log"><Edit className="mr-2 h-4 w-4 inline-block"/>Manual Log</TabsTrigger>
           <TabsTrigger value="screenshot"><ImageUp className="mr-2 h-4 w-4 inline-block"/>Parse Screenshot</TabsTrigger>

@@ -1,6 +1,7 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Target, FileText, BarChartBig } from "lucide-react";
+import { Dumbbell, Target, FileText, BarChartBig, Camera, FilePenLine } from "lucide-react"; // Added Camera, FilePenLine
 import Link from "next/link";
 import Image from "next/image";
 
@@ -24,9 +25,18 @@ export default function HomePage() {
           <CardContent>
             <Image src="https://placehold.co/600x400.png" alt="Workout logging" width={600} height={400} className="rounded-md object-cover" data-ai-hint="fitness workout" />
           </CardContent>
-          <CardFooter>
-            <Button asChild className="w-full bg-primary hover:bg-primary/90">
-              <Link href="/history">Log Now</Link>
+          <CardFooter className="flex gap-4">
+            <Button asChild className="flex-1">
+              <Link href="/history?tab=screenshot">
+                <Camera className="mr-2 h-4 w-4" />
+                Screenshot
+              </Link>
+            </Button>
+            <Button asChild className="flex-1" variant="outline">
+              <Link href="/history?tab=log">
+                <FilePenLine className="mr-2 h-4 w-4" />
+                Manual
+              </Link>
             </Button>
           </CardFooter>
         </Card>
