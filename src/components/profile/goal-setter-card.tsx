@@ -20,6 +20,7 @@ import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useEffect } from "react";
 import { format as formatDate } from "date-fns";
+import { useToast } from "@/hooks/use-toast"; // Added
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
@@ -46,7 +47,7 @@ type GoalSetterCardProps = {
 
 // Helper to create initial form values from initialGoals prop
 const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
-  if (!Array.isArray(goalsProp)) return { goals: [] };
+  if (!Array.isArray(goalsProp) || goalsProp.length === 0) return { goals: [] };
   return {
     goals: goalsProp.map(g => {
       let displayDateString = "";
@@ -68,20 +69,15 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 
 
 export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
-
+  const { toast } = useToast(); // Added
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
-    defaultValues: createFormValues(initialGoals), // Initialize with prop data
+    defaultValues: createFormValues(initialGoals), 
   });
 
-  // useEffect to reset the form if initialGoals prop changes after initial mount
   useEffect(() => {
-    if (initialGoals) {
-      // This ensures that if the prop itself changes (e.g. after a save and parent re-render),
-      // the form reflects these external changes.
       form.reset(createFormValues(initialGoals));
-    }
-  }, [initialGoals, form]); // form.reset can be used here instead of form
+  }, [initialGoals, form]); 
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -93,13 +89,11 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     });
-    form.trigger("goals"); // Ensure re-render for button states
+    form.trigger("goals"); 
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => {
-        // Try to find the original ID. This logic might need refinement if goals are reordered or IDs are not stable.
-        // For now, we rely on the index for simplicity if `initialGoals` is the source of truth for IDs.
         const originalGoal = initialGoals?.find((_og, i) => i === index);
 
         return {
@@ -112,6 +106,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     });
     onGoalsChange(updatedGoals);
   }
+
+  const handleAddNewGoal = () => {
+    if (fields.length >= 3) {
+      toast({
+        title: "Goal Limit Reached",
+        description: "You have already set 3 goals, please remove one or edit an existing goal.",
+        variant: "destructive",
+      });
+    } else {
+      append({ description: "", achieved: false, targetDate: "", isPrimary: false });
+    }
+  };
 
   return (
     <Card className="shadow-lg">
@@ -205,7 +211,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 <Button
                 type="button"
                 variant="outline"
-                onClick={() => append({ description: "", achieved: false, targetDate: "", isPrimary: false })}
+                onClick={handleAddNewGoal} // Updated
+                disabled={fields.length >= 3} // Added disabled state
                 >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
                 </Button>
