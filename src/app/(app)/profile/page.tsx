@@ -18,7 +18,7 @@ const initialMockUser: UserProfile = {
   fitnessGoals: [
     { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
-    { id: "goal3", description: "Workout 4 times a week", achieved: true, isPrimary: false, targetDate: new Date("2024-07-30") },
+    { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") }, // Changed achieved to false
   ],
 };
 
