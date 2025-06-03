@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const initialMockUser: UserProfile = {
   id: "user123",
   name: "Alex Fitness",
-  email: "alex.fitness@example.com",
+  email: "alex.fitness@example.com", // Email still in data, just not displayed
   avatarUrl: "https://placehold.co/100x100.png",
   fitnessGoals: [
     { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
@@ -47,7 +47,6 @@ export default function ProfilePage() {
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
-          // If parsing fails, stick with initialMockUser or handle error appropriately
         }
       }
     }
@@ -78,17 +77,7 @@ export default function ProfilePage() {
     // Toast is handled in UserDetailsCard for name updates
   };
 
-  const handleAvatarUpdate = (newAvatarDataUrl: string) => {
-    setUserProfile(prevProfile => ({
-        ...prevProfile,
-        avatarUrl: newAvatarDataUrl,
-      }));
-    toast({
-        title: "Profile Picture Updated!",
-        description: "Your new profile picture has been applied.",
-    });
-  };
-
+  // Removed handleAvatarUpdate function
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -102,7 +91,7 @@ export default function ProfilePage() {
           <UserDetailsCard 
             user={userProfile} 
             onNameUpdate={handleNameUpdate}
-            onAvatarUpdate={handleAvatarUpdate} 
+            // onAvatarUpdate prop removed
           />
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
@@ -114,7 +103,7 @@ export default function ProfilePage() {
             <UserDetailsCard 
                 user={initialMockUser} 
                 onNameUpdate={handleNameUpdate}
-                onAvatarUpdate={() => { /* Placeholder for server render or pre-client load */}}
+                // onAvatarUpdate prop removed
             />
             <GoalSetterCard 
                 initialGoals={initialMockUser.fitnessGoals} 
