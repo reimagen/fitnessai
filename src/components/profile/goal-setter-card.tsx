@@ -20,7 +20,7 @@ import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useEffect } from "react";
 import { format as formatDate } from "date-fns";
-import { useToast } from "@/hooks/use-toast"; // Added
+import { useToast } from "@/hooks/use-toast";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
@@ -69,7 +69,7 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 
 
 export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
-  const { toast } = useToast(); // Added
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
     defaultValues: createFormValues(initialGoals), 
@@ -211,8 +211,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 <Button
                 type="button"
                 variant="outline"
-                onClick={handleAddNewGoal} // Updated
-                disabled={fields.length >= 3} // Added disabled state
+                onClick={handleAddNewGoal}
                 >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
                 </Button>
