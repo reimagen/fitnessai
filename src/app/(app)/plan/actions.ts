@@ -1,3 +1,4 @@
+
 "use server";
 
 import { workoutRecommendation, type WorkoutRecommendationInput, type WorkoutRecommendationOutput } from "@/ai/flows/workout-recommendation";
@@ -17,7 +18,7 @@ export async function getWorkoutRecommendationAction(
   if (!validatedFields.success) {
     return {
       success: false,
-      error: validatedFields.error.flatten().fieldErrors APE HTML here
+      error: JSON.stringify(validatedFields.error.flatten().fieldErrors)
     };
   }
   
@@ -29,3 +30,4 @@ export async function getWorkoutRecommendationAction(
     return { success: false, error: "Failed to get workout recommendation. Please try again." };
   }
 }
+
