@@ -3,7 +3,6 @@
 
 import { useState } from "react";
 import type { UserProfile } from "@/lib/types";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +13,6 @@ import { cn } from "@/lib/utils";
 type UserDetailsCardProps = {
   user: UserProfile;
   onNameUpdate: (newName: string) => void;
-  // onAvatarUpdate prop removed
 };
 
 export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
@@ -54,23 +52,8 @@ export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
   return (
     <>
       <Card className="shadow-lg">
-        <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left">
-          <div 
-            className="relative h-24 w-24 mb-4 sm:mb-0 sm:mr-6 rounded-full"
-            // Removed onClick, role, tabIndex, onKeyDown, aria-label for avatar change
-          >
-            <Avatar
-              className={cn(
-                "h-full w-full ring-2 ring-primary ring-offset-2" // Removed transition-opacity and group-hover:opacity-70
-              )}
-            >
-              <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person portrait" />
-              <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            {/* Removed camera icon overlay div */}
-          </div>
-          {/* Removed hidden file input */}
-          <div className="flex-grow">
+        <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left sm:justify-between">
+          <div className="flex-grow mb-4 sm:mb-0">
             {isEditingName ? (
               <div className="flex flex-col gap-2 items-center sm:items-start">
                 <Input
@@ -82,9 +65,7 @@ export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
                 />
               </div>
             ) : (
-              <>
-                <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
-              </>
+              <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
             )}
           </div>
           {isEditingName ? (
@@ -115,7 +96,6 @@ export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
           </div>
         </CardContent>
       </Card>
-      {/* Removed ImageCropDialog instance */}
     </>
   );
 }
