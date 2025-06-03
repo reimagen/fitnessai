@@ -18,15 +18,23 @@ const initialMockUser: UserProfile = {
   fitnessGoals: [
     { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
-    { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") }, // Changed achieved to false
+    { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") },
   ],
 };
 
 const LOCAL_STORAGE_KEY = "fitnessAppUserProfile";
 
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
-    if (typeof window !== "undefined") {
+  const [userProfile, setUserProfile] = useState<UserProfile>(initialMockUser);
+  const [isClient, setIsClient] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    setIsClient(true); // Component has mounted on the client
+  }, []);
+
+  useEffect(() => {
+    if (isClient) { // Only run on client after mount
       const savedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedProfile) {
         try {
@@ -36,22 +44,20 @@ export default function ProfilePage() {
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
-          return parsedProfile;
+          setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
-          // Fallback to initial mock user if parsing fails
+          // Fallback to initial mock user if parsing fails (though initial state is already this)
         }
       }
     }
-    return initialMockUser;
-  });
-  const { toast } = useToast();
+  }, [isClient]); // Effect runs once after isClient becomes true
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isClient) { // Only save to localStorage on the client
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userProfile));
     }
-  }, [userProfile]);
+  }, [userProfile, isClient]); // Effect runs when userProfile changes (and isClient is true)
 
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     setUserProfile(prevProfile => ({
@@ -71,11 +77,26 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
       </header>
 
-      <UserDetailsCard user={userProfile} />
-      <GoalSetterCard 
-        initialGoals={userProfile.fitnessGoals} 
-        onGoalsChange={handleGoalsUpdate} 
-      />
+      {isClient ? ( // Conditionally render dependent components or show loading state
+        <>
+          <UserDetailsCard user={userProfile} />
+          <GoalSetterCard 
+            initialGoals={userProfile.fitnessGoals} 
+            onGoalsChange={handleGoalsUpdate} 
+          />
+        </>
+      ) : (
+        // Optional: Render a loading state or placeholders if desired
+        // to avoid rendering components that rely on potentially mismatched data
+        // For now, we'll let them render with initialMockUser until client hydrates
+        <>
+            <UserDetailsCard user={initialMockUser} />
+            <GoalSetterCard 
+                initialGoals={initialMockUser.fitnessGoals} 
+                onGoalsChange={handleGoalsUpdate} 
+            />
+        </>
+      )}
       
       <Card className="shadow-lg">
         <CardHeader>
