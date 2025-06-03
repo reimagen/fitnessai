@@ -1,13 +1,9 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Import react-image-crop styles */
 @import 'react-image-crop/dist/ReactCrop.css';
-
-body {
-  font-family: 'Inter', sans-serif;
-}
 
 @layer base {
   :root {
@@ -43,12 +39,12 @@ body {
     --radius: 0.5rem;
 
     /* Sidebar specific colors */
-    --sidebar-background: 335 70% 97%; 
-    --sidebar-foreground: 355 11% 26%; 
+    --sidebar-background: 335 70% 97%;
+    --sidebar-foreground: 355 11% 26%;
     --sidebar-primary: 345 90% 62%;    /* Matches new primary */
-    --sidebar-primary-foreground: 0 0% 100%; 
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 5 85% 75%;     /* Lighter Reddish Coral */
-    --sidebar-accent-foreground: 355 11% 26%; 
+    --sidebar-accent-foreground: 355 11% 26%;
     --sidebar-border: 350 80% 90%;    /* Matches new border */
     --sidebar-ring: 345 90% 62%;       /* Matches new ring */
 
@@ -98,14 +94,14 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark theme */
-    --sidebar-background: 335 40% 25%; 
-    --sidebar-foreground: 340 60% 90%; 
-    --sidebar-primary: 345 85% 65%;     
-    --sidebar-primary-foreground: 0 0% 10%; 
-    --sidebar-accent: 5 75% 70%;      
-    --sidebar-accent-foreground: 340 10% 15%; 
-    --sidebar-border: 350 50% 35%;      
-    --sidebar-ring: 345 85% 65%;        
+    --sidebar-background: 335 40% 25%;
+    --sidebar-foreground: 340 60% 90%;
+    --sidebar-primary: 345 85% 65%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 5 75% 70%;
+    --sidebar-accent-foreground: 340 10% 15%;
+    --sidebar-border: 350 50% 35%;
+    --sidebar-ring: 345 85% 65%;
   }
 }
 
