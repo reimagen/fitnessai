@@ -1,6 +1,7 @@
+
 "use client";
 
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,13 +15,15 @@ const mockUser: UserProfile = {
   email: "alex.fitness@example.com",
   avatarUrl: "https://placehold.co/100x100.png", // Placeholder
   fitnessGoals: [
-    { id: "goal1", description: "Lose 5kg by end of August", achieved: false },
-    { id: "goal2", description: "Run a 10k marathon", achieved: false },
+    { id: "goal1", description: "Lose 5kg by end of August", achieved: false, isPrimary: true },
+    { id: "goal2", description: "Run a 10k marathon", achieved: false, isPrimary: false },
   ],
 };
 
 export function UserDetailsCard() {
   const user = mockUser; // In a real app, this would come from auth/context/props
+  const primaryGoal = user.fitnessGoals.find(g => g.isPrimary);
+  const displayGoal = primaryGoal || user.fitnessGoals[0];
 
   return (
     <Card className="shadow-lg">
@@ -46,7 +49,7 @@ export function UserDetailsCard() {
           </div>
            <div>
             <h4 className="font-semibold text-sm text-muted-foreground">Primary Goal:</h4>
-            <p className="text-accent font-medium">{user.fitnessGoals[0]?.description || "Not set"}</p>
+            <p className="text-accent font-medium">{displayGoal?.description || "Not set"}</p>
           </div>
         </div>
       </CardContent>

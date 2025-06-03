@@ -1,3 +1,4 @@
+
 export interface Exercise {
   id: string;
   name: string;
@@ -18,6 +19,7 @@ export interface FitnessGoal {
   description: string;
   targetDate?: Date;
   achieved: boolean;
+  isPrimary?: boolean; // Added for primary goal
 }
 
 export interface UserProfile {
