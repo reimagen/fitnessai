@@ -92,7 +92,7 @@ export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
         <div className="mt-4 space-y-2">
           <div>
             <h4 className="font-semibold text-sm text-muted-foreground">Joined:</h4>
-            <p>July 15, 2023 (Example)</p>
+            <p>June 1, 2025</p>
           </div>
            <div>
             <h4 className="font-semibold text-sm text-muted-foreground">Primary Goal:</h4>
