@@ -3,51 +3,51 @@
 @tailwind utilities;
 
 body {
-  font-family: 'PT Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%; /* #F5F5F5 light gray */
-    --foreground: 222.2 47.4% 11.2%; /* Dark Gray for text */
+    --background: 330 67% 95%; /* Soft Pink */
+    --foreground: 355 11% 26%; /* Dark Brownish-Grey */
 
-    --muted: 0 0% 90%;
-    --muted-foreground: 222.2 47.4% 40%; /* Slightly lighter than foreground */
+    --muted: 0 25% 95%; /* Light Pinkish Gray */
+    --muted-foreground: 355 10% 45%; /* Lighter Brownish-Grey */
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 355 11% 26%;
 
     --card: 0 0% 100%; /* White cards */
-    --card-foreground: 222.2 47.4% 11.2%;
+    --card-foreground: 355 11% 26%;
 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
+    --border: 7 71% 91%; /* Soft Peach-Pink */
+    --input: 7 71% 91%; /* Soft Peach-Pink */
 
-    --primary: 203 69% 62%; /* #5DADE2 muted blue */
+    --primary: 16 100% 66%; /* Coral */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
-    --secondary: 0 0% 92%; /* Slightly darker gray for secondary elements */
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 27 100% 94%; /* Very Light Peach */
+    --secondary-foreground: 355 11% 26%;
 
-    --accent: 36 100% 63%; /* #FFB347 vibrant orange */
-    --accent-foreground: 20 14.3% 4.1%; /* Dark text on accent */
+    --accent: 30 100% 70%; /* Peach */
+    --accent-foreground: 355 11% 26%; /* Dark Brownish-Grey text on accent */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 203 69% 62%; /* Primary color for rings */
+    --ring: 16 100% 66%; /* Primary color for rings */
 
     --radius: 0.5rem;
 
-    /* Sidebar specific colors - can be adjusted if sidebar is used differently */
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar specific colors */
+    --sidebar-background: 330 70% 97%; /* Lighter Pink */
+    --sidebar-foreground: 355 11% 26%; /* Dark Brownish-Grey */
+    --sidebar-primary: 16 100% 66%;    /* Coral */
+    --sidebar-primary-foreground: 0 0% 100%; /* White */
+    --sidebar-accent: 30 100% 80%;     /* Lighter Peach */
+    --sidebar-accent-foreground: 355 11% 26%; /* Dark Brownish-Grey */
+    --sidebar-border: 7 71% 91%;       /* Soft Peach-Pink */
+    --sidebar-ring: 16 100% 66%;       /* Coral */
 
     /* Chart colors - keeping defaults for now, can be themed if needed */
     --chart-1: 12 76% 61%;
@@ -58,34 +58,34 @@ body {
   }
 
   .dark {
-    --background: 222.2 47.4% 11.2%;
-    --foreground: 0 0% 98%;
+    --background: 355 10% 15%; /* Dark Brown */
+    --foreground: 330 40% 90%; /* Light Pinkish tint */
 
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 355 10% 20%;
+    --muted-foreground: 330 30% 70%;
 
-    --popover: 222.2 47.4% 11.2%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 355 10% 12%;
+    --popover-foreground: 330 40% 90%;
 
-    --card: 222.2 47.4% 11.2%;
-    --card-foreground: 0 0% 98%;
+    --card: 355 10% 12%;
+    --card-foreground: 330 40% 90%;
 
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
+    --border: 16 50% 30%; /* Dark Coral */
+    --input: 16 50% 30%;
 
-    --primary: 203 69% 62%; /* #5DADE2 muted blue */
-    --primary-foreground: 0 0% 100%; /* White text on primary */
+    --primary: 16 90% 60%; /* Coral (brighter for dark mode) */
+    --primary-foreground: 0 0% 10%; /* Dark text on primary */
 
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 30 60% 25%; /* Dark Peach */
+    --secondary-foreground: 330 40% 90%;
 
-    --accent: 36 100% 63%; /* #FFB347 vibrant orange */
-    --accent-foreground: 20 14.3% 4.1%; /* Dark text on accent */
+    --accent: 30 90% 65%; /* Peach (brighter for dark mode) */
+    --accent-foreground: 355 10% 15%; /* Dark Brown text on accent */
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 203 69% 62%;
+    --ring: 16 90% 60%;
 
     /* Chart colors for dark theme */
     --chart-1: 220 70% 50%;
@@ -95,14 +95,14 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark theme */
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 355 10% 12%; /* Slightly lighter dark brown */
+    --sidebar-foreground: 330 40% 90%; /* Light Pinkish tint */
+    --sidebar-primary: 16 90% 60%;     /* Coral */
+    --sidebar-primary-foreground: 0 0% 10%; /* Almost black */
+    --sidebar-accent: 30 70% 30%;      /* Darker Peach */
+    --sidebar-accent-foreground: 330 40% 90%; /* Light Pinkish tint */
+    --sidebar-border: 16 50% 25%;      /* Darker Coral for border */
+    --sidebar-ring: 16 90% 60%;        /* Coral */
   }
 }
 
