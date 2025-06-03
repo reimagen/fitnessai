@@ -30,11 +30,11 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsClient(true); 
+    setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if (isClient) { 
+    if (isClient) {
       const savedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedProfile) {
         try {
@@ -47,13 +47,14 @@ export default function ProfilePage() {
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
+          // If parsing fails, stick with initialMockUser or handle error appropriately
         }
       }
     }
   }, [isClient]); 
 
   useEffect(() => {
-    if (isClient) { 
+    if (isClient) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userProfile));
     }
   }, [userProfile, isClient]); 
@@ -77,6 +78,18 @@ export default function ProfilePage() {
     // Toast is handled in UserDetailsCard for name updates
   };
 
+  const handleAvatarUpdate = (newAvatarDataUrl: string) => {
+    setUserProfile(prevProfile => ({
+        ...prevProfile,
+        avatarUrl: newAvatarDataUrl,
+      }));
+    toast({
+        title: "Profile Picture Updated!",
+        description: "Your new profile picture has been applied.",
+    });
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
@@ -86,7 +99,11 @@ export default function ProfilePage() {
 
       {isClient ? ( 
         <>
-          <UserDetailsCard user={userProfile} onNameUpdate={handleNameUpdate} />
+          <UserDetailsCard 
+            user={userProfile} 
+            onNameUpdate={handleNameUpdate}
+            onAvatarUpdate={handleAvatarUpdate} 
+          />
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
             onGoalsChange={handleGoalsUpdate} 
@@ -94,7 +111,11 @@ export default function ProfilePage() {
         </>
       ) : (
         <>
-            <UserDetailsCard user={initialMockUser} onNameUpdate={handleNameUpdate} />
+            <UserDetailsCard 
+                user={initialMockUser} 
+                onNameUpdate={handleNameUpdate}
+                onAvatarUpdate={() => { /* Placeholder for server render or pre-client load */}}
+            />
             <GoalSetterCard 
                 initialGoals={initialMockUser.fitnessGoals} 
                 onGoalsChange={handleGoalsUpdate} 
