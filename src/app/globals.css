@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import react-image-crop styles */
+@import 'react-image-crop/dist/ReactCrop.css';
+
 body {
   font-family: 'Inter', sans-serif;
 }
