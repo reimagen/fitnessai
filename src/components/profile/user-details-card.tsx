@@ -1,29 +1,21 @@
 
 "use client";
 
-import type { UserProfile, FitnessGoal } from "@/lib/types";
+import type { UserProfile } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Edit2 } from "lucide-react";
-import Image from "next/image";
 
-// Mock user data for now
-const mockUser: UserProfile = {
-  id: "user123",
-  name: "Alex Fitness",
-  email: "alex.fitness@example.com",
-  avatarUrl: "https://placehold.co/100x100.png", // Placeholder
-  fitnessGoals: [
-    { id: "goal1", description: "Lose 5kg by end of August", achieved: false, isPrimary: true },
-    { id: "goal2", description: "Run a 10k marathon", achieved: false, isPrimary: false },
-  ],
+type UserDetailsCardProps = {
+  user: UserProfile;
 };
 
-export function UserDetailsCard() {
-  const user = mockUser; // In a real app, this would come from auth/context/props
+export function UserDetailsCard({ user }: UserDetailsCardProps) {
   const primaryGoal = user.fitnessGoals.find(g => g.isPrimary);
-  const displayGoal = primaryGoal || user.fitnessGoals[0];
+  // If no primary goal explicitly set, try to find one, or default to first or "Not set"
+  const displayGoal = primaryGoal || user.fitnessGoals.find(g => g.isPrimary !== false) || user.fitnessGoals[0];
+
 
   return (
     <Card className="shadow-lg">

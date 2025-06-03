@@ -1,10 +1,43 @@
+
+"use client";
+
+import { useState } from "react";
+import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Palette } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+// Initial mock user data, now managed by the page
+const initialMockUser: UserProfile = {
+  id: "user123",
+  name: "Alex Fitness",
+  email: "alex.fitness@example.com",
+  avatarUrl: "https://placehold.co/100x100.png",
+  fitnessGoals: [
+    { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
+    { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
+    { id: "goal3", description: "Workout 4 times a week", achieved: true, isPrimary: false, targetDate: new Date("2024-07-30") },
+  ],
+};
 
 export default function ProfilePage() {
+  const [userProfile, setUserProfile] = useState<UserProfile>(initialMockUser);
+  const { toast } = useToast();
+
+  const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
+    setUserProfile(prevProfile => ({
+      ...prevProfile,
+      fitnessGoals: updatedGoals,
+    }));
+    toast({
+        title: "Goals Updated!",
+        description: "Your fitness goals have been saved.",
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
@@ -12,8 +45,11 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
       </header>
 
-      <UserDetailsCard />
-      <GoalSetterCard />
+      <UserDetailsCard user={userProfile} />
+      <GoalSetterCard 
+        initialGoals={userProfile.fitnessGoals} 
+        onGoalsChange={handleGoalsUpdate} 
+      />
       
       <Card className="shadow-lg">
         <CardHeader>

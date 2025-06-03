@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,11 +19,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
+// Removed useToast as it's now handled by the parent page
+// import { useToast } from "@/hooks/use-toast";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
-  targetDate: z.string().optional(), // Keep as string for date input, convert on submit
+  targetDate: z.string().optional(),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
 });
@@ -33,33 +33,32 @@ const goalsFormSchema = z.object({
   goals: z.array(goalSchema),
 });
 
-// Mock initial goals
-const mockInitialGoals: FitnessGoal[] = [
-  { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
-  { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
-  { id: "goal3", description: "Workout 4 times a week", achieved: true, isPrimary: false },
-];
+type GoalSetterCardProps = {
+  initialGoals: FitnessGoal[];
+  onGoalsChange: (updatedGoals: FitnessGoal[]) => void;
+};
 
-
-export function GoalSetterCard() {
-  const { toast } = useToast();
-  // Initialize state with mock data. In a real app, this would come from a store or API.
-  const [userGoals, setUserGoals] = useState<FitnessGoal[]>(mockInitialGoals);
+export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
+  // const { toast } = useToast(); // Toast is now handled by parent
 
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
     defaultValues: {
-      goals: [], // Will be set by useEffect
+      goals: [], 
     },
   });
 
   useEffect(() => {
     form.reset({
-        goals: userGoals.map(g => {
+        goals: initialGoals.map(g => {
         let targetDateString = "";
-        // Ensure g.targetDate is a valid Date object before calling toISOString
         if (g.targetDate && g.targetDate instanceof Date && !isNaN(g.targetDate.getTime())) {
             targetDateString = g.targetDate.toISOString().split("T")[0];
+        } else if (typeof g.targetDate === 'string') { // Handle if date is already string
+            const parsedDate = new Date(g.targetDate);
+            if (!isNaN(parsedDate.getTime())) {
+                targetDateString = parsedDate.toISOString().split("T")[0];
+            }
         }
         return {
             description: g.description,
@@ -69,7 +68,7 @@ export function GoalSetterCard() {
         };
       })
     });
-  }, [userGoals, form.reset]);
+  }, [initialGoals, form.reset, form]); // Added form to dependency array
 
 
   const { fields, append, remove } = useFieldArray({
@@ -82,25 +81,26 @@ export function GoalSetterCard() {
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true });
     });
-    // Trigger a re-render by updating a dummy state or by ensuring form state change is picked up
-    // Forcing a re-render if form.setValue doesn't immediately update `fields` visually for button state
     form.trigger(); 
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
-    // In a real app, you would send this to your backend to save.
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => ({
-        id: userGoals[index]?.id || `new-${Date.now()}-${index}`, // Preserve existing IDs or generate new ones
+        // Try to preserve existing IDs if possible, or generate new ones.
+        // This logic assumes initialGoals map somewhat to the form's current index.
+        // For robust ID management, IDs should ideally be part of the form values.
+        id: initialGoals[index]?.id || `new-${Date.now()}-${index}`, 
         description: g.description,
         targetDate: g.targetDate && g.targetDate !== "" ? new Date(g.targetDate) : undefined,
         achieved: g.achieved,
         isPrimary: g.isPrimary,
     }));
-    setUserGoals(updatedGoals); // Update local state for demo
-    toast({
-        title: "Goals Updated!",
-        description: "Your fitness goals have been saved.",
-    });
+    onGoalsChange(updatedGoals); // Call parent's handler
+    // Toast is now handled by parent
+    // toast({
+    //     title: "Goals Updated!",
+    //     description: "Your fitness goals have been saved.",
+    // });
   }
 
   return (
@@ -157,13 +157,13 @@ export function GoalSetterCard() {
                                 <Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal
                             </>
                         ) : (
-                            "Set as Primary"
+                           "Set as Primary"
                         )}
                     </Button>
                     <FormField
                     control={form.control}
                     name={`goals.${index}.achieved`}
-                    render={({ field: checkboxField }) => ( // Renamed field to avoid conflict
+                    render={({ field: checkboxField }) => ( 
                         <FormItem className="flex flex-row items-center space-x-2 pb-1 justify-self-start md:justify-self-end">
                         <FormControl>
                             <Checkbox
@@ -204,4 +204,3 @@ export function GoalSetterCard() {
     </Card>
   );
 }
-
