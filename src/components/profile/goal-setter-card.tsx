@@ -18,7 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { format as formatDate } from "date-fns";
 
 const goalSchema = z.object({
@@ -27,7 +27,6 @@ const goalSchema = z.object({
     .refine(val => {
       if (!val || val.trim() === "") return true; // Empty is allowed
       const date = new Date(val);
-      // Check if the date is valid and the input string looks like a date (e.g., contains / and has reasonable length)
       return !isNaN(date.getTime()) && val.length >= 8 && (val.includes('/') || val.includes('-'));
     }, {
       message: "Invalid date. Please use MM/DD/YYYY or similar format.",
@@ -45,37 +44,44 @@ type GoalSetterCardProps = {
   onGoalsChange: (updatedGoals: FitnessGoal[]) => void;
 };
 
+// Helper to create initial form values from initialGoals prop
+const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
+  if (!Array.isArray(goalsProp)) return { goals: [] };
+  return {
+    goals: goalsProp.map(g => {
+      let displayDateString = "";
+      if (g.targetDate) {
+          const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
+          if (!isNaN(dateObj.getTime())) {
+              displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
+          }
+      }
+      return {
+          description: g.description,
+          targetDate: displayDateString,
+          achieved: g.achieved || false,
+          isPrimary: g.isPrimary || false,
+      };
+    }),
+  };
+};
+
+
 export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
 
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
-    defaultValues: {
-      goals: [],
-    },
+    defaultValues: createFormValues(initialGoals), // Initialize with prop data
   });
 
+  // useEffect to reset the form if initialGoals prop changes after initial mount
   useEffect(() => {
     if (initialGoals) {
-      form.reset({
-          goals: initialGoals.map(g => {
-          let displayDateString = "";
-          if (g.targetDate) {
-              const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
-              if (!isNaN(dateObj.getTime())) {
-                  displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
-              }
-          }
-          return {
-              description: g.description,
-              targetDate: displayDateString,
-              achieved: g.achieved || false,
-              isPrimary: g.isPrimary || false,
-          };
-        })
-      });
+      // This ensures that if the prop itself changes (e.g. after a save and parent re-render),
+      // the form reflects these external changes.
+      form.reset(createFormValues(initialGoals));
     }
-  }, [initialGoals, form]);
-
+  }, [initialGoals, form]); // form.reset can be used here instead of form
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -87,12 +93,14 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     });
-    form.trigger("goals");
+    form.trigger("goals"); // Ensure re-render for button states
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => {
-        const originalGoal = initialGoals?.find((og, i) => i === index || og.id === (fields[index] as any).actualId) || initialGoals?.[index];
+        // Try to find the original ID. This logic might need refinement if goals are reordered or IDs are not stable.
+        // For now, we rely on the index for simplicity if `initialGoals` is the source of truth for IDs.
+        const originalGoal = initialGoals?.find((_og, i) => i === index);
 
         return {
             id: originalGoal?.id || `new-${Date.now()}-${index}`,
@@ -209,3 +217,4 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     </Card>
   );
 }
+
