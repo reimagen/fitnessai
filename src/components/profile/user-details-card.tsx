@@ -66,12 +66,10 @@ export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
                 className="text-xl font-semibold leading-none tracking-tight"
                 aria-label="Edit user name"
               />
-              <CardDescription>{user.email}</CardDescription>
             </div>
           ) : (
             <>
               <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
-              <CardDescription>{user.email}</CardDescription>
             </>
           )}
         </div>
