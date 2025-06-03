@@ -4,6 +4,7 @@
 import { useState, useEffect } from "react";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
+import { UserStatsCard } from "@/components/profile/user-stats-card"; // New import
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 const initialMockUser: UserProfile = {
   id: "user123",
   name: "Alex Fitness",
-  email: "alex.fitness@example.com", // Email still in data, just not displayed
+  email: "alex.fitness@example.com",
   avatarUrl: "https://placehold.co/100x100.png",
+  age: 30, // Added age
+  gender: "Male", // Added gender
   fitnessGoals: [
     { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -44,10 +47,18 @@ export default function ProfilePage() {
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
+          // Ensure age and gender from localStorage are used or defaults from initialMockUser
+          parsedProfile.age = parsedProfile.age || initialMockUser.age;
+          parsedProfile.gender = parsedProfile.gender || initialMockUser.gender;
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
+          // Fallback to initialMockUser if parsing fails
+          setUserProfile(initialMockUser);
         }
+      } else {
+        // If no saved profile, use initialMockUser
+         setUserProfile(initialMockUser);
       }
     }
   }, [isClient]); 
@@ -77,7 +88,18 @@ export default function ProfilePage() {
     // Toast is handled in UserDetailsCard for name updates
   };
 
-  // Removed handleAvatarUpdate function
+  const handleStatsUpdate = (newStats: { age?: number; gender?: string }) => {
+    setUserProfile(prevProfile => ({
+      ...prevProfile,
+      age: newStats.age !== undefined ? newStats.age : prevProfile.age,
+      gender: newStats.gender !== undefined ? newStats.gender : prevProfile.gender,
+    }));
+    toast({
+      title: "Stats Updated!",
+      description: "Your personal stats have been saved.",
+    });
+  };
+
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -88,11 +110,17 @@ export default function ProfilePage() {
 
       {isClient ? ( 
         <>
-          <UserDetailsCard 
-            user={userProfile} 
-            onNameUpdate={handleNameUpdate}
-            // onAvatarUpdate prop removed
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <UserDetailsCard 
+              user={userProfile} 
+              onNameUpdate={handleNameUpdate}
+            />
+            <UserStatsCard
+              age={userProfile.age}
+              gender={userProfile.gender}
+              onStatsUpdate={handleStatsUpdate}
+            />
+          </div>
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
             onGoalsChange={handleGoalsUpdate} 
@@ -100,11 +128,17 @@ export default function ProfilePage() {
         </>
       ) : (
         <>
-            <UserDetailsCard 
-                user={initialMockUser} 
-                onNameUpdate={handleNameUpdate}
-                // onAvatarUpdate prop removed
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <UserDetailsCard 
+                    user={initialMockUser} 
+                    onNameUpdate={handleNameUpdate}
+                />
+                 <UserStatsCard
+                    age={initialMockUser.age}
+                    gender={initialMockUser.gender}
+                    onStatsUpdate={handleStatsUpdate} // This won't be called pre-hydration but good to have
+                 />
+            </div>
             <GoalSetterCard 
                 initialGoals={initialMockUser.fitnessGoals} 
                 onGoalsChange={handleGoalsUpdate} 
@@ -156,3 +190,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

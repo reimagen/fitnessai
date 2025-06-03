@@ -28,5 +28,8 @@ export interface UserProfile {
   email: string;
   avatarUrl?: string;
   fitnessGoals: FitnessGoal[];
+  age?: number;
+  gender?: string;
   // Add other relevant profile fields
 }
+
