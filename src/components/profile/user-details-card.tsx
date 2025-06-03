@@ -75,10 +75,10 @@ export function UserDetailsCard({ user, onNameUpdate, onAvatarUpdate }: UserDeta
   return (
     <Card className="shadow-lg">
       <CardHeader className="flex flex-col items-center text-center sm:flex-row sm:text-left">
-        <div className="relative group">
+        <div className="relative group h-24 w-24 mb-4 sm:mb-0 sm:mr-6 rounded-full">
           <Avatar
             className={cn(
-              "h-24 w-24 mb-4 sm:mb-0 sm:mr-6 ring-2 ring-primary ring-offset-2 cursor-pointer transition-opacity group-hover:opacity-70"
+              "h-full w-full ring-2 ring-primary ring-offset-2 cursor-pointer transition-opacity group-hover:opacity-70"
             )}
             onClick={handleAvatarClick}
             role="button"
@@ -151,3 +151,4 @@ export function UserDetailsCard({ user, onNameUpdate, onAvatarUpdate }: UserDeta
     </Card>
   );
 }
+
