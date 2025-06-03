@@ -19,12 +19,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useState, useEffect } from "react";
-// Removed useToast as it's now handled by the parent page
-// import { useToast } from "@/hooks/use-toast";
+import { format as formatDate } from "date-fns";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
-  targetDate: z.string().optional(),
+  targetDate: z.string().optional()
+    .refine(val => {
+      if (!val || val.trim() === "") return true; // Empty is allowed
+      return !isNaN(new Date(val).getTime());
+    }, {
+      message: "Invalid date. Please use a common format (e.g., MM/DD/YYYY).",
+    }),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
 });
@@ -39,36 +44,33 @@ type GoalSetterCardProps = {
 };
 
 export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
-  // const { toast } = useToast(); // Toast is now handled by parent
 
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
     defaultValues: {
-      goals: [], 
+      goals: [],
     },
   });
 
   useEffect(() => {
     form.reset({
         goals: initialGoals.map(g => {
-        let targetDateString = "";
-        if (g.targetDate && g.targetDate instanceof Date && !isNaN(g.targetDate.getTime())) {
-            targetDateString = g.targetDate.toISOString().split("T")[0];
-        } else if (typeof g.targetDate === 'string') { // Handle if date is already string
-            const parsedDate = new Date(g.targetDate);
-            if (!isNaN(parsedDate.getTime())) {
-                targetDateString = parsedDate.toISOString().split("T")[0];
+        let displayDateString = "";
+        if (g.targetDate) {
+            const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
+            if (!isNaN(dateObj.getTime())) {
+                displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
             }
         }
         return {
             description: g.description,
-            targetDate: targetDateString,
+            targetDate: displayDateString,
             achieved: g.achieved,
             isPrimary: g.isPrimary || false,
         };
       })
     });
-  }, [initialGoals, form.reset, form]); // Added form to dependency array
+  }, [initialGoals, form.reset, form]);
 
 
   const { fields, append, remove } = useFieldArray({
@@ -81,26 +83,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     currentGoals.forEach((goal, index) => {
       form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true });
     });
-    form.trigger(); 
+    form.trigger("goals");
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => ({
-        // Try to preserve existing IDs if possible, or generate new ones.
-        // This logic assumes initialGoals map somewhat to the form's current index.
-        // For robust ID management, IDs should ideally be part of the form values.
-        id: initialGoals[index]?.id || `new-${Date.now()}-${index}`, 
+        id: initialGoals[index]?.id || `new-${Date.now()}-${index}`,
         description: g.description,
-        targetDate: g.targetDate && g.targetDate !== "" ? new Date(g.targetDate) : undefined,
+        targetDate: g.targetDate && g.targetDate.trim() !== "" ? new Date(g.targetDate) : undefined,
         achieved: g.achieved,
         isPrimary: g.isPrimary,
     }));
-    onGoalsChange(updatedGoals); // Call parent's handler
-    // Toast is now handled by parent
-    // toast({
-    //     title: "Goals Updated!",
-    //     description: "Your fitness goals have been saved.",
-    // });
+    onGoalsChange(updatedGoals);
   }
 
   return (
@@ -138,7 +132,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                         <FormItem>
                         <FormLabel>Target Date (Optional)</FormLabel>
                         <FormControl>
-                            <Input type="date" {...field} />
+                            <Input type="text" placeholder="MM/DD/YYYY" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
