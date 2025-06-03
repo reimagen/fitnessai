@@ -55,17 +55,24 @@ export function GoalSetterCard() {
 
   useEffect(() => {
     form.reset({
-        goals: userGoals.map(g => ({
-        description: g.description,
-        targetDate: g.targetDate ? g.targetDate.toISOString().split("T")[0] : "",
-        achieved: g.achieved,
-        isPrimary: g.isPrimary || false,
-      }))
+        goals: userGoals.map(g => {
+        let targetDateString = "";
+        // Ensure g.targetDate is a valid Date object before calling toISOString
+        if (g.targetDate && g.targetDate instanceof Date && !isNaN(g.targetDate.getTime())) {
+            targetDateString = g.targetDate.toISOString().split("T")[0];
+        }
+        return {
+            description: g.description,
+            targetDate: targetDateString,
+            achieved: g.achieved,
+            isPrimary: g.isPrimary || false,
+        };
+      })
     });
   }, [userGoals, form.reset]);
 
 
-  const { fields, append, remove, update } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "goals",
   });
@@ -73,9 +80,11 @@ export function GoalSetterCard() {
   const handleSetPrimary = (selectedIndex: number) => {
     const currentGoals = form.getValues("goals");
     currentGoals.forEach((goal, index) => {
-      form.setValue(`goals.${index}.isPrimary`, index === selectedIndex);
+      form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true });
     });
-    // Trigger re-render or update state if needed, form.setValue should handle it with react-hook-form
+    // Trigger a re-render by updating a dummy state or by ensuring form state change is picked up
+    // Forcing a re-render if form.setValue doesn't immediately update `fields` visually for button state
+    form.trigger(); 
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
@@ -83,12 +92,11 @@ export function GoalSetterCard() {
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => ({
         id: userGoals[index]?.id || `new-${Date.now()}-${index}`, // Preserve existing IDs or generate new ones
         description: g.description,
-        targetDate: g.targetDate ? new Date(g.targetDate) : undefined,
+        targetDate: g.targetDate && g.targetDate !== "" ? new Date(g.targetDate) : undefined,
         achieved: g.achieved,
         isPrimary: g.isPrimary,
     }));
     setUserGoals(updatedGoals); // Update local state for demo
-    console.log("Updated goals:", updatedGoals);
     toast({
         title: "Goals Updated!",
         description: "Your fitness goals have been saved.",
@@ -196,3 +204,4 @@ export function GoalSetterCard() {
     </Card>
   );
 }
+
