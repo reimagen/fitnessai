@@ -70,7 +70,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         };
       })
     });
-  }, [initialGoals, form.reset, form]);
+  }, [initialGoals, form]); // form is stable, effect primarily depends on initialGoals
 
 
   const { fields, append, remove } = useFieldArray({
@@ -81,7 +81,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
   const handleSetPrimary = (selectedIndex: number) => {
     const currentGoals = form.getValues("goals");
     currentGoals.forEach((goal, index) => {
-      form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true });
+      form.setValue(`goals.${index}.isPrimary`, index === selectedIndex, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     });
     form.trigger("goals");
   };
