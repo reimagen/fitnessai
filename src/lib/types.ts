@@ -30,6 +30,8 @@ export interface UserProfile {
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;
+  heightValue?: number; // Height in cm
+  heightUnit?: 'cm' | 'ft/in'; // Preferred unit for height
   // Add other relevant profile fields
 }
 

@@ -16,8 +16,10 @@ const initialMockUser: UserProfile = {
   name: "Alex Fitness",
   email: "alex.fitness@example.com",
   avatarUrl: "https://placehold.co/100x100.png",
-  age: 30, // Added age
-  gender: "Male", // Added gender
+  age: 30,
+  gender: "Male",
+  heightValue: 175, // Default height in cm
+  heightUnit: 'cm',   // Default height unit
   fitnessGoals: [
     { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -47,9 +49,11 @@ export default function ProfilePage() {
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
-          // Ensure age and gender from localStorage are used or defaults from initialMockUser
-          parsedProfile.age = parsedProfile.age || initialMockUser.age;
-          parsedProfile.gender = parsedProfile.gender || initialMockUser.gender;
+          // Ensure age, gender, heightValue, heightUnit from localStorage are used or defaults from initialMockUser
+          parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
+          parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
+          parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
+          parsedProfile.heightUnit = parsedProfile.heightUnit !== undefined ? parsedProfile.heightUnit : initialMockUser.heightUnit;
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
@@ -88,11 +92,13 @@ export default function ProfilePage() {
     // Toast is handled in UserDetailsCard for name updates
   };
 
-  const handleStatsUpdate = (newStats: { age?: number; gender?: string }) => {
+  const handleStatsUpdate = (newStats: { age?: number; gender?: string; heightValue?: number; heightUnit?: 'cm' | 'ft/in' }) => {
     setUserProfile(prevProfile => ({
       ...prevProfile,
       age: newStats.age !== undefined ? newStats.age : prevProfile.age,
       gender: newStats.gender !== undefined ? newStats.gender : prevProfile.gender,
+      heightValue: newStats.heightValue, // This can be undefined to clear height
+      heightUnit: newStats.heightValue !== undefined ? newStats.heightUnit : undefined, // Clear unit if value is cleared
     }));
     toast({
       title: "Stats Updated!",
@@ -118,6 +124,8 @@ export default function ProfilePage() {
             <UserStatsCard
               age={userProfile.age}
               gender={userProfile.gender}
+              heightValue={userProfile.heightValue}
+              heightUnit={userProfile.heightUnit}
               onStatsUpdate={handleStatsUpdate}
             />
           </div>
@@ -136,7 +144,9 @@ export default function ProfilePage() {
                  <UserStatsCard
                     age={initialMockUser.age}
                     gender={initialMockUser.gender}
-                    onStatsUpdate={handleStatsUpdate} // This won't be called pre-hydration but good to have
+                    heightValue={initialMockUser.heightValue}
+                    heightUnit={initialMockUser.heightUnit}
+                    onStatsUpdate={handleStatsUpdate} 
                  />
             </div>
             <GoalSetterCard 
