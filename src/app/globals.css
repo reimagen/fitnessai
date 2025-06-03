@@ -20,34 +20,34 @@ body {
     --card: 0 0% 100%; /* White cards */
     --card-foreground: 355 11% 26%;
 
-    --border: 10 80% 90%; /* Very Soft Coral/Peach */
-    --input: 10 80% 90%; /* Very Soft Coral/Peach */
+    --border: 350 80% 90%; /* Very Soft Pink (less orange) */
+    --input: 350 80% 90%; /* Very Soft Pink (less orange) */
 
-    --primary: 16 100% 66%; /* Coral */
+    --primary: 345 90% 62%; /* Vibrant Pink/Rose */
     --primary-foreground: 0 0% 100%; /* White text on primary */
 
     --secondary: 335 70% 97%; /* Very Light Pink */
     --secondary-foreground: 355 11% 26%;
 
-    --accent: 30 90% 75%; /* Softer Peach */
+    --accent: 5 85% 68%; /* Reddish Coral (less orange) */
     --accent-foreground: 355 11% 26%; /* Dark Brownish-Grey text on accent */
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 16 100% 66%; /* Primary color for rings */
+    --ring: 345 90% 62%; /* Primary color for rings (matches new primary) */
 
     --radius: 0.5rem;
 
     /* Sidebar specific colors */
-    --sidebar-background: 335 70% 97%; /* Very Light Pink (matches new secondary) */
+    --sidebar-background: 335 70% 97%; 
     --sidebar-foreground: 355 11% 26%; 
-    --sidebar-primary: 16 100% 66%;    /* Coral (matches primary) */
+    --sidebar-primary: 345 90% 62%;    /* Matches new primary */
     --sidebar-primary-foreground: 0 0% 100%; 
-    --sidebar-accent: 30 90% 85%;     /* Lighter, Softer Peach */
+    --sidebar-accent: 5 85% 75%;     /* Lighter Reddish Coral */
     --sidebar-accent-foreground: 355 11% 26%; 
-    --sidebar-border: 10 80% 90%;       /* Very Soft Coral/Peach (matches border) */
-    --sidebar-ring: 16 100% 66%;       /* Coral (matches ring) */
+    --sidebar-border: 350 80% 90%;    /* Matches new border */
+    --sidebar-ring: 345 90% 62%;       /* Matches new ring */
 
     /* Chart colors - keeping defaults for now, can be themed if needed */
     --chart-1: 12 76% 61%;
@@ -70,22 +70,22 @@ body {
     --card: 340 10% 12%; /* Very Dark Desaturated Pink/Plum */
     --card-foreground: 340 60% 90%;
 
-    --border: 10 50% 35%; /* Darker, slightly desaturated Peach/Coral */
-    --input: 10 50% 35%;
+    --border: 350 50% 35%; /* Darker, slightly desaturated soft pink */
+    --input: 350 50% 35%;
 
-    --primary: 16 90% 60%; /* Coral (brighter for dark mode) */
+    --primary: 345 85% 65%; /* Pink/Rose (brighter for dark mode) */
     --primary-foreground: 0 0% 10%; /* Dark text on primary */
 
     --secondary: 335 40% 25%; /* Dark Pink */
     --secondary-foreground: 340 60% 90%;
 
-    --accent: 30 80% 70%; /* Softer Peach (for dark mode) */
+    --accent: 5 75% 65%; /* Reddish Coral (for dark mode) */
     --accent-foreground: 340 10% 15%; /* Dark text on accent */
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 16 90% 60%;
+    --ring: 345 85% 65%; /* Matches new primary dark */
 
     /* Chart colors for dark theme */
     --chart-1: 220 70% 50%;
@@ -95,14 +95,14 @@ body {
     --chart-5: 340 75% 55%;
 
     /* Sidebar specific colors for dark theme */
-    --sidebar-background: 335 40% 25%; /* Dark Pink (matches new secondary dark) */
+    --sidebar-background: 335 40% 25%; 
     --sidebar-foreground: 340 60% 90%; 
-    --sidebar-primary: 16 90% 60%;     /* Coral (matches primary dark) */
+    --sidebar-primary: 345 85% 65%;     
     --sidebar-primary-foreground: 0 0% 10%; 
-    --sidebar-accent: 30 70% 75%;      /* Lighter Softer Peach for dark sidebar */
+    --sidebar-accent: 5 75% 70%;      
     --sidebar-accent-foreground: 340 10% 15%; 
-    --sidebar-border: 10 50% 35%;      /* Darker Peach/Coral (matches border dark) */
-    --sidebar-ring: 16 90% 60%;        /* Coral (matches ring dark) */
+    --sidebar-border: 350 50% 35%;      
+    --sidebar-ring: 345 85% 65%;        
   }
 }
 
