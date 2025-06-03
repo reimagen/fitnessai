@@ -1,21 +1,53 @@
 
 "use client";
 
+import { useState } from "react";
 import type { UserProfile } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Edit2, Save, XCircle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 type UserDetailsCardProps = {
   user: UserProfile;
+  onNameUpdate: (newName: string) => void;
 };
 
-export function UserDetailsCard({ user }: UserDetailsCardProps) {
+export function UserDetailsCard({ user, onNameUpdate }: UserDetailsCardProps) {
+  const { toast } = useToast();
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState(user.name);
+
   const primaryGoal = user.fitnessGoals.find(g => g.isPrimary);
-  // If no primary goal explicitly set, try to find one, or default to first or "Not set"
   const displayGoal = primaryGoal || user.fitnessGoals.find(g => g.isPrimary !== false) || user.fitnessGoals[0];
 
+  const handleEditClick = () => {
+    setEditedName(user.name); // Reset to current name when starting edit
+    setIsEditingName(true);
+  };
+
+  const handleCancelClick = () => {
+    setIsEditingName(false);
+  };
+
+  const handleSaveClick = () => {
+    if (editedName.trim() === "") {
+      toast({
+        title: "Invalid Name",
+        description: "Name cannot be empty.",
+        variant: "destructive",
+      });
+      return;
+    }
+    onNameUpdate(editedName);
+    setIsEditingName(false);
+    toast({
+      title: "Name Updated!",
+      description: "Your profile name has been saved.",
+    });
+  };
 
   return (
     <Card className="shadow-lg">
@@ -24,14 +56,39 @@ export function UserDetailsCard({ user }: UserDetailsCardProps) {
           <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="person portrait" />
           <AvatarFallback>{user.name.substring(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
-        <div>
-          <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
-          <CardDescription>{user.email}</CardDescription>
+        <div className="flex-grow">
+          {isEditingName ? (
+            <div className="flex flex-col gap-2 items-center sm:items-start">
+              <Input
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                className="text-xl font-semibold leading-none tracking-tight"
+                aria-label="Edit user name"
+              />
+              <CardDescription>{user.email}</CardDescription>
+            </div>
+          ) : (
+            <>
+              <CardTitle className="font-headline text-2xl">{user.name}</CardTitle>
+              <CardDescription>{user.email}</CardDescription>
+            </>
+          )}
         </div>
-        <Button variant="ghost" size="icon" className="sm:ml-auto mt-4 sm:mt-0">
-          <Edit2 className="h-5 w-5" />
-          <span className="sr-only">Edit Profile</span>
-        </Button>
+        {isEditingName ? (
+          <div className="flex gap-2 mt-4 sm:mt-0 sm:ml-auto">
+            <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel name edit">
+              <XCircle className="h-5 w-5" />
+            </Button>
+            <Button size="icon" onClick={handleSaveClick} aria-label="Save new name">
+              <Save className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" size="icon" className="sm:ml-auto mt-4 sm:mt-0" onClick={handleEditClick} aria-label="Edit profile name">
+            <Edit2 className="h-5 w-5" />
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <div className="mt-4 space-y-2">

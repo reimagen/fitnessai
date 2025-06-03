@@ -30,16 +30,16 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    setIsClient(true); // Component has mounted on the client
+    setIsClient(true); 
   }, []);
 
   useEffect(() => {
-    if (isClient) { // Only run on client after mount
+    if (isClient) { 
       const savedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (savedProfile) {
         try {
           const parsedProfile = JSON.parse(savedProfile);
-          // Dates need to be re-hydrated from strings
+          
           parsedProfile.fitnessGoals = parsedProfile.fitnessGoals.map((goal: FitnessGoal) => ({
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
@@ -47,17 +47,16 @@ export default function ProfilePage() {
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
-          // Fallback to initial mock user if parsing fails (though initial state is already this)
         }
       }
     }
-  }, [isClient]); // Effect runs once after isClient becomes true
+  }, [isClient]); 
 
   useEffect(() => {
-    if (isClient) { // Only save to localStorage on the client
+    if (isClient) { 
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userProfile));
     }
-  }, [userProfile, isClient]); // Effect runs when userProfile changes (and isClient is true)
+  }, [userProfile, isClient]); 
 
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     setUserProfile(prevProfile => ({
@@ -70,6 +69,14 @@ export default function ProfilePage() {
     });
   };
 
+  const handleNameUpdate = (newName: string) => {
+    setUserProfile(prevProfile => ({
+      ...prevProfile,
+      name: newName,
+    }));
+    // Toast is handled in UserDetailsCard for name updates
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
@@ -77,20 +84,17 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
       </header>
 
-      {isClient ? ( // Conditionally render dependent components or show loading state
+      {isClient ? ( 
         <>
-          <UserDetailsCard user={userProfile} />
+          <UserDetailsCard user={userProfile} onNameUpdate={handleNameUpdate} />
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
             onGoalsChange={handleGoalsUpdate} 
           />
         </>
       ) : (
-        // Optional: Render a loading state or placeholders if desired
-        // to avoid rendering components that rely on potentially mismatched data
-        // For now, we'll let them render with initialMockUser until client hydrates
         <>
-            <UserDetailsCard user={initialMockUser} />
+            <UserDetailsCard user={initialMockUser} onNameUpdate={handleNameUpdate} />
             <GoalSetterCard 
                 initialGoals={initialMockUser.fitnessGoals} 
                 onGoalsChange={handleGoalsUpdate} 
