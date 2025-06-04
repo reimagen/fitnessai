@@ -21,6 +21,7 @@ import type { FitnessGoal } from "@/lib/types";
 import { useEffect } from "react";
 import { format as formatDate } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
@@ -168,7 +169,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                           size="sm"
                           onClick={() => handleSetPrimary(index)}
                           disabled={isCurrentGoalPrimary}
-                          className="w-full md:w-auto whitespace-nowrap"
+                          className={cn(
+                            "w-full md:w-auto whitespace-nowrap",
+                            isCurrentGoalPrimary && "disabled:opacity-100"
+                          )}
                       >
                           {isCurrentGoalPrimary ? (
                               <>
