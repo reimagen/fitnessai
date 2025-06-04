@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
-import { format } from 'date-fns';
-import { TrendingUp } from 'lucide-react'; // Added TrendingUp icon
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { TrendingUp } from 'lucide-react'; 
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
@@ -40,7 +40,7 @@ const chartConfig = {
   'Lower Body': { label: "Lower Body", color: "hsl(var(--chart-2))" },
   'Cardio': { label: "Cardio", color: "hsl(var(--chart-3))" },
   'Core': { label: "Core", color: "hsl(var(--chart-4))" },
-  'Other': { label: "Other", color: "hsl(var(--chart-5))" }, // Updated color for 'Other'
+  'Other': { label: "Other", color: "hsl(var(--chart-5))" },
 } satisfies ChartConfig;
 
 interface ChartDataPoint {
@@ -78,9 +78,7 @@ export default function AnalysisPage() {
     if (isClient) {
       const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
       let parsedLogs: WorkoutLog[] = [];
-      let frequencyChartData: ChartDataPoint[] = [];
-      let repPieChartData: CategoryRepDataPoint[] = [];
-
+      
       const currentYear = new Date().getFullYear();
       let ytdWorkoutDays = 0;
       let ytdTotalWeightLiftedLbs = 0;
@@ -92,7 +90,7 @@ export default function AnalysisPage() {
         try {
           parsedLogs = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date),
+            date: log.date ? parseISO(log.date) : new Date(), // Ensure date is parsed
             exercises: log.exercises.map((ex: any) => ({ 
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
@@ -108,36 +106,77 @@ export default function AnalysisPage() {
               calories: ex.calories ?? 0,
             }))
           }));
+
+          // --- Data for Workout Frequency Chart (filtered by timeRange) ---
+          let logsForFrequencyChart = parsedLogs;
+          const today = new Date();
+          if (timeRange === 'weekly') {
+            const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); // 0 for Sunday
+            const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
+            logsForFrequencyChart = parsedLogs.filter(log => 
+              isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
+            );
+          } else if (timeRange === 'monthly') {
+            const startOfCurrentMonth = startOfMonth(today);
+            const endOfCurrentMonth = endOfMonth(today);
+            logsForFrequencyChart = parsedLogs.filter(log =>
+              isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
+            );
+          }
+          // For 'all-time', logsForFrequencyChart remains as parsedLogs
+
+          const frequencySummaries = generateWorkoutSummaries(logsForFrequencyChart);
+          const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
           
-          const summaries = generateWorkoutSummaries(parsedLogs);
-          const displaySummaries = summaries.sort((a,b) => a.date.getTime() - b.date.getTime());
-          
-          frequencyChartData = displaySummaries.map(summary => ({
+          const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
             dateLabel: format(summary.date, 'MMM d'),
             workouts: summary.totalExercises,
             duration: Math.round(summary.totalDurationMinutes),
           }));
+          setWorkoutFrequencyData(newWorkoutFrequencyData);
 
+
+          // --- Data for Category Rep Pie Chart (always all-time) ---
           const repsByCat: Record<string, number> = {
             'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
+          parsedLogs.forEach(log => { // Use full parsedLogs for pie chart
+            log.exercises.forEach(ex => {
+              const reps = ex.reps || 0;
+              if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
+              else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
+              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; // Cardio reps might be 0, but we sum them
+              else if (ex.category === 'Core') repsByCat['Core'] += reps;
+              else repsByCat['Other'] += reps; 
+            });
+          });
+          const pieChartColors: Record<string, string> = {
+            'Upper Body': chartConfig['Upper Body'].color!,
+            'Lower Body': chartConfig['Lower Body'].color!,
+            'Cardio': chartConfig['Cardio'].color!,
+            'Core': chartConfig['Core'].color!,
+            'Other': chartConfig['Other'].color!,
+          };
+          const newCategoryRepData = Object.entries(repsByCat)
+            .filter(([, value]) => value > 0)
+            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
+          setCategoryRepData(newCategoryRepData);
+          
 
+          // --- Data for Year-to-Date Summary (always current year) ---
           parsedLogs.forEach(log => {
-            const logDate = new Date(log.date);
+            const logDate = new Date(log.date); // log.date is already a Date object
             if (logDate.getFullYear() === currentYear) {
               uniqueWorkoutDatesThisYear.add(format(logDate, 'yyyy-MM-dd'));
 
               log.exercises.forEach(ex => {
-                // YTD Weight Lifted
                 if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
                     let volume = ex.weight * ex.sets * ex.reps;
                     if (ex.weightUnit === 'kg') {
-                        volume *= 2.20462; // Convert kg to lbs
+                        volume *= 2.20462; 
                     }
                     ytdTotalWeightLiftedLbs += volume;
                 }
-
-                // YTD Cardio Duration
                 if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
                     let durationInMin = 0;
                     switch (ex.durationUnit) {
@@ -147,22 +186,10 @@ export default function AnalysisPage() {
                     }
                     ytdTotalCardioDurationMin += durationInMin;
                 }
-                // YTD Calories Burned
                 ytdTotalCaloriesBurned += (ex.calories || 0);
               });
             }
-
-            // Reps by category (all time for pie chart)
-            log.exercises.forEach(ex => {
-              const reps = ex.reps || 0;
-              if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
-              else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
-              else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps; // Includes "Full Body" and uncategorized
-            });
           });
-          
           ytdWorkoutDays = uniqueWorkoutDatesThisYear.size;
           setYearToDateSummary({
             workoutDays: ytdWorkoutDays,
@@ -172,36 +199,26 @@ export default function AnalysisPage() {
             currentYear,
           });
           
-          const pieChartColors: Record<string, string> = {
-            'Upper Body': chartConfig['Upper Body'].color!,
-            'Lower Body': chartConfig['Lower Body'].color!,
-            'Cardio': chartConfig['Cardio'].color!,
-            'Core': chartConfig['Core'].color!,
-            'Other': chartConfig['Other'].color!,
-          };
-
-          repPieChartData = Object.entries(repsByCat)
-            .filter(([, value]) => value > 0)
-            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' })); // Fallback to muted for any unexpected category
-
         } catch (error) {
           console.error("Error processing workout logs for analysis:", error);
-           setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
+          setWorkoutFrequencyData([]);
+          setCategoryRepData([]);
+          setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
         }
       } else {
-        // No logs, set YTD to zeros
+        // No logs, set all to empty/zeros
+        setWorkoutFrequencyData([]);
+        setCategoryRepData([]);
         setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
       }
-      setWorkoutFrequencyData(frequencyChartData);
-      setCategoryRepData(repPieChartData);
     }
-  }, [isClient, timeRange]); // timeRange might not be needed for YTD, but keep for chart consistency
+  }, [isClient, timeRange]);
 
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }: any) => {
-    if (percent < 0.05 && categoryRepData.length > 3) return null; // Hide small labels if too many slices
+    if (percent < 0.05 && categoryRepData.length > 3) return null; 
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN); // Adjust label distance based on slice count
+    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN); 
     const y = cy + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.sin(-midAngle * RADIAN);
 
     return (
@@ -265,7 +282,9 @@ export default function AnalysisPage() {
           <CardHeader>
             <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
             <CardDescription>
-              {workoutFrequencyData.length > 0 ? `Based on ${timeRange} data` : "Log some workouts to see your data"}
+              {workoutFrequencyData.length > 0 
+                ? `Based on ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)} data` 
+                : (isClient ? `No workout data for this ${timeRange} period.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -286,7 +305,7 @@ export default function AnalysisPage() {
               </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? "No workout data available for this period." : "Loading chart data..."}</p>
+                <p>{isClient ? `No workout data available for this ${timeRange} period.` : "Loading chart data..."}</p>
               </div>
             )}
           </CardContent>
