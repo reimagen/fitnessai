@@ -2,10 +2,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { UserProfile, FitnessGoal } from "@/lib/types";
+import type { UserProfile, FitnessGoal, ExperienceLevel, SessionTime } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
-// UserStatsCard import removed
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
+import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card"; // New import
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Palette } from "lucide-react";
@@ -15,16 +15,19 @@ const initialMockUser: UserProfile = {
   id: "user123",
   name: "Lisa Gu",
   email: "lisa.gu@example.com",
-  joinedDate: new Date(2025, 5, 1), // Month is 0-indexed, so 5 is June
+  joinedDate: new Date(2025, 5, 1),
   age: 36,
   gender: "Female",
-  heightValue: 162.56, // Example height in cm
-  heightUnit: 'ft/in',  // User prefers ft/in
+  heightValue: 162.56,
+  heightUnit: 'ft/in',
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
     { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") },
   ],
+  workoutsPerWeek: 3,
+  sessionTimeMinutes: 45,
+  experienceLevel: 'intermediate',
 };
 
 const LOCAL_STORAGE_KEY = "fitnessAppUserProfile";
@@ -50,15 +53,18 @@ export default function ProfilePage() {
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
           
-          // Ensure joinedDate is correctly parsed as a Date object
           parsedProfile.joinedDate = parsedProfile.joinedDate ? new Date(parsedProfile.joinedDate) : initialMockUser.joinedDate;
-
           parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
-          // joinedDate handled above
           parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
           parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
           parsedProfile.heightUnit = parsedProfile.heightUnit !== undefined ? parsedProfile.heightUnit : initialMockUser.heightUnit;
+          
+          // Load workout preferences
+          parsedProfile.workoutsPerWeek = parsedProfile.workoutsPerWeek !== undefined ? parsedProfile.workoutsPerWeek : initialMockUser.workoutsPerWeek;
+          parsedProfile.sessionTimeMinutes = parsedProfile.sessionTimeMinutes !== undefined ? parsedProfile.sessionTimeMinutes : initialMockUser.sessionTimeMinutes;
+          parsedProfile.experienceLevel = parsedProfile.experienceLevel !== undefined ? parsedProfile.experienceLevel : initialMockUser.experienceLevel;
+
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
@@ -98,6 +104,17 @@ export default function ProfilePage() {
     });
   };
 
+  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel'>>) => {
+    setUserProfile(prevProfile => ({
+      ...prevProfile,
+      ...updatedPreferences,
+    }));
+    toast({
+      title: "Preferences Updated!",
+      description: "Your workout preferences have been saved.",
+    });
+  };
+
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -116,6 +133,14 @@ export default function ProfilePage() {
             initialGoals={userProfile.fitnessGoals} 
             onGoalsChange={handleGoalsUpdate} 
           />
+           <WorkoutPreferencesCard
+            preferences={{
+              workoutsPerWeek: userProfile.workoutsPerWeek,
+              sessionTimeMinutes: userProfile.sessionTimeMinutes,
+              experienceLevel: userProfile.experienceLevel,
+            }}
+            onUpdate={handlePreferencesUpdate}
+          />
         </>
       ) : (
         <>
@@ -127,6 +152,14 @@ export default function ProfilePage() {
                 initialGoals={initialMockUser.fitnessGoals} 
                 onGoalsChange={handleGoalsUpdate} 
             />
+            <WorkoutPreferencesCard
+                preferences={{
+                  workoutsPerWeek: initialMockUser.workoutsPerWeek,
+                  sessionTimeMinutes: initialMockUser.sessionTimeMinutes,
+                  experienceLevel: initialMockUser.experienceLevel,
+                }}
+                onUpdate={handlePreferencesUpdate}
+          />
         </>
       )}
       
@@ -174,3 +207,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

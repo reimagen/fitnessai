@@ -22,17 +22,24 @@ export interface FitnessGoal {
   isPrimary?: boolean; // Added for primary goal
 }
 
+export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
+export type SessionTime = 15 | 30 | 45 | 60;
+
+
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
   avatarUrl?: string;
-  joinedDate: Date; // Added joinedDate
+  joinedDate: Date;
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;
   heightValue?: number; // Height in cm
   heightUnit?: 'cm' | 'ft/in'; // Preferred unit for height
+  workoutsPerWeek?: number;
+  sessionTimeMinutes?: SessionTime;
+  experienceLevel?: ExperienceLevel;
   // Add other relevant profile fields
 }
 
