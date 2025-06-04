@@ -125,21 +125,29 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           name = name.substring(5);
         }
         
-        let finalWeightUnit: 'kg' | 'lbs' | undefined = undefined;
-        if (ex.weightUnit) {
-            const rawUnit = String(ex.weightUnit).trim().toLowerCase();
-            if (rawUnit === 'lbs00' || rawUnit === 'lbs') {
-                finalWeightUnit = 'lbs';
-            } else if (rawUnit === 'kg00' || rawUnit === 'kg') {
-                finalWeightUnit = 'kg';
+        let correctedWeightUnit: 'kg' | 'lbs' | undefined;
+
+        if (typeof ex.weightUnit === 'string') {
+            const rawUnit = ex.weightUnit.trim().toLowerCase();
+            if (rawUnit === 'lbs00') {
+                correctedWeightUnit = 'lbs';
+            } else if (rawUnit === 'kg00') {
+                correctedWeightUnit = 'kg';
+            } else if (rawUnit === 'lbs' || rawUnit === 'kg') {
+                correctedWeightUnit = rawUnit as 'kg' | 'lbs';
+            } else {
+                correctedWeightUnit = undefined; 
+            }
+        } else {
+             correctedWeightUnit = undefined;
+        }
+
+        if (correctedWeightUnit === undefined) {
+            if (ex.weight !== undefined && ex.weight > 0) {
+                correctedWeightUnit = 'kg';
             }
         }
 
-        if (ex.weight !== undefined && ex.weight > 0 && !finalWeightUnit) {
-          finalWeightUnit = 'kg'; 
-        } else if ((ex.weight === undefined || ex.weight === 0) && !finalWeightUnit) {
-            finalWeightUnit = undefined;
-        }
 
         let finalSets = ex.sets ?? 0;
         let finalReps = ex.reps ?? 0;
@@ -153,8 +161,8 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             finalSets = 0; 
             finalReps = 0;
             finalWeight = 0;
-            finalWeightUnit = undefined; // Cardio doesn't use weight/unit
-        } else { // Non-Cardio
+            correctedWeightUnit = undefined; 
+        } else { 
             finalDistance = 0; 
             finalDuration = 0;
             finalDistanceUnit = undefined; 
@@ -164,7 +172,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         return {
           ...ex,
           name: name,
-          weightUnit: finalWeightUnit,
+          weightUnit: correctedWeightUnit,
           sets: finalSets,
           reps: finalReps,
           weight: finalWeight,
@@ -174,7 +182,6 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           durationUnit: finalDurationUnit,
         };
       });
-      // Return a new object with the modified exercises array
       return {
         ...output,
         exercises: modifiedExercises,
