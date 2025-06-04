@@ -59,7 +59,7 @@ Key Instructions:
 1.  **Workout Date**:
     *   Extract the date of the workout from the screenshot. If a year is explicitly present in the screenshot (e.g., "June 2, 2024"), use that year.
     *   Format this date as YYYY-MM-DD.
-    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), infer the year based on the current date at the time of this processing. For example, if this processing occurs in 2024 and the image shows "Jun 2" without a year, the \\\`workoutDate\\\` should be "2024-06-02". If this processing occurs in 2025 and the image shows "Jun 2", it should be "2025-06-02".
+    *   **Year Inference (No Visible Year)**: If the screenshot shows a month and day (e.g., "June 2", "Mon, Jun 2") but **NO explicit year is visible anywhere in the image**, you MUST use the **current calendar year** of when this request is being processed. For example, if this request is processed in the year 2025 and the image shows "June 2" (with no year displayed), the \`workoutDate\` MUST be "2025-06-02". If processed in 2026 and image shows "June 2" (with no year displayed), it MUST be "2026-06-02". Do NOT assume a past year unless that past year is explicitly written in the image.
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
     *   Ignore common OCR (Optical Character Recognition) artifacts. For instance:
