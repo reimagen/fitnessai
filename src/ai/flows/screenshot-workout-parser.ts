@@ -36,7 +36,7 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'),
       duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated.'),
       durationUnit: z.enum(['min', 'hr', 'sec']).optional().describe('The unit of duration (min, hr, or sec).'),
-      calories: z.number().optional().describe('The number of calories burned.'),
+      calories: z.number().describe('The number of calories burned. If a dash ("-"), "N/A", or no value is clearly visible for calories, output 0.'),
     })
   ).describe('A list of exercises parsed from the screenshot, with details about sets, reps, weight, weight unit, category, distance, duration, and calories.'),
 });
@@ -74,11 +74,11 @@ Key Instructions:
     *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If truly unsure or it doesn't fit these standard categories (or a tag like "Endurance" is present for a cardio activity), default to "Other".
 5.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
-        *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`.
+        *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
         *   For these "Cardio" exercises, \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\` should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: \\\`sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96\\\`.
         *   Do not mistake distance values (like "5383 ft") for \\\`reps\\\`.
 6.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
-    *   For these categories, prioritize extracting \\\`sets\\\`, \\\`reps\\\`, \\\`weight\\\`, \\\`weightUnit\\\`, and \\\`calories\\\`.
+    *   For these categories, prioritize extracting \\\`sets\\\`, \\\`reps\\\`, \\\`weight\\\`, \\\`weightUnit\\\`, and \\\`calories\\\`. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
     *   \\\`distance\\\` and \\\`duration\\\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
 7.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs).
@@ -94,10 +94,9 @@ Key Instructions:
     *   Do NOT create multiple identical entries for an exercise if it's just one logged item in the image.
     *   Only if the screenshot clearly shows the *same exercise name* logged *multiple separate times* with potentially different stats (e.g., "Bench Press: 3 sets..." and then later "Bench Press: 4 sets..."), should you list each of those distinct logs.
     *   The items "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear.
-11. **Other Fields (for non-Cardio exercises primarily)**:
-    *   Extract \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\`.
-    *   Also extract \\\`calories\\\` if available.
-    *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
+11. **Calories Field (General)**:
+    *   Extract \\\`calories\\\` if available for any exercise. Ensure it is output as a numerical value.
+    *   If a value for calories is explicitly shown as '-' or 'N/A' or is not clearly visible in the screenshot for an exercise, output 0 for the \\\`calories\\\` field for that exercise.
 
 Here is the screenshot:
 {{media url=photoDataUri}}
@@ -140,13 +139,15 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
 
         if (typeof ex.weightUnit === 'string') {
             const rawUnit = ex.weightUnit.trim().toLowerCase();
-            if (/^lbs0+$/.test(rawUnit)) { // Matches lbs followed by one or more zeros
+            if (/^lbs0+$/.test(rawUnit)) {
                 correctedWeightUnit = 'lbs';
-            } else if (/^kg0+$/.test(rawUnit)) { // Matches kg followed by one or more zeros
+            } else if (/^kg0+$/.test(rawUnit)) {
                 correctedWeightUnit = 'kg';
             } else if (rawUnit === 'lbs' || rawUnit === 'kg') {
                 correctedWeightUnit = rawUnit as 'kg' | 'lbs';
             } else {
+                // If it's an unrecognized string for weightUnit, treat as undefined initially
+                // so the default 'kg' can be applied if weight > 0
                 correctedWeightUnit = undefined; 
             }
         } else {
@@ -155,17 +156,17 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
 
         if (correctedWeightUnit === undefined) {
             if (ex.weight !== undefined && ex.weight > 0) {
-                correctedWeightUnit = 'kg';
+                correctedWeightUnit = 'kg'; // Default to kg if weight is present and unit is unknown/missing
             }
         }
 
-        // Initialize final values with AI's parsed values (or default to 0 if undefined)
+        // Initialize final values with AI's parsed values (or default to 0 if undefined by AI, Zod now requires calories)
         let finalSets = ex.sets ?? 0;
         let finalReps = ex.reps ?? 0;
         let finalWeight = ex.weight ?? 0;
         let finalDistance = ex.distance ?? 0;
         let finalDuration = ex.duration ?? 0;
-        let finalCalories = ex.calories ?? 0;
+        let finalCalories = ex.calories; // Zod schema now requires calories, so ex.calories should be a number.
         let finalDistanceUnit = ex.distanceUnit;
         let finalDurationUnit = ex.durationUnit;
 
@@ -174,22 +175,16 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             finalSets = 0; 
             finalReps = 0;
             finalWeight = 0;
-            // For Cardio, weightUnit should be undefined if weight is 0
             if (finalWeight === 0) {
                 correctedWeightUnit = undefined; 
             }
-            // For Cardio, distance, duration, calories, and their units are preserved from AI (or their ?? 0 defaults)
         } else if (ex.category && strengthCategories.includes(ex.category)) { 
-            // For explicitly defined strength categories, zero out cardio-specific metrics
             finalDistance = 0; 
             finalDuration = 0;
             finalDistanceUnit = undefined; 
             finalDurationUnit = undefined; 
-            // For Strength, sets, reps, weight, calories, and weightUnit are preserved from AI (or their ?? 0 defaults)
         }
-        // If category is 'Other' or undefined (which shouldn't happen if category is required), 
-        // all metrics are preserved as parsed by AI (or their ?? 0 defaults)
-
+        
         return {
           name: name, 
           sets: finalSets,
@@ -201,7 +196,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           distanceUnit: finalDistanceUnit,
           duration: finalDuration,
           durationUnit: finalDurationUnit,
-          calories: finalCalories,
+          calories: finalCalories, // Ensure calories is passed through
         };
       });
       return {
