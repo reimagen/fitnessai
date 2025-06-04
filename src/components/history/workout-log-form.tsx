@@ -252,7 +252,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Distance (Optional)</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
