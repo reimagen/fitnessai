@@ -110,7 +110,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
       {previewUrl && (
         <div className="mt-4">
           <p className="text-sm font-medium mb-2">Image Preview:</p>
-          <div className="border rounded-md p-2 inline-block bg-muted/20 shadow-sm">
+          <div className="border border-primary rounded-md p-2 inline-block bg-muted/20 shadow-sm">
             <Image src={previewUrl} alt="Screenshot preview" width={300} height={200} className="rounded-md object-contain" data-ai-hint="mobile screen" />
           </div>
         </div>
@@ -123,7 +123,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
 
       {(file || parsedResult || error) && (
          <Button onClick={handleClearScreenshot} variant="outline" className="w-full mt-2">
-            <RotateCcw className="mr-2 h-4 w-4" /> Clear Previous Screenshot
+            <RotateCcw className="mr-2 h-4 w-4" /> Clear Screenshot
         </Button>
       )}
 
