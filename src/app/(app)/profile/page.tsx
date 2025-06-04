@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
-import { UserStatsCard } from "@/components/profile/user-stats-card"; // New import
+// UserStatsCard import removed
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,14 @@ import { useToast } from "@/hooks/use-toast";
 
 const initialMockUser: UserProfile = {
   id: "user123",
-  name: "Alex Fitness",
-  email: "alex.fitness@example.com",
-  avatarUrl: "https://placehold.co/100x100.png",
-  age: 30,
-  gender: "Male",
-  heightValue: 175, // Default height in cm
-  heightUnit: 'cm',   // Default height unit
+  name: "Lisa Gu", // Updated name
+  email: "lisa.gu@example.com",
+  age: 36, // Default age
+  gender: "Female", // Default gender
+  heightValue: 162.56, // Approx 5ft 4in in cm ( (5*12 + 4) * 2.54 )
+  heightUnit: 'ft/in',   // Default height unit
   fitnessGoals: [
-    { id: "goal1", description: "Lose 5kg by end of August", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
+    { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
     { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") },
   ],
@@ -49,7 +48,8 @@ export default function ProfilePage() {
             ...goal,
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
-          // Ensure age, gender, heightValue, heightUnit from localStorage are used or defaults from initialMockUser
+          
+          parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
           parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
           parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
@@ -57,11 +57,9 @@ export default function ProfilePage() {
           setUserProfile(parsedProfile);
         } catch (error) {
           console.error("Error parsing user profile from localStorage", error);
-          // Fallback to initialMockUser if parsing fails
           setUserProfile(initialMockUser);
         }
       } else {
-        // If no saved profile, use initialMockUser
          setUserProfile(initialMockUser);
       }
     }
@@ -84,25 +82,14 @@ export default function ProfilePage() {
     });
   };
 
-  const handleNameUpdate = (newName: string) => {
+  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => {
     setUserProfile(prevProfile => ({
       ...prevProfile,
-      name: newName,
-    }));
-    // Toast is handled in UserDetailsCard for name updates
-  };
-
-  const handleStatsUpdate = (newStats: { age?: number; gender?: string; heightValue?: number; heightUnit?: 'cm' | 'ft/in' }) => {
-    setUserProfile(prevProfile => ({
-      ...prevProfile,
-      age: newStats.age !== undefined ? newStats.age : prevProfile.age,
-      gender: newStats.gender !== undefined ? newStats.gender : prevProfile.gender,
-      heightValue: newStats.heightValue, // This can be undefined to clear height
-      heightUnit: newStats.heightValue !== undefined ? newStats.heightUnit : undefined, // Clear unit if value is cleared
+      ...updatedDetails,
     }));
     toast({
-      title: "Stats Updated!",
-      description: "Your personal stats have been saved.",
+      title: "Profile Updated!",
+      description: "Your profile details have been saved.",
     });
   };
 
@@ -116,19 +103,10 @@ export default function ProfilePage() {
 
       {isClient ? ( 
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <UserDetailsCard 
-              user={userProfile} 
-              onNameUpdate={handleNameUpdate}
-            />
-            <UserStatsCard
-              age={userProfile.age}
-              gender={userProfile.gender}
-              heightValue={userProfile.heightValue}
-              heightUnit={userProfile.heightUnit}
-              onStatsUpdate={handleStatsUpdate}
-            />
-          </div>
+          <UserDetailsCard 
+            user={userProfile} 
+            onUpdate={handleProfileDetailsUpdate}
+          />
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
             onGoalsChange={handleGoalsUpdate} 
@@ -136,19 +114,10 @@ export default function ProfilePage() {
         </>
       ) : (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <UserDetailsCard 
-                    user={initialMockUser} 
-                    onNameUpdate={handleNameUpdate}
-                />
-                 <UserStatsCard
-                    age={initialMockUser.age}
-                    gender={initialMockUser.gender}
-                    heightValue={initialMockUser.heightValue}
-                    heightUnit={initialMockUser.heightUnit}
-                    onStatsUpdate={handleStatsUpdate} 
-                 />
-            </div>
+            <UserDetailsCard 
+                user={initialMockUser} 
+                onUpdate={handleProfileDetailsUpdate}
+            />
             <GoalSetterCard 
                 initialGoals={initialMockUser.fitnessGoals} 
                 onGoalsChange={handleGoalsUpdate} 
