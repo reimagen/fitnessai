@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2 } from "lucide-react";
-import type { WorkoutLog, Exercise } from "@/lib/types"; 
+import type { WorkoutLog, Exercise } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 
@@ -47,23 +47,23 @@ type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
 
 type WorkoutLogFormProps = {
   onSubmitLog: (data: Omit<WorkoutLog, 'id'>) => void;
-  initialData?: Omit<WorkoutLog, 'id'>; // Make 'id' optional for initialData if it's a new log
+  initialData?: Omit<WorkoutLog, 'id'>;
   editingLogId?: string | null;
   onCancelEdit?: () => void;
 };
 
-const defaultExerciseValues: Omit<Exercise, 'id'> = { 
-  name: "", 
-  sets: 3, 
-  reps: 10, 
-  weight: 0, 
+const defaultExerciseValues: Omit<Exercise, 'id'> = {
+  name: "",
+  sets: 3,
+  reps: 10,
+  weight: 0,
   weightUnit: "kg" as ('kg' | 'lbs'),
-  category: "", 
-  distance: undefined, 
-  distanceUnit: undefined as ('mi' | 'km' | undefined), 
-  duration: undefined, 
-  durationUnit: undefined as ('min' | 'hr' | 'sec' | undefined), 
-  calories: undefined 
+  category: "",
+  distance: 0,
+  distanceUnit: undefined as ('mi' | 'km' | undefined),
+  duration: 0,
+  durationUnit: undefined as ('min' | 'hr' | 'sec' | undefined),
+  calories: 0
 };
 
 export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit }: WorkoutLogFormProps) {
@@ -72,7 +72,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     // Default values are set in useEffect to handle initialData changes
   });
 
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "exercises",
   });
@@ -82,7 +82,17 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
       form.reset({
         date: initialData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         notes: initialData.notes || "",
-        exercises: initialData.exercises?.map(ex => ({...defaultExerciseValues, ...ex})) || [defaultExerciseValues],
+        exercises: initialData.exercises?.map(ex => ({
+          ...defaultExerciseValues, // Start with system defaults
+          ...ex, // Override with actual exercise data
+          // Ensure optional numerics from `ex` become 0 if they were undefined/null
+          distance: ex.distance ?? 0,
+          duration: ex.duration ?? 0,
+          calories: ex.calories ?? 0,
+          sets: ex.sets ?? 0, // also ensure other numerics are handled
+          reps: ex.reps ?? 0,
+          weight: ex.weight ?? 0,
+        })) || [defaultExerciseValues],
       });
     } else {
       form.reset({
@@ -97,17 +107,22 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   function onSubmit(values: WorkoutLogFormData) {
     onSubmitLog({
         ...values,
-        date: new Date(values.date), // Ensure date is a Date object
+        date: new Date(values.date),
         exercises: values.exercises.map(ex => ({
-          id: ex.id || Math.random().toString(36).substring(2,9), // Keep existing ID or generate new
-          ...ex,
+          id: ex.id || Math.random().toString(36).substring(2,9),
+          name: ex.name,
+          category: ex.category,
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
           weightUnit: ex.weightUnit || 'kg',
+          distance: ex.distance ?? 0,
+          distanceUnit: ex.distanceUnit,
+          duration: ex.duration ?? 0,
+          durationUnit: ex.durationUnit,
+          calories: ex.calories ?? 0,
         }))
     });
-    // Resetting is handled by parent changing editingLogId or by useEffect if not editing
   }
 
   return (
@@ -177,7 +192,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Sets</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="3" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" placeholder="3" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -190,7 +205,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Reps</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="10" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" placeholder="10" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -203,7 +218,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Weight</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="50" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -237,7 +252,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Distance (Optional)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="5" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -271,7 +286,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Duration (Optional)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="30" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -306,7 +321,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Calories (Optional)</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="150" {...field} onChange={e => field.onChange(e.target.value === '' ? undefined : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

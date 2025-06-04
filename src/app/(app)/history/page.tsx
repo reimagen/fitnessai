@@ -20,8 +20,8 @@ const initialSampleLogs: WorkoutLog[] = [
     id: "1",
     date: new Date("2024-07-20"),
     exercises: [
-      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80, weightUnit: "kg", category: "Upper Body", calories: 150 },
-      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100, weightUnit: "kg", category: "Lower Body", calories: 200 },
+      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80, weightUnit: "kg", category: "Upper Body", calories: 150, distance: 0, duration: 0 },
+      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100, weightUnit: "kg", category: "Lower Body", calories: 200, distance: 0, duration: 0 },
     ],
     notes: "Felt strong today!",
   },
@@ -29,8 +29,8 @@ const initialSampleLogs: WorkoutLog[] = [
     id: "2",
     date: new Date("2024-07-18"),
     exercises: [
-      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120, weightUnit: "kg", category: "Full Body" },
-      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50, weightUnit: "kg", category: "Upper Body" },
+      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120, weightUnit: "kg", category: "Full Body", distance: 0, duration: 0, calories: 0 },
+      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50, weightUnit: "kg", category: "Upper Body", distance: 0, duration: 0, calories: 0 },
       { id: "ex5", name: "Running", sets: 1, reps: 1, weight: 0, category: "Cardio", distance: 5, distanceUnit: "km", duration: 30, durationUnit: "min", calories: 300 },
     ],
   },
@@ -61,26 +61,39 @@ export default function HistoryPage() {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date), 
-            exercises: log.exercises.map((ex: Exercise) => ({
-              ...ex,
-              id: ex.id || Math.random().toString(36).substring(2,9), // Ensure exercise ID exists
+            date: new Date(log.date),
+            exercises: log.exercises.map((ex: any) => ({ // Use 'any' for ex temporarily for easier defaulting
+              id: ex.id || Math.random().toString(36).substring(2,9),
+              name: ex.name,
+              sets: ex.sets ?? 0,
+              reps: ex.reps ?? 0,
+              weight: ex.weight ?? 0,
               weightUnit: ex.weightUnit || 'kg',
               category: ex.category,
-              distance: ex.distance,
+              distance: ex.distance ?? 0,
               distanceUnit: ex.distanceUnit,
-              duration: ex.duration,
+              duration: ex.duration ?? 0,
               durationUnit: ex.durationUnit,
-              calories: ex.calories,
+              calories: ex.calories ?? 0,
             }))
           }));
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
-          console.error("Error parsing workout logs from localStorage. Data might be corrupted. Initializing with empty logs.", error);
-          setWorkoutLogs([]); 
+          console.error("Error parsing workout logs from localStorage. Initializing with empty logs.", error);
+          setWorkoutLogs([]);
         }
       } else {
-        setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
+        // Initialize with sample logs if localStorage is empty, ensuring new fields default appropriately
+         const logsWithDefaults = initialSampleLogs.map(log => ({
+            ...log,
+            exercises: log.exercises.map(ex => ({
+                ...ex,
+                distance: ex.distance ?? 0,
+                duration: ex.duration ?? 0,
+                calories: ex.calories ?? 0,
+            }))
+         }));
+        setWorkoutLogs(logsWithDefaults.sort((a,b) => b.date.getTime() - a.date.getTime()));
       }
     }
   }, [isClient]);
@@ -92,18 +105,28 @@ export default function HistoryPage() {
   }, [workoutLogs, isClient]);
 
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => {
+    const processedExercises = data.exercises.map(ex => ({
+        id: ex.id || Math.random().toString(36).substring(2,9),
+        name: ex.name,
+        category: ex.category,
+        sets: ex.sets ?? 0,
+        reps: ex.reps ?? 0,
+        weight: ex.weight ?? 0,
+        weightUnit: ex.weightUnit || 'kg',
+        distance: ex.distance ?? 0,
+        distanceUnit: ex.distanceUnit,
+        duration: ex.duration ?? 0,
+        durationUnit: ex.durationUnit,
+        calories: ex.calories ?? 0,
+    }));
+
     if (editingLogId) {
-      // Update existing log
       const updatedLogs = workoutLogs.map(log => {
         if (log.id === editingLogId) {
           return {
-            ...log, // Keep original log id
-            ...data, // Submitted data
-            exercises: data.exercises.map(ex => ({
-              ...ex,
-              id: ex.id || Math.random().toString(36).substring(2,9), // Keep existing ex id or generate
-              weightUnit: ex.weightUnit || 'kg'
-            }))
+            ...log,
+            ...data, // Submitted data (date, notes)
+            exercises: processedExercises
           };
         }
         return log;
@@ -114,17 +137,13 @@ export default function HistoryPage() {
         description: `Your workout on ${data.date.toLocaleDateString()} has been updated.`,
         variant: "default",
       });
-      setEditingLogId(null); // Exit editing mode
+      setEditingLogId(null);
     } else {
-      // Add new log
       const newLog: WorkoutLog = {
-        ...data,
         id: Date.now().toString(),
-        exercises: data.exercises.map(ex => ({
-          ...ex,
-          id: Math.random().toString(36).substring(2,9),
-          weightUnit: ex.weightUnit || 'kg'
-        }))
+        date: data.date,
+        notes: data.notes,
+        exercises: processedExercises
       };
       setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
       toast({
@@ -133,12 +152,11 @@ export default function HistoryPage() {
         variant: "default",
       });
     }
-     // Reset form through key change or specific reset method if WorkoutLogForm supports it
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let logDate = new Date(); 
-    logDate.setHours(0,0,0,0); 
+    let logDate = new Date();
+    logDate.setHours(0,0,0,0);
     let notes = "Parsed from screenshot.";
     const currentYear = new Date().getFullYear();
 
@@ -146,8 +164,8 @@ export default function HistoryPage() {
       const dateParts = parsedData.workoutDate.split('-').map(Number);
       if (dateParts.length === 3) {
         const aiYear = dateParts[0];
-        const aiMonth = dateParts[1]; 
-        const aiDay = dateParts[2];   
+        const aiMonth = dateParts[1];
+        const aiDay = dateParts[2];
         logDate = new Date(currentYear, aiMonth - 1, aiDay, 0, 0, 0, 0);
         if (aiYear !== currentYear) {
             notes += ` Original year ${aiYear} from screenshot was updated to current year ${currentYear}.`;
@@ -167,9 +185,18 @@ export default function HistoryPage() {
       id: Date.now().toString(),
       date: logDate,
       exercises: parsedData.exercises.map(ex => ({
-        ...ex,
         id: Math.random().toString(36).substring(2,9),
+        name: ex.name,
+        sets: ex.sets ?? 0,
+        reps: ex.reps ?? 0,
+        weight: ex.weight ?? 0,
         weightUnit: ex.weightUnit || 'kg',
+        category: ex.category,
+        distance: ex.distance ?? 0,
+        distanceUnit: ex.distanceUnit,
+        duration: ex.duration ?? 0,
+        durationUnit: ex.durationUnit,
+        calories: ex.calories ?? 0,
       })),
       notes: notes,
     };
@@ -194,7 +221,7 @@ export default function HistoryPage() {
     const logToEdit = workoutLogs.find(log => log.id === logId);
     if (logToEdit) {
       setEditingLogId(logId);
-      setActiveTab('log'); // Switch to the log form tab
+      setActiveTab('log');
     } else {
       toast({
         title: "Error",
@@ -207,10 +234,10 @@ export default function HistoryPage() {
   const handleCancelEdit = () => {
     setEditingLogId(null);
   }
-  
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    if (value !== 'log') { // If navigating away from the log tab, cancel any active edit
+    if (value !== 'log') {
       setEditingLogId(null);
     }
   }
@@ -238,9 +265,9 @@ export default function HistoryPage() {
               <CardDescription>{editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}</CardDescription>
             </CardHeader>
             <CardContent>
-              <WorkoutLogForm 
-                key={editingLogId || 'new'} // Force re-render and re-initialization of form
-                onSubmitLog={handleManualLogSubmit} 
+              <WorkoutLogForm
+                key={editingLogId || 'new'}
+                onSubmitLog={handleManualLogSubmit}
                 initialData={logBeingEdited}
                 editingLogId={editingLogId}
                 onCancelEdit={handleCancelEdit}
@@ -293,4 +320,3 @@ export default function HistoryPage() {
     </div>
   );
 }
-
