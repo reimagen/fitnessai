@@ -121,14 +121,18 @@ export default function AnalysisPage() {
             logsForCurrentPeriod = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
             );
+            periodLabel = `${timeRangeDisplayNames['weekly']}'s`;
           } else if (timeRange === 'monthly') {
             const startOfCurrentMonth = startOfMonth(today);
             const endOfCurrentMonth = endOfMonth(today);
             logsForCurrentPeriod = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
             );
+            periodLabel = `${timeRangeDisplayNames['monthly']}'s`;
+          } else { // 'all-time'
+             periodLabel = `${timeRangeDisplayNames['all-time']}`;
           }
-          // For 'all-time', logsForCurrentPeriod remains all parsedLogs
+          
 
           // --- Data for Workout Frequency Chart (filtered by timeRange) ---
           const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
@@ -142,18 +146,18 @@ export default function AnalysisPage() {
           setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-          // --- Data for Category Rep Pie Chart (always all-time using `parsedLogs`) ---
+          // --- Data for Category Rep Pie Chart (filtered by timeRange) ---
           const repsByCat: Record<string, number> = {
             'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
-          parsedLogs.forEach(log => { 
+          logsForCurrentPeriod.forEach(log => { 
             log.exercises.forEach(ex => {
               const reps = ex.reps || 0;
               if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
               else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps;
+              else repsByCat['Other'] += reps; // Includes Full Body, uncategorized, etc.
             });
           });
           const pieChartColors: Record<string, string> = {
@@ -317,7 +321,11 @@ export default function AnalysisPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Reps by Category</CardTitle>
-            <CardDescription>Total repetitions distribution (all time)</CardDescription>
+            <CardDescription>
+              {isClient && categoryRepData.length > 0
+                ? `Repetitions distribution for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
+                : (isClient ? `No repetition data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isClient && categoryRepData.length > 0 ? (
@@ -336,7 +344,7 @@ export default function AnalysisPage() {
               </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? "No repetition data available." : "Loading chart data..."}</p>
+                <p>{isClient ? `No repetition data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
               </div>
             )}
           </CardContent>
