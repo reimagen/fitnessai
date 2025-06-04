@@ -7,7 +7,7 @@ import { ScreenshotParserForm } from "@/components/history/screenshot-parser-for
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
 import { WorkoutList } from "@/components/history/workout-list";
 import { parseWorkoutScreenshotAction } from "./actions";
-import type { WorkoutLog, Exercise } from "@/lib/types";
+import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO, startOfDay } from "date-fns";
+
+const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 const initialSampleLogs: WorkoutLog[] = [
   {
@@ -39,6 +41,10 @@ const initialSampleLogs: WorkoutLog[] = [
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
+const isValidCategory = (category: any): category is ExerciseCategory => {
+  return CATEGORY_OPTIONS.includes(category);
+};
+
 export default function HistoryPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -62,7 +68,7 @@ export default function HistoryPage() {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: parseISO(log.date), // Use parseISO for robust date parsing
+            date: parseISO(log.date), 
             exercises: log.exercises.map((ex: any) => ({ 
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
@@ -70,7 +76,7 @@ export default function HistoryPage() {
               reps: ex.reps ?? 0,
               weight: ex.weight ?? 0,
               weightUnit: ex.weightUnit || 'kg',
-              category: ex.category || '',
+              category: isValidCategory(ex.category) ? ex.category : 'Other',
               distance: ex.distance ?? 0,
               distanceUnit: ex.distanceUnit,
               duration: ex.duration ?? 0,
@@ -88,7 +94,7 @@ export default function HistoryPage() {
             ...log,
             exercises: log.exercises.map(ex => ({
                 ...ex,
-                category: ex.category || '',
+                category: isValidCategory(ex.category) ? ex.category : 'Other',
                 distance: ex.distance ?? 0,
                 duration: ex.duration ?? 0,
                 calories: ex.calories ?? 0,
@@ -109,7 +115,7 @@ export default function HistoryPage() {
     const processedExercises = data.exercises.map(ex => ({
         id: ex.id || Math.random().toString(36).substring(2,9),
         name: ex.name,
-        category: ex.category || "", 
+        category: ex.category, 
         sets: ex.sets ?? 0,
         reps: ex.reps ?? 0,
         weight: ex.weight ?? 0,
@@ -162,13 +168,12 @@ export default function HistoryPage() {
 
     if (parsedData.workoutDate) {
       const dateParts = parsedData.workoutDate.split('-').map(Number);
-      // AI provides YYYY-MM-DD. Month is 1-indexed.
       targetDate = startOfDay(new Date(dateParts[0], dateParts[1] - 1, dateParts[2]));
       if (dateParts[0] !== currentYear) {
         notesSuffix = ` (Original year ${dateParts[0]} from screenshot was used).`;
       }
     } else {
-      targetDate = startOfDay(new Date()); // Default to today if no date from AI
+      targetDate = startOfDay(new Date()); 
       notesSuffix = " (Date not found in screenshot; used current date).";
     }
 
@@ -183,7 +188,7 @@ export default function HistoryPage() {
       reps: ex.reps ?? 0,
       weight: ex.weight ?? 0,
       weightUnit: ex.weightUnit || 'kg',
-      category: ex.category || "",
+      category: ex.category, // AI flow ensures this is a valid ExerciseCategory
       distance: ex.distance ?? 0,
       distanceUnit: ex.distanceUnit,
       duration: ex.duration ?? 0,
@@ -192,7 +197,6 @@ export default function HistoryPage() {
     }));
 
     if (existingLogIndex > -1) {
-      // Log for this date exists, merge exercises
       const updatedLogs = [...workoutLogs];
       const logToUpdate = { ...updatedLogs[existingLogIndex] };
       
@@ -217,7 +221,6 @@ export default function HistoryPage() {
       });
 
     } else {
-      // No log for this date, create a new one
       const newLog: WorkoutLog = {
         id: Date.now().toString(),
         date: targetDate,

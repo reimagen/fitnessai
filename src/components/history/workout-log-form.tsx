@@ -18,9 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2 } from "lucide-react";
-import type { WorkoutLog, Exercise } from "@/lib/types";
+import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
+
+const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 const exerciseSchema = z.object({
   id: z.string().optional(), 
@@ -29,9 +31,9 @@ const exerciseSchema = z.object({
   reps: z.coerce.number().min(0).optional().default(0),
   weight: z.coerce.number().min(0).optional().default(0),
   weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'),
-  category: z.string().optional().default(""), 
+  category: z.enum(CATEGORY_OPTIONS).default("Other"), 
   distance: z.coerce.number().min(0).optional().default(0),
-  distanceUnit: z.enum(['mi', 'km', 'ft']).optional().default('mi'), // Changed default to mi
+  distanceUnit: z.enum(['mi', 'km', 'ft']).optional().default('mi'),
   duration: z.coerce.number().min(0).optional().default(0),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional(),
   calories: z.coerce.number().min(0).optional().default(0),
@@ -58,9 +60,9 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   reps: 0,
   weight: 0,
   weightUnit: "lbs",
-  category: "", 
+  category: "Other", 
   distance: 0,
-  distanceUnit: "mi", // Changed default to mi
+  distanceUnit: "mi",
   duration: 0,
   durationUnit: undefined,
   calories: 0
@@ -86,20 +88,23 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
       form.reset({
         date: initialData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         notes: initialData.notes || "",
-        exercises: initialData.exercises?.map(ex => ({
-          id: ex.id,
-          name: ex.name || "",
-          sets: ex.sets ?? 0,
-          reps: ex.reps ?? 0,
-          weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'lbs',
-          category: ex.category || "", 
-          distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit || 'mi', // Ensure editing also respects this default
-          duration: ex.duration ?? 0,
-          durationUnit: ex.durationUnit,
-          calories: ex.calories ?? 0,
-        })) || [defaultExerciseValues],
+        exercises: initialData.exercises?.map(ex => {
+          const categoryIsValid = ex.category && CATEGORY_OPTIONS.includes(ex.category as ExerciseCategory);
+          return {
+            id: ex.id,
+            name: ex.name || "",
+            sets: ex.sets ?? 0,
+            reps: ex.reps ?? 0,
+            weight: ex.weight ?? 0,
+            weightUnit: ex.weightUnit || 'lbs',
+            category: categoryIsValid ? ex.category as ExerciseCategory : "Other", 
+            distance: ex.distance ?? 0,
+            distanceUnit: ex.distanceUnit || 'mi',
+            duration: ex.duration ?? 0,
+            durationUnit: ex.durationUnit,
+            calories: ex.calories ?? 0,
+          };
+        }) || [defaultExerciseValues],
       });
     } else if (!editingLogId) { 
       form.reset({
@@ -114,7 +119,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   function onSubmit(values: WorkoutLogFormData) {
     const dateParts = values.date.split('-').map(Number);
     const year = dateParts[0];
-    const month = dateParts[1] - 1; // Month is 0-indexed for Date constructor
+    const month = dateParts[1] - 1; 
     const day = dateParts[2];
     const localDate = new Date(year, month, day);
 
@@ -124,13 +129,13 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
-          category: ex.category || "", 
+          category: ex.category, 
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
           weightUnit: ex.weightUnit || 'lbs',
           distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit || 'mi', // Ensure submission also respects this if undefined
+          distanceUnit: ex.distanceUnit || 'mi',
           duration: ex.duration ?? 0,
           durationUnit: ex.durationUnit,
           calories: ex.calories ?? 0,
@@ -176,11 +181,33 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   control={form.control}
                   name={`exercises.${index}.name`}
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2 lg:col-span-3">
+                    <FormItem className="md:col-span-2 lg:col-span-1">
                       <FormLabel>Exercise Name</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., Bench Press" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name={`exercises.${index}.category`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {CATEGORY_OPTIONS.map(option => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

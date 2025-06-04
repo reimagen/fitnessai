@@ -1,4 +1,6 @@
 
+export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
+
 export interface Exercise {
   id: string;
   name: string;
@@ -6,7 +8,7 @@ export interface Exercise {
   reps: number;
   weight: number;
   weightUnit?: 'kg' | 'lbs';
-  category?: string;
+  category?: ExerciseCategory;
   distance?: number;
   distanceUnit?: 'mi' | 'km' | 'ft'; // Added 'ft'
   duration?: number;
@@ -60,3 +62,4 @@ export interface AggregatedWorkoutDaySummary {
   // totalWeightLifted: number; // Could be sum of weight * reps * sets
   // exerciseCategoriesCount: Record<string, number>; // e.g., { "Cardio": 2, "Upper Body": 3 }
 }
+
