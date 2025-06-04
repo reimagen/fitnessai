@@ -80,7 +80,8 @@ Key Instructions:
 8.  **Distance Unit**:
     *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be \`distance: 5383, distanceUnit: 'ft'\`).
 9.  **Duplicate Exercises in Screenshot**:
-    *   If the exact same exercise (same name and details) appears multiple times *within the same screenshot*, list each instance as a separate exercise entry in the output. Do not attempt to aggregate them unless they are clearly distinct efforts. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises).
+    *   If an exercise (e.g., "Treadmill") appears *only once* in the screenshot, it MUST be listed *only once* in the output.
+    *   If the exact same exercise (same name and all details like duration, distance, etc.) appears multiple times *within the same screenshot*, then list each instance as a separate exercise entry in the output. Do not attempt to aggregate them. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear).
 10. **Other Fields (for non-Cardio exercises primarily)**:
     *   Extract \`sets\`, \`reps\`, and \`weight\`.
     *   Also extract \`calories\` if available.
@@ -139,18 +140,18 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
 
 
         if (ex.category === 'Cardio') {
-            finalSets = ex.sets ?? 0;
+            finalSets = ex.sets ?? 0; // Explicitly ensure these are 0 if AI doesn't provide or if AI provides non-zero
             finalReps = ex.reps ?? 0;
             finalWeight = ex.weight ?? 0;
-            if (finalWeight === 0) finalWeightUnit = undefined;
+            if (finalWeight === 0) finalWeightUnit = undefined; // Clear unit if weight is 0 for cardio
             // For cardio, distance/duration are primary, so keep them if AI provides.
-            // If AI omits them, they'll default to 0 above.
+            // If AI omits them, they'll default to 0 from the initial ?? 0.
         } else {
             // For non-Cardio, distance and duration should be 0 unless explicitly parsed
             finalDistance = ex.distance ?? 0; 
             finalDuration = ex.duration ?? 0;
-            if (finalDistance === 0) finalDistanceUnit = undefined;
-            if (finalDuration === 0) finalDurationUnit = undefined;
+            if (finalDistance === 0) finalDistanceUnit = undefined; // Clear unit if distance is 0
+            if (finalDuration === 0) finalDurationUnit = undefined; // Clear unit if duration is 0
         }
 
 
