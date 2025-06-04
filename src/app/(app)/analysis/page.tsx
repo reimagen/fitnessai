@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { TrendingUp } from 'lucide-react'; 
+import { TrendingUp } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
@@ -63,6 +63,12 @@ interface YearToDateSummaryStats {
   currentYear: number;
 }
 
+const timeRangeDisplayNames: Record<string, string> = {
+  'weekly': 'This Week',
+  'monthly': 'This Month',
+  'all-time': 'All Time',
+};
+
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
@@ -91,7 +97,7 @@ export default function AnalysisPage() {
           parsedLogs = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
             date: log.date ? parseISO(log.date) : new Date(), // Ensure date is parsed
-            exercises: log.exercises.map((ex: any) => ({ 
+            exercises: log.exercises.map((ex: any) => ({
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
               sets: ex.sets ?? 0,
@@ -113,7 +119,7 @@ export default function AnalysisPage() {
           if (timeRange === 'weekly') {
             const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); // 0 for Sunday
             const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
-            logsForFrequencyChart = parsedLogs.filter(log => 
+            logsForFrequencyChart = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
             );
           } else if (timeRange === 'monthly') {
@@ -145,9 +151,9 @@ export default function AnalysisPage() {
               const reps = ex.reps || 0;
               if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; // Cardio reps might be 0, but we sum them
+              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps; 
+              else repsByCat['Other'] += reps;
             });
           });
           const pieChartColors: Record<string, string> = {
@@ -173,7 +179,7 @@ export default function AnalysisPage() {
                 if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
                     let volume = ex.weight * ex.sets * ex.reps;
                     if (ex.weightUnit === 'kg') {
-                        volume *= 2.20462; 
+                        volume *= 2.20462;
                     }
                     ytdTotalWeightLiftedLbs += volume;
                 }
@@ -216,9 +222,9 @@ export default function AnalysisPage() {
 
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }: any) => {
-    if (percent < 0.05 && categoryRepData.length > 3) return null; 
+    if (percent < 0.05 && categoryRepData.length > 3) return null;
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN); 
+    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN);
     const y = cy + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.sin(-midAngle * RADIAN);
 
     return (
@@ -241,8 +247,8 @@ export default function AnalysisPage() {
             <SelectValue placeholder="Select time range" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="weekly">Weekly</SelectItem>
-            <SelectItem value="monthly">Monthly</SelectItem>
+            <SelectItem value="weekly">This Week</SelectItem>
+            <SelectItem value="monthly">This Month</SelectItem>
             <SelectItem value="all-time">All Time</SelectItem>
           </SelectContent>
         </Select>
@@ -282,9 +288,9 @@ export default function AnalysisPage() {
           <CardHeader>
             <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
             <CardDescription>
-              {workoutFrequencyData.length > 0 
-                ? `Based on ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)} data` 
-                : (isClient ? `No workout data for this ${timeRange} period.` : "Log some workouts to see your data")}
+              {isClient && workoutFrequencyData.length > 0
+                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
+                : (isClient ? `No workout data for this ${timeRangeDisplayNames[timeRange] || timeRange} period.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -305,7 +311,7 @@ export default function AnalysisPage() {
               </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No workout data available for this ${timeRange} period.` : "Loading chart data..."}</p>
+                <p>{isClient ? `No workout data available for this ${timeRangeDisplayNames[timeRange] || timeRange} period.` : "Loading chart data..."}</p>
               </div>
             )}
           </CardContent>
