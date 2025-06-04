@@ -68,7 +68,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
           type="file"
           accept="image/*"
           onChange={handleFileChange}
-          className="mt-2"
+          className="mt-2 border-foreground/30"
           disabled={isLoading}
         />
         <p className="mt-1 text-sm text-muted-foreground">
