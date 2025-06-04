@@ -24,17 +24,17 @@ import { useEffect } from "react";
 
 const exerciseSchema = z.object({
   id: z.string().optional(), 
-  name: z.string().min(1, "Exercise name is required."),
-  sets: z.coerce.number().min(0).optional(),
-  reps: z.coerce.number().min(0).optional(),
-  weight: z.coerce.number().min(0).optional(),
-  weightUnit: z.enum(['kg', 'lbs']).optional(),
-  category: z.string().optional(), 
-  distance: z.coerce.number().min(0).optional(),
-  distanceUnit: z.enum(['mi', 'km', 'ft']).optional(), // Added 'ft'
-  duration: z.coerce.number().min(0).optional(),
+  name: z.string().min(1, "Exercise name is required.").default(""),
+  sets: z.coerce.number().min(0).optional().default(0),
+  reps: z.coerce.number().min(0).optional().default(0),
+  weight: z.coerce.number().min(0).optional().default(0),
+  weightUnit: z.enum(['kg', 'lbs']).optional().default('kg'),
+  category: z.string().optional().default(""), 
+  distance: z.coerce.number().min(0).optional().default(0),
+  distanceUnit: z.enum(['mi', 'km', 'ft']).optional(),
+  duration: z.coerce.number().min(0).optional().default(0),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional(),
-  calories: z.coerce.number().min(0).optional(),
+  calories: z.coerce.number().min(0).optional().default(0),
 });
 
 const workoutLogSchema = z.object({
@@ -46,23 +46,23 @@ const workoutLogSchema = z.object({
 type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
 
 type WorkoutLogFormProps = {
-  onSubmitLog: (data: Omit<WorkoutLog, 'id'>) => void;
-  initialData?: Omit<WorkoutLog, 'id'>;
+  onSubmitLog: (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => void;
+  initialData?: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>};
   editingLogId?: string | null;
   onCancelEdit?: () => void;
 };
 
-const defaultExerciseValues: Omit<Exercise, 'id'> = {
+const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   name: "",
   sets: 0,
   reps: 0,
   weight: 0,
-  weightUnit: "kg" as ('kg' | 'lbs'),
+  weightUnit: "kg",
   category: "", 
   distance: 0,
-  distanceUnit: undefined as ('mi' | 'km' | 'ft' | undefined), // Updated
+  distanceUnit: undefined,
   duration: 0,
-  durationUnit: undefined as ('min' | 'hr' | 'sec' | undefined),
+  durationUnit: undefined,
   calories: 0
 };
 
@@ -112,9 +112,15 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
 
 
   function onSubmit(values: WorkoutLogFormData) {
+    const dateParts = values.date.split('-').map(Number);
+    const year = dateParts[0];
+    const month = dateParts[1] - 1; // Month is 0-indexed for Date constructor
+    const day = dateParts[2];
+    const localDate = new Date(year, month, day);
+
     onSubmitLog({
         ...values,
-        date: new Date(values.date),
+        date: localDate,
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
@@ -328,7 +334,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           <Button
             type="button"
             variant="outline"
-            onClick={() => append(defaultExerciseValues as Exercise)} 
+            onClick={() => append(defaultExerciseValues)} 
             className="mt-2"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise
