@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation"; // Added
+import { useState, useEffect } from "react"; // Added useEffect
+import { useSearchParams } from "next/navigation";
 import { ScreenshotParserForm } from "@/components/history/screenshot-parser-form";
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
 import { WorkoutList } from "@/components/history/workout-list";
@@ -15,6 +15,28 @@ import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const initialSampleLogs: WorkoutLog[] = [
+  {
+    id: "1",
+    date: new Date("2024-07-20"),
+    exercises: [
+      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80 },
+      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100 },
+    ],
+    notes: "Felt strong today!",
+  },
+  {
+    id: "2",
+    date: new Date("2024-07-18"),
+    exercises: [
+      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120 },
+      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50 },
+    ],
+  },
+];
+
+const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
+
 export default function HistoryPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
@@ -22,31 +44,44 @@ export default function HistoryPage() {
   const validTabs = ['log', 'screenshot', 'upload'];
   const defaultTabValue = initialTab && validTabs.includes(initialTab) ? initialTab : 'log';
 
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([
-    // Sample initial data
-    {
-      id: "1",
-      date: new Date("2024-07-20"),
-      exercises: [
-        { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80 },
-        { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100 },
-      ],
-      notes: "Felt strong today!",
-    },
-    {
-      id: "2",
-      date: new Date("2024-07-18"),
-      exercises: [
-        { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120 },
-        { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50 },
-      ],
-    },
-  ]);
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      const savedLogs = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
+      if (savedLogs) {
+        try {
+          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogs).map((log: any) => ({
+            ...log,
+            date: new Date(log.date), // Convert date string back to Date object
+            exercises: log.exercises.map((ex: Exercise) => ({...ex})) // Ensure exercises are correctly typed
+          }));
+          setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
+        } catch (error) {
+          console.error("Error parsing workout logs from localStorage", error);
+          setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime())); // Fallback to sample
+        }
+      } else {
+        setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime())); // Fallback to sample if nothing in localStorage
+      }
+    }
+  }, [isClient]);
+
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem(LOCAL_STORAGE_KEY_WORKOUTS, JSON.stringify(workoutLogs));
+    }
+  }, [workoutLogs, isClient]);
 
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
     const newLog: WorkoutLog = {
       ...data,
-      id: Date.now().toString(), // Simple ID generation for client-side
+      id: Date.now().toString(),
       exercises: data.exercises.map(ex => ({...ex, id: Math.random().toString(36).substring(2,9)}))
     };
     setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
@@ -60,10 +95,10 @@ export default function HistoryPage() {
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
     const newLog: WorkoutLog = {
       id: Date.now().toString(),
-      date: new Date(), // Default to today, or prompt user
+      date: new Date(), 
       exercises: parsedData.exercises.map(ex => ({
         ...ex,
-        id: Math.random().toString(36).substring(2,9), // Simple ID
+        id: Math.random().toString(36).substring(2,9),
       })),
       notes: "Parsed from screenshot.",
     };
@@ -85,8 +120,6 @@ export default function HistoryPage() {
   }
   
   const handleEditLog = (logId: string) => {
-    // This is a placeholder for actual edit functionality
-    // You might open a modal with WorkoutLogForm pre-filled with data for `logId`
     toast({
       title: "Edit Log (Not Implemented)",
       description: `Feature to edit log ID ${logId} is coming soon.`,
@@ -151,7 +184,15 @@ export default function HistoryPage() {
 
       <section className="mt-12">
         <h2 className="mb-6 font-headline text-2xl font-semibold">Logged Workouts</h2>
-        <WorkoutList workoutLogs={workoutLogs} onDelete={handleDeleteLog} onEdit={handleEditLog} />
+        {isClient ? (
+          <WorkoutList workoutLogs={workoutLogs} onDelete={handleDeleteLog} onEdit={handleEditLog} />
+        ) : (
+          <Card className="shadow-sm">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Loading workout history...</p>
+            </CardContent>
+          </Card>
+        )}
       </section>
     </div>
   );
