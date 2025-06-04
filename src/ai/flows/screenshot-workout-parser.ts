@@ -22,6 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
+  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible, assume the current year.'),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -51,18 +52,22 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert in parsing workout data from screenshots.
 
 You will be provided with a screenshot of a workout log.
-Your goal is to extract the exercise data from the screenshot and return it in a structured JSON format.
+Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
 
 Key Instructions:
-1.  **Exercise Name**:
+1.  **Workout Date**:
+    *   Extract the date of the workout from the screenshot.
+    *   Format this date as YYYY-MM-DD.
+    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), assume the current year. For example, if today is 2024 and the image says "Jun 2", the workoutDate should be "2024-06-02".
+2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
-2.  **Exercise Category**:
+3.  **Exercise Category**:
     *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
     *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit, use "Other".
-3.  **Weight Unit**:
+4.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg'.
-4.  **Other Fields**:
+5.  **Other Fields**:
     *   Extract sets, reps, and weight.
     *   Also extract distance, distanceUnit, duration, durationUnit, and calories if available.
     *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.

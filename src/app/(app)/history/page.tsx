@@ -59,7 +59,7 @@ export default function HistoryPage() {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date),
+            date: new Date(log.date), // Ensure date is a Date object
             exercises: log.exercises.map((ex: Exercise) => ({
               ...ex,
               weightUnit: ex.weightUnit || 'kg',
@@ -74,9 +74,10 @@ export default function HistoryPage() {
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
           console.error("Error parsing workout logs from localStorage. Data might be corrupted. Initializing with empty logs.", error);
-          setWorkoutLogs([]); // Fallback to empty list if parsing fails, instead of sample data
+          setWorkoutLogs([]); 
         }
       } else {
+        // Only use initialSampleLogs if localStorage is truly empty
         setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
       }
     }
@@ -107,20 +108,35 @@ export default function HistoryPage() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
+    let logDate = new Date(); // Default to current date
+    let notes = "Parsed from screenshot.";
+
+    if (parsedData.workoutDate) {
+      const dateParts = parsedData.workoutDate.split('-').map(Number);
+      if (dateParts.length === 3) {
+        // Create date in local timezone to avoid UTC issues
+        logDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      } else {
+        notes += " Could not parse date from screenshot, used current date.";
+      }
+    } else {
+      notes += " Date not found in screenshot, used current date.";
+    }
+
     const newLog: WorkoutLog = {
       id: Date.now().toString(),
-      date: new Date(),
+      date: logDate,
       exercises: parsedData.exercises.map(ex => ({
         ...ex,
         id: Math.random().toString(36).substring(2,9),
         weightUnit: ex.weightUnit || 'kg',
       })),
-      notes: "Parsed from screenshot.",
+      notes: notes,
     };
     setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
      toast({
       title: "Screenshot Parsed!",
-      description: `${parsedData.exercises.length} exercises added to your log.`,
+      description: `${parsedData.exercises.length} exercises added to your log for ${logDate.toLocaleDateString()}.`,
       variant: "default",
     });
   };
@@ -212,3 +228,4 @@ export default function HistoryPage() {
     </div>
   );
 }
+
