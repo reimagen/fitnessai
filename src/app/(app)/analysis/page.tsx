@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format } from 'date-fns';
+import { TrendingUp } from 'lucide-react'; // Added TrendingUp icon
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
@@ -53,10 +54,19 @@ interface CategoryRepDataPoint {
   fill: string;
 }
 
+interface YearToDateSummaryStats {
+  workoutDays: number;
+  totalWeightLiftedLbs: number;
+  totalCardioDurationMin: number;
+  totalCaloriesBurned: number;
+  currentYear: number;
+}
+
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
   const [categoryRepData, setCategoryRepData] = useState<CategoryRepDataPoint[]>([]);
+  const [yearToDateSummary, setYearToDateSummary] = useState<YearToDateSummaryStats | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -70,6 +80,13 @@ export default function AnalysisPage() {
       let frequencyChartData: ChartDataPoint[] = [];
       let repPieChartData: CategoryRepDataPoint[] = [];
 
+      const currentYear = new Date().getFullYear();
+      let ytdWorkoutDays = 0;
+      let ytdTotalWeightLiftedLbs = 0;
+      let ytdTotalCardioDurationMin = 0;
+      let ytdTotalCaloriesBurned = 0;
+      const uniqueWorkoutDatesThisYear = new Set<string>();
+
       if (savedLogsString) {
         try {
           parsedLogs = JSON.parse(savedLogsString).map((log: any) => ({
@@ -82,7 +99,7 @@ export default function AnalysisPage() {
               reps: ex.reps ?? 0,
               weight: ex.weight ?? 0,
               weightUnit: ex.weightUnit || 'kg',
-              category: ex.category || 'Other', // Default to 'Other' if category is missing
+              category: ex.category || 'Other',
               distance: ex.distance ?? 0,
               distanceUnit: ex.distanceUnit,
               duration: ex.duration ?? 0,
@@ -100,27 +117,57 @@ export default function AnalysisPage() {
             duration: Math.round(summary.totalDurationMinutes),
           }));
 
-          // Calculate reps per category for the pie chart
           const repsByCat: Record<string, number> = {
-            'Upper Body': 0,
-            'Lower Body': 0,
-            'Cardio': 0,
-            'Other': 0,
+            'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Other': 0,
           };
 
           parsedLogs.forEach(log => {
+            const logDate = new Date(log.date);
+            if (logDate.getFullYear() === currentYear) {
+              uniqueWorkoutDatesThisYear.add(format(logDate, 'yyyy-MM-dd'));
+
+              log.exercises.forEach(ex => {
+                // YTD Weight Lifted
+                if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
+                    let volume = ex.weight * ex.sets * ex.reps;
+                    if (ex.weightUnit === 'kg') {
+                        volume *= 2.20462; // Convert kg to lbs
+                    }
+                    ytdTotalWeightLiftedLbs += volume;
+                }
+
+                // YTD Cardio Duration
+                if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
+                    let durationInMin = 0;
+                    switch (ex.durationUnit) {
+                        case 'sec': durationInMin = ex.duration / 60; break;
+                        case 'hr': durationInMin = ex.duration * 60; break;
+                        case 'min': default: durationInMin = ex.duration; break;
+                    }
+                    ytdTotalCardioDurationMin += durationInMin;
+                }
+                // YTD Calories Burned
+                ytdTotalCaloriesBurned += (ex.calories || 0);
+              });
+            }
+
+            // Reps by category (all time for pie chart)
             log.exercises.forEach(ex => {
               const reps = ex.reps || 0;
-              if (ex.category === 'Upper Body') {
-                repsByCat['Upper Body'] += reps;
-              } else if (ex.category === 'Lower Body') {
-                repsByCat['Lower Body'] += reps;
-              } else if (ex.category === 'Cardio') {
-                repsByCat['Cardio'] += reps;
-              } else { // Includes 'Full Body', 'Core', undefined, or actual 'Other'
-                repsByCat['Other'] += reps;
-              }
+              if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
+              else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
+              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; // Cardio reps might be 0 but count them if present
+              else repsByCat['Other'] += reps;
             });
+          });
+          
+          ytdWorkoutDays = uniqueWorkoutDatesThisYear.size;
+          setYearToDateSummary({
+            workoutDays: ytdWorkoutDays,
+            totalWeightLiftedLbs: Math.round(ytdTotalWeightLiftedLbs),
+            totalCardioDurationMin: Math.round(ytdTotalCardioDurationMin),
+            totalCaloriesBurned: Math.round(ytdTotalCaloriesBurned),
+            currentYear,
           });
           
           const pieChartColors: Record<string, string> = {
@@ -132,42 +179,34 @@ export default function AnalysisPage() {
 
           repPieChartData = Object.entries(repsByCat)
             .filter(([, value]) => value > 0)
-            .map(([name, value]) => ({
-              name,
-              value,
-              fill: pieChartColors[name] || 'hsl(var(--chart-5))', // Fallback color
-            }));
+            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--chart-5))' }));
 
         } catch (error) {
           console.error("Error processing workout logs for analysis:", error);
+           setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
         }
+      } else {
+        // No logs, set YTD to zeros
+        setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
       }
       setWorkoutFrequencyData(frequencyChartData);
       setCategoryRepData(repPieChartData);
     }
-  }, [isClient, timeRange]);
+  }, [isClient, timeRange]); // timeRange might not be needed for YTD, but keep for chart consistency
 
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }: any) => {
-    if (percent < 0.05) return null; // Don't render label for very small slices
+    if (percent < 0.05) return null; 
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + (radius + 10) * Math.cos(-midAngle * RADIAN); // Move label slightly outside
+    const x = cx + (radius + 10) * Math.cos(-midAngle * RADIAN);
     const y = cy + (radius + 10) * Math.sin(-midAngle * RADIAN);
 
     return (
-      <text
-        x={x}
-        y={y}
-        fill="hsl(var(--foreground))" // Use theme foreground color
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        className="text-xs"
-      >
+      <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">
         {`${name} (${value})`}
       </text>
     );
   };
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -189,14 +228,41 @@ export default function AnalysisPage() {
         </Select>
       </div>
 
+      {isClient && yearToDateSummary && (
+        <Card className="shadow-lg mb-6 bg-secondary/30">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2 text-xl">
+              <TrendingUp className="h-6 w-6 text-primary" />
+              Year to Date ({yearToDateSummary.currentYear}) Summary
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-y-6 gap-x-4 md:grid-cols-4 text-center py-6">
+            <div>
+              <p className="text-3xl font-bold text-accent">{yearToDateSummary.workoutDays.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground mt-1">Workout Days</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalWeightLiftedLbs.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground mt-1">Weight Lifted (lbs)</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalCardioDurationMin.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground mt-1">Cardio Duration (min)</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalCaloriesBurned.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground mt-1">Calories Burned</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
             <CardDescription>
-              {workoutFrequencyData.length > 0 
-                ? `Based on ${timeRange} data` 
-                : "Log some workouts to see your data"}
+              {workoutFrequencyData.length > 0 ? `Based on ${timeRange} data` : "Log some workouts to see your data"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -233,16 +299,7 @@ export default function AnalysisPage() {
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <Pie
-                      data={categoryRepData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      labelLine={false}
-                      label={renderCustomizedLabel}
-                    >
+                    <Pie data={categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
                       {categoryRepData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
                       ))}
@@ -281,7 +338,7 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
         
-        <Card className="shadow-lg lg:col-span-2"> {/* Adjusted to lg:col-span-2 for better layout with 3 items in first row */}
+        <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline">Exercise Performance (Placeholder)</CardTitle>
             <CardDescription>Track improvements in specific exercises</CardDescription>
