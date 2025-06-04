@@ -39,7 +39,8 @@ const chartConfig = {
   'Upper Body': { label: "Upper Body", color: "hsl(var(--chart-1))" },
   'Lower Body': { label: "Lower Body", color: "hsl(var(--chart-2))" },
   'Cardio': { label: "Cardio", color: "hsl(var(--chart-3))" },
-  'Other': { label: "Other", color: "hsl(var(--chart-4))" },
+  'Core': { label: "Core", color: "hsl(var(--chart-4))" },
+  'Other': { label: "Other", color: "hsl(var(--chart-5))" }, // Updated color for 'Other'
 } satisfies ChartConfig;
 
 interface ChartDataPoint {
@@ -118,7 +119,7 @@ export default function AnalysisPage() {
           }));
 
           const repsByCat: Record<string, number> = {
-            'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Other': 0,
+            'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
 
           parsedLogs.forEach(log => {
@@ -156,8 +157,9 @@ export default function AnalysisPage() {
               const reps = ex.reps || 0;
               if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; // Cardio reps might be 0 but count them if present
-              else repsByCat['Other'] += reps;
+              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
+              else if (ex.category === 'Core') repsByCat['Core'] += reps;
+              else repsByCat['Other'] += reps; // Includes "Full Body" and uncategorized
             });
           });
           
@@ -174,12 +176,13 @@ export default function AnalysisPage() {
             'Upper Body': chartConfig['Upper Body'].color!,
             'Lower Body': chartConfig['Lower Body'].color!,
             'Cardio': chartConfig['Cardio'].color!,
+            'Core': chartConfig['Core'].color!,
             'Other': chartConfig['Other'].color!,
           };
 
           repPieChartData = Object.entries(repsByCat)
             .filter(([, value]) => value > 0)
-            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--chart-5))' }));
+            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' })); // Fallback to muted for any unexpected category
 
         } catch (error) {
           console.error("Error processing workout logs for analysis:", error);
@@ -196,10 +199,10 @@ export default function AnalysisPage() {
 
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }: any) => {
-    if (percent < 0.05) return null; 
+    if (percent < 0.05 && categoryRepData.length > 3) return null; // Hide small labels if too many slices
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + (radius + 10) * Math.cos(-midAngle * RADIAN);
-    const y = cy + (radius + 10) * Math.sin(-midAngle * RADIAN);
+    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN); // Adjust label distance based on slice count
+    const y = cy + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.sin(-midAngle * RADIAN);
 
     return (
       <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">
