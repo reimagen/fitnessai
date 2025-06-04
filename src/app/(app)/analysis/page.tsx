@@ -24,8 +24,8 @@ const weightProgressData = [
 ];
 
 const chartConfig = {
-  workouts: {
-    label: "Workouts",
+  exercises: { // Changed from "workouts"
+    label: "Exercises", // Changed from "Workouts"
     color: "hsl(var(--primary))",
   },
   duration: {
@@ -45,7 +45,7 @@ const chartConfig = {
 
 interface ChartDataPoint {
   dateLabel: string;
-  workouts: number;
+  exercises: number; // Changed from "workouts"
   duration: number;
 }
 
@@ -96,7 +96,7 @@ export default function AnalysisPage() {
         try {
           parsedLogs = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: log.date ? parseISO(log.date) : new Date(), // Ensure date is parsed
+            date: log.date ? parseISO(log.date) : new Date(), 
             exercises: log.exercises.map((ex: any) => ({
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
@@ -117,7 +117,7 @@ export default function AnalysisPage() {
           let logsForFrequencyChart = parsedLogs;
           const today = new Date();
           if (timeRange === 'weekly') {
-            const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); // 0 for Sunday
+            const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); 
             const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
             logsForFrequencyChart = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
@@ -129,14 +129,14 @@ export default function AnalysisPage() {
               isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
             );
           }
-          // For 'all-time', logsForFrequencyChart remains as parsedLogs
+          
 
           const frequencySummaries = generateWorkoutSummaries(logsForFrequencyChart);
           const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
           
           const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
             dateLabel: format(summary.date, 'MMM d'),
-            workouts: summary.totalExercises,
+            exercises: summary.totalExercises, // Changed from workouts
             duration: Math.round(summary.totalDurationMinutes),
           }));
           setWorkoutFrequencyData(newWorkoutFrequencyData);
@@ -146,14 +146,14 @@ export default function AnalysisPage() {
           const repsByCat: Record<string, number> = {
             'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
-          parsedLogs.forEach(log => { // Use full parsedLogs for pie chart
+          parsedLogs.forEach(log => { 
             log.exercises.forEach(ex => {
               const reps = ex.reps || 0;
               if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
               else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps;
+              else repsByCat['Other'] += reps; // Full Body, uncategorized, etc. go to Other
             });
           });
           const pieChartColors: Record<string, string> = {
@@ -171,7 +171,7 @@ export default function AnalysisPage() {
 
           // --- Data for Year-to-Date Summary (always current year) ---
           parsedLogs.forEach(log => {
-            const logDate = new Date(log.date); // log.date is already a Date object
+            const logDate = new Date(log.date); 
             if (logDate.getFullYear() === currentYear) {
               uniqueWorkoutDatesThisYear.add(format(logDate, 'yyyy-MM-dd'));
 
@@ -212,7 +212,6 @@ export default function AnalysisPage() {
           setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
         }
       } else {
-        // No logs, set all to empty/zeros
         setWorkoutFrequencyData([]);
         setCategoryRepData([]);
         setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
@@ -300,11 +299,11 @@ export default function AnalysisPage() {
                   <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                     <XAxis dataKey="dateLabel" />
-                    <YAxis yAxisId="left" orientation="left" stroke="hsl(var(--primary))" allowDecimals={false} />
-                    <YAxis yAxisId="right" orientation="right" stroke="hsl(var(--accent))" allowDecimals={false} />
+                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
+                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--accent))" allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="workouts" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
                     <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
