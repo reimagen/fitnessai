@@ -28,10 +28,10 @@ const exerciseSchema = z.object({
   sets: z.coerce.number().min(0).optional().default(0),
   reps: z.coerce.number().min(0).optional().default(0),
   weight: z.coerce.number().min(0).optional().default(0),
-  weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'), // Changed default to lbs
+  weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'),
   category: z.string().optional().default(""), 
   distance: z.coerce.number().min(0).optional().default(0),
-  distanceUnit: z.enum(['mi', 'km', 'ft']).optional(),
+  distanceUnit: z.enum(['mi', 'km', 'ft']).optional().default('mi'), // Changed default to mi
   duration: z.coerce.number().min(0).optional().default(0),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional(),
   calories: z.coerce.number().min(0).optional().default(0),
@@ -57,10 +57,10 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   sets: 0,
   reps: 0,
   weight: 0,
-  weightUnit: "lbs", // Changed default to lbs
+  weightUnit: "lbs",
   category: "", 
   distance: 0,
-  distanceUnit: undefined,
+  distanceUnit: "mi", // Changed default to mi
   duration: 0,
   durationUnit: undefined,
   calories: 0
@@ -92,10 +92,10 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'lbs', // Ensure editing also respects this default if undefined
+          weightUnit: ex.weightUnit || 'lbs',
           category: ex.category || "", 
           distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit,
+          distanceUnit: ex.distanceUnit || 'mi', // Ensure editing also respects this default
           duration: ex.duration ?? 0,
           durationUnit: ex.durationUnit,
           calories: ex.calories ?? 0,
@@ -128,9 +128,9 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'lbs', // Ensure submission also respects this if undefined
+          weightUnit: ex.weightUnit || 'lbs',
           distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit,
+          distanceUnit: ex.distanceUnit || 'mi', // Ensure submission also respects this if undefined
           duration: ex.duration ?? 0,
           durationUnit: ex.durationUnit,
           calories: ex.calories ?? 0,
@@ -264,7 +264,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Distance Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || "mi"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unit" />
