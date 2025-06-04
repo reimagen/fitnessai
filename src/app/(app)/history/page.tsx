@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format, parseISO, startOfDay } from "date-fns";
 
 const initialSampleLogs: WorkoutLog[] = [
   {
@@ -61,7 +62,7 @@ export default function HistoryPage() {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date),
+            date: parseISO(log.date), // Use parseISO for robust date parsing
             exercises: log.exercises.map((ex: any) => ({ 
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
@@ -80,7 +81,7 @@ export default function HistoryPage() {
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
           console.error("Error parsing workout logs from localStorage. Initializing with empty logs.", error);
-          setWorkoutLogs([]); // Safer fallback
+          setWorkoutLogs([]); 
         }
       } else {
          const logsWithDefaults = initialSampleLogs.map(log => ({
@@ -134,7 +135,7 @@ export default function HistoryPage() {
       setWorkoutLogs(updatedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
       toast({
         title: "Workout Updated!",
-        description: `Your workout on ${data.date.toLocaleDateString()} has been updated.`,
+        description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been updated.`,
         variant: "default",
       });
       setEditingLogId(null);
@@ -148,66 +149,88 @@ export default function HistoryPage() {
       setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
       toast({
         title: "Workout Logged!",
-        description: `Your workout on ${data.date.toLocaleDateString()} has been saved.`,
+        description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been saved.`,
         variant: "default",
       });
     }
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let logDate = new Date(); // This will be today's date
-    logDate.setHours(0,0,0,0); // Normalize to start of day
-    let notes = "Parsed from screenshot.";
+    let targetDate: Date;
+    let notesSuffix = "";
     const currentYear = new Date().getFullYear();
-    let toastDescription = `${parsedData.exercises.length} exercises added.`;
 
     if (parsedData.workoutDate) {
       const dateParts = parsedData.workoutDate.split('-').map(Number);
-      if (dateParts.length === 3) {
-        const aiYear = dateParts[0];
-        const aiMonth = dateParts[1]; // 1-indexed month from AI
-        const aiDay = dateParts[2];
-        
-        logDate = new Date(currentYear, aiMonth - 1, aiDay, 0,0,0,0); // Use current year, AI's month & day
-        
-        if (aiYear !== currentYear) {
-            notes += ` Original year ${aiYear} from screenshot was updated to current year ${currentYear}.`;
-        }
-      } else {
-        notes += " Could not fully parse date from screenshot; used current date (year overridden).";
+      // AI provides YYYY-MM-DD. Month is 1-indexed.
+      targetDate = startOfDay(new Date(dateParts[0], dateParts[1] - 1, dateParts[2]));
+      if (dateParts[0] !== currentYear) {
+        notesSuffix = ` (Original year ${dateParts[0]} from screenshot was used).`;
       }
-      toastDescription = `${parsedData.exercises.length} exercises added to your log for ${logDate.toLocaleDateString()}.`;
     } else {
-      notes += " Date not found in screenshot; used current date.";
-      toastDescription = `${parsedData.exercises.length} exercises added to a new log for today. You can edit this log to change its date and manually merge exercises with an existing day's workout.`;
+      targetDate = startOfDay(new Date()); // Default to today if no date from AI
+      notesSuffix = " (Date not found in screenshot; used current date).";
     }
 
+    const existingLogIndex = workoutLogs.findIndex(
+      (log) => startOfDay(log.date).getTime() === targetDate.getTime()
+    );
 
-    const newLog: WorkoutLog = {
-      id: Date.now().toString(),
-      date: logDate,
-      exercises: parsedData.exercises.map(ex => ({
-        id: Math.random().toString(36).substring(2,9),
-        name: ex.name,
-        sets: ex.sets ?? 0,
-        reps: ex.reps ?? 0,
-        weight: ex.weight ?? 0,
-        weightUnit: ex.weightUnit || 'kg',
-        category: ex.category || "",
-        distance: ex.distance ?? 0,
-        distanceUnit: ex.distanceUnit,
-        duration: ex.duration ?? 0,
-        durationUnit: ex.durationUnit,
-        calories: ex.calories ?? 0,
-      })),
-      notes: notes,
-    };
-    setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
-     toast({
-      title: "Screenshot Parsed!",
-      description: toastDescription,
-      variant: "default",
-    });
+    const parsedExercises: Exercise[] = parsedData.exercises.map(ex => ({
+      id: Math.random().toString(36).substring(2, 9),
+      name: ex.name,
+      sets: ex.sets ?? 0,
+      reps: ex.reps ?? 0,
+      weight: ex.weight ?? 0,
+      weightUnit: ex.weightUnit || 'kg',
+      category: ex.category || "",
+      distance: ex.distance ?? 0,
+      distanceUnit: ex.distanceUnit,
+      duration: ex.duration ?? 0,
+      durationUnit: ex.durationUnit,
+      calories: ex.calories ?? 0,
+    }));
+
+    if (existingLogIndex > -1) {
+      // Log for this date exists, merge exercises
+      const updatedLogs = [...workoutLogs];
+      const logToUpdate = { ...updatedLogs[existingLogIndex] };
+      
+      const existingExerciseNames = new Set(logToUpdate.exercises.map(ex => ex.name.trim().toLowerCase()));
+      let addedCount = 0;
+
+      parsedExercises.forEach(newEx => {
+        if (!existingExerciseNames.has(newEx.name.trim().toLowerCase())) {
+          logToUpdate.exercises.push(newEx);
+          addedCount++;
+        }
+      });
+      
+      logToUpdate.notes = (logToUpdate.notes ? logToUpdate.notes + " " : "") + `Updated from screenshot.${notesSuffix}`;
+      updatedLogs[existingLogIndex] = logToUpdate;
+      setWorkoutLogs(updatedLogs.sort((a, b) => b.date.getTime() - a.date.getTime()));
+      
+      toast({
+        title: "Workout Updated!",
+        description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}. Existing exercises were not duplicated.`,
+        variant: "default",
+      });
+
+    } else {
+      // No log for this date, create a new one
+      const newLog: WorkoutLog = {
+        id: Date.now().toString(),
+        date: targetDate,
+        exercises: parsedExercises,
+        notes: `Parsed from screenshot.${notesSuffix}`,
+      };
+      setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a, b) => b.date.getTime() - a.date.getTime()));
+      toast({
+        title: "Screenshot Parsed!",
+        description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
+        variant: "default",
+      });
+    }
   };
 
   const handleDeleteLog = (logId: string) => {
