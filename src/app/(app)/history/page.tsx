@@ -108,19 +108,36 @@ export default function HistoryPage() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let logDate = new Date(); // Default to current date
+    let logDate = new Date(); // Default to current date and time
+    logDate.setHours(0,0,0,0); // Normalize to start of the day
     let notes = "Parsed from screenshot.";
+    const currentYear = new Date().getFullYear();
 
     if (parsedData.workoutDate) {
+      // Expected format from AI: YYYY-MM-DD
       const dateParts = parsedData.workoutDate.split('-').map(Number);
       if (dateParts.length === 3) {
-        // Create date in local timezone to avoid UTC issues
-        logDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+        const aiYear = dateParts[0];
+        const aiMonth = dateParts[1]; // Month from AI (1-indexed)
+        const aiDay = dateParts[2];   // Day from AI
+
+        // Create date using AI's month and day, but ALWAYS the current year
+        logDate = new Date(currentYear, aiMonth - 1, aiDay, 0, 0, 0, 0);
+
+        if (aiYear !== currentYear) {
+            notes += ` Original year ${aiYear} from screenshot was updated to current year ${currentYear}.`;
+        }
       } else {
-        notes += " Could not parse date from screenshot, used current date.";
+        notes += " Could not fully parse date from screenshot; used current date (year overridden).";
+        // Fallback: use current day, month, but ensure current year and normalized time
+        const today = new Date();
+        logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
       }
     } else {
-      notes += " Date not found in screenshot, used current date.";
+      notes += " Date not found in screenshot; used current date.";
+      // Fallback: use current day, month, but ensure current year and normalized time
+      const today = new Date();
+      logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
     }
 
     const newLog: WorkoutLog = {
