@@ -35,7 +35,7 @@ const exerciseSchema = z.object({
   distance: z.coerce.number().min(0).optional().default(0),
   distanceUnit: z.enum(['mi', 'km', 'ft']).optional().default('mi'),
   duration: z.coerce.number().min(0).optional().default(0),
-  durationUnit: z.enum(['min', 'hr', 'sec']).optional(),
+  durationUnit: z.enum(['min', 'hr', 'sec']).optional().default('min'),
   calories: z.coerce.number().min(0).optional().default(0),
 });
 
@@ -64,7 +64,7 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   distance: 0,
   distanceUnit: "mi",
   duration: 0,
-  durationUnit: undefined,
+  durationUnit: "min",
   calories: 0
 };
 
@@ -101,7 +101,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
             distance: ex.distance ?? 0,
             distanceUnit: ex.distanceUnit || 'mi',
             duration: ex.duration ?? 0,
-            durationUnit: ex.durationUnit,
+            durationUnit: ex.durationUnit || "min",
             calories: ex.calories ?? 0,
           };
         }) || [defaultExerciseValues],
@@ -137,7 +137,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           distance: ex.distance ?? 0,
           distanceUnit: ex.distanceUnit || 'mi',
           duration: ex.duration ?? 0,
-          durationUnit: ex.durationUnit,
+          durationUnit: ex.durationUnit || 'min',
           calories: ex.calories ?? 0,
         }))
     });
@@ -326,10 +326,10 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Duration Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || "min"}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Unit" />
+                            <SelectValue placeholder="Select unit" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -373,7 +373,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Notes (Optional)</FormLabel>
+              <FormLabel>Notes</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Any comments about your workout?"
