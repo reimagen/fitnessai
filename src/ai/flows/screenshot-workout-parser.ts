@@ -31,9 +31,9 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       weight: z.number().describe('The weight used for each set. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
       weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified and weight > 0.'),
       category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional().describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name if not explicitly stated.'),
-      distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling).'),
+      distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling). For non-cardio exercises, this should be 0 unless explicitly stated.'),
       distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'),
-      duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds).'),
+      duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated.'),
       durationUnit: z.enum(['min', 'hr', 'sec']).optional().describe('The unit of duration (min, hr, or sec).'),
       calories: z.number().optional().describe('The number of calories burned.'),
     })
@@ -70,15 +70,18 @@ Key Instructions:
         *   Prioritize extracting \`distance\`, \`distanceUnit\`, \`duration\`, \`durationUnit\`, and \`calories\`.
         *   For these "Cardio" exercises, \`sets\`, \`reps\`, and \`weight\` should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: \`sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96\`.
         *   Do not mistake distance values (like "5383 ft") for \`reps\`.
-5.  **Weight Unit**:
+5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
+    *   For these categories, prioritize extracting \`sets\`, \`reps\`, \`weight\`, \`weightUnit\`, and \`calories\`.
+    *   \`distance\` and \`duration\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
+6.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, \`weightUnit\` can be omitted or kept as default.
-6.  **Duration Parsing**:
+7.  **Duration Parsing**:
     *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so \`duration: 566, durationUnit: 'sec'\`). If it's simpler (e.g., "30 min"), parse as is (\`duration: 30, durationUnit: 'min'\`).
-7.  **Distance Unit**:
+8.  **Distance Unit**:
     *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be \`distance: 5383, distanceUnit: 'ft'\`).
-8.  **Duplicate Exercises in Screenshot**:
+9.  **Duplicate Exercises in Screenshot**:
     *   If the exact same exercise (same name and details) appears multiple times *within the same screenshot*, list each instance as a separate exercise entry in the output. Do not attempt to aggregate them unless they are clearly distinct efforts. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises).
-9.  **Other Fields (for non-Cardio exercises primarily)**:
+10. **Other Fields (for non-Cardio exercises primarily)**:
     *   Extract \`sets\`, \`reps\`, and \`weight\`.
     *   Also extract \`calories\` if available.
     *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
@@ -123,19 +126,31 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         if (ex.weight !== undefined && ex.weight > 0 && !ex.weightUnit) {
           finalWeightUnit = 'kg'; 
         } else if (ex.weight === undefined || ex.weight === 0) {
-            // If weight is 0 or undefined, unit doesn't strictly matter,
-            // but we can clear it or let the schema default handle it.
-            // For consistency, if AI provides a unit for 0 weight, we can keep it.
-            // If not, and weight is 0, then it can be undefined.
             if (!finalWeightUnit) finalWeightUnit = undefined;
         }
 
-        // Ensure cardio exercises have 0 sets, reps, weight if AI missed this
+        let finalSets = ex.sets ?? 0;
+        let finalReps = ex.reps ?? 0;
+        let finalWeight = ex.weight ?? 0;
+        let finalDistance = ex.distance ?? 0;
+        let finalDuration = ex.duration ?? 0;
+        let finalDistanceUnit = ex.distanceUnit;
+        let finalDurationUnit = ex.durationUnit;
+
+
         if (ex.category === 'Cardio') {
-            ex.sets = ex.sets ?? 0; // Default to 0 if undefined, but prompt should make AI set it to 0
-            ex.reps = ex.reps ?? 0;
-            ex.weight = ex.weight ?? 0;
-            if (ex.weight === 0) finalWeightUnit = undefined; // No unit for 0 weight in cardio
+            finalSets = ex.sets ?? 0;
+            finalReps = ex.reps ?? 0;
+            finalWeight = ex.weight ?? 0;
+            if (finalWeight === 0) finalWeightUnit = undefined;
+            // For cardio, distance/duration are primary, so keep them if AI provides.
+            // If AI omits them, they'll default to 0 above.
+        } else {
+            // For non-Cardio, distance and duration should be 0 unless explicitly parsed
+            finalDistance = ex.distance ?? 0; 
+            finalDuration = ex.duration ?? 0;
+            if (finalDistance === 0) finalDistanceUnit = undefined;
+            if (finalDuration === 0) finalDurationUnit = undefined;
         }
 
 
@@ -143,10 +158,13 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           ...ex,
           name: name,
           weightUnit: finalWeightUnit,
-          // Ensure numeric fields that should be 0 for cardio are indeed 0
-          sets: ex.category === 'Cardio' ? (ex.sets || 0) : ex.sets,
-          reps: ex.category === 'Cardio' ? (ex.reps || 0) : ex.reps,
-          weight: ex.category === 'Cardio' ? (ex.weight || 0) : ex.weight,
+          sets: finalSets,
+          reps: finalReps,
+          weight: finalWeight,
+          distance: finalDistance,
+          distanceUnit: finalDistanceUnit,
+          duration: finalDuration,
+          durationUnit: finalDurationUnit,
         };
       });
     }
