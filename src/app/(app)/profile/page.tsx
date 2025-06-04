@@ -15,11 +15,11 @@ const initialMockUser: UserProfile = {
   id: "user123",
   name: "Lisa Gu",
   email: "lisa.gu@example.com",
-  joinedDate: new Date(2025, 5, 1),
+  joinedDate: new Date(2025, 5, 1), // June 1st, 2025
   age: 36,
   gender: "Female",
-  heightValue: 162.56,
-  heightUnit: 'ft/in',
+  heightValue: 162.56, // Example height in cm
+  heightUnit: 'ft/in',   // Example unit
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -28,6 +28,7 @@ const initialMockUser: UserProfile = {
   workoutsPerWeek: 3,
   sessionTimeMinutes: 45,
   experienceLevel: 'intermediate',
+  aiPreferencesNotes: "I prefer outdoor running and have access to a full gym.",
 };
 
 const LOCAL_STORAGE_KEY = "fitnessAppUserProfile";
@@ -64,6 +65,8 @@ export default function ProfilePage() {
           parsedProfile.workoutsPerWeek = parsedProfile.workoutsPerWeek !== undefined ? parsedProfile.workoutsPerWeek : initialMockUser.workoutsPerWeek;
           parsedProfile.sessionTimeMinutes = parsedProfile.sessionTimeMinutes !== undefined ? parsedProfile.sessionTimeMinutes : initialMockUser.sessionTimeMinutes;
           parsedProfile.experienceLevel = parsedProfile.experienceLevel !== undefined ? parsedProfile.experienceLevel : initialMockUser.experienceLevel;
+          parsedProfile.aiPreferencesNotes = parsedProfile.aiPreferencesNotes !== undefined ? parsedProfile.aiPreferencesNotes : initialMockUser.aiPreferencesNotes;
+
 
           setUserProfile(parsedProfile);
         } catch (error) {
@@ -104,7 +107,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel'>>) => {
+  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes'>>) => {
     setUserProfile(prevProfile => ({
       ...prevProfile,
       ...updatedPreferences,
@@ -138,6 +141,7 @@ export default function ProfilePage() {
               workoutsPerWeek: userProfile.workoutsPerWeek,
               sessionTimeMinutes: userProfile.sessionTimeMinutes,
               experienceLevel: userProfile.experienceLevel,
+              aiPreferencesNotes: userProfile.aiPreferencesNotes,
             }}
             onUpdate={handlePreferencesUpdate}
           />
@@ -157,6 +161,7 @@ export default function ProfilePage() {
                   workoutsPerWeek: initialMockUser.workoutsPerWeek,
                   sessionTimeMinutes: initialMockUser.sessionTimeMinutes,
                   experienceLevel: initialMockUser.experienceLevel,
+                  aiPreferencesNotes: initialMockUser.aiPreferencesNotes,
                 }}
                 onUpdate={handlePreferencesUpdate}
           />

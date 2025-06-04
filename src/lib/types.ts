@@ -40,6 +40,7 @@ export interface UserProfile {
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
+  aiPreferencesNotes?: string; // New field for AI notes
   // Add other relevant profile fields
 }
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, XCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,6 +16,7 @@ type WorkoutPreferences = {
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
+  aiPreferencesNotes?: string;
 };
 
 type WorkoutPreferencesCardProps = {
@@ -42,12 +44,14 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
   const [editedWorkoutsPerWeek, setEditedWorkoutsPerWeek] = useState(preferences.workoutsPerWeek?.toString() || "3");
   const [editedSessionTime, setEditedSessionTime] = useState<SessionTime>(preferences.sessionTimeMinutes || 45);
   const [editedExperienceLevel, setEditedExperienceLevel] = useState<ExperienceLevel>(preferences.experienceLevel || "intermediate");
+  const [editedAiPreferencesNotes, setEditedAiPreferencesNotes] = useState(preferences.aiPreferencesNotes || "");
 
   useEffect(() => {
     if (isEditing) {
       setEditedWorkoutsPerWeek(preferences.workoutsPerWeek?.toString() || "3");
       setEditedSessionTime(preferences.sessionTimeMinutes || 45);
       setEditedExperienceLevel(preferences.experienceLevel || "intermediate");
+      setEditedAiPreferencesNotes(preferences.aiPreferencesNotes || "");
     }
   }, [isEditing, preferences]);
 
@@ -69,6 +73,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       workoutsPerWeek: numWorkouts,
       sessionTimeMinutes: editedSessionTime,
       experienceLevel: editedExperienceLevel,
+      aiPreferencesNotes: editedAiPreferencesNotes,
     });
     setIsEditing(false);
   };
@@ -93,7 +98,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             <Zap className="h-5 w-5 text-primary" />
             Workout Preferences
           </CardTitle>
-          <CardDescription>Tell us how you like to train.</CardDescription>
+          <CardDescription>Tell us how you like to train and any notes for the AI.</CardDescription>
         </div>
         {isEditing ? (
           <div className="flex gap-2">
@@ -168,22 +173,42 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="ai-preferences-notes" className="text-sm font-medium">
+                Additional Concerns or Preferences for AI
+              </Label>
+              <Textarea
+                id="ai-preferences-notes"
+                value={editedAiPreferencesNotes}
+                onChange={(e) => setEditedAiPreferencesNotes(e.target.value)}
+                placeholder="enter any equipment or exercise preferences, injuries to note, and anything else you want AI to consider for your custom workout plan"
+                className="mt-1 min-h-[100px]"
+              />
+            </div>
           </>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
-            <div>
-              <span className="font-medium text-muted-foreground">Workouts/Week: </span>
-              <span>{preferences.workoutsPerWeek !== undefined ? preferences.workoutsPerWeek : "Not set"}</span>
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
+              <div>
+                <span className="font-medium text-muted-foreground">Workouts/Week: </span>
+                <span>{preferences.workoutsPerWeek !== undefined ? preferences.workoutsPerWeek : "Not set"}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Session Time: </span>
+                <span>{formatSessionTime(preferences.sessionTimeMinutes)}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Experience: </span>
+                <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
+              </div>
             </div>
-            <div>
-              <span className="font-medium text-muted-foreground">Session Time: </span>
-              <span>{formatSessionTime(preferences.sessionTimeMinutes)}</span>
-            </div>
-            <div>
-              <span className="font-medium text-muted-foreground">Experience: </span>
-              <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
-            </div>
-          </div>
+            {preferences.aiPreferencesNotes && (
+              <div>
+                <h4 className="font-semibold text-sm text-muted-foreground mt-2">Additional Preferences for AI:</h4>
+                <p className="text-sm whitespace-pre-wrap">{preferences.aiPreferencesNotes}</p>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
