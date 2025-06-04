@@ -168,21 +168,26 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         ) : (
           <CardTitle className="font-headline text-3xl flex-grow">{user.name}</CardTitle>
         )}
-        <div className="text-right space-y-1">
-          <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+        <div className="flex flex-col items-end"> {/* Aligns children to the right, stacks them if multiple block children */}
           {isEditing ? (
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-                <XCircle className="h-5 w-5" />
-              </Button>
-              <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
-                <Save className="h-5 w-5" />
+            <>
+              <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+              <div className="flex gap-2 mt-1"> {/* Save/Cancel buttons below with a small margin */}
+                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center gap-2"> {/* Joined Date and Edit icon side-by-side */}
+              <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
+                <Edit2 className="h-5 w-5" />
               </Button>
             </div>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details" className="ml-auto">
-              <Edit2 className="h-5 w-5" />
-            </Button>
           )}
         </div>
       </CardHeader>
