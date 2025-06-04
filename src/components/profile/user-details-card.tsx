@@ -156,39 +156,39 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="flex flex-row items-start justify-between pb-4">
-        {isEditing ? (
-          <Input
-            type="text"
-            value={editedName}
-            onChange={(e) => setEditedName(e.target.value)}
-            className="text-2xl font-headline font-semibold leading-none tracking-tight flex-grow mr-4"
-            aria-label="Edit user name"
-          />
-        ) : (
-          <CardTitle className="font-headline text-3xl flex-grow">{user.name}</CardTitle>
-        )}
-        <div className="flex flex-col items-end"> {/* Aligns children to the right, stacks them if multiple block children */}
+      <CardHeader className="pb-4"> {/* Changed: rely on default flex-col and space-y */}
+        <div>
           {isEditing ? (
-            <>
-              <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
-              <div className="flex gap-2 mt-1"> {/* Save/Cancel buttons below with a small margin */}
+            <Input
+              type="text"
+              value={editedName}
+              onChange={(e) => setEditedName(e.target.value)}
+              className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
+              aria-label="Edit user name"
+            />
+          ) : (
+            <CardTitle className="font-headline text-3xl">{user.name}</CardTitle>
+          )}
+        </div>
+        
+        <div className="flex justify-between items-center w-full mt-1">
+          <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
                 <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
                   <XCircle className="h-5 w-5" />
                 </Button>
                 <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
                   <Save className="h-5 w-5" />
                 </Button>
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-2"> {/* Joined Date and Edit icon side-by-side */}
-              <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+              </>
+            ) : (
               <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
                 <Edit2 className="h-5 w-5" />
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -252,3 +252,4 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     </Card>
   );
 }
+
