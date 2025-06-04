@@ -8,8 +8,9 @@ import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
 import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react"; // Added useState, useEffect
+import React, { useState, useEffect } from "react";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -76,22 +77,35 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             {log.notes && (
               <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
             )}
-            <ul className="space-y-3">
-              {log.exercises.map((exercise) => (
-                <li key={exercise.id} className="p-3 bg-secondary/50 rounded-md">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Dumbbell className="h-4 w-4 text-accent" />
-                    <strong className="font-semibold">{exercise.name}</strong>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {exercise.sets} sets &times; {exercise.reps} reps @ {exercise.weight} kg
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[40%]">Exercise</TableHead>
+                  <TableHead className="text-right">Sets</TableHead>
+                  <TableHead className="text-right">Reps</TableHead>
+                  <TableHead className="text-right">Weight (kg)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {log.exercises.map((exercise) => (
+                  <TableRow key={exercise.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Dumbbell className="h-4 w-4 text-accent shrink-0" />
+                        <span className="font-medium">{exercise.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">{exercise.sets}</TableCell>
+                    <TableCell className="text-right">{exercise.reps}</TableCell>
+                    <TableCell className="text-right">{exercise.weight}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </AccordionContent>
         </AccordionItem>
       ))}
     </Accordion>
   );
 }
+
