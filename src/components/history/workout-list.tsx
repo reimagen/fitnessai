@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
+import React, { useState, useEffect } from "react"; // Added useState, useEffect
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -17,6 +18,12 @@ type WorkoutListProps = {
 };
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   if (workoutLogs.length === 0) {
     return (
       <Card className="shadow-sm">
@@ -40,7 +47,9 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
               <div className="flex flex-col sm:flex-row sm:items-center w-full">
                 <div className="flex items-center gap-3 mb-2 sm:mb-0">
                   <CalendarDays className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-lg">{format(new Date(log.date), "MMMM d, yyyy")}</span>
+                  <span className="font-medium text-lg">
+                    {isClient ? format(log.date, "MMMM d, yyyy") : ""}
+                  </span>
                 </div>
                 <span className="text-sm text-muted-foreground sm:ml-4">
                   {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
