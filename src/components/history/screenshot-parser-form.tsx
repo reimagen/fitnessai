@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 type ScreenshotParserFormProps = {
   onParse: (data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParseWorkoutScreenshotOutput; error?: string }>;
-  onParsedData: (data: ParseWorkoutScreenshotOutput) => void; // Callback to pass parsed data to parent
+  onParsedData: (data: ParseWorkoutScreenshotOutput) => void;
 };
 
 export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParserFormProps) {
@@ -52,7 +52,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
 
     if (result.success && result.data) {
       setParsedResult(result.data);
-      onParsedData(result.data); // Pass data to parent
+      onParsedData(result.data); 
     } else {
       setError(result.error || "Failed to parse screenshot.");
     }
@@ -111,7 +111,14 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
             <ul className="space-y-1 text-xs text-muted-foreground">
               {parsedResult.exercises.map((ex, index) => (
                 <li key={index}>
-                  <strong>{ex.name}:</strong> {ex.sets} sets, {ex.reps} reps @ {ex.weight}{ex.weightUnit || 'kg'}
+                  <strong>{ex.name}:</strong>
+                  {ex.category && ` (${ex.category})`}
+                  {ex.sets && ` ${ex.sets} sets,`}
+                  {ex.reps && ` ${ex.reps} reps`}
+                  {ex.weight && ex.weight > 0 && ` @ ${ex.weight}${ex.weightUnit || 'kg'}`}
+                  {ex.distance && ` - ${ex.distance} ${ex.distanceUnit || ''}`.trim()}
+                  {ex.duration && ` - ${ex.duration} ${ex.durationUnit || ''}`.trim()}
+                  {ex.calories && ` - ${ex.calories} kcal`}
                 </li>
               ))}
             </ul>
@@ -122,4 +129,3 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
     </div>
   );
 }
-

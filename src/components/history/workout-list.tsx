@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
-import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown } from "lucide-react";
+import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils, Route, Timer } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,16 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  if (!isClient) { // Show loading state before client-side rendering is complete
+    return (
+      <Card className="shadow-sm">
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">Loading workout history...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (workoutLogs.length === 0) {
     return (
@@ -49,7 +59,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                 <div className="flex items-center gap-3 mb-2 sm:mb-0">
                   <CalendarDays className="h-5 w-5 text-primary" />
                   <span className="font-medium text-lg">
-                    {isClient ? format(log.date, "MMMM d, yyyy") : ""}
+                    {format(log.date, "MMMM d, yyyy")}
                   </span>
                 </div>
                 <span className="text-sm text-muted-foreground sm:ml-4">
@@ -80,10 +90,14 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">Exercise</TableHead>
+                  <TableHead className="w-[25%]">Exercise</TableHead>
+                  <TableHead className="text-left w-[15%]">Category</TableHead>
                   <TableHead className="text-right">Sets</TableHead>
                   <TableHead className="text-right">Reps</TableHead>
                   <TableHead className="text-right">Weight</TableHead>
+                  <TableHead className="text-right">Distance</TableHead>
+                  <TableHead className="text-right">Duration</TableHead>
+                  <TableHead className="text-right">Calories</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -95,9 +109,19 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                         <span className="font-medium">{exercise.name}</span>
                       </div>
                     </TableCell>
+                    <TableCell className="text-left">{exercise.category || "-"}</TableCell>
                     <TableCell className="text-right">{exercise.sets}</TableCell>
                     <TableCell className="text-right">{exercise.reps}</TableCell>
-                    <TableCell className="text-right">{exercise.weight}{exercise.weightUnit || 'kg'}</TableCell>
+                    <TableCell className="text-right">
+                        {exercise.weight > 0 ? `${exercise.weight}${exercise.weightUnit || 'kg'}` : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        {exercise.distance ? `${exercise.distance} ${exercise.distanceUnit || ''}`.trim() : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                        {exercise.duration ? `${exercise.duration} ${exercise.durationUnit || ''}`.trim() : "-"}
+                    </TableCell>
+                    <TableCell className="text-right">{exercise.calories || "-"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -108,4 +132,3 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     </Accordion>
   );
 }
-

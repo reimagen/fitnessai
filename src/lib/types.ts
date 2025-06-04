@@ -4,8 +4,14 @@ export interface Exercise {
   name: string;
   sets: number;
   reps: number;
-  weight: number; // in kg
-  weightUnit?: 'kg' | 'lbs'; // Added weightUnit
+  weight: number;
+  weightUnit?: 'kg' | 'lbs';
+  category?: string;
+  distance?: number;
+  distanceUnit?: 'mi' | 'km';
+  duration?: number; // Consider a consistent unit, e.g., minutes, or add durationUnit
+  durationUnit?: 'min' | 'hr' | 'sec';
+  calories?: number;
 }
 
 export interface WorkoutLog {
@@ -20,7 +26,7 @@ export interface FitnessGoal {
   description: string;
   targetDate?: Date;
   achieved: boolean;
-  isPrimary?: boolean; // Added for primary goal
+  isPrimary?: boolean;
 }
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
@@ -36,12 +42,10 @@ export interface UserProfile {
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;
-  heightValue?: number; // Height in cm
-  heightUnit?: 'cm' | 'ft/in'; // Preferred unit for height
+  heightValue?: number; 
+  heightUnit?: 'cm' | 'ft/in'; 
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
-  aiPreferencesNotes?: string; // New field for AI notes
-  // Add other relevant profile fields
+  aiPreferencesNotes?: string; 
 }
-
