@@ -13,12 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 
 const initialMockUser: UserProfile = {
   id: "user123",
-  name: "Lisa Gu", // Updated name
+  name: "Lisa Gu",
   email: "lisa.gu@example.com",
-  age: 36, // Default age
-  gender: "Female", // Default gender
-  heightValue: 162.56, // Approx 5ft 4in in cm ( (5*12 + 4) * 2.54 )
-  heightUnit: 'ft/in',   // Default height unit
+  joinedDate: new Date("2025-06-01"), // Added initial joined date
+  age: 36,
+  gender: "Female",
+  heightValue: 162.56, 
+  heightUnit: 'ft/in',  
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -50,6 +51,7 @@ export default function ProfilePage() {
           }));
           
           parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
+          parsedProfile.joinedDate = parsedProfile.joinedDate ? new Date(parsedProfile.joinedDate) : initialMockUser.joinedDate;
           parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
           parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
@@ -82,7 +84,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => {
+  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => {
     setUserProfile(prevProfile => ({
       ...prevProfile,
       ...updatedDetails,

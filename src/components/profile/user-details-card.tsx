@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit2, Save, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 type UserDetailsCardProps = {
   user: UserProfile;
-  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => void;
+  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => void;
 };
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -24,12 +25,18 @@ const HEIGHT_UNIT_OPTIONS = [
 const INCH_TO_CM = 2.54;
 const FT_TO_INCHES = 12;
 
+// Helper to format Date to 'yyyy-MM-dd' for date input
+const formatDateForInput = (date: Date | undefined): string => {
+  if (!date) return "";
+  return format(new Date(date), "yyyy-MM-dd");
+};
+
 export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Editing state for all fields
   const [editedName, setEditedName] = useState(user.name);
+  const [editedJoinedDate, setEditedJoinedDate] = useState(formatDateForInput(user.joinedDate));
   const [editedAge, setEditedAge] = useState(user.age?.toString() || "");
   const [editedGender, setEditedGender] = useState(user.gender || "");
   const [editedHeightUnit, setEditedHeightUnit] = useState<'cm' | 'ft/in'>(user.heightUnit || "cm");
@@ -40,6 +47,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   useEffect(() => {
     if (isEditing) {
       setEditedName(user.name);
+      setEditedJoinedDate(formatDateForInput(user.joinedDate));
       setEditedAge(user.age?.toString() || "");
       setEditedGender(user.gender || "");
       const initialUnit = user.heightUnit || "cm";
@@ -72,7 +80,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     setEditedHeightUnit(newUnit);
     if (oldUnit === newUnit) return;
 
-    if (newUnit === 'ft/in') { // cm -> ft/in
+    if (newUnit === 'ft/in') { 
         const cmVal = parseFloat(editedHeightCm);
         if (!isNaN(cmVal) && cmVal > 0) {
             const totalInches = cmVal / INCH_TO_CM;
@@ -82,7 +90,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
             setEditedHeightFt(""); setEditedHeightIn("");
         }
         setEditedHeightCm("");
-    } else { // ft/in -> cm
+    } else { 
         const ftVal = parseFloat(editedHeightFt);
         const inVal = parseFloat(editedHeightIn);
         if ((!isNaN(ftVal) && ftVal >=0) || (!isNaN(inVal) && inVal >=0 && inVal < 12)) {
@@ -100,6 +108,10 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       toast({ title: "Invalid Name", description: "Name cannot be empty.", variant: "destructive" });
       return;
     }
+    if (!editedJoinedDate || isNaN(new Date(editedJoinedDate).getTime())) {
+      toast({ title: "Invalid Joined Date", description: "Please enter a valid date.", variant: "destructive" });
+      return;
+    }
     const currentAgeNum = parseInt(editedAge, 10);
     if (editedAge !== "" && (isNaN(currentAgeNum) || currentAgeNum <= 0 || currentAgeNum > 120)) {
       toast({ title: "Invalid Age", description: "Please enter a valid age.", variant: "destructive" });
@@ -115,7 +127,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         }
         finalHeightCmValue = cmVal;
       }
-    } else { // ft/in
+    } else { 
       const ftVal = parseFloat(editedHeightFt);
       const inVal = parseFloat(editedHeightIn);
       const ftIsEmpty = editedHeightFt === ""; const inIsEmpty = editedHeightIn === "";
@@ -137,6 +149,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     
     onUpdate({ 
       name: editedName,
+      joinedDate: new Date(editedJoinedDate),
       age: editedAge === "" ? undefined : currentAgeNum, 
       gender: editedGender === "" ? undefined : editedGender,
       heightValue: finalHeightCmValue,
@@ -156,7 +169,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="pb-4 relative"> {/* Added relative positioning context */}
+      <CardHeader className="pb-4 relative">
         <div>
           {isEditing ? (
             <Input
@@ -169,10 +182,25 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
           ) : (
             <CardTitle className="font-headline text-3xl mb-1">{user.name}</CardTitle>
           )}
-          <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
+           {isEditing ? (
+            <div className="mt-1">
+              <Label htmlFor="joined-date-input" className="text-sm font-medium text-muted-foreground">Joined:</Label>
+              <Input 
+                id="joined-date-input"
+                type="date" 
+                value={editedJoinedDate} 
+                onChange={(e) => setEditedJoinedDate(e.target.value)} 
+                className="text-sm w-full md:w-auto"
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Joined: {user.joinedDate ? format(new Date(user.joinedDate), "MMMM d, yyyy") : "Not set"}
+            </p>
+          )}
         </div>
         
-        <div className="absolute top-6 right-6 flex gap-2"> {/* Buttons positioned top-right */}
+        <div className="absolute top-6 right-6 flex gap-2">
           {isEditing ? (
             <>
               <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
@@ -250,4 +278,3 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     </Card>
   );
 }
-

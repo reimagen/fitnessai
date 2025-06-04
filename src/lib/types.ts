@@ -27,6 +27,7 @@ export interface UserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
+  joinedDate: Date; // Added joinedDate
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;
