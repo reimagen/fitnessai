@@ -29,7 +29,7 @@ export type WorkoutRecommendationInput = z.infer<typeof WorkoutRecommendationInp
 const WorkoutRecommendationOutputSchema = z.object({
   workoutRecommendation: z
     .string()
-    .describe('A personalized workout recommendation. This should start by acknowledging the primary fitness goal (if provided) and explaining how the plan helps achieve it. Then, it should detail the full workout routine.'),
+    .describe('A personalized workout recommendation. This should start by acknowledging the primary fitness goal (if provided) and explaining how the plan helps achieve it. It should also address how the plan supports any other specified goals. Then, it should detail the full workout routine.'),
 });
 export type WorkoutRecommendationOutput = z.infer<typeof WorkoutRecommendationOutputSchema>;
 
@@ -49,10 +49,10 @@ Workout History: {{{workoutHistory}}}
 Personal Stats: {{{personalStats}}}
 
 Instructions for your response:
-1.  Acknowledge Primary Goal: If a "Primary Goal" is specified in the "Fitness Goals", begin your recommendation by briefly acknowledging it.
-2.  Explain Relevance to Primary Goal: Clearly explain how the key components or overall strategy of your recommended workout plan will directly help the user achieve this primary goal. Be specific.
-3.  Provide Full Workout Plan: After addressing the primary goal, present the comprehensive workout recommendation. This plan should be well-rounded, actionable, and also consider any other secondary goals, workout history, and personal stats provided.
-4.  Structure: Ensure the explanation for the primary goal flows naturally into the detailed workout plan.
+1.  **Acknowledge and Prioritize Primary Goal**: If a "Primary Goal" is specified in the "Fitness Goals", begin your recommendation by acknowledging it. Clearly explain how the key components or overall strategy of your recommended workout plan will directly help the user achieve this primary goal. Be specific.
+2.  **Address Additional Goals**: If other goals are specified (e.g., in "Other goals: ..."), after addressing the primary goal, briefly explain how the workout plan also supports these additional goals.
+3.  **Provide Full Workout Plan**: After the explanations for the primary and any additional goals, present the comprehensive workout recommendation. This plan should be well-rounded, actionable, and consider all goals, workout history, and personal stats provided.
+4.  **Structure**: Ensure the explanations flow naturally into the detailed workout plan.
 
 Workout Recommendation:`,
 });
