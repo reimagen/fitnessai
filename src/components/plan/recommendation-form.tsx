@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WorkoutRecommendationInput, WorkoutRecommendationOutput } from "@/ai/flows/workout-recommendation";
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -33,8 +33,6 @@ const formSchema = z.object({
   }),
 });
 
-// This type should ideally be shared or imported if PlanPage exports it.
-// For now, re-declaring for clarity within this component.
 type FormDataForPlan = {
   fitnessGoals: string;
   workoutHistory: string;
@@ -46,14 +44,20 @@ type RecommendationFormProps = {
   initialFormData?: FormDataForPlan;
 };
 
+const LOCAL_STORAGE_AI_PLAN_KEY = "fitnessAppAiPlan";
+
 export function RecommendationForm({ onRecommendation, initialFormData }: RecommendationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [recommendationResult, setRecommendationResult] = useState<WorkoutRecommendationOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    // Default values will be set by useEffect if initialFormData is provided
     defaultValues: initialFormData || {
       fitnessGoals: "",
       workoutHistory: "",
@@ -61,7 +65,6 @@ export function RecommendationForm({ onRecommendation, initialFormData }: Recomm
     },
   });
 
-  // Effect to update form values when initialFormData changes
   useEffect(() => {
     if (initialFormData) {
       form.reset({
@@ -70,21 +73,45 @@ export function RecommendationForm({ onRecommendation, initialFormData }: Recomm
         personalStats: initialFormData.personalStats,
       });
     }
-  }, [initialFormData, form]); // form.reset is stable, so form is added. Or form.reset.
+  }, [initialFormData, form]);
+
+  useEffect(() => {
+    if (isClient) {
+      const savedPlanString = localStorage.getItem(LOCAL_STORAGE_AI_PLAN_KEY);
+      if (savedPlanString) {
+        try {
+          const savedPlan: WorkoutRecommendationOutput = JSON.parse(savedPlanString);
+          setRecommendationResult(savedPlan);
+        } catch (e) {
+          console.error("Error parsing saved AI plan from localStorage", e);
+          localStorage.removeItem(LOCAL_STORAGE_AI_PLAN_KEY); // Clear invalid data
+        }
+      }
+    }
+  }, [isClient]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setError(null);
-    setRecommendationResult(null);
+    // Do not clear recommendationResult here, so the old plan remains visible during loading
+    // setRecommendationResult(null); 
     const result = await onRecommendation(values);
     if (result.success && result.data) {
       setRecommendationResult(result.data);
+      if (isClient) {
+        localStorage.setItem(LOCAL_STORAGE_AI_PLAN_KEY, JSON.stringify(result.data));
+      }
     } else {
       if (typeof result.error === 'string') {
         setError(result.error);
       } else {
         setError("An unexpected error occurred.");
         console.error(result.error);
+      }
+      // Clear previous plan from display if new generation fails
+      setRecommendationResult(null);
+      if (isClient) {
+        localStorage.removeItem(LOCAL_STORAGE_AI_PLAN_KEY);
       }
     }
     setIsLoading(false);
@@ -171,7 +198,7 @@ export function RecommendationForm({ onRecommendation, initialFormData }: Recomm
         </Card>
       )}
 
-      {recommendationResult && (
+      {isClient && recommendationResult && (
         <Card className="mt-6 shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline text-primary">Your AI-Generated Workout Plan</CardTitle>
