@@ -22,7 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
-  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible, assume the current year.'),
+  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible, assume the current year for the app context (e.g., 2025).'),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -56,9 +56,9 @@ Your goal is to extract the workout date and exercise data from the screenshot a
 
 Key Instructions:
 1.  **Workout Date**:
-    *   Extract the date of the workout from the screenshot.
+    *   Extract the date of the workout from the screenshot. If a year is explicitly present in the screenshot (e.g., "June 2, 2024"), use that year.
     *   Format this date as YYYY-MM-DD.
-    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), assume the current year. For example, if today is 2024 and the image says "Jun 2", the workoutDate should be "2024-06-02".
+    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), assume the current year for the app's context is 2025. For example, if the app's context year is 2025 and the image says "Jun 2" without a year, the workoutDate should be "2025-06-02".
 2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
