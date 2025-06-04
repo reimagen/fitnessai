@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
@@ -55,12 +55,12 @@ interface CategoryRepDataPoint {
   fill: string;
 }
 
-interface YearToDateSummaryStats {
+interface PeriodSummaryStats {
   workoutDays: number;
   totalWeightLiftedLbs: number;
   totalCardioDurationMin: number;
   totalCaloriesBurned: number;
-  currentYear: number;
+  periodLabel: string;
 }
 
 const timeRangeDisplayNames: Record<string, string> = {
@@ -73,7 +73,7 @@ export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
   const [categoryRepData, setCategoryRepData] = useState<CategoryRepDataPoint[]>([]);
-  const [yearToDateSummary, setYearToDateSummary] = useState<YearToDateSummaryStats | null>(null);
+  const [currentPeriodSummary, setCurrentPeriodSummary] = useState<PeriodSummaryStats | null>(null);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -85,13 +85,6 @@ export default function AnalysisPage() {
       const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
       let parsedLogs: WorkoutLog[] = [];
       
-      const currentYear = new Date().getFullYear();
-      let ytdWorkoutDays = 0;
-      let ytdTotalWeightLiftedLbs = 0;
-      let ytdTotalCardioDurationMin = 0;
-      let ytdTotalCaloriesBurned = 0;
-      const uniqueWorkoutDatesThisYear = new Set<string>();
-
       if (savedLogsString) {
         try {
           parsedLogs = JSON.parse(savedLogsString).map((log: any) => ({
@@ -112,26 +105,33 @@ export default function AnalysisPage() {
               calories: ex.calories ?? 0,
             }))
           }));
-
-          // --- Data for Workout Frequency Chart (filtered by timeRange) ---
-          let logsForFrequencyChart = parsedLogs;
+        } catch (error) {
+          console.error("Error parsing workout logs for analysis:", error);
+          parsedLogs = [];
+        }
+      }
+          // --- Determine logs for the selected timeRange ---
+          let logsForCurrentPeriod = parsedLogs;
           const today = new Date();
+          let periodLabel = timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1));
+
           if (timeRange === 'weekly') {
             const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); 
             const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
-            logsForFrequencyChart = parsedLogs.filter(log =>
+            logsForCurrentPeriod = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
             );
           } else if (timeRange === 'monthly') {
             const startOfCurrentMonth = startOfMonth(today);
             const endOfCurrentMonth = endOfMonth(today);
-            logsForFrequencyChart = parsedLogs.filter(log =>
+            logsForCurrentPeriod = parsedLogs.filter(log =>
               isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
             );
           }
-          
+          // For 'all-time', logsForCurrentPeriod remains all parsedLogs
 
-          const frequencySummaries = generateWorkoutSummaries(logsForFrequencyChart);
+          // --- Data for Workout Frequency Chart (filtered by timeRange) ---
+          const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
           const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
           
           const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
@@ -142,7 +142,7 @@ export default function AnalysisPage() {
           setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-          // --- Data for Category Rep Pie Chart (always all-time) ---
+          // --- Data for Category Rep Pie Chart (always all-time using `parsedLogs`) ---
           const repsByCat: Record<string, number> = {
             'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
@@ -151,7 +151,7 @@ export default function AnalysisPage() {
               const reps = ex.reps || 0;
               if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
+              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
               else repsByCat['Other'] += reps;
             });
@@ -169,53 +169,43 @@ export default function AnalysisPage() {
           setCategoryRepData(newCategoryRepData);
           
 
-          // --- Data for Year-to-Date Summary (always current year) ---
-          parsedLogs.forEach(log => {
-            const logDate = new Date(log.date); 
-            if (logDate.getFullYear() === currentYear) {
-              uniqueWorkoutDatesThisYear.add(format(logDate, 'yyyy-MM-dd'));
+          // --- Data for Current Period Summary (uses logsForCurrentPeriod) ---
+          let currentPeriodWorkoutDays = 0;
+          let currentPeriodTotalWeightLiftedLbs = 0;
+          let currentPeriodTotalCardioDurationMin = 0;
+          let currentPeriodTotalCaloriesBurned = 0;
+          const uniqueWorkoutDatesThisPeriod = new Set<string>();
 
-              log.exercises.forEach(ex => {
-                if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
-                    let volume = ex.weight * ex.sets * ex.reps;
-                    if (ex.weightUnit === 'kg') {
-                        volume *= 2.20462;
-                    }
-                    ytdTotalWeightLiftedLbs += volume;
-                }
-                if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
-                    let durationInMin = 0;
-                    switch (ex.durationUnit) {
-                        case 'sec': durationInMin = ex.duration / 60; break;
-                        case 'hr': durationInMin = ex.duration * 60; break;
-                        case 'min': default: durationInMin = ex.duration; break;
-                    }
-                    ytdTotalCardioDurationMin += durationInMin;
-                }
-                ytdTotalCaloriesBurned += (ex.calories || 0);
-              });
-            }
+          logsForCurrentPeriod.forEach(log => {
+            uniqueWorkoutDatesThisPeriod.add(format(log.date, 'yyyy-MM-dd'));
+            log.exercises.forEach(ex => {
+              if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
+                  let volume = ex.weight * ex.sets * ex.reps;
+                  if (ex.weightUnit === 'kg') {
+                      volume *= 2.20462;
+                  }
+                  currentPeriodTotalWeightLiftedLbs += volume;
+              }
+              if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
+                  let durationInMin = 0;
+                  switch (ex.durationUnit) {
+                      case 'sec': durationInMin = ex.duration / 60; break;
+                      case 'hr': durationInMin = ex.duration * 60; break;
+                      case 'min': default: durationInMin = ex.duration; break;
+                  }
+                  currentPeriodTotalCardioDurationMin += durationInMin;
+              }
+              currentPeriodTotalCaloriesBurned += (ex.calories || 0);
+            });
           });
-          ytdWorkoutDays = uniqueWorkoutDatesThisYear.size;
-          setYearToDateSummary({
-            workoutDays: ytdWorkoutDays,
-            totalWeightLiftedLbs: Math.round(ytdTotalWeightLiftedLbs),
-            totalCardioDurationMin: Math.round(ytdTotalCardioDurationMin),
-            totalCaloriesBurned: Math.round(ytdTotalCaloriesBurned),
-            currentYear,
+          currentPeriodWorkoutDays = uniqueWorkoutDatesThisPeriod.size;
+          setCurrentPeriodSummary({
+            workoutDays: currentPeriodWorkoutDays,
+            totalWeightLiftedLbs: Math.round(currentPeriodTotalWeightLiftedLbs),
+            totalCardioDurationMin: Math.round(currentPeriodTotalCardioDurationMin),
+            totalCaloriesBurned: Math.round(currentPeriodTotalCaloriesBurned),
+            periodLabel: periodLabel,
           });
-          
-        } catch (error) {
-          console.error("Error processing workout logs for analysis:", error);
-          setWorkoutFrequencyData([]);
-          setCategoryRepData([]);
-          setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
-        }
-      } else {
-        setWorkoutFrequencyData([]);
-        setCategoryRepData([]);
-        setYearToDateSummary({ workoutDays: 0, totalWeightLiftedLbs: 0, totalCardioDurationMin: 0, totalCaloriesBurned: 0, currentYear });
-      }
     }
   }, [isClient, timeRange]);
 
@@ -259,31 +249,31 @@ export default function AnalysisPage() {
         </Select>
       </div>
 
-      {isClient && yearToDateSummary && (
+      {isClient && currentPeriodSummary && (
         <Card className="shadow-lg mb-6 bg-secondary/30">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2 text-xl">
               <TrendingUp className="h-6 w-6 text-primary" />
-              Year to Date ({yearToDateSummary.currentYear}) Summary
+              {currentPeriodSummary.periodLabel} Summary
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-y-6 gap-x-4 md:grid-cols-4 text-center py-6">
             <div>
-              <p className="text-3xl font-bold text-accent">{yearToDateSummary.workoutDays.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-accent">{currentPeriodSummary.workoutDays.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Workout Days</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalWeightLiftedLbs.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-accent">{currentPeriodSummary.totalWeightLiftedLbs.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Weight Lifted (lbs)</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-accent">
-                {formatCardioDuration(yearToDateSummary.totalCardioDurationMin)}
+                {formatCardioDuration(currentPeriodSummary.totalCardioDurationMin)}
               </p>
               <p className="text-sm text-muted-foreground mt-1">Cardio Duration</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalCaloriesBurned.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-accent">{currentPeriodSummary.totalCaloriesBurned.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Calories Burned</p>
             </div>
           </CardContent>
@@ -297,7 +287,7 @@ export default function AnalysisPage() {
             <CardDescription>
               {isClient && workoutFrequencyData.length > 0
                 ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
-                : (isClient ? `No workout data for this ${timeRangeDisplayNames[timeRange] || timeRange} period.` : "Log some workouts to see your data")}
+                : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -318,7 +308,7 @@ export default function AnalysisPage() {
               </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No workout data available for this ${timeRangeDisplayNames[timeRange] || timeRange} period.` : "Loading chart data..."}</p>
+                <p>{isClient ? `No workout data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
               </div>
             )}
           </CardContent>
