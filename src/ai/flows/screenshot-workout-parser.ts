@@ -119,6 +119,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     if (output && output.exercises) {
+      const strengthCategories = ['Lower Body', 'Upper Body', 'Full Body', 'Core'];
       const modifiedExercises = output.exercises.map(ex => {
         let name = ex.name;
         if (name.toLowerCase().startsWith('egym ')) {
@@ -148,38 +149,45 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             }
         }
 
-
+        // Initialize final values with AI's parsed values (or default to 0 if undefined)
         let finalSets = ex.sets ?? 0;
         let finalReps = ex.reps ?? 0;
         let finalWeight = ex.weight ?? 0;
         let finalDistance = ex.distance ?? 0;
         let finalDuration = ex.duration ?? 0;
+        let finalCalories = ex.calories ?? 0;
         let finalDistanceUnit = ex.distanceUnit;
         let finalDurationUnit = ex.durationUnit;
+
 
         if (ex.category === 'Cardio') {
             finalSets = 0; 
             finalReps = 0;
             finalWeight = 0;
             correctedWeightUnit = undefined; 
-        } else { 
+            // For Cardio, distance, duration, calories, and their units are preserved from AI (or their ?? 0 defaults)
+        } else if (ex.category && strengthCategories.includes(ex.category)) { 
+            // For explicitly defined strength categories, zero out cardio-specific metrics
             finalDistance = 0; 
             finalDuration = 0;
             finalDistanceUnit = undefined; 
             finalDurationUnit = undefined; 
+            // For Strength, sets, reps, weight, calories, and weightUnit are preserved from AI (or their ?? 0 defaults)
         }
+        // If category is 'Other' or undefined, all metrics are preserved as parsed by AI (or their ?? 0 defaults)
 
         return {
-          ...ex,
-          name: name,
-          weightUnit: correctedWeightUnit,
+          name: name, // name should be first as per schema for readability
           sets: finalSets,
           reps: finalReps,
           weight: finalWeight,
+          weightUnit: correctedWeightUnit,
+          category: ex.category, // Preserve original category from AI
           distance: finalDistance,
           distanceUnit: finalDistanceUnit,
           duration: finalDuration,
           durationUnit: finalDurationUnit,
+          calories: finalCalories,
         };
       });
       return {
