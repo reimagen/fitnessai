@@ -24,8 +24,8 @@ const weightProgressData = [
 ];
 
 const chartConfig = {
-  exercises: { // Changed from "workouts"
-    label: "Exercises", // Changed from "Workouts"
+  exercises: {
+    label: "Exercises",
     color: "hsl(var(--primary))",
   },
   duration: {
@@ -45,7 +45,7 @@ const chartConfig = {
 
 interface ChartDataPoint {
   dateLabel: string;
-  exercises: number; // Changed from "workouts"
+  exercises: number;
   duration: number;
 }
 
@@ -136,7 +136,7 @@ export default function AnalysisPage() {
           
           const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
             dateLabel: format(summary.date, 'MMM d'),
-            exercises: summary.totalExercises, // Changed from workouts
+            exercises: summary.totalExercises,
             duration: Math.round(summary.totalDurationMinutes),
           }));
           setWorkoutFrequencyData(newWorkoutFrequencyData);
@@ -153,7 +153,7 @@ export default function AnalysisPage() {
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
               else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps;
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps; // Full Body, uncategorized, etc. go to Other
+              else repsByCat['Other'] += reps;
             });
           });
           const pieChartColors: Record<string, string> = {
@@ -233,6 +233,12 @@ export default function AnalysisPage() {
     );
   };
 
+  const formatCardioDuration = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}h ${minutes}m`;
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -271,8 +277,10 @@ export default function AnalysisPage() {
               <p className="text-sm text-muted-foreground mt-1">Weight Lifted (lbs)</p>
             </div>
             <div>
-              <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalCardioDurationMin.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground mt-1">Cardio Duration (min)</p>
+              <p className="text-3xl font-bold text-accent">
+                {formatCardioDuration(yearToDateSummary.totalCardioDurationMin)}
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">Cardio Duration</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-accent">{yearToDateSummary.totalCaloriesBurned.toLocaleString()}</p>
