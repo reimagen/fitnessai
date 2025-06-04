@@ -15,11 +15,11 @@ const initialMockUser: UserProfile = {
   id: "user123",
   name: "Lisa Gu",
   email: "lisa.gu@example.com",
-  joinedDate: new Date("2025-06-01"), // Added initial joined date
+  joinedDate: new Date(2025, 5, 1), // Month is 0-indexed, so 5 is June
   age: 36,
   gender: "Female",
-  heightValue: 162.56, 
-  heightUnit: 'ft/in',  
+  heightValue: 162.56, // Example height in cm
+  heightUnit: 'ft/in',  // User prefers ft/in
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -50,8 +50,11 @@ export default function ProfilePage() {
             targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
           }));
           
-          parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
+          // Ensure joinedDate is correctly parsed as a Date object
           parsedProfile.joinedDate = parsedProfile.joinedDate ? new Date(parsedProfile.joinedDate) : initialMockUser.joinedDate;
+
+          parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
+          // joinedDate handled above
           parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
           parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
@@ -171,4 +174,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
