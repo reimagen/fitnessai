@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import type { UserProfile, FitnessGoal, ExperienceLevel, SessionTime } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
-import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card"; // New import
+import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Palette } from "lucide-react";
@@ -18,8 +18,8 @@ const initialMockUser: UserProfile = {
   joinedDate: new Date(2025, 5, 1), // June 1st, 2025
   age: 36,
   gender: "Female",
-  heightValue: 162.56, // Example height in cm
-  heightUnit: 'ft/in',   // Example unit
+  heightValue: 162.56, 
+  heightUnit: 'ft/in',   
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -61,7 +61,6 @@ export default function ProfilePage() {
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
           parsedProfile.heightUnit = parsedProfile.heightUnit !== undefined ? parsedProfile.heightUnit : initialMockUser.heightUnit;
           
-          // Load workout preferences
           parsedProfile.workoutsPerWeek = parsedProfile.workoutsPerWeek !== undefined ? parsedProfile.workoutsPerWeek : initialMockUser.workoutsPerWeek;
           parsedProfile.sessionTimeMinutes = parsedProfile.sessionTimeMinutes !== undefined ? parsedProfile.sessionTimeMinutes : initialMockUser.sessionTimeMinutes;
           parsedProfile.experienceLevel = parsedProfile.experienceLevel !== undefined ? parsedProfile.experienceLevel : initialMockUser.experienceLevel;
@@ -132,11 +131,7 @@ export default function ProfilePage() {
             user={userProfile} 
             onUpdate={handleProfileDetailsUpdate}
           />
-          <GoalSetterCard 
-            initialGoals={userProfile.fitnessGoals} 
-            onGoalsChange={handleGoalsUpdate} 
-          />
-           <WorkoutPreferencesCard
+          <WorkoutPreferencesCard
             preferences={{
               workoutsPerWeek: userProfile.workoutsPerWeek,
               sessionTimeMinutes: userProfile.sessionTimeMinutes,
@@ -145,6 +140,10 @@ export default function ProfilePage() {
             }}
             onUpdate={handlePreferencesUpdate}
           />
+          <GoalSetterCard 
+            initialGoals={userProfile.fitnessGoals} 
+            onGoalsChange={handleGoalsUpdate} 
+          />
         </>
       ) : (
         <>
@@ -152,11 +151,7 @@ export default function ProfilePage() {
                 user={initialMockUser} 
                 onUpdate={handleProfileDetailsUpdate}
             />
-            <GoalSetterCard 
-                initialGoals={initialMockUser.fitnessGoals} 
-                onGoalsChange={handleGoalsUpdate} 
-            />
-            <WorkoutPreferencesCard
+             <WorkoutPreferencesCard
                 preferences={{
                   workoutsPerWeek: initialMockUser.workoutsPerWeek,
                   sessionTimeMinutes: initialMockUser.sessionTimeMinutes,
@@ -165,6 +160,10 @@ export default function ProfilePage() {
                 }}
                 onUpdate={handlePreferencesUpdate}
           />
+            <GoalSetterCard 
+                initialGoals={initialMockUser.fitnessGoals} 
+                onGoalsChange={handleGoalsUpdate} 
+            />
         </>
       )}
       
