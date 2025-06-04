@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -26,9 +27,10 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       name: z.string().describe('The name of the exercise.'),
       sets: z.number().describe('The number of sets performed.'),
       reps: z.number().describe('The number of repetitions performed for each set.'),
-      weight: z.number().describe('The weight used for each set, in kilograms.'),
+      weight: z.number().describe('The weight used for each set.'),
+      weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified.'),
     })
-  ).describe('A list of exercises parsed from the screenshot, with details about sets, reps, and weight.'),
+  ).describe('A list of exercises parsed from the screenshot, with details about sets, reps, weight, and weight unit.'),
 });
 export type ParseWorkoutScreenshotOutput = z.infer<typeof ParseWorkoutScreenshotOutputSchema>;
 
@@ -48,7 +50,7 @@ Your goal is to extract the exercise data from the screenshot and return it in a
 Here is the screenshot:
 {{media url=photoDataUri}}
 
-Return the exercises with name, sets, reps and weights used.
+Return the exercises with name, sets, reps, weight, and the unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg'.
 `,config: {
     safetySettings: [
       {
@@ -75,6 +77,14 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
+    // Post-process to ensure weightUnit defaults to 'kg' if undefined by the model
+    if (output && output.exercises) {
+      output.exercises = output.exercises.map(ex => ({
+        ...ex,
+        weightUnit: ex.weightUnit || 'kg'
+      }));
+    }
     return output!;
   }
 );
+

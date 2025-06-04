@@ -20,8 +20,8 @@ const initialSampleLogs: WorkoutLog[] = [
     id: "1",
     date: new Date("2024-07-20"),
     exercises: [
-      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80 },
-      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100 },
+      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80, weightUnit: "kg" },
+      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100, weightUnit: "kg" },
     ],
     notes: "Felt strong today!",
   },
@@ -29,8 +29,8 @@ const initialSampleLogs: WorkoutLog[] = [
     id: "2",
     date: new Date("2024-07-18"),
     exercises: [
-      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120 },
-      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50 },
+      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120, weightUnit: "kg" },
+      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50, weightUnit: "kg" },
     ],
   },
 ];
@@ -59,7 +59,7 @@ export default function HistoryPage() {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogs).map((log: any) => ({
             ...log,
             date: new Date(log.date), // Convert date string back to Date object
-            exercises: log.exercises.map((ex: Exercise) => ({...ex})) // Ensure exercises are correctly typed
+            exercises: log.exercises.map((ex: Exercise) => ({...ex, weightUnit: ex.weightUnit || 'kg'})) // Ensure exercises are correctly typed and default unit
           }));
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
@@ -82,7 +82,7 @@ export default function HistoryPage() {
     const newLog: WorkoutLog = {
       ...data,
       id: Date.now().toString(),
-      exercises: data.exercises.map(ex => ({...ex, id: Math.random().toString(36).substring(2,9)}))
+      exercises: data.exercises.map(ex => ({...ex, id: Math.random().toString(36).substring(2,9), weightUnit: ex.weightUnit || 'kg'}))
     };
     setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
     toast({
@@ -99,6 +99,7 @@ export default function HistoryPage() {
       exercises: parsedData.exercises.map(ex => ({
         ...ex,
         id: Math.random().toString(36).substring(2,9),
+        weightUnit: ex.weightUnit || 'kg', // Ensure weightUnit is set, default to 'kg'
       })),
       notes: "Parsed from screenshot.",
     };
@@ -197,3 +198,4 @@ export default function HistoryPage() {
     </div>
   );
 }
+

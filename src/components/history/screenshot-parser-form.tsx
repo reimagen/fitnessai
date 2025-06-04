@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type ChangeEvent } from "react";
@@ -110,14 +111,15 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
             <ul className="space-y-1 text-xs text-muted-foreground">
               {parsedResult.exercises.map((ex, index) => (
                 <li key={index}>
-                  <strong>{ex.name}:</strong> {ex.sets} sets, {ex.reps} reps @ {ex.weight}kg
+                  <strong>{ex.name}:</strong> {ex.sets} sets, {ex.reps} reps @ {ex.weight}{ex.weightUnit || 'kg'}
                 </li>
               ))}
             </ul>
-            <p className="text-xs text-muted-foreground mt-2">This data has been added to your log below (if implemented).</p>
+            <p className="text-xs text-muted-foreground mt-2">This data has been added to your log below.</p>
           </CardContent>
         </Card>
       )}
     </div>
   );
 }
+

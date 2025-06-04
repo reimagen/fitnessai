@@ -5,6 +5,7 @@ export interface Exercise {
   sets: number;
   reps: number;
   weight: number; // in kg
+  weightUnit?: 'kg' | 'lbs'; // Added weightUnit
 }
 
 export interface WorkoutLog {

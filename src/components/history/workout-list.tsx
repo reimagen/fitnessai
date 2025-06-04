@@ -83,7 +83,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                   <TableHead className="w-[40%]">Exercise</TableHead>
                   <TableHead className="text-right">Sets</TableHead>
                   <TableHead className="text-right">Reps</TableHead>
-                  <TableHead className="text-right">Weight (kg)</TableHead>
+                  <TableHead className="text-right">Weight</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -97,7 +97,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                     </TableCell>
                     <TableCell className="text-right">{exercise.sets}</TableCell>
                     <TableCell className="text-right">{exercise.reps}</TableCell>
-                    <TableCell className="text-right">{exercise.weight}</TableCell>
+                    <TableCell className="text-right">{exercise.weight}{exercise.weightUnit || 'kg'}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
