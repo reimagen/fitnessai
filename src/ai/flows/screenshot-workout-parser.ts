@@ -22,7 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
-  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible, infer the year based on the current date at the time of processing.'),
+  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible in the image, default to the year 2025.'),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -60,11 +60,11 @@ Key Instructions:
     *   Extract the date of the workout. Format as YYYY-MM-DD.
     *   **Priority 1: Explicit Year in Image**: If a year is EXPLICITLY WRITTEN in the screenshot (e.g., "June 2, 2023", "06/02/23"), you MUST use that year.
     *   **Priority 2: No Explicit Year in Image**: If the screenshot shows a month and day (e.g., "June 2", "Wed, Jun 4") but **ABSOLUTELY NO YEAR is written or displayed anywhere in the image**:
-        *   You MUST use the **ACTUAL CURRENT CALENDAR YEAR** of when this request is being processed. This "current calendar year" is dynamic and depends on the real-world date you are processing this.
-        *   For example: If you are processing this on January 15, **2027**, and the image only shows "Jan 10" (no year), the \`workoutDate\` MUST be "2027-01-10".
-        *   If you are processing this on July 5, **2025**, and the image only shows "Jul 1" (no year), the \`workoutDate\` MUST be "2025-07-01".
-        *   **Crucially, if no year is visible in the image, DO NOT default to 2024 or any other specific past year from your training data unless that specific past year is the true current processing year.**
-        *   Do NOT attempt to infer a year based on the day of the week if no year is visible in the image (e.g., "Wed, Jun 4" does not imply a specific past year if no year is written).
+        *   You MUST use the year **2025** for the \`workoutDate\`.
+        *   For example: If the image shows "Jan 10" (no year visible), the \`workoutDate\` MUST be "2025-01-10".
+        *   If the image shows "Jul 1" (no year visible), the \`workoutDate\` MUST be "2025-07-01".
+        *   **Crucially, if no year is visible in the image, DO NOT default to 2024 or any other specific year from your training data. You MUST use 2025.**
+        *   Do NOT attempt to infer a year based on the day of the week if no year is visible in the image (e.g., "Wed, Jun 4" does not imply a specific past year if no year is written; use 2025 in such cases).
     *   **If no date information can be extracted at all**, you may omit the \`workoutDate\` field.
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
