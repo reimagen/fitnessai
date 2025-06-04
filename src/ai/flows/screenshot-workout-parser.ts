@@ -24,12 +24,12 @@ export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotI
 const ParseWorkoutScreenshotOutputSchema = z.object({
   exercises: z.array(
     z.object({
-      name: z.string().describe('The name of the exercise.'),
+      name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
       sets: z.number().describe('The number of sets performed.'),
       reps: z.number().describe('The number of repetitions performed for each set.'),
       weight: z.number().describe('The weight used for each set.'),
       weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified.'),
-      category: z.string().optional().describe('The category of the exercise (e.g., Lower Body, Upper Body, Cardio).'),
+      category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional().describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name if not explicitly stated.'),
       distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling).'),
       distanceUnit: z.enum(['mi', 'km']).optional().describe('The unit of distance (mi or km).'),
       duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds).'),
@@ -53,20 +53,22 @@ const prompt = ai.definePrompt({
 You will be provided with a screenshot of a workout log.
 Your goal is to extract the exercise data from the screenshot and return it in a structured JSON format.
 
+Key Instructions:
+1.  **Exercise Name**:
+    *   Extract the name of the exercise.
+    *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
+2.  **Exercise Category**:
+    *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
+    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit, use "Other".
+3.  **Weight Unit**:
+    *   Identify the unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg'.
+4.  **Other Fields**:
+    *   Extract sets, reps, and weight.
+    *   Also extract distance, distanceUnit, duration, durationUnit, and calories if available.
+    *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
+
 Here is the screenshot:
 {{media url=photoDataUri}}
-
-Return the exercises with name, sets, reps, weight.
-Also extract the following if available:
-- weightUnit: The unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg'.
-- category: The type of exercise (e.g., Lower Body, Upper Body, Cardio).
-- distance: The distance covered.
-- distanceUnit: The unit for distance (e.g., mi, km).
-- duration: The time taken for the exercise.
-- durationUnit: The unit for duration (e.g., min, hr, sec).
-- calories: The estimated calories burned.
-
-If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A', do not include that field in the output for that exercise.
 `,
   config: {
     safetySettings: [
@@ -95,11 +97,19 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     if (output && output.exercises) {
-      output.exercises = output.exercises.map(ex => ({
-        ...ex,
-        weightUnit: ex.weightUnit || 'kg'
-      }));
+      output.exercises = output.exercises.map(ex => {
+        let name = ex.name;
+        if (name.toLowerCase().startsWith('egym ')) {
+          name = name.substring(5);
+        }
+        return {
+          ...ex,
+          name: name,
+          weightUnit: ex.weightUnit || 'kg'
+        };
+      });
     }
     return output!;
   }
 );
+
