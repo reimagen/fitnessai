@@ -156,39 +156,37 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="pb-4"> {/* Changed: rely on default flex-col and space-y */}
+      <CardHeader className="pb-4 relative"> {/* Added relative positioning context */}
         <div>
           {isEditing ? (
             <Input
               type="text"
               value={editedName}
               onChange={(e) => setEditedName(e.target.value)}
-              className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
+              className="text-2xl font-headline font-semibold leading-none tracking-tight w-full mb-1"
               aria-label="Edit user name"
             />
           ) : (
-            <CardTitle className="font-headline text-3xl">{user.name}</CardTitle>
+            <CardTitle className="font-headline text-3xl mb-1">{user.name}</CardTitle>
           )}
+          <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
         </div>
         
-        <div className="flex justify-between items-center w-full mt-1">
-          <p className="text-sm text-muted-foreground">Joined: June 1, 2025</p>
-          <div className="flex gap-2">
-            {isEditing ? (
-              <>
-                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-                  <XCircle className="h-5 w-5" />
-                </Button>
-                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
-                  <Save className="h-5 w-5" />
-                </Button>
-              </>
-            ) : (
-              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
-                <Edit2 className="h-5 w-5" />
+        <div className="absolute top-6 right-6 flex gap-2"> {/* Buttons positioned top-right */}
+          {isEditing ? (
+            <>
+              <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                <XCircle className="h-5 w-5" />
               </Button>
-            )}
-          </div>
+              <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
+                <Save className="h-5 w-5" />
+              </Button>
+            </>
+          ) : (
+            <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
+              <Edit2 className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
