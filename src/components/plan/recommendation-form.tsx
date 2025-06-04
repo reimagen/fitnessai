@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { WorkoutRecommendationInput, WorkoutRecommendationOutput } from "@/ai/flows/workout-recommendation";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Added useEffect
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -32,23 +33,44 @@ const formSchema = z.object({
   }),
 });
 
-type RecommendationFormProps = {
-  onRecommendation: (data: WorkoutRecommendationInput) => Promise<{ success: boolean; data?: WorkoutRecommendationOutput; error?: string | object }>;
+// This type should ideally be shared or imported if PlanPage exports it.
+// For now, re-declaring for clarity within this component.
+type FormDataForPlan = {
+  fitnessGoals: string;
+  workoutHistory: string;
+  personalStats: string;
 };
 
-export function RecommendationForm({ onRecommendation }: RecommendationFormProps) {
+type RecommendationFormProps = {
+  onRecommendation: (data: WorkoutRecommendationInput) => Promise<{ success: boolean; data?: WorkoutRecommendationOutput; error?: string | object }>;
+  initialFormData?: FormDataForPlan;
+};
+
+export function RecommendationForm({ onRecommendation, initialFormData }: RecommendationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [recommendationResult, setRecommendationResult] = useState<WorkoutRecommendationOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    // Default values will be set by useEffect if initialFormData is provided
+    defaultValues: initialFormData || {
       fitnessGoals: "",
       workoutHistory: "",
       personalStats: "",
     },
   });
+
+  // Effect to update form values when initialFormData changes
+  useEffect(() => {
+    if (initialFormData) {
+      form.reset({
+        fitnessGoals: initialFormData.fitnessGoals,
+        workoutHistory: initialFormData.workoutHistory,
+        personalStats: initialFormData.personalStats,
+      });
+    }
+  }, [initialFormData, form]); // form.reset is stable, so form is added. Or form.reset.
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
