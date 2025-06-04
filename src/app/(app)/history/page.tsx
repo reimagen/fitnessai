@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { ScreenshotParserForm } from "@/components/history/screenshot-parser-form";
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
@@ -56,6 +56,7 @@ export default function HistoryPage() {
   const [isClient, setIsClient] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(defaultTabValue);
+  const manualLogCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -110,6 +111,12 @@ export default function HistoryPage() {
       localStorage.setItem(LOCAL_STORAGE_KEY_WORKOUTS, JSON.stringify(workoutLogs));
     }
   }, [workoutLogs, isClient]);
+
+  useEffect(() => {
+    if (editingLogId && activeTab === 'log' && manualLogCardRef.current) {
+      manualLogCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [editingLogId, activeTab]);
 
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => {
     const processedExercises = data.exercises.map(ex => ({
@@ -250,6 +257,7 @@ export default function HistoryPage() {
     if (logToEdit) {
       setEditingLogId(logId);
       setActiveTab('log');
+      // Scroll will be handled by the useEffect hook watching editingLogId and activeTab
     } else {
       toast({
         title: "Error",
@@ -287,7 +295,7 @@ export default function HistoryPage() {
         </TabsList>
 
         <TabsContent value="log">
-          <Card className="shadow-lg">
+          <Card ref={manualLogCardRef} className="shadow-lg">
             <CardHeader>
               <CardTitle className="font-headline">{editingLogId ? "Edit Workout Log" : "Log New Workout"}</CardTitle>
               <CardDescription>{editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}</CardDescription>
