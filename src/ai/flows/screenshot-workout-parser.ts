@@ -58,7 +58,7 @@ Key Instructions:
 1.  **Workout Date**:
     *   Extract the date of the workout from the screenshot. If a year is explicitly present in the screenshot (e.g., "June 2, 2024"), use that year.
     *   Format this date as YYYY-MM-DD.
-    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), infer the year based on the current date at the time of this processing. For example, if this processing occurs in 2024 and the image shows "Jun 2" without a year, the \`workoutDate\` should be "2024-06-02". If this processing occurs in 2025 and the image shows "Jun 2", it should be "2025-06-02".
+    *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), infer the year based on the current date at the time of this processing. For example, if this processing occurs in 2024 and the image shows "Jun 2" without a year, the \\\`workoutDate\\\` should be "2024-06-02". If this processing occurs in 2025 and the image shows "Jun 2", it should be "2025-06-02".
 2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
@@ -67,26 +67,26 @@ Key Instructions:
     *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit (or a tag like "Endurance" is present for a cardio activity), use "Other" or infer "Cardio" as appropriate.
 4.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
-        *   Prioritize extracting \`distance\`, \`distanceUnit\`, \`duration\`, \`durationUnit\`, and \`calories\`.
-        *   For these "Cardio" exercises, \`sets\`, \`reps\`, and \`weight\` should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: \`sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96\`.
-        *   Do not mistake distance values (like "5383 ft") for \`reps\`.
+        *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`.
+        *   For these "Cardio" exercises, \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\` should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: \\\`sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96\\\`.
+        *   Do not mistake distance values (like "5383 ft") for \\\`reps\\\`.
 5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
-    *   For these categories, prioritize extracting \`sets\`, \`reps\`, \`weight\`, \`weightUnit\`, and \`calories\`.
-    *   \`distance\` and \`duration\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
+    *   For these categories, prioritize extracting \\\`sets\\\`, \\\`reps\\\`, \\\`weight\\\`, \\\`weightUnit\\\`, and \\\`calories\\\`.
+    *   \\\`distance\\\` and \\\`duration\\\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
 6.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs).
     *   If you see "lbs00" or "kg00" in the screenshot, interpret this as "lbs" or "kg" respectively. The "00" is an artifact and not part of the unit.
-    *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, \`weightUnit\` can be omitted or kept as default.
+    *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, \\\`weightUnit\\\` can be omitted or kept as default.
 7.  **Duration Parsing**:
-    *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so \`duration: 566, durationUnit: 'sec'\`). If it's simpler (e.g., "30 min"), parse as is (\`duration: 30, durationUnit: 'min'\`).
+    *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so \\\`duration: 566, durationUnit: 'sec'\\\`). If it's simpler (e.g., "30 min"), parse as is (\\\`duration: 30, durationUnit: 'min'\\\`).
 8.  **Distance Unit**:
-    *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be \`distance: 5383, distanceUnit: 'ft'\`).
+    *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be \\\`distance: 5383, distanceUnit: 'ft'\\\`).
 9.  **Duplicate Exercises in Screenshot**:
     *   If an exercise (e.g., "Treadmill") appears *only once* in the screenshot, it MUST be listed *only once* in the output.
     *   If the exact same exercise (same name and all details like duration, distance, etc.) appears multiple times *within the same screenshot*, then list each instance as a separate exercise entry in the output. Do not attempt to aggregate them. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear).
 10. **Other Fields (for non-Cardio exercises primarily)**:
-    *   Extract \`sets\`, \`reps\`, and \`weight\`.
-    *   Also extract \`calories\` if available.
+    *   Extract \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\`.
+    *   Also extract \\\`calories\\\` if available.
     *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
 
 Here is the screenshot:
@@ -119,24 +119,26 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
   async input => {
     const {output} = await prompt(input);
     if (output && output.exercises) {
-      output.exercises = output.exercises.map(ex => {
+      const modifiedExercises = output.exercises.map(ex => {
         let name = ex.name;
         if (name.toLowerCase().startsWith('egym ')) {
           name = name.substring(5);
         }
         
-        let finalWeightUnit = ex.weightUnit;
-        // Correct "lbs00" or "kg00" if AI picked it up literally
-        if (finalWeightUnit === 'lbs00' as any) { // Use 'as any' for this specific check if Zod enum complains
-          finalWeightUnit = 'lbs';
-        } else if (finalWeightUnit === 'kg00' as any) {
-          finalWeightUnit = 'kg';
+        let finalWeightUnit: 'kg' | 'lbs' | undefined = undefined;
+        if (ex.weightUnit) {
+            const rawUnit = String(ex.weightUnit).trim().toLowerCase();
+            if (rawUnit === 'lbs00' || rawUnit === 'lbs') {
+                finalWeightUnit = 'lbs';
+            } else if (rawUnit === 'kg00' || rawUnit === 'kg') {
+                finalWeightUnit = 'kg';
+            }
         }
 
         if (ex.weight !== undefined && ex.weight > 0 && !finalWeightUnit) {
           finalWeightUnit = 'kg'; 
-        } else if (ex.weight === undefined || ex.weight === 0) {
-            if (!finalWeightUnit) finalWeightUnit = undefined;
+        } else if ((ex.weight === undefined || ex.weight === 0) && !finalWeightUnit) {
+            finalWeightUnit = undefined;
         }
 
         let finalSets = ex.sets ?? 0;
@@ -147,19 +149,17 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         let finalDistanceUnit = ex.distanceUnit;
         let finalDurationUnit = ex.durationUnit;
 
-
         if (ex.category === 'Cardio') {
-            finalSets = ex.sets ?? 0; 
-            finalReps = ex.reps ?? 0;
-            finalWeight = ex.weight ?? 0;
-            if (finalWeight === 0) finalWeightUnit = undefined; 
-        } else {
-            finalDistance = ex.distance ?? 0; 
-            finalDuration = ex.duration ?? 0;
-            if (finalDistance === 0) finalDistanceUnit = undefined; 
-            if (finalDuration === 0) finalDurationUnit = undefined; 
+            finalSets = 0; 
+            finalReps = 0;
+            finalWeight = 0;
+            finalWeightUnit = undefined; // Cardio doesn't use weight/unit
+        } else { // Non-Cardio
+            finalDistance = 0; 
+            finalDuration = 0;
+            finalDistanceUnit = undefined; 
+            finalDurationUnit = undefined; 
         }
-
 
         return {
           ...ex,
@@ -174,6 +174,11 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           durationUnit: finalDurationUnit,
         };
       });
+      // Return a new object with the modified exercises array
+      return {
+        ...output,
+        exercises: modifiedExercises,
+      };
     }
     return output!;
   }
