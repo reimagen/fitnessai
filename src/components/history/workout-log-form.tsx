@@ -277,7 +277,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   name={`exercises.${index}.distance`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Distance (Optional)</FormLabel>
+                      <FormLabel>Distance</FormLabel>
                       <FormControl>
                         <Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
@@ -312,7 +312,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   name={`exercises.${index}.duration`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Duration (Optional)</FormLabel>
+                      <FormLabel>Duration</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
@@ -347,7 +347,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   name={`exercises.${index}.calories`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Calories (Optional)</FormLabel>
+                      <FormLabel>Calories</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
