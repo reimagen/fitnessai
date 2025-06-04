@@ -59,32 +59,41 @@ Key Instructions:
     *   Extract the date of the workout from the screenshot. If a year is explicitly present in the screenshot (e.g., "June 2, 2024"), use that year.
     *   Format this date as YYYY-MM-DD.
     *   If the year is not explicitly visible in the screenshot (e.g., "Mon, Jun 2"), infer the year based on the current date at the time of this processing. For example, if this processing occurs in 2024 and the image shows "Jun 2" without a year, the \\\`workoutDate\\\` should be "2024-06-02". If this processing occurs in 2025 and the image shows "Jun 2", it should be "2025-06-02".
-2.  **Exercise Name**:
+2.  **Data Cleaning and OCR Artifacts**:
+    *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
+    *   Ignore common OCR (Optical Character Recognition) artifacts. For instance:
+        *   If you see "000- 5383 ft", the distance is \\\`5383\\\` and unit is \\\`ft\\\`. The "000-" prefix is an artifact.
+        *   If you see "566 sec0", the duration is \\\`566\\\` and unit is \\\`sec\\\`. The trailing "0" is an artifact.
+        *   Ensure all numerical fields in your output are actual numbers, not strings containing numbers and artifacts.
+3.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
-3.  **Exercise Category**:
+4.  **Exercise Category**:
     *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
     *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit (or a tag like "Endurance" is present for a cardio activity), use "Other" or infer "Cardio" as appropriate.
-4.  **Specific Handling for "Cardio" Exercises**:
+5.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
         *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`.
         *   For these "Cardio" exercises, \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\` should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: \\\`sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96\\\`.
         *   Do not mistake distance values (like "5383 ft") for \\\`reps\\\`.
-5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
+6.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
     *   For these categories, prioritize extracting \\\`sets\\\`, \\\`reps\\\`, \\\`weight\\\`, \\\`weightUnit\\\`, and \\\`calories\\\`.
     *   \\\`distance\\\` and \\\`duration\\\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
-6.  **Weight Unit**:
+7.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs).
     *   If you see "lbs00" or "kg00" in the screenshot, interpret this as "lbs" or "kg" respectively. The "00" is an artifact and not part of the unit.
     *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, \\\`weightUnit\\\` can be omitted or kept as default.
-7.  **Duration Parsing**:
+8.  **Duration Parsing**:
     *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so \\\`duration: 566, durationUnit: 'sec'\\\`). If it's simpler (e.g., "30 min"), parse as is (\\\`duration: 30, durationUnit: 'min'\\\`).
-8.  **Distance Unit**:
+9.  **Distance Unit**:
     *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be \\\`distance: 5383, distanceUnit: 'ft'\\\`).
-9.  **Duplicate Exercises in Screenshot**:
-    *   If an exercise (e.g., "Treadmill") appears *only once* in the screenshot, it MUST be listed *only once* in the output.
-    *   If the exact same exercise (same name and all details like duration, distance, etc.) appears multiple times *within the same screenshot*, then list each instance as a separate exercise entry in the output. Do not attempt to aggregate them. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear).
-10. **Other Fields (for non-Cardio exercises primarily)**:
+10. **Critical: Avoid Duplicating Single Exercise Entries**:
+    *   Pay very close attention to how many times an exercise is *actually logged* in the screenshot.
+    *   If an exercise like "Treadmill" and its associated stats (e.g., "5383 ft, 566 sec") appear as a *single distinct entry* in the image, you MUST list it *only once* in your output.
+    *   Do NOT create multiple identical entries for an exercise if it's just one logged item in the image.
+    *   Only if the screenshot clearly shows the *same exercise name* logged *multiple separate times* with potentially different stats (e.g., "Bench Press: 3 sets..." and then later "Bench Press: 4 sets..."), should you list each of those distinct logs.
+    *   The items "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear.
+11. **Other Fields (for non-Cardio exercises primarily)**:
     *   Extract \\\`sets\\\`, \\\`reps\\\`, and \\\`weight\\\`.
     *   Also extract \\\`calories\\\` if available.
     *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
