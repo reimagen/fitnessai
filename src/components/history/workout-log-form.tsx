@@ -69,7 +69,11 @@ const defaultExerciseValues: Omit<Exercise, 'id'> = {
 export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit }: WorkoutLogFormProps) {
   const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
-    // Default values are set in useEffect to handle initialData changes
+    defaultValues: { // Provide initial default values here
+      date: new Date().toISOString().split('T')[0],
+      notes: "",
+      exercises: [defaultExerciseValues],
+    }
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -83,21 +87,21 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         date: initialData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         notes: initialData.notes || "",
         exercises: initialData.exercises?.map(ex => ({
-          id: ex.id, // Preserve ID for editing
-          name: ex.name || "", // Ensure name is always a string
+          id: ex.id,
+          name: ex.name || "",
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
           weightUnit: ex.weightUnit || 'kg',
-          category: ex.category || "", // Ensure category is always a string
+          category: ex.category || "",
           distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit, // Select component handles undefined for placeholder
+          distanceUnit: ex.distanceUnit,
           duration: ex.duration ?? 0,
-          durationUnit: ex.durationUnit, // Select component handles undefined for placeholder
+          durationUnit: ex.durationUnit,
           calories: ex.calories ?? 0,
         })) || [defaultExerciseValues],
       });
-    } else {
+    } else if (!editingLogId) { // Reset to default if not editing (e.g., after an edit is cancelled or new log submitted)
       form.reset({
         date: new Date().toISOString().split('T')[0],
         notes: "",
@@ -114,7 +118,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
-          category: ex.category || "", // Ensure empty string if not provided
+          category: ex.category || "",
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
@@ -233,7 +237,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Weight Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value || "kg"}>
+                      <Select onValueChange={field.onChange} value={field.value || "kg"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unit" />
@@ -267,7 +271,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Distance Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unit" />
@@ -301,7 +305,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Duration Unit</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unit" />
