@@ -18,6 +18,8 @@ type WorkoutListProps = {
   onDelete?: (logId: string) => void;
 };
 
+const FEET_IN_A_MILE = 5280;
+
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -43,6 +45,20 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         </CardContent>
       </Card>
     );
+  }
+
+  const formatDistanceForDisplay = (distance?: number, unit?: 'mi' | 'km' | 'ft'): string => {
+    if (distance === undefined || distance === null || distance <= 0) return "-";
+    if (unit === 'ft') {
+      const miles = distance / FEET_IN_A_MILE;
+      return `${miles.toFixed(2)} mi`;
+    }
+    return `${distance} ${unit || ''}`.trim();
+  };
+
+  const formatCaloriesForDisplay = (calories?: number): string => {
+    if (calories === undefined || calories === null || calories <= 0) return "-";
+    return `${calories} kcal`;
   }
 
   return (
@@ -110,18 +126,18 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                       </div>
                     </TableCell>
                     <TableCell className="text-left">{exercise.category || "-"}</TableCell>
-                    <TableCell className="text-right">{exercise.sets}</TableCell>
-                    <TableCell className="text-right">{exercise.reps}</TableCell>
+                    <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
+                    <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
                     <TableCell className="text-right">
-                        {exercise.weight > 0 ? `${exercise.weight}${exercise.weightUnit || 'kg'}` : "-"}
+                        {exercise.weight && exercise.weight > 0 ? `${exercise.weight}${exercise.weightUnit || 'kg'}` : "-"}
                     </TableCell>
                     <TableCell className="text-right">
-                        {exercise.distance ? `${exercise.distance} ${exercise.distanceUnit || ''}`.trim() : "-"}
+                        {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
                     </TableCell>
                     <TableCell className="text-right">
-                        {exercise.duration ? `${exercise.duration} ${exercise.durationUnit || ''}`.trim() : "-"}
+                        {exercise.duration && exercise.duration > 0 ? `${exercise.duration} ${exercise.durationUnit || ''}`.trim() : "-"}
                     </TableCell>
-                    <TableCell className="text-right">{exercise.calories || "-"}</TableCell>
+                    <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
