@@ -8,8 +8,8 @@ export interface Exercise {
   weightUnit?: 'kg' | 'lbs';
   category?: string;
   distance?: number;
-  distanceUnit?: 'mi' | 'km';
-  duration?: number; // Consider a consistent unit, e.g., minutes, or add durationUnit
+  distanceUnit?: 'mi' | 'km' | 'ft'; // Added 'ft'
+  duration?: number;
   durationUnit?: 'min' | 'hr' | 'sec';
   calories?: number;
 }
@@ -49,3 +49,4 @@ export interface UserProfile {
   experienceLevel?: ExperienceLevel;
   aiPreferencesNotes?: string; 
 }
+

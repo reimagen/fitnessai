@@ -32,7 +32,7 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified.'),
       category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional().describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name if not explicitly stated.'),
       distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling).'),
-      distanceUnit: z.enum(['mi', 'km']).optional().describe('The unit of distance (mi or km).'),
+      distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'), // Added 'ft'
       duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds).'),
       durationUnit: z.enum(['min', 'hr', 'sec']).optional().describe('The unit of duration (min, hr, or sec).'),
       calories: z.number().optional().describe('The number of calories burned.'),
@@ -64,12 +64,18 @@ Key Instructions:
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
 3.  **Exercise Category**:
     *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
-    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit, use "Other".
+    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit (or a tag like "Endurance" is present for a cardio activity), use "Other" or infer "Cardio" as appropriate.
 4.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs). If the unit is not clearly visible or specified, default to 'kg'.
-5.  **Other Fields**:
+5.  **Duration**:
+    *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so duration: 566, durationUnit: 'sec'). If it's simpler (e.g., "30 min"), parse as is (duration: 30, durationUnit: 'min').
+6.  **Distance Unit**:
+    *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be distance: 5383, distanceUnit: 'ft').
+7.  **Duplicate Exercises in Screenshot**:
+    *   If the exact same exercise (same name and details) appears multiple times *within the same screenshot*, list each instance as a separate exercise entry in the output. Do not attempt to aggregate them unless they are clearly distinct efforts. (e.g. "EGYM Abductor" and "EGYM Adductor" are different exercises).
+8.  **Other Fields**:
     *   Extract sets, reps, and weight.
-    *   Also extract distance, distanceUnit, duration, durationUnit, and calories if available.
+    *   Also extract calories if available.
     *   If a value for distance, duration, or calories is explicitly shown as '-' or 'N/A' in the screenshot, do not include that field in the output for that exercise.
 
 Here is the screenshot:
@@ -110,7 +116,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         return {
           ...ex,
           name: name,
-          weightUnit: ex.weightUnit || 'kg'
+          weightUnit: ex.weightUnit || 'kg' // Default weight unit if not parsed
         };
       });
     }

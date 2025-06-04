@@ -23,15 +23,15 @@ import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 
 const exerciseSchema = z.object({
-  id: z.string().optional(), // Keep existing ID if editing
+  id: z.string().optional(), 
   name: z.string().min(1, "Exercise name is required."),
   sets: z.coerce.number().min(0).optional(),
   reps: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
   weightUnit: z.enum(['kg', 'lbs']).optional(),
-  category: z.string().optional(), // Stays in schema for data consistency, but no form input
+  category: z.string().optional(), 
   distance: z.coerce.number().min(0).optional(),
-  distanceUnit: z.enum(['mi', 'km']).optional(),
+  distanceUnit: z.enum(['mi', 'km', 'ft']).optional(), // Added 'ft'
   duration: z.coerce.number().min(0).optional(),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional(),
   calories: z.coerce.number().min(0).optional(),
@@ -58,9 +58,9 @@ const defaultExerciseValues: Omit<Exercise, 'id'> = {
   reps: 0,
   weight: 0,
   weightUnit: "kg" as ('kg' | 'lbs'),
-  category: "", // Default to empty string, will not be user-editable in this form
+  category: "", 
   distance: 0,
-  distanceUnit: undefined as ('mi' | 'km' | undefined),
+  distanceUnit: undefined as ('mi' | 'km' | 'ft' | undefined), // Updated
   duration: 0,
   durationUnit: undefined as ('min' | 'hr' | 'sec' | undefined),
   calories: 0
@@ -93,7 +93,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
           weightUnit: ex.weightUnit || 'kg',
-          category: ex.category || "", // Keep existing category from data
+          category: ex.category || "", 
           distance: ex.distance ?? 0,
           distanceUnit: ex.distanceUnit,
           duration: ex.duration ?? 0,
@@ -118,7 +118,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
-          category: ex.category || "", // Will be "" if coming from this form, or populated if AI set it
+          category: ex.category || "", 
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
@@ -179,7 +179,6 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     </FormItem>
                   )}
                 />
-                {/* Category Field Removed */}
                 <FormField
                   control={form.control}
                   name={`exercises.${index}.sets`}
@@ -268,6 +267,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                         <SelectContent>
                           <SelectItem value="mi">mi</SelectItem>
                           <SelectItem value="km">km</SelectItem>
+                          <SelectItem value="ft">ft</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -328,7 +328,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           <Button
             type="button"
             variant="outline"
-            onClick={() => append(defaultExerciseValues as Exercise)} // Cast needed as defaultExerciseValues might be seen as partial by TS
+            onClick={() => append(defaultExerciseValues as Exercise)} 
             className="mt-2"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise

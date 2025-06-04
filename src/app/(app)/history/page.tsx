@@ -62,14 +62,14 @@ export default function HistoryPage() {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
             date: new Date(log.date),
-            exercises: log.exercises.map((ex: any) => ({ // Use 'any' for ex temporarily for easier defaulting
+            exercises: log.exercises.map((ex: any) => ({ 
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
               sets: ex.sets ?? 0,
               reps: ex.reps ?? 0,
               weight: ex.weight ?? 0,
               weightUnit: ex.weightUnit || 'kg',
-              category: ex.category,
+              category: ex.category || '',
               distance: ex.distance ?? 0,
               distanceUnit: ex.distanceUnit,
               duration: ex.duration ?? 0,
@@ -80,14 +80,14 @@ export default function HistoryPage() {
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
           console.error("Error parsing workout logs from localStorage. Initializing with empty logs.", error);
-          setWorkoutLogs([]);
+          setWorkoutLogs([]); // Safer fallback
         }
       } else {
-        // Initialize with sample logs if localStorage is empty, ensuring new fields default appropriately
          const logsWithDefaults = initialSampleLogs.map(log => ({
             ...log,
             exercises: log.exercises.map(ex => ({
                 ...ex,
+                category: ex.category || '',
                 distance: ex.distance ?? 0,
                 duration: ex.duration ?? 0,
                 calories: ex.calories ?? 0,
@@ -108,7 +108,7 @@ export default function HistoryPage() {
     const processedExercises = data.exercises.map(ex => ({
         id: ex.id || Math.random().toString(36).substring(2,9),
         name: ex.name,
-        category: ex.category,
+        category: ex.category || "", 
         sets: ex.sets ?? 0,
         reps: ex.reps ?? 0,
         weight: ex.weight ?? 0,
@@ -125,7 +125,7 @@ export default function HistoryPage() {
         if (log.id === editingLogId) {
           return {
             ...log,
-            ...data, // Submitted data (date, notes)
+            ...data, 
             exercises: processedExercises
           };
         }
@@ -155,31 +155,33 @@ export default function HistoryPage() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let logDate = new Date();
-    logDate.setHours(0,0,0,0);
+    let logDate = new Date(); // This will be today's date
+    logDate.setHours(0,0,0,0); // Normalize to start of day
     let notes = "Parsed from screenshot.";
     const currentYear = new Date().getFullYear();
+    let toastDescription = `${parsedData.exercises.length} exercises added.`;
 
     if (parsedData.workoutDate) {
       const dateParts = parsedData.workoutDate.split('-').map(Number);
       if (dateParts.length === 3) {
         const aiYear = dateParts[0];
-        const aiMonth = dateParts[1];
+        const aiMonth = dateParts[1]; // 1-indexed month from AI
         const aiDay = dateParts[2];
-        logDate = new Date(currentYear, aiMonth - 1, aiDay, 0, 0, 0, 0);
+        
+        logDate = new Date(currentYear, aiMonth - 1, aiDay, 0,0,0,0); // Use current year, AI's month & day
+        
         if (aiYear !== currentYear) {
             notes += ` Original year ${aiYear} from screenshot was updated to current year ${currentYear}.`;
         }
       } else {
         notes += " Could not fully parse date from screenshot; used current date (year overridden).";
-        const today = new Date();
-        logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
       }
+      toastDescription = `${parsedData.exercises.length} exercises added to your log for ${logDate.toLocaleDateString()}.`;
     } else {
       notes += " Date not found in screenshot; used current date.";
-      const today = new Date();
-      logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
+      toastDescription = `${parsedData.exercises.length} exercises added to a new log for today. You can edit this log to change its date and manually merge exercises with an existing day's workout.`;
     }
+
 
     const newLog: WorkoutLog = {
       id: Date.now().toString(),
@@ -191,7 +193,7 @@ export default function HistoryPage() {
         reps: ex.reps ?? 0,
         weight: ex.weight ?? 0,
         weightUnit: ex.weightUnit || 'kg',
-        category: ex.category,
+        category: ex.category || "",
         distance: ex.distance ?? 0,
         distanceUnit: ex.distanceUnit,
         duration: ex.duration ?? 0,
@@ -203,7 +205,7 @@ export default function HistoryPage() {
     setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
      toast({
       title: "Screenshot Parsed!",
-      description: `${parsedData.exercises.length} exercises added to your log for ${logDate.toLocaleDateString()}.`,
+      description: toastDescription,
       variant: "default",
     });
   };
