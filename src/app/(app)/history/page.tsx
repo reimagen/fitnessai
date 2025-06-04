@@ -54,31 +54,30 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (isClient) {
-      const savedLogs = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
-      if (savedLogs) {
+      const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
+      if (savedLogsString) {
         try {
-          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogs).map((log: any) => ({
+          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date), 
+            date: new Date(log.date),
             exercises: log.exercises.map((ex: Exercise) => ({
-              ...ex, 
+              ...ex,
               weightUnit: ex.weightUnit || 'kg',
-              // Ensure new fields are handled, even if undefined from old data
               category: ex.category,
               distance: ex.distance,
               distanceUnit: ex.distanceUnit,
               duration: ex.duration,
               durationUnit: ex.durationUnit,
               calories: ex.calories,
-            })) 
+            }))
           }));
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
-          console.error("Error parsing workout logs from localStorage", error);
-          setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime())); 
+          console.error("Error parsing workout logs from localStorage. Data might be corrupted. Initializing with empty logs.", error);
+          setWorkoutLogs([]); // Fallback to empty list if parsing fails, instead of sample data
         }
       } else {
-        setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime())); 
+        setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
       }
     }
   }, [isClient]);
@@ -94,8 +93,8 @@ export default function HistoryPage() {
       ...data,
       id: Date.now().toString(),
       exercises: data.exercises.map(ex => ({
-        ...ex, 
-        id: Math.random().toString(36).substring(2,9), 
+        ...ex,
+        id: Math.random().toString(36).substring(2,9),
         weightUnit: ex.weightUnit || 'kg'
       }))
     };
@@ -110,12 +109,11 @@ export default function HistoryPage() {
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
     const newLog: WorkoutLog = {
       id: Date.now().toString(),
-      date: new Date(), 
+      date: new Date(),
       exercises: parsedData.exercises.map(ex => ({
         ...ex,
         id: Math.random().toString(36).substring(2,9),
-        weightUnit: ex.weightUnit || 'kg', 
-        // category, distance, duration, calories will come from 'ex' if parsed
+        weightUnit: ex.weightUnit || 'kg',
       })),
       notes: "Parsed from screenshot.",
     };
@@ -126,7 +124,7 @@ export default function HistoryPage() {
       variant: "default",
     });
   };
-  
+
   const handleDeleteLog = (logId: string) => {
     setWorkoutLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
     toast({
@@ -135,7 +133,7 @@ export default function HistoryPage() {
       variant: "destructive"
     })
   }
-  
+
   const handleEditLog = (logId: string) => {
     toast({
       title: "Edit Log (Not Implemented)",
@@ -181,7 +179,7 @@ export default function HistoryPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="upload">
           <Card className="shadow-lg">
             <CardHeader>
