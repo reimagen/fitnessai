@@ -28,7 +28,7 @@ const exerciseSchema = z.object({
   sets: z.coerce.number().min(0).optional().default(0),
   reps: z.coerce.number().min(0).optional().default(0),
   weight: z.coerce.number().min(0).optional().default(0),
-  weightUnit: z.enum(['kg', 'lbs']).optional().default('kg'),
+  weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'), // Changed default to lbs
   category: z.string().optional().default(""), 
   distance: z.coerce.number().min(0).optional().default(0),
   distanceUnit: z.enum(['mi', 'km', 'ft']).optional(),
@@ -57,7 +57,7 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   sets: 0,
   reps: 0,
   weight: 0,
-  weightUnit: "kg",
+  weightUnit: "lbs", // Changed default to lbs
   category: "", 
   distance: 0,
   distanceUnit: undefined,
@@ -92,7 +92,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'kg',
+          weightUnit: ex.weightUnit || 'lbs', // Ensure editing also respects this default if undefined
           category: ex.category || "", 
           distance: ex.distance ?? 0,
           distanceUnit: ex.distanceUnit,
@@ -128,7 +128,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'kg',
+          weightUnit: ex.weightUnit || 'lbs', // Ensure submission also respects this if undefined
           distance: ex.distance ?? 0,
           distanceUnit: ex.distanceUnit,
           duration: ex.duration ?? 0,
@@ -230,7 +230,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Weight Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "kg"}>
+                      <Select onValueChange={field.onChange} value={field.value || "lbs"}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Unit" />
