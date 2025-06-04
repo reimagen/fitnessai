@@ -31,7 +31,7 @@ const fallbackUserProfile: UserProfile = {
   aiPreferencesNotes: "",
 };
 
-// Helper function to get display height (moved here, was in types.ts or global before)
+// Helper function to get display height
 const getDisplayHeight = (heightValue?: number, heightUnit?: 'cm' | 'ft/in'): string => {
   if (heightValue === undefined || heightUnit === undefined) return "Not set";
   if (heightUnit === 'cm') {
@@ -170,7 +170,7 @@ export default function PlanPage() {
           <CardDescription>
             {userProfile === fallbackUserProfile || !userProfile // Check if using fallback or still null
               ? "Provide your details or update your profile for a better plan."
-              : "We've pre-filled this from your profile. You can adjust it for this specific plan."}
+              : "We've pre-filled information from your profile, this section is for you to update with anything extra you'd like AI to consider when forming your weekly workout plans (any recent injuries, equipment preferences/exclusions, etc.)."}
           </CardDescription>
         </CardHeader>
         <CardContent>
