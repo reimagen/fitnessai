@@ -41,12 +41,14 @@ const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 export default function HistoryPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const initialTab = searchParams.get('tab');
+  const initialTabQueryParam = searchParams.get('tab');
   const validTabs = ['log', 'screenshot', 'upload'];
-  const defaultTabValue = initialTab && validTabs.includes(initialTab) ? initialTab : 'log';
+  const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
 
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>(defaultTabValue);
 
   useEffect(() => {
     setIsClient(true);
@@ -59,9 +61,10 @@ export default function HistoryPage() {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
             ...log,
-            date: new Date(log.date), // Ensure date is a Date object
+            date: new Date(log.date), 
             exercises: log.exercises.map((ex: Exercise) => ({
               ...ex,
+              id: ex.id || Math.random().toString(36).substring(2,9), // Ensure exercise ID exists
               weightUnit: ex.weightUnit || 'kg',
               category: ex.category,
               distance: ex.distance,
@@ -77,7 +80,6 @@ export default function HistoryPage() {
           setWorkoutLogs([]); 
         }
       } else {
-        // Only use initialSampleLogs if localStorage is truly empty
         setWorkoutLogs(initialSampleLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
       }
     }
@@ -89,53 +91,74 @@ export default function HistoryPage() {
     }
   }, [workoutLogs, isClient]);
 
-  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
-    const newLog: WorkoutLog = {
-      ...data,
-      id: Date.now().toString(),
-      exercises: data.exercises.map(ex => ({
-        ...ex,
-        id: Math.random().toString(36).substring(2,9),
-        weightUnit: ex.weightUnit || 'kg'
-      }))
-    };
-    setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
-    toast({
-      title: "Workout Logged!",
-      description: `Your workout on ${data.date.toLocaleDateString()} has been saved.`,
-      variant: "default",
-    });
+  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => {
+    if (editingLogId) {
+      // Update existing log
+      const updatedLogs = workoutLogs.map(log => {
+        if (log.id === editingLogId) {
+          return {
+            ...log, // Keep original log id
+            ...data, // Submitted data
+            exercises: data.exercises.map(ex => ({
+              ...ex,
+              id: ex.id || Math.random().toString(36).substring(2,9), // Keep existing ex id or generate
+              weightUnit: ex.weightUnit || 'kg'
+            }))
+          };
+        }
+        return log;
+      });
+      setWorkoutLogs(updatedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
+      toast({
+        title: "Workout Updated!",
+        description: `Your workout on ${data.date.toLocaleDateString()} has been updated.`,
+        variant: "default",
+      });
+      setEditingLogId(null); // Exit editing mode
+    } else {
+      // Add new log
+      const newLog: WorkoutLog = {
+        ...data,
+        id: Date.now().toString(),
+        exercises: data.exercises.map(ex => ({
+          ...ex,
+          id: Math.random().toString(36).substring(2,9),
+          weightUnit: ex.weightUnit || 'kg'
+        }))
+      };
+      setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
+      toast({
+        title: "Workout Logged!",
+        description: `Your workout on ${data.date.toLocaleDateString()} has been saved.`,
+        variant: "default",
+      });
+    }
+     // Reset form through key change or specific reset method if WorkoutLogForm supports it
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let logDate = new Date(); // Default to current date and time
-    logDate.setHours(0,0,0,0); // Normalize to start of the day
+    let logDate = new Date(); 
+    logDate.setHours(0,0,0,0); 
     let notes = "Parsed from screenshot.";
     const currentYear = new Date().getFullYear();
 
     if (parsedData.workoutDate) {
-      // Expected format from AI: YYYY-MM-DD
       const dateParts = parsedData.workoutDate.split('-').map(Number);
       if (dateParts.length === 3) {
         const aiYear = dateParts[0];
-        const aiMonth = dateParts[1]; // Month from AI (1-indexed)
-        const aiDay = dateParts[2];   // Day from AI
-
-        // Create date using AI's month and day, but ALWAYS the current year
+        const aiMonth = dateParts[1]; 
+        const aiDay = dateParts[2];   
         logDate = new Date(currentYear, aiMonth - 1, aiDay, 0, 0, 0, 0);
-
         if (aiYear !== currentYear) {
             notes += ` Original year ${aiYear} from screenshot was updated to current year ${currentYear}.`;
         }
       } else {
         notes += " Could not fully parse date from screenshot; used current date (year overridden).";
-        // Fallback: use current day, month, but ensure current year and normalized time
         const today = new Date();
         logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
       }
     } else {
       notes += " Date not found in screenshot; used current date.";
-      // Fallback: use current day, month, but ensure current year and normalized time
       const today = new Date();
       logDate = new Date(currentYear, today.getMonth(), today.getDate(), 0,0,0,0);
     }
@@ -168,12 +191,31 @@ export default function HistoryPage() {
   }
 
   const handleEditLog = (logId: string) => {
-    toast({
-      title: "Edit Log (Not Implemented)",
-      description: `Feature to edit log ID ${logId} is coming soon.`,
-    })
+    const logToEdit = workoutLogs.find(log => log.id === logId);
+    if (logToEdit) {
+      setEditingLogId(logId);
+      setActiveTab('log'); // Switch to the log form tab
+    } else {
+      toast({
+        title: "Error",
+        description: "Could not find log to edit.",
+        variant: "destructive"
+      })
+    }
   }
 
+  const handleCancelEdit = () => {
+    setEditingLogId(null);
+  }
+  
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value !== 'log') { // If navigating away from the log tab, cancel any active edit
+      setEditingLogId(null);
+    }
+  }
+
+  const logBeingEdited = editingLogId ? workoutLogs.find(log => log.id === editingLogId) : undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -182,7 +224,7 @@ export default function HistoryPage() {
         <p className="text-muted-foreground">Log your sessions and review your past performance.</p>
       </header>
 
-      <Tabs defaultValue={defaultTabValue} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-6">
           <TabsTrigger value="log"><Edit className="mr-2 h-4 w-4 inline-block"/>Manual Log</TabsTrigger>
           <TabsTrigger value="screenshot"><ImageUp className="mr-2 h-4 w-4 inline-block"/>Parse Screenshot</TabsTrigger>
@@ -192,11 +234,17 @@ export default function HistoryPage() {
         <TabsContent value="log">
           <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="font-headline">Log New Workout</CardTitle>
-              <CardDescription>Manually enter the details of your workout session.</CardDescription>
+              <CardTitle className="font-headline">{editingLogId ? "Edit Workout Log" : "Log New Workout"}</CardTitle>
+              <CardDescription>{editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}</CardDescription>
             </CardHeader>
             <CardContent>
-              <WorkoutLogForm onSubmitLog={handleManualLogSubmit} />
+              <WorkoutLogForm 
+                key={editingLogId || 'new'} // Force re-render and re-initialization of form
+                onSubmitLog={handleManualLogSubmit} 
+                initialData={logBeingEdited}
+                editingLogId={editingLogId}
+                onCancelEdit={handleCancelEdit}
+              />
             </CardContent>
           </Card>
         </TabsContent>

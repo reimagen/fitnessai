@@ -18,13 +18,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2 } from "lucide-react";
-import type { WorkoutLog } from "@/lib/types"; // WorkoutLog already includes Exercise type
+import type { WorkoutLog, Exercise } from "@/lib/types"; 
 import { Card } from "@/components/ui/card";
+import { useEffect } from "react";
 
 const exerciseSchema = z.object({
+  id: z.string().optional(), // Keep existing ID if editing
   name: z.string().min(1, "Exercise name is required."),
-  sets: z.coerce.number().min(0).optional(), // Optional, could be 0 for cardio
-  reps: z.coerce.number().min(0).optional(), // Optional
+  sets: z.coerce.number().min(0).optional(),
+  reps: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
   weightUnit: z.enum(['kg', 'lbs']).optional(),
   category: z.string().optional(),
@@ -41,17 +43,21 @@ const workoutLogSchema = z.object({
   exercises: z.array(exerciseSchema).min(1, "Add at least one exercise."),
 });
 
+type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
+
 type WorkoutLogFormProps = {
   onSubmitLog: (data: Omit<WorkoutLog, 'id'>) => void;
-  initialData?: Partial<Omit<WorkoutLog, 'id'>>;
+  initialData?: Omit<WorkoutLog, 'id'>; // Make 'id' optional for initialData if it's a new log
+  editingLogId?: string | null;
+  onCancelEdit?: () => void;
 };
 
-const defaultExerciseValues = { 
+const defaultExerciseValues: Omit<Exercise, 'id'> = { 
   name: "", 
   sets: 3, 
   reps: 10, 
   weight: 0, 
-  weightUnit: "kg" as ('kg' | 'lbs'), // Cast for type safety
+  weightUnit: "kg" as ('kg' | 'lbs'),
   category: "", 
   distance: undefined, 
   distanceUnit: undefined as ('mi' | 'km' | undefined), 
@@ -60,37 +66,48 @@ const defaultExerciseValues = {
   calories: undefined 
 };
 
-export function WorkoutLogForm({ onSubmitLog, initialData }: WorkoutLogFormProps) {
-  const form = useForm<z.infer<typeof workoutLogSchema>>({
+export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit }: WorkoutLogFormProps) {
+  const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
-    defaultValues: {
-      date: initialData?.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-      notes: initialData?.notes || "",
-      exercises: initialData?.exercises?.map(ex => ({...defaultExerciseValues, ...ex})) || [defaultExerciseValues],
-    },
+    // Default values are set in useEffect to handle initialData changes
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: "exercises",
   });
 
-  function onSubmit(values: z.infer<typeof workoutLogSchema>) {
-    onSubmitLog({
-        ...values,
-        date: new Date(values.date),
-        exercises: values.exercises.map(ex => ({
-          ...ex,
-          sets: ex.sets ?? 0, // Default to 0 if undefined
-          reps: ex.reps ?? 0,
-          weight: ex.weight ?? 0,
-        }))
-    });
-    form.reset({
+  useEffect(() => {
+    if (editingLogId && initialData) {
+      form.reset({
+        date: initialData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+        notes: initialData.notes || "",
+        exercises: initialData.exercises?.map(ex => ({...defaultExerciseValues, ...ex})) || [defaultExerciseValues],
+      });
+    } else {
+      form.reset({
         date: new Date().toISOString().split('T')[0],
         notes: "",
-        exercises: [defaultExerciseValues]
-    }); 
+        exercises: [defaultExerciseValues],
+      });
+    }
+  }, [editingLogId, initialData, form]);
+
+
+  function onSubmit(values: WorkoutLogFormData) {
+    onSubmitLog({
+        ...values,
+        date: new Date(values.date), // Ensure date is a Date object
+        exercises: values.exercises.map(ex => ({
+          id: ex.id || Math.random().toString(36).substring(2,9), // Keep existing ID or generate new
+          ...ex,
+          sets: ex.sets ?? 0,
+          reps: ex.reps ?? 0,
+          weight: ex.weight ?? 0,
+          weightUnit: ex.weightUnit || 'kg',
+        }))
+    });
+    // Resetting is handled by parent changing editingLogId or by useEffect if not editing
   }
 
   return (
@@ -301,7 +318,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData }: WorkoutLogFormProps
           <Button
             type="button"
             variant="outline"
-            onClick={() => append(defaultExerciseValues)}
+            onClick={() => append(defaultExerciseValues as Exercise)}
             className="mt-2"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise
@@ -325,7 +342,16 @@ export function WorkoutLogForm({ onSubmitLog, initialData }: WorkoutLogFormProps
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Log Workout</Button>
+        <div className="flex gap-2">
+            <Button type="submit" className="w-full">
+            {editingLogId ? "Update Log" : "Log Workout"}
+            </Button>
+            {editingLogId && onCancelEdit && (
+            <Button type="button" variant="outline" onClick={onCancelEdit} className="w-full">
+                Cancel Edit
+            </Button>
+            )}
+        </div>
       </form>
     </Form>
   );
