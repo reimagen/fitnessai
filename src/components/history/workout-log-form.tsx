@@ -54,8 +54,8 @@ type WorkoutLogFormProps = {
 
 const defaultExerciseValues: Omit<Exercise, 'id'> = {
   name: "",
-  sets: 3,
-  reps: 10,
+  sets: 0,
+  reps: 0,
   weight: 0,
   weightUnit: "kg" as ('kg' | 'lbs'),
   category: "",
@@ -83,15 +83,18 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         date: initialData.date?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
         notes: initialData.notes || "",
         exercises: initialData.exercises?.map(ex => ({
-          ...defaultExerciseValues, // Start with system defaults
-          ...ex, // Override with actual exercise data
-          // Ensure optional numerics from `ex` become 0 if they were undefined/null
-          distance: ex.distance ?? 0,
-          duration: ex.duration ?? 0,
-          calories: ex.calories ?? 0,
-          sets: ex.sets ?? 0, // also ensure other numerics are handled
+          id: ex.id, // Preserve ID for editing
+          name: ex.name || "", // Ensure name is always a string
+          sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
+          weightUnit: ex.weightUnit || 'kg',
+          category: ex.category || "", // Ensure category is always a string
+          distance: ex.distance ?? 0,
+          distanceUnit: ex.distanceUnit, // Select component handles undefined for placeholder
+          duration: ex.duration ?? 0,
+          durationUnit: ex.durationUnit, // Select component handles undefined for placeholder
+          calories: ex.calories ?? 0,
         })) || [defaultExerciseValues],
       });
     } else {
@@ -111,7 +114,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
-          category: ex.category,
+          category: ex.category || "", // Ensure empty string if not provided
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
@@ -192,7 +195,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Sets</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="3" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -205,7 +208,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Reps</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="10" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -218,7 +221,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Weight</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="0" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -371,3 +374,4 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     </Form>
   );
 }
+
