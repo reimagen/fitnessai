@@ -142,7 +142,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                       <FormItem className="mb-2">
                         <FormLabel>Goal Description</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Run 5km without stopping" {...field} />
+                          <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km without stopping" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
