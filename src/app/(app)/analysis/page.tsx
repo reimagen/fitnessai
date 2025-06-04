@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
-import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear } from 'date-fns';
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
 import { TrendingUp } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
@@ -66,6 +66,7 @@ interface PeriodSummaryStats {
 const timeRangeDisplayNames: Record<string, string> = {
   'weekly': 'This Week',
   'monthly': 'This Month',
+  'yearly': 'This Year',
   'all-time': 'All Time',
 };
 
@@ -110,7 +111,7 @@ export default function AnalysisPage() {
           parsedLogs = [];
         }
       }
-          // --- Determine logs for the selected timeRange ---
+          
           let logsForCurrentPeriod = parsedLogs;
           const today = new Date();
           let periodLabel = timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1));
@@ -129,12 +130,18 @@ export default function AnalysisPage() {
               isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
             );
             periodLabel = `${timeRangeDisplayNames['monthly']}'s`;
+          } else if (timeRange === 'yearly') {
+            const startOfCurrentYear = startOfYear(today);
+            const endOfCurrentYear = endOfYear(today);
+            logsForCurrentPeriod = parsedLogs.filter(log =>
+              isWithinInterval(log.date, { start: startOfCurrentYear, end: endOfCurrentYear })
+            );
+            periodLabel = `${timeRangeDisplayNames['yearly']}'s`;
           } else { // 'all-time'
              periodLabel = `${timeRangeDisplayNames['all-time']}`;
           }
           
 
-          // --- Data for Workout Frequency Chart (filtered by timeRange) ---
           const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
           const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
           
@@ -146,7 +153,6 @@ export default function AnalysisPage() {
           setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-          // --- Data for Category Rep Pie Chart (filtered by timeRange) ---
           const repsByCat: Record<string, number> = {
             'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
           };
@@ -157,7 +163,7 @@ export default function AnalysisPage() {
               else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
               else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
               else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps; // Includes Full Body, uncategorized, etc.
+              else repsByCat['Other'] += reps;
             });
           });
           const pieChartColors: Record<string, string> = {
@@ -173,7 +179,6 @@ export default function AnalysisPage() {
           setCategoryRepData(newCategoryRepData);
           
 
-          // --- Data for Current Period Summary (uses logsForCurrentPeriod) ---
           let currentPeriodWorkoutDays = 0;
           let currentPeriodTotalWeightLiftedLbs = 0;
           let currentPeriodTotalCardioDurationMin = 0;
@@ -248,6 +253,7 @@ export default function AnalysisPage() {
           <SelectContent>
             <SelectItem value="weekly">This Week</SelectItem>
             <SelectItem value="monthly">This Month</SelectItem>
+            <SelectItem value="yearly">This Year</SelectItem>
             <SelectItem value="all-time">All Time</SelectItem>
           </SelectContent>
         </Select>
