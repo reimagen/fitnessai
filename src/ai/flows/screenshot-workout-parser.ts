@@ -82,7 +82,7 @@ Key Instructions:
     *   \\\`distance\\\` and \\\`duration\\\` (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
 7.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs).
-    *   If you see "lbs00" or "kg00" in the screenshot, interpret this as "lbs" or "kg" respectively. The "00" is an artifact and not part of the unit.
+    *   If you see "lbs00" or "kg00" (or "lbs000", "kg000", etc.) in the screenshot, interpret this as "lbs" or "kg" respectively. The trailing zeros are an artifact and not part of the unit.
     *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, \\\`weightUnit\\\` can be omitted or kept as default.
 8.  **Duration Parsing**:
     *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so \\\`duration: 566, durationUnit: 'sec'\\\`). If it's simpler (e.g., "30 min"), parse as is (\\\`duration: 30, durationUnit: 'min'\\\`).
@@ -140,9 +140,9 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
 
         if (typeof ex.weightUnit === 'string') {
             const rawUnit = ex.weightUnit.trim().toLowerCase();
-            if (rawUnit === 'lbs00') {
+            if (/^lbs0+$/.test(rawUnit)) { // Matches lbs followed by one or more zeros
                 correctedWeightUnit = 'lbs';
-            } else if (rawUnit === 'kg00') {
+            } else if (/^kg0+$/.test(rawUnit)) { // Matches kg followed by one or more zeros
                 correctedWeightUnit = 'kg';
             } else if (rawUnit === 'lbs' || rawUnit === 'kg') {
                 correctedWeightUnit = rawUnit as 'kg' | 'lbs';
@@ -174,7 +174,10 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             finalSets = 0; 
             finalReps = 0;
             finalWeight = 0;
-            correctedWeightUnit = undefined; 
+            // For Cardio, weightUnit should be undefined if weight is 0
+            if (finalWeight === 0) {
+                correctedWeightUnit = undefined; 
+            }
             // For Cardio, distance, duration, calories, and their units are preserved from AI (or their ?? 0 defaults)
         } else if (ex.category && strengthCategories.includes(ex.category)) { 
             // For explicitly defined strength categories, zero out cardio-specific metrics
@@ -188,12 +191,12 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         // all metrics are preserved as parsed by AI (or their ?? 0 defaults)
 
         return {
-          name: name, // name should be first as per schema for readability
+          name: name, 
           sets: finalSets,
           reps: finalReps,
           weight: finalWeight,
           weightUnit: correctedWeightUnit,
-          category: ex.category, // Preserve original category from AI
+          category: ex.category, 
           distance: finalDistance,
           distanceUnit: finalDistanceUnit,
           duration: finalDuration,
