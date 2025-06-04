@@ -1,11 +1,14 @@
+
 "use client";
 
 import type { WorkoutLog } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Card, CardContent } from "@/components/ui/card";
+import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
-import { CalendarDays, Dumbbell, Edit3, Trash2 } from "lucide-react";
+import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "../ui/button";
+import { cn } from "@/lib/utils";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -28,29 +31,38 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     <Accordion type="single" collapsible className="w-full space-y-4">
       {workoutLogs.map((log) => (
         <AccordionItem value={log.id} key={log.id} className="border rounded-lg shadow-sm bg-card overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full">
-              <div className="flex items-center gap-3 mb-2 sm:mb-0">
-                <CalendarDays className="h-5 w-5 text-primary" />
-                <span className="font-medium text-lg">{format(new Date(log.date), "MMMM d, yyyy")}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground">
+          <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4">
+            <AccordionPrimitive.Trigger className={cn(
+              "flex flex-1 items-center justify-between p-0 text-left font-medium transition-all hover:underline rounded-sm",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-offset-2",
+              "[&[data-state=open]>svg]:rotate-180"
+            )}>
+              <div className="flex flex-col sm:flex-row sm:items-center w-full">
+                <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-lg">{format(new Date(log.date), "MMMM d, yyyy")}</span>
+                </div>
+                <span className="text-sm text-muted-foreground sm:ml-4">
                   {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
                 </span>
-                {onEdit && (
-                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onEdit(log.id)}} className="h-8 w-8">
-                    <Edit3 className="h-4 w-4" />
-                  </Button>
-                )}
-                {onDelete && (
-                  <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); onDelete(log.id)}} className="h-8 w-8 text-destructive hover:text-destructive">
-                     <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
+              <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 ml-2" />
+            </AccordionPrimitive.Trigger>
+
+            <div className="flex items-center gap-1 ml-4 shrink-0">
+              {onEdit && (
+                <Button variant="ghost" size="icon" onClick={() => onEdit(log.id)} className="h-8 w-8">
+                  <Edit3 className="h-4 w-4" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button variant="ghost" size="icon" onClick={() => onDelete(log.id)} className="h-8 w-8 text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-          </AccordionTrigger>
+          </AccordionPrimitive.Header>
+
           <AccordionContent className="px-6 pb-6 pt-0">
             {log.notes && (
               <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
