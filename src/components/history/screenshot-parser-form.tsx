@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
-import { Loader2, UploadCloud, CheckCircle, XCircle } from "lucide-react";
+import { Loader2, UploadCloud, CheckCircle, XCircle, FileImage } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type ScreenshotParserFormProps = {
   onParse: (data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParseWorkoutScreenshotOutput; error?: string }>;
@@ -62,16 +63,34 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
   return (
     <div className="space-y-6">
       <div>
-        <Label htmlFor="screenshot-upload" className="text-base font-medium">Upload Workout Screenshot</Label>
-        <Input
-          id="screenshot-upload"
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="mt-2 border-primary"
-          disabled={isLoading}
-        />
-        <p className="mt-1 text-sm text-muted-foreground">
+        <div 
+          className={cn(
+            "flex h-10 w-full items-center rounded-md border border-input bg-background pl-1 pr-3 py-1 text-sm",
+            isLoading && "opacity-50 cursor-not-allowed"
+          )}
+        >
+          <Label
+            htmlFor="screenshot-upload"
+            className={cn(
+              "whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium border border-primary text-primary bg-card hover:bg-primary/10 cursor-pointer shadow-sm",
+              isLoading && "pointer-events-none"
+            )}
+          >
+            Choose File
+          </Label>
+          <Input
+            id="screenshot-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="hidden"
+            disabled={isLoading}
+          />
+          <span className="ml-3 text-muted-foreground truncate text-xs">
+            {file ? file.name : "No file chosen"}
+          </span>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">
           Upload an image of your workout log (e.g., from another app or a notepad).
         </p>
       </div>
@@ -79,7 +98,9 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
       {previewUrl && (
         <div className="mt-4">
           <p className="text-sm font-medium mb-2">Image Preview:</p>
-          <Image src={previewUrl} alt="Screenshot preview" width={300} height={200} className="rounded-md border object-contain" data-ai-hint="mobile screen" />
+          <div className="border rounded-md p-2 inline-block">
+            <Image src={previewUrl} alt="Screenshot preview" width={300} height={200} className="rounded-md object-contain" data-ai-hint="mobile screen" />
+          </div>
         </div>
       )}
 
@@ -113,12 +134,12 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
                 <li key={index}>
                   <strong>{ex.name}:</strong>
                   {ex.category && ` (${ex.category})`}
-                  {ex.sets && ` ${ex.sets} sets,`}
-                  {ex.reps && ` ${ex.reps} reps`}
+                  {ex.sets && ex.sets > 0 && ` ${ex.sets} sets,`}
+                  {ex.reps && ex.reps > 0 && ` ${ex.reps} reps`}
                   {ex.weight && ex.weight > 0 && ` @ ${ex.weight}${ex.weightUnit || 'kg'}`}
-                  {ex.distance && ` - ${ex.distance} ${ex.distanceUnit || ''}`.trim()}
-                  {ex.duration && ` - ${ex.duration} ${ex.durationUnit || ''}`.trim()}
-                  {ex.calories && ` - ${ex.calories} kcal`}
+                  {ex.distance && ex.distance > 0 && ` - ${ex.distance} ${ex.distanceUnit || ''}`.trim()}
+                  {ex.duration && ex.duration > 0 && ` - ${ex.duration} ${ex.durationUnit || ''}`.trim()}
+                  {ex.calories && ex.calories > 0 && ` - ${ex.calories} kcal`}
                 </li>
               ))}
             </ul>
