@@ -29,7 +29,7 @@ const exerciseSchema = z.object({
   reps: z.coerce.number().min(0).optional(),
   weight: z.coerce.number().min(0).optional(),
   weightUnit: z.enum(['kg', 'lbs']).optional(),
-  category: z.string().optional(),
+  category: z.string().optional(), // Stays in schema for data consistency, but no form input
   distance: z.coerce.number().min(0).optional(),
   distanceUnit: z.enum(['mi', 'km']).optional(),
   duration: z.coerce.number().min(0).optional(),
@@ -58,7 +58,7 @@ const defaultExerciseValues: Omit<Exercise, 'id'> = {
   reps: 0,
   weight: 0,
   weightUnit: "kg" as ('kg' | 'lbs'),
-  category: "",
+  category: "", // Default to empty string, will not be user-editable in this form
   distance: 0,
   distanceUnit: undefined as ('mi' | 'km' | undefined),
   duration: 0,
@@ -69,7 +69,7 @@ const defaultExerciseValues: Omit<Exercise, 'id'> = {
 export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit }: WorkoutLogFormProps) {
   const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
-    defaultValues: { // Provide initial default values here
+    defaultValues: { 
       date: new Date().toISOString().split('T')[0],
       notes: "",
       exercises: [defaultExerciseValues],
@@ -93,7 +93,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
           weightUnit: ex.weightUnit || 'kg',
-          category: ex.category || "",
+          category: ex.category || "", // Keep existing category from data
           distance: ex.distance ?? 0,
           distanceUnit: ex.distanceUnit,
           duration: ex.duration ?? 0,
@@ -101,7 +101,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           calories: ex.calories ?? 0,
         })) || [defaultExerciseValues],
       });
-    } else if (!editingLogId) { // Reset to default if not editing (e.g., after an edit is cancelled or new log submitted)
+    } else if (!editingLogId) { 
       form.reset({
         date: new Date().toISOString().split('T')[0],
         notes: "",
@@ -118,7 +118,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,
-          category: ex.category || "",
+          category: ex.category || "", // Will be "" if coming from this form, or populated if AI set it
           sets: ex.sets ?? 0,
           reps: ex.reps ?? 0,
           weight: ex.weight ?? 0,
@@ -179,19 +179,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.category`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Upper Body" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Category Field Removed */}
                 <FormField
                   control={form.control}
                   name={`exercises.${index}.sets`}
@@ -340,7 +328,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           <Button
             type="button"
             variant="outline"
-            onClick={() => append(defaultExerciseValues as Exercise)}
+            onClick={() => append(defaultExerciseValues as Exercise)} // Cast needed as defaultExerciseValues might be seen as partial by TS
             className="mt-2"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise
