@@ -30,7 +30,8 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       reps: z.number().describe('The number of repetitions performed for each set. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
       weight: z.number().describe('The weight used for each set. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
       weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified and weight > 0.'),
-      category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional().describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name if not explicitly stated.'),
+      category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'])
+                .describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name. If truly unsure or it doesn\'t fit standard categories, default to "Other".'),
       distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling). For non-cardio exercises, this should be 0 unless explicitly stated.'),
       distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'),
       duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated.'),
@@ -70,7 +71,7 @@ Key Instructions:
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
 4.  **Exercise Category**:
     *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
-    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If unsure or it doesn't fit (or a tag like "Endurance" is present for a cardio activity), use "Other" or infer "Cardio" as appropriate.
+    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If truly unsure or it doesn't fit these standard categories (or a tag like "Endurance" is present for a cardio activity), default to "Other".
 5.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
         *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`.
@@ -183,7 +184,8 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             finalDurationUnit = undefined; 
             // For Strength, sets, reps, weight, calories, and weightUnit are preserved from AI (or their ?? 0 defaults)
         }
-        // If category is 'Other' or undefined, all metrics are preserved as parsed by AI (or their ?? 0 defaults)
+        // If category is 'Other' or undefined (which shouldn't happen if category is required), 
+        // all metrics are preserved as parsed by AI (or their ?? 0 defaults)
 
         return {
           name: name, // name should be first as per schema for readability
