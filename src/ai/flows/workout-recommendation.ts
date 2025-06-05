@@ -53,18 +53,28 @@ Instructions for your response:
 2.  **Address Additional Goals**: If other goals are specified (e.g., in "Other goals: ..."), after addressing the primary goal, briefly explain how the workout plan also supports these additional goals.
 3.  **Provide Full Workout Plan**: After the explanations for the primary and any additional goals, present the comprehensive workout recommendation. This plan should be well-rounded, actionable, and consider all goals, workout history, and personal stats provided.
 4.  **Day Order**: Structure the weekly plan with days listed in order from **Sunday to Saturday**.
-5.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading (e.g., \\\`**Monday: ...**\\\`). This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
-6.  **Detailed Workout Session Structure and Formatting**: For *each* individual workout day or session detailed in the plan, you MUST structure it clearly with the following components in order:
-    *   **Day Heading**: Each day's section MUST start with the day and focus, bolded (e.g., \\\`**Sunday: Upper Body Strength**\\\`). This line MUST NOT start with \\\`*\\\` or \\\`-\\\`.
-    *   **Warm-up Section**:
-        *   The line \\\`**Warm-up:**\\\` (exactly this text, bolded). This line MUST NOT start with \\\`*\\\` or \\\`-\\\`.
-        *   Followed by the warm-up description as a plain text paragraph on subsequent lines.
-    *   **Main Workout Section**:
-        *   The line \\\`**Main Workout:**\\\` (exactly this text, bolded). This line MUST NOT start with \\\`*\\\` or \\\`-\\\`.
-        *   Followed by a list of exercises. Each exercise line MUST start with \\\`* \\\` (an asterisk followed by a space). Example: \\\`* Bench Press: 3 sets of 8-10 reps\\\`.
-    *   **Cool-down Section**:
-        *   The line \\\`**Cool-down:**\\\` (exactly this text, bolded). This line MUST NOT start with \\\`*\\\` or \\\`-\\\`.
-        *   Followed by the cool-down description as a plain text paragraph on subsequent lines.
+5.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading (e.g., \`**Monday: ...**\`). This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
+6.  **Detailed Workout Session Structure and Formatting**: For *each* individual workout day or session detailed in the plan, you MUST structure it clearly with the following components, IN THIS ORDER:
+
+    A.  **Day Heading**:
+        The line for the day (e.g., \`**Sunday: Upper Body Strength**\`) MUST be bold.
+        IMPORTANT: This Day Heading line MUST NOT start with an asterisk (\`*\`), hyphen (\`-\`), or any other list marker.
+
+    B.  **Warm-up Section**:
+        The line \`**Warm-up:**\` (exactly this text, bolded) MUST be the start of this section.
+        IMPORTANT: This \`**Warm-up:**\` line MUST NOT start with an asterisk (\`*\`), hyphen (\`-\`), or any other list marker.
+        The warm-up description should follow on subsequent lines as plain text paragraphs.
+
+    C.  **Main Workout Section**:
+        The line \`**Main Workout:**\` (exactly this text, bolded) MUST be the start of this section.
+        IMPORTANT: This \`**Main Workout:**\` line MUST NOT start with an asterisk (\`*\`), hyphen (\`-\`), or any other list marker.
+        Exercises listed under this section MUST be formatted as a list. Each exercise line MUST start with an asterisk followed by a space (\`* \`). For example: \`* Bench Press: 3 sets of 8-10 reps\`.
+
+    D.  **Cool-down Section**:
+        The line \`**Cool-down:**\` (exactly this text, bolded) MUST be the start of this section.
+        IMPORTANT: This \`**Cool-down:**\` line MUST NOT start with an asterisk (\`*\`), hyphen (\`-\`), or any other list marker.
+        The cool-down description should follow on subsequent lines as plain text paragraphs.
+
 7.  **Overall Structure**: Ensure the explanations flow naturally into the detailed workout plan and that the entire response is coherent and easy to follow.
 
 Workout Recommendation:`,
