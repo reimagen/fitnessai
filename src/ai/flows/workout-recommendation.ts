@@ -29,7 +29,7 @@ export type WorkoutRecommendationInput = z.infer<typeof WorkoutRecommendationInp
 const WorkoutRecommendationOutputSchema = z.object({
   workoutRecommendation: z
     .string()
-    .describe('A personalized workout recommendation. This should start by acknowledging the primary fitness goal (if provided) and explaining how the plan helps achieve it. It should also address how the plan supports any other specified goals. Then, it should detail the full workout routine. Each workout day MUST have its own Warm-up, Main Workout, and Cool-down sections. Day headings (e.g., "**Sunday: Focus**") and section headings (e.g., "**Warm-up:**") MUST be bold and NOT start with list markers. Exercises under "Main Workout:" MUST start with list markers. Days should be ordered Sunday to Saturday, with a blank line separating each day.'),
+    .describe('A personalized workout recommendation. This should start by acknowledging the primary fitness goal (if provided) and explaining how the plan helps achieve it. It should also address how the plan supports any other specified goals. Then, it should detail the full workout routine. Each workout day MUST have its own Warm-up, Main Workout, and Cool-down sections. Day headings (e.g., "Sunday: Focus") and section headings (e.g., "Warm-up:") MUST be bold and NOT start with list markers. Exercises under "Main Workout:" MUST start with list markers. Days should be ordered Sunday to Saturday, with a blank line separating each day.'),
 });
 export type WorkoutRecommendationOutput = z.infer<typeof WorkoutRecommendationOutputSchema>;
 
@@ -91,4 +91,3 @@ const workoutRecommendationFlow = ai.defineFlow(
     return output;
   }
 );
-
