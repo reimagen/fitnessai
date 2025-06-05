@@ -91,4 +91,3 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
 };
 
 export default MarkdownRenderer;
-```
