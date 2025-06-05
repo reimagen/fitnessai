@@ -156,45 +156,8 @@ export default function PlanPage() {
   }, [userProfile]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">AI Workout Planner</h1>
-        <p className="text-muted-foreground">
-          Let our AI craft a personalized workout plan tailored to your goals and needs.
-        </p>
-      </header>
-
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline">Tell Us About Yourself</CardTitle>
-          <CardDescription>
-            {userProfile === fallbackUserProfile || !userProfile // Check if using fallback or still null
-              ? "Provide your details or update your profile for a better plan."
-              : "We've pre-filled information from your profile, this section is for you to update with anything extra you'd like AI to consider when forming your weekly workout plans (any recent injuries, equipment preferences/exclusions, etc.)."}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isClient ? (
-            <RecommendationForm
-              onRecommendation={getWorkoutRecommendationAction}
-              initialFormData={synthesizedFormData}
-            />
-          ) : (
-            <p>Loading your preferences...</p> // Or a spinner component
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="mt-8 bg-secondary/50 shadow-md">
-        <CardHeader>
-          <CardTitle className="font-headline text-lg">How It Works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p><strong>1. Input Your Data:</strong> Fill in your fitness goals, workout history, and personal statistics (or let us pre-fill from your profile!).</p>
-          <p><strong>2. AI Analysis:</strong> Our intelligent system processes your information to understand your unique profile.</p>
-          <p><strong>3. Personalized Plan:</strong> Receive a custom workout recommendation designed to help you achieve your objectives efficiently.</p>
-        </CardContent>
-      </Card>
+    <div>
+      New Plan Page UI Starts Here
     </div>
   );
 }
