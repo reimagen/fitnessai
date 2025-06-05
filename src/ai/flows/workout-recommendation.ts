@@ -53,25 +53,21 @@ Instructions for your response:
 2.  **Address Additional Goals**: If other goals are specified (e.g., in "Other goals: ..."), after addressing the primary goal, briefly explain how the workout plan also supports these additional goals.
 3.  **Provide Full Workout Plan**: After the goal explanations, present the comprehensive workout recommendation.
 4.  **Day Order**: Structure the weekly plan with days listed in order from **Sunday to Saturday**.
-5.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading (e.g., \\\`**Monday: ...**\\\`). This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
+5.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading. For example, if the next day is Monday, its heading would be "**Monday: ...**" and there should be a blank line above it. This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
 6.  **Detailed Workout Session Structure and Formatting**: For *each* workout day, you MUST follow this structure precisely:
 
-    **Day Heading Line (Example: \`**Sunday: Focus**\`)**
-    This line MUST be bold.
+    **Day Heading Line**: This line should be bold, for example, it should look like "**Sunday: Focus**".
     This line MUST NOT start with \`*\` or \`-\`. It is NOT a list item.
 
-    **Warm-up Section Heading (Example: \`**Warm-up:**\`)**
-    This line MUST be bold and appear exactly as shown.
+    **Warm-up Section Heading**: This line must be bold and appear exactly as "**Warm-up:**".
     This line MUST NOT start with \`*\` or \`-\`. It is NOT a list item.
     Follow this with a paragraph describing the warm-up.
 
-    **Main Workout Section Heading (Example: \`**Main Workout:**\`)**
-    This line MUST be bold and appear exactly as shown.
+    **Main Workout Section Heading**: This line must be bold and appear exactly as "**Main Workout:**".
     This line MUST NOT start with \`*\` or \`-\`. It is NOT a list item.
-    Follow this with a list of exercises. Each exercise line MUST start with \`* \` (an asterisk and a space). Example: \\\`* Bench Press: 3 sets of 8-10 reps\\\`.
+    Follow this with a list of exercises. Each exercise line MUST start with \`* \` (an asterisk and a space). For example, an exercise line should look like "* Bench Press: 3 sets of 8-10 reps".
 
-    **Cool-down Section Heading (Example: \`**Cool-down:**\`)**
-    This line MUST be bold and appear exactly as shown.
+    **Cool-down Section Heading**: This line must be bold and appear exactly as "**Cool-down:**".
     This line MUST NOT start with \`*\` or \`-\`. It is NOT a list item.
     Follow this with a paragraph describing the cool-down.
 
@@ -88,7 +84,11 @@ const workoutRecommendationFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output || !output.workoutRecommendation) {
+      console.error('AI failed to generate a valid workout recommendation string.');
+      throw new Error('AI failed to produce a workout recommendation.');
+    }
+    return output;
   }
 );
 
