@@ -20,6 +20,7 @@ import type { WorkoutRecommendationInput, WorkoutRecommendationOutput } from "@/
 import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 
 const formSchema = z.object({
   fitnessGoals: z.string().min(10, {
@@ -67,11 +68,7 @@ export function RecommendationForm({ onRecommendation, initialFormData }: Recomm
 
   useEffect(() => {
     if (initialFormData) {
-      form.reset({
-        fitnessGoals: initialFormData.fitnessGoals,
-        workoutHistory: initialFormData.workoutHistory,
-        personalStats: initialFormData.personalStats,
-      });
+      form.reset(initialFormData);
     }
   }, [initialFormData, form]);
 
@@ -198,13 +195,15 @@ export function RecommendationForm({ onRecommendation, initialFormData }: Recomm
         </Card>
       )}
 
-      {isClient && recommendationResult && (
+      {isClient && recommendationResult && recommendationResult.workoutRecommendation && (
         <Card className="mt-6 shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline text-primary">Your AI-Generated Workout Plan</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="whitespace-pre-wrap text-sm">{recommendationResult.workoutRecommendation}</p>
+            <div className="text-sm">
+              <MarkdownRenderer text={recommendationResult.workoutRecommendation} />
+            </div>
           </CardContent>
         </Card>
       )}
