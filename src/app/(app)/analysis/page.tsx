@@ -58,6 +58,7 @@ interface CategoryRepDataPoint {
 interface PeriodSummaryStats {
   workoutDays: number;
   totalWeightLiftedLbs: number;
+  totalDistanceMi: number;
   totalCardioDurationMin: number;
   totalCaloriesBurned: number;
   periodLabel: string;
@@ -100,7 +101,7 @@ export default function AnalysisPage() {
               weightUnit: ex.weightUnit || 'kg',
               category: ex.category || 'Other',
               distance: ex.distance ?? 0,
-              distanceUnit: ex.distanceUnit,
+              distanceUnit: ex.distanceUnit || 'km',
               duration: ex.duration ?? 0,
               durationUnit: ex.durationUnit,
               calories: ex.calories ?? 0,
@@ -181,6 +182,7 @@ export default function AnalysisPage() {
 
           let currentPeriodWorkoutDays = 0;
           let currentPeriodTotalWeightLiftedLbs = 0;
+          let currentPeriodTotalDistanceMi = 0;
           let currentPeriodTotalCardioDurationMin = 0;
           let currentPeriodTotalCaloriesBurned = 0;
           const uniqueWorkoutDatesThisPeriod = new Set<string>();
@@ -204,6 +206,19 @@ export default function AnalysisPage() {
                   }
                   currentPeriodTotalCardioDurationMin += durationInMin;
               }
+              if (ex.category === 'Cardio' && ex.distance && ex.distanceUnit) {
+                let distanceInMiles = 0;
+                switch (ex.distanceUnit) {
+                  case 'km':
+                    distanceInMiles = ex.distance * 0.621371;
+                    break;
+                  case 'ft':
+                    distanceInMiles = ex.distance * 0.000189394;
+                    break;
+                  case 'mi': default: distanceInMiles = ex.distance; break;
+                }
+                currentPeriodTotalDistanceMi += distanceInMiles;
+              }
               currentPeriodTotalCaloriesBurned += (ex.calories || 0);
             });
           });
@@ -211,6 +226,7 @@ export default function AnalysisPage() {
           setCurrentPeriodSummary({
             workoutDays: currentPeriodWorkoutDays,
             totalWeightLiftedLbs: Math.round(currentPeriodTotalWeightLiftedLbs),
+            totalDistanceMi: Math.round(currentPeriodTotalDistanceMi),
             totalCardioDurationMin: Math.round(currentPeriodTotalCardioDurationMin),
             totalCaloriesBurned: Math.round(currentPeriodTotalCaloriesBurned),
             periodLabel: periodLabel,
@@ -260,14 +276,14 @@ export default function AnalysisPage() {
       </div>
 
       {isClient && currentPeriodSummary && (
-        <Card className="shadow-lg mb-6 bg-secondary/30">
+        <Card className="shadow-lg mb-6 bg-white">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2 text-xl">
               <TrendingUp className="h-6 w-6 text-primary" />
               {currentPeriodSummary.periodLabel} Summary
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-y-6 gap-x-4 md:grid-cols-4 text-center py-6">
+          <CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">
             <div>
               <p className="text-3xl font-bold text-accent">{currentPeriodSummary.workoutDays.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Workout Days</p>
@@ -275,6 +291,10 @@ export default function AnalysisPage() {
             <div>
               <p className="text-3xl font-bold text-accent">{currentPeriodSummary.totalWeightLiftedLbs.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground mt-1">Weight Lifted (lbs)</p>
+            </div>
+            <div>
+              <p className="text-3xl font-bold text-accent">{currentPeriodSummary.totalDistanceMi.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground mt-1">Distance (mi)</p>
             </div>
             <div>
               <p className="text-3xl font-bold text-accent">
