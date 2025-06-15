@@ -24,19 +24,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
   };
 
   lines.forEach((line, index) => {
-    // Treat every non-empty line as a paragraph
-    if (line.trim() !== '') {
-      elements.push(
-        <p key={`p-${index}`} className="my-1">
-          {renderWithBold(line, `p-${index}`)}
-        </p>
-      );
-    }
+    // Treat every line as a paragraph; empty lines will create empty <p> tags with margins,
+    // which effectively creates a visual gap if the AI outputs an empty line.
+    elements.push(
+      <p key={`p-${index}`} className="my-1">
+        {renderWithBold(line, `p-${index}`)}
+      </p>
+    );
   });
 
   if (elements.length === 0) {
-    // This case should ideally not be hit if text.trim() !== '' check at the start is effective.
-    // However, keeping it as a fallback.
     return null;
   }
 
