@@ -30,7 +30,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
     // Check if the current line is a day heading and it's not the first line of the plan
     if (index > 0 && dayHeadingRegex.test(line)) {
       // Add an extra paragraph for spacing before a new day's heading
-      elements.push(<p key={`spacer-${index}`} className="my-2"></p>);
+      elements.push(<p key={`spacer-${index}`} className="my-4"></p>);
     }
 
     // Render the current line as a paragraph
