@@ -1,19 +1,19 @@
 
 "use server";
 
-import { workoutRecommendation, type WorkoutRecommendationInput, type WorkoutRecommendationOutput } from "@/ai/flows/workout-recommendation";
+import { generateWeeklyWorkoutPlan, type WeeklyWorkoutPlanInput, type WeeklyWorkoutPlanOutput } from "@/ai/flows/weekly-workout-planner";
 import { z } from "zod";
 
-const RecommendationInputSchema = z.object({
-  fitnessGoals: z.string().min(1, "Fitness goals are required."),
-  workoutHistory: z.string().min(1, "Workout history is required."),
-  personalStats: z.string().min(1, "Personal stats are required."),
+const WeeklyPlanActionInputSchema = z.object({
+  userId: z.string().min(1, "User ID is required."),
+  userProfileContext: z.string().min(1, "User profile context is required."),
+  weekStartDate: z.string().optional(), // YYYY-MM-DD format
 });
 
-export async function getWorkoutRecommendationAction(
-  values: WorkoutRecommendationInput
-): Promise<{ success: boolean; data?: WorkoutRecommendationOutput; error?: string }> {
-  const validatedFields = RecommendationInputSchema.safeParse(values);
+export async function generateWeeklyWorkoutPlanAction(
+  values: WeeklyWorkoutPlanInput
+): Promise<{ success: boolean; data?: WeeklyWorkoutPlanOutput; error?: string }> {
+  const validatedFields = WeeklyPlanActionInputSchema.safeParse(values);
 
   if (!validatedFields.success) {
     return {
@@ -23,11 +23,12 @@ export async function getWorkoutRecommendationAction(
   }
   
   try {
-    const recommendation = await workoutRecommendation(validatedFields.data);
-    return { success: true, data: recommendation };
+    const planOutput = await generateWeeklyWorkoutPlan(validatedFields.data);
+    return { success: true, data: planOutput };
   } catch (error) {
-    console.error("Error fetching workout recommendation:", error);
-    return { success: false, error: "Failed to get workout recommendation. Please try again." };
+    console.error("Error generating weekly workout plan:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while generating the plan.";
+    return { success: false, error: errorMessage };
   }
 }
 
