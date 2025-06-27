@@ -11,6 +11,17 @@ import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
@@ -114,18 +125,16 @@ export default function PRsPage() {
     }
   };
 
-  const handleClearRecords = () => {
-    if (window.confirm("Are you sure you want to delete all personal records? This cannot be undone.")) {
-      if (isClient) {
-        localStorage.removeItem(LOCAL_STORAGE_KEY_PRS);
-      }
-      setAllRecords([]);
-      toast({
-        title: "Records Cleared",
-        description: "All personal records have been removed. You can now re-upload.",
-        variant: "destructive",
-      });
+  const performClearRecords = () => {
+    if (isClient) {
+      localStorage.removeItem(LOCAL_STORAGE_KEY_PRS);
     }
+    setAllRecords([]);
+    toast({
+      title: "Records Cleared",
+      description: "All personal records have been removed. You can now re-upload.",
+      variant: "destructive",
+    });
   };
 
   const groupedRecords = bestRecords.reduce((acc, record) => {
@@ -161,13 +170,31 @@ export default function PRsPage() {
         <CardContent>
           <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
           {isClient && allRecords.length > 0 && (
-            <Button
-              variant="destructive"
-              className="w-full mt-4"
-              onClick={handleClearRecords}
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full mt-4"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all
+                    your personal records from this device.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={performClearRecords}>
+                    Continue
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </CardContent>
       </Card>
