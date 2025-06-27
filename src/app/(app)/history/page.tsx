@@ -173,7 +173,6 @@ export default function HistoryPage() {
     let notesSuffix = "";
 
     if (parsedData.workoutDate) {
-      // Standardize date parsing to start of local day to ensure consistent comparisons
       targetDate = startOfDay(parseISO(parsedData.workoutDate));
       const currentYear = new Date().getFullYear();
       if (targetDate.getFullYear() !== currentYear) {
@@ -184,8 +183,9 @@ export default function HistoryPage() {
       notesSuffix = " (Date not found in screenshot; used current date).";
     }
 
+    const targetDateString = format(targetDate, 'yyyy-MM-dd');
     const existingLogIndex = workoutLogs.findIndex(
-      (log) => startOfDay(log.date).getTime() === targetDate.getTime()
+      (log) => format(log.date, 'yyyy-MM-dd') === targetDateString
     );
 
     const parsedExercises: Exercise[] = parsedData.exercises.map(ex => ({
@@ -195,7 +195,7 @@ export default function HistoryPage() {
       reps: ex.reps ?? 0,
       weight: ex.weight ?? 0,
       weightUnit: ex.weightUnit || 'kg',
-      category: ex.category, // AI flow ensures this is a valid ExerciseCategory
+      category: ex.category,
       distance: ex.distance ?? 0,
       distanceUnit: ex.distanceUnit,
       duration: ex.duration ?? 0,
@@ -207,7 +207,6 @@ export default function HistoryPage() {
       const updatedLogs = [...workoutLogs];
       const logToUpdate = { 
         ...updatedLogs[existingLogIndex],
-        // Create a new array for exercises to avoid state mutation
         exercises: [...updatedLogs[existingLogIndex].exercises] 
       };
       
@@ -261,7 +260,6 @@ export default function HistoryPage() {
     if (logToEdit) {
       setEditingLogId(logId);
       setActiveTab('log');
-      // Scroll will be handled by the useEffect hook watching editingLogId and activeTab
     } else {
       toast({
         title: "Error",
