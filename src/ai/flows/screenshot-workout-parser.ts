@@ -22,7 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
-  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year is not visible in the image, default to the year 2025.'),
+  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year 2024 is visible, it must be changed to 2025. If no year is visible, default to 2025.'),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -56,15 +56,11 @@ You will be provided with a screenshot of a workout log.
 Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
 
 Key Instructions:
-1.  **Workout Date**:
-    *   Extract the date of the workout. Format as YYYY-MM-DD.
-    *   **Priority 1: Explicit Year in Image**: If a year is EXPLICITLY WRITTEN in the screenshot (e.g., "June 2, 2023", "06/02/23"), you MUST use that year.
-    *   **Priority 2: No Explicit Year in Image**: If the screenshot shows a month and day (e.g., "June 2", "Wed, Jun 4") but **ABSOLUTELY NO YEAR is written or displayed anywhere in the image**:
-        *   You MUST use the year **2025** for the \`workoutDate\`.
-        *   For example: If the image shows "Jan 10" (no year visible), the \`workoutDate\` MUST be "2025-01-10".
-        *   If the image shows "Jul 1" (no year visible), the \`workoutDate\` MUST be "2025-07-01".
-        *   **Crucially, if no year is visible in the image, DO NOT default to 2024 or any other specific year from your training data. You MUST use 2025.**
-        *   Do NOT attempt to infer a year based on the day of the week if no year is visible in the image (e.g., "Wed, Jun 4" does not imply a specific past year if no year is written; use 2025 in such cases).
+1.  **Workout Date - IMPORTANT**:
+    *   Your main task is to extract the date from the screenshot and format it as YYYY-MM-DD.
+    *   **Rule 1: If the year \`2024\` is visible in the image, you MUST IGNORE it and use the year \`2025\` in your output.** For example, if the image says "June 26, 2024", the \`workoutDate\` MUST be "2025-06-26".
+    *   **Rule 2: If NO year is visible in the image at all**, you MUST use the year **2025**. For example, if the image says "June 26", the \`workoutDate\` MUST be "2025-06-26".
+    *   **Rule 3: For any other explicit year** (like 2023, 2022, etc.), you should use that year.
     *   **If no date information can be extracted at all**, you may omit the \`workoutDate\` field.
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
@@ -213,4 +209,5 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     return output!;
   }
 );
+
 
