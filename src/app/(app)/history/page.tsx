@@ -70,7 +70,7 @@ export default function HistoryPage() {
       if (savedLogsString) {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => {
-            const date = parseISO(log.date);
+            const date = new Date(log.date);
             return {
             ...log,
             date,
@@ -98,6 +98,7 @@ export default function HistoryPage() {
       } else {
          const logsWithDefaults = initialSampleLogs.map(log => ({
             ...log,
+            dateString: format(log.date, 'yyyy-MM-dd'),
             exercises: log.exercises.map(ex => ({
                 ...ex,
                 category: isValidCategory(ex.category) ? ex.category : 'Other',
@@ -178,18 +179,18 @@ export default function HistoryPage() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
-    let targetDate: Date;
-    let notesSuffix = "";
-
-    if (parsedData.workoutDate) {
-      // Use replace() to hint local timezone parsing, then startOfDay to normalize
-      targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
-    } else {
-      targetDate = startOfDay(new Date()); 
-      notesSuffix = " (Date not found in screenshot; used current date).";
+    if (!parsedData.workoutDate) {
+      toast({
+        title: "Parsing Error",
+        description: "A date was not provided for the parsed log. Cannot save.",
+        variant: "destructive",
+      });
+      return;
     }
 
+    const targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
     const targetDateString = format(targetDate, 'yyyy-MM-dd');
+
     const existingLogIndex = workoutLogs.findIndex(
       (log) => log.dateString === targetDateString
     );
@@ -226,7 +227,7 @@ export default function HistoryPage() {
         }
       });
       
-      logToUpdate.notes = (logToUpdate.notes ? logToUpdate.notes + " " : "") + `Updated from screenshot.${notesSuffix}`;
+      logToUpdate.notes = (logToUpdate.notes ? logToUpdate.notes + " " : "") + `Updated from screenshot.`;
       updatedLogs[existingLogIndex] = logToUpdate;
       setWorkoutLogs(updatedLogs.sort((a, b) => b.date.getTime() - a.date.getTime()));
       
@@ -242,7 +243,7 @@ export default function HistoryPage() {
         date: targetDate,
         dateString: targetDateString,
         exercises: parsedExercises,
-        notes: `Parsed from screenshot.${notesSuffix}`,
+        notes: `Parsed from screenshot.`,
       };
       setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a, b) => b.date.getTime() - a.date.getTime()));
       toast({
