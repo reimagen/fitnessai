@@ -171,13 +171,13 @@ export default function HistoryPage() {
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
     let targetDate: Date;
     let notesSuffix = "";
-    const currentYear = new Date().getFullYear();
 
     if (parsedData.workoutDate) {
-      const dateParts = parsedData.workoutDate.split('-').map(Number);
-      targetDate = startOfDay(new Date(dateParts[0], dateParts[1] - 1, dateParts[2]));
-      if (dateParts[0] !== currentYear) {
-        notesSuffix = ` (Original year ${dateParts[0]} from screenshot was used).`;
+      // Standardize date parsing to start of local day to ensure consistent comparisons
+      targetDate = startOfDay(parseISO(parsedData.workoutDate));
+      const currentYear = new Date().getFullYear();
+      if (targetDate.getFullYear() !== currentYear) {
+        notesSuffix = ` (Original year ${targetDate.getFullYear()} from screenshot was used).`;
       }
     } else {
       targetDate = startOfDay(new Date()); 
@@ -205,7 +205,11 @@ export default function HistoryPage() {
 
     if (existingLogIndex > -1) {
       const updatedLogs = [...workoutLogs];
-      const logToUpdate = { ...updatedLogs[existingLogIndex] };
+      const logToUpdate = { 
+        ...updatedLogs[existingLogIndex],
+        // Create a new array for exercises to avoid state mutation
+        exercises: [...updatedLogs[existingLogIndex].exercises] 
+      };
       
       const existingExerciseNames = new Set(logToUpdate.exercises.map(ex => ex.name.trim().toLowerCase()));
       let addedCount = 0;
