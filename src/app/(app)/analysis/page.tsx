@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,7 +10,7 @@ import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp, Award, Flame } from 'lucide-react';
+import { TrendingUp, Award, Flame, Route } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
@@ -32,11 +32,15 @@ const chartConfig = {
   },
   duration: {
     label: "Duration (min)",
-    color: "hsl(var(--accent))",
+    color: "hsl(var(--chart-2))",
   },
   weight: {
     label: "Weight (kg)",
     color: "hsl(var(--primary))",
+  },
+  distance: {
+    label: "Distance (mi)",
+    color: "hsl(var(--accent))",
   },
   'Upper Body': { label: "Upper Body", color: "hsl(var(--chart-1))" },
   'Lower Body': { label: "Lower Body", color: "hsl(var(--chart-2))" },
@@ -55,6 +59,11 @@ interface CategoryDataPoint {
   name: string;
   value: number;
   fill: string;
+}
+
+interface RunningDataPoint {
+    dateLabel: string;
+    distance: number;
 }
 
 interface PeriodSummaryStats {
@@ -79,6 +88,7 @@ export default function AnalysisPage() {
   const [categoryRepData, setCategoryRepData] = useState<CategoryDataPoint[]>([]);
   const [categoryCalorieData, setCategoryCalorieData] = useState<CategoryDataPoint[]>([]);
   const [newPrsData, setNewPrsData] = useState<PersonalRecord[]>([]);
+  const [runningProgressData, setRunningProgressData] = useState<RunningDataPoint[]>([]);
   const [currentPeriodSummary, setCurrentPeriodSummary] = useState<PeriodSummaryStats | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -188,6 +198,7 @@ export default function AnalysisPage() {
 
       const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
       const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
+      const runningDataPoints: { date: Date, distance: number }[] = [];
 
       logsForCurrentPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
@@ -200,6 +211,36 @@ export default function AnalysisPage() {
           }
           if (caloriesByCat[category] !== undefined) {
              caloriesByCat[category] += calories;
+          }
+
+          if (
+            ex.category === 'Cardio' &&
+            ex.distance && ex.distance > 0 &&
+            ex.duration && ex.duration > 0
+          ) {
+            let distanceInMiles = 0;
+            switch (ex.distanceUnit) {
+              case 'km': distanceInMiles = ex.distance * 0.621371; break;
+              case 'ft': distanceInMiles = ex.distance * 0.000189394; break;
+              case 'mi': default: distanceInMiles = ex.distance; break;
+            }
+      
+            let durationInHours = 0;
+            switch (ex.durationUnit) {
+              case 'sec': durationInHours = ex.duration / 3600; break;
+              case 'hr': durationInHours = ex.duration; break;
+              case 'min': default: durationInHours = ex.duration / 60; break;
+            }
+      
+            if (durationInHours > 0) {
+              const speedMph = distanceInMiles / durationInHours;
+              if (speedMph >= 4.5) {
+                runningDataPoints.push({
+                  date: log.date,
+                  distance: parseFloat(distanceInMiles.toFixed(2))
+                });
+              }
+            }
           }
         });
       });
@@ -222,6 +263,13 @@ export default function AnalysisPage() {
         .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
       setCategoryCalorieData(newCategoryCalorieData);
       
+      const sortedRunningData = runningDataPoints
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(data => ({
+          dateLabel: format(data.date, 'MMM d'),
+          distance: data.distance
+        }));
+      setRunningProgressData(sortedRunningData);
 
       let currentPeriodWorkoutDays = 0;
       let currentPeriodTotalWeightLiftedLbs = 0;
@@ -393,6 +441,39 @@ export default function AnalysisPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
+            <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
+            <CardDescription>
+              {isClient && workoutFrequencyData.length > 0
+                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
+                : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isClient && workoutFrequencyData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                    <XAxis dataKey="dateLabel" />
+                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
+                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--chart-2))" allowDecimals={false} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
+                    <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <p>{isClient ? `No workout data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg">
+          <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
               <Flame className="h-6 w-6 text-primary" />
               Category Breakdown
@@ -474,49 +555,38 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
-            <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
-            <CardDescription>
-              {isClient && workoutFrequencyData.length > 0
-                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
-                : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
-            </CardDescription>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Route className="h-6 w-6 text-accent" />
+              Running Distance Progression
+            </CardTitle>
+            <CardDescription>Your running distance over time (for sessions faster than 4.5 mph).</CardDescription>
           </CardHeader>
           <CardContent>
-            {isClient && workoutFrequencyData.length > 0 ? (
+            {isClient && runningProgressData.length > 0 ? (
               <ChartContainer config={chartConfig} className="h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                  <LineChart data={runningProgressData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="dateLabel" />
-                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
-                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--accent))" allowDecimals={false} />
-                    <Tooltip content={<ChartTooltipContent />} />
+                    <YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5 }} />
+                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
-                    <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
+                    <Line type="monotone" dataKey="distance" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No workout data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
+                <p>{isClient ? `No running data available for this period.` : "Loading chart data..."}</p>
               </div>
             )}
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-lg lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline">Exercise Performance (Placeholder)</CardTitle>
-            <CardDescription>Track improvements in specific exercises</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px] flex items-center justify-center text-muted-foreground">
-            <p>Detailed exercise performance charts coming soon!</p>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 }
+
+    
