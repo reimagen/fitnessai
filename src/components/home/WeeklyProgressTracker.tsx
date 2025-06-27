@@ -104,12 +104,12 @@ export function WeeklyProgressTracker() {
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center border-2",
                 isCompleted 
-                  ? "bg-yellow-400/20 border-yellow-500"
+                  ? "bg-yellow-400 border-yellow-500"
                   : "bg-secondary border-secondary-foreground/10",
                 isCurrentDay && "border-primary"
               )}>
                 {isCompleted ? (
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
+                  <Star className="h-5 w-5 text-white fill-white" />
                 ) : (
                   <span className="text-sm font-bold text-muted-foreground">{format(day, 'd')}</span>
                 )}
