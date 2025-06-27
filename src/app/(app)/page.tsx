@@ -26,7 +26,7 @@ export default function HomePage() {
               </Link>
               <Link href="/plan" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary">
                 <Target className="h-8 w-8 text-accent transition-transform group-hover:scale-110" />
-                <span className="text-sm font-medium text-foreground">AI Plan</span>
+                <span className="text-sm font-medium text-foreground">Get AI Plan</span>
               </Link>
               <Link href="/analysis" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary">
                 <BarChartBig className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
