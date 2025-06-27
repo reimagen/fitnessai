@@ -6,12 +6,13 @@ import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useEffect } from 'react';
-import type { WorkoutLog, Exercise } from '@/lib/types';
+import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, Award } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
+const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
 // Static data for weight progress - this will be updated later
 const weightProgressData = [
@@ -75,6 +76,7 @@ export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
   const [categoryRepData, setCategoryRepData] = useState<CategoryRepDataPoint[]>([]);
+  const [newPrsData, setNewPrsData] = useState<PersonalRecord[]>([]);
   const [currentPeriodSummary, setCurrentPeriodSummary] = useState<PeriodSummaryStats | null>(null);
   const [isClient, setIsClient] = useState(false);
 
@@ -84,6 +86,7 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     if (isClient) {
+      // Fetch workout logs
       const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
       let parsedLogs: WorkoutLog[] = [];
       
@@ -112,125 +115,152 @@ export default function AnalysisPage() {
           parsedLogs = [];
         }
       }
-          
-          let logsForCurrentPeriod = parsedLogs;
-          const today = new Date();
-          let periodLabel = timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1));
+      
+      // Fetch personal records
+      const savedPrsString = localStorage.getItem(LOCAL_STORAGE_KEY_PRS);
+      let parsedPrs: PersonalRecord[] = [];
+      if (savedPrsString) {
+        try {
+            parsedPrs = JSON.parse(savedPrsString).map((pr: any) => ({
+                ...pr,
+                date: pr.date ? parseISO(pr.date) : new Date(),
+            }));
+        } catch (error) {
+            console.error("Error parsing PRs for analysis:", error);
+            parsedPrs = [];
+        }
+      }
 
-          if (timeRange === 'weekly') {
-            const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); 
-            const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
-            logsForCurrentPeriod = parsedLogs.filter(log =>
-              isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
-            );
-            periodLabel = `${timeRangeDisplayNames['weekly']}'s`;
-          } else if (timeRange === 'monthly') {
-            const startOfCurrentMonth = startOfMonth(today);
-            const endOfCurrentMonth = endOfMonth(today);
-            logsForCurrentPeriod = parsedLogs.filter(log =>
-              isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
-            );
-            periodLabel = `${timeRangeDisplayNames['monthly']}'s`;
-          } else if (timeRange === 'yearly') {
-            const startOfCurrentYear = startOfYear(today);
-            const endOfCurrentYear = endOfYear(today);
-            logsForCurrentPeriod = parsedLogs.filter(log =>
-              isWithinInterval(log.date, { start: startOfCurrentYear, end: endOfCurrentYear })
-            );
-            periodLabel = `${timeRangeDisplayNames['yearly']}'s`;
-          } else { // 'all-time'
-             periodLabel = `${timeRangeDisplayNames['all-time']}`;
+      let logsForCurrentPeriod = parsedLogs;
+      let prsForCurrentPeriod = parsedPrs;
+      const today = new Date();
+      let periodLabel = timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1));
+
+      if (timeRange === 'weekly') {
+        const startOfCurrentWeek = startOfWeek(today, { weekStartsOn: 0 }); 
+        const endOfCurrentWeek = endOfWeek(today, { weekStartsOn: 0 });
+        logsForCurrentPeriod = parsedLogs.filter(log =>
+          isWithinInterval(log.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
+        );
+        prsForCurrentPeriod = parsedPrs.filter(pr =>
+            isWithinInterval(pr.date, { start: startOfCurrentWeek, end: endOfCurrentWeek })
+        );
+        periodLabel = `${timeRangeDisplayNames['weekly']}'s`;
+      } else if (timeRange === 'monthly') {
+        const startOfCurrentMonth = startOfMonth(today);
+        const endOfCurrentMonth = endOfMonth(today);
+        logsForCurrentPeriod = parsedLogs.filter(log =>
+          isWithinInterval(log.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
+        );
+        prsForCurrentPeriod = parsedPrs.filter(pr =>
+            isWithinInterval(pr.date, { start: startOfCurrentMonth, end: endOfCurrentMonth })
+        );
+        periodLabel = `${timeRangeDisplayNames['monthly']}'s`;
+      } else if (timeRange === 'yearly') {
+        const startOfCurrentYear = startOfYear(today);
+        const endOfCurrentYear = endOfYear(today);
+        logsForCurrentPeriod = parsedLogs.filter(log =>
+          isWithinInterval(log.date, { start: startOfCurrentYear, end: endOfCurrentYear })
+        );
+        prsForCurrentPeriod = parsedPrs.filter(pr =>
+            isWithinInterval(pr.date, { start: startOfCurrentYear, end: endOfCurrentYear })
+        );
+        periodLabel = `${timeRangeDisplayNames['yearly']}'s`;
+      } else { // 'all-time'
+          periodLabel = `${timeRangeDisplayNames['all-time']}`;
+      }
+      
+      // Update PR state
+      setNewPrsData(prsForCurrentPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()));
+
+      const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
+      const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
+      
+      const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
+        dateLabel: format(summary.date, 'MMM d'),
+        exercises: summary.totalExercises,
+        duration: Math.round(summary.totalDurationMinutes),
+      }));
+      setWorkoutFrequencyData(newWorkoutFrequencyData);
+
+
+      const repsByCat: Record<string, number> = {
+        'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
+      };
+      logsForCurrentPeriod.forEach(log => { 
+        log.exercises.forEach(ex => {
+          const reps = ex.reps || 0;
+          if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
+          else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
+          else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
+          else if (ex.category === 'Core') repsByCat['Core'] += reps;
+          else repsByCat['Other'] += reps;
+        });
+      });
+      const pieChartColors: Record<string, string> = {
+        'Upper Body': chartConfig['Upper Body'].color!,
+        'Lower Body': chartConfig['Lower Body'].color!,
+        'Cardio': chartConfig['Cardio'].color!,
+        'Core': chartConfig['Core'].color!,
+        'Other': chartConfig['Other'].color!,
+      };
+      const newCategoryRepData = Object.entries(repsByCat)
+        .filter(([, value]) => value > 0)
+        .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
+      setCategoryRepData(newCategoryRepData);
+      
+
+      let currentPeriodWorkoutDays = 0;
+      let currentPeriodTotalWeightLiftedLbs = 0;
+      let currentPeriodTotalDistanceMi = 0;
+      let currentPeriodTotalCardioDurationMin = 0;
+      let currentPeriodTotalCaloriesBurned = 0;
+      const uniqueWorkoutDatesThisPeriod = new Set<string>();
+
+      logsForCurrentPeriod.forEach(log => {
+        uniqueWorkoutDatesThisPeriod.add(format(log.date, 'yyyy-MM-dd'));
+        log.exercises.forEach(ex => {
+          if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
+              let volume = ex.weight * ex.sets * ex.reps;
+              if (ex.weightUnit === 'kg') {
+                  volume *= 2.20462;
+              }
+              currentPeriodTotalWeightLiftedLbs += volume;
           }
-          
-
-          const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
-          const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
-          
-          const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
-            dateLabel: format(summary.date, 'MMM d'),
-            exercises: summary.totalExercises,
-            duration: Math.round(summary.totalDurationMinutes),
-          }));
-          setWorkoutFrequencyData(newWorkoutFrequencyData);
-
-
-          const repsByCat: Record<string, number> = {
-            'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
-          };
-          logsForCurrentPeriod.forEach(log => { 
-            log.exercises.forEach(ex => {
-              const reps = ex.reps || 0;
-              if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
-              else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-              else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
-              else if (ex.category === 'Core') repsByCat['Core'] += reps;
-              else repsByCat['Other'] += reps;
-            });
-          });
-          const pieChartColors: Record<string, string> = {
-            'Upper Body': chartConfig['Upper Body'].color!,
-            'Lower Body': chartConfig['Lower Body'].color!,
-            'Cardio': chartConfig['Cardio'].color!,
-            'Core': chartConfig['Core'].color!,
-            'Other': chartConfig['Other'].color!,
-          };
-          const newCategoryRepData = Object.entries(repsByCat)
-            .filter(([, value]) => value > 0)
-            .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
-          setCategoryRepData(newCategoryRepData);
-          
-
-          let currentPeriodWorkoutDays = 0;
-          let currentPeriodTotalWeightLiftedLbs = 0;
-          let currentPeriodTotalDistanceMi = 0;
-          let currentPeriodTotalCardioDurationMin = 0;
-          let currentPeriodTotalCaloriesBurned = 0;
-          const uniqueWorkoutDatesThisPeriod = new Set<string>();
-
-          logsForCurrentPeriod.forEach(log => {
-            uniqueWorkoutDatesThisPeriod.add(format(log.date, 'yyyy-MM-dd'));
-            log.exercises.forEach(ex => {
-              if (ex.weight && ex.sets && ex.reps && ex.weight > 0 && ex.sets > 0 && ex.reps > 0) {
-                  let volume = ex.weight * ex.sets * ex.reps;
-                  if (ex.weightUnit === 'kg') {
-                      volume *= 2.20462;
-                  }
-                  currentPeriodTotalWeightLiftedLbs += volume;
+          if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
+              let durationInMin = 0;
+              switch (ex.durationUnit) {
+                  case 'sec': durationInMin = ex.duration / 60; break;
+                  case 'hr': durationInMin = ex.duration * 60; break;
+                  case 'min': default: durationInMin = ex.duration; break;
               }
-              if (ex.category === 'Cardio' && ex.duration && ex.duration > 0) {
-                  let durationInMin = 0;
-                  switch (ex.durationUnit) {
-                      case 'sec': durationInMin = ex.duration / 60; break;
-                      case 'hr': durationInMin = ex.duration * 60; break;
-                      case 'min': default: durationInMin = ex.duration; break;
-                  }
-                  currentPeriodTotalCardioDurationMin += durationInMin;
-              }
-              if (ex.category === 'Cardio' && ex.distance && ex.distanceUnit) {
-                let distanceInMiles = 0;
-                switch (ex.distanceUnit) {
-                  case 'km':
-                    distanceInMiles = ex.distance * 0.621371;
-                    break;
-                  case 'ft':
-                    distanceInMiles = ex.distance * 0.000189394;
-                    break;
-                  case 'mi': default: distanceInMiles = ex.distance; break;
-                }
-                currentPeriodTotalDistanceMi += distanceInMiles;
-              }
-              currentPeriodTotalCaloriesBurned += (ex.calories || 0);
-            });
-          });
-          currentPeriodWorkoutDays = uniqueWorkoutDatesThisPeriod.size;
-          setCurrentPeriodSummary({
-            workoutDays: currentPeriodWorkoutDays,
-            totalWeightLiftedLbs: Math.round(currentPeriodTotalWeightLiftedLbs),
-            totalDistanceMi: Math.round(currentPeriodTotalDistanceMi),
-            totalCardioDurationMin: Math.round(currentPeriodTotalCardioDurationMin),
-            totalCaloriesBurned: Math.round(currentPeriodTotalCaloriesBurned),
-            periodLabel: periodLabel,
-          });
+              currentPeriodTotalCardioDurationMin += durationInMin;
+          }
+          if (ex.category === 'Cardio' && ex.distance && ex.distanceUnit) {
+            let distanceInMiles = 0;
+            switch (ex.distanceUnit) {
+              case 'km':
+                distanceInMiles = ex.distance * 0.621371;
+                break;
+              case 'ft':
+                distanceInMiles = ex.distance * 0.000189394;
+                break;
+              case 'mi': default: distanceInMiles = ex.distance; break;
+            }
+            currentPeriodTotalDistanceMi += distanceInMiles;
+          }
+          currentPeriodTotalCaloriesBurned += (ex.calories || 0);
+        });
+      });
+      currentPeriodWorkoutDays = uniqueWorkoutDatesThisPeriod.size;
+      setCurrentPeriodSummary({
+        workoutDays: currentPeriodWorkoutDays,
+        totalWeightLiftedLbs: Math.round(currentPeriodTotalWeightLiftedLbs),
+        totalDistanceMi: Math.round(currentPeriodTotalDistanceMi),
+        totalCardioDurationMin: Math.round(currentPeriodTotalCardioDurationMin),
+        totalCaloriesBurned: Math.round(currentPeriodTotalCaloriesBurned),
+        periodLabel: periodLabel,
+      });
     }
   }, [isClient, timeRange]);
 
@@ -397,6 +427,39 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
         
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Award className="h-6 w-6 text-accent" />
+              New Personal Records
+            </CardTitle>
+            <CardDescription>
+              {isClient && newPrsData.length > 0
+                ? `Achievements in ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
+                : (isClient ? `No new PRs achieved in this period.` : "Checking for new records...")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isClient && newPrsData.length > 0 ? (
+              <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">
+                {newPrsData.map(pr => (
+                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                    <div className="flex flex-col">
+                      <p className="font-semibold text-primary">{pr.exerciseName}</p>
+                      <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
+                    </div>
+                    <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <p>{isClient ? `No new PRs for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading records..."}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline">Exercise Performance (Placeholder)</CardTitle>
@@ -411,3 +474,4 @@ export default function AnalysisPage() {
   );
 }
 
+    
