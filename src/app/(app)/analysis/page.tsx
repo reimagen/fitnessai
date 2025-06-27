@@ -5,11 +5,12 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp, Award } from 'lucide-react';
+import { TrendingUp, Award, Flame } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
@@ -50,7 +51,7 @@ interface ChartDataPoint {
   duration: number;
 }
 
-interface CategoryRepDataPoint {
+interface CategoryDataPoint {
   name: string;
   value: number;
   fill: string;
@@ -75,7 +76,8 @@ const timeRangeDisplayNames: Record<string, string> = {
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
-  const [categoryRepData, setCategoryRepData] = useState<CategoryRepDataPoint[]>([]);
+  const [categoryRepData, setCategoryRepData] = useState<CategoryDataPoint[]>([]);
+  const [categoryCalorieData, setCategoryCalorieData] = useState<CategoryDataPoint[]>([]);
   const [newPrsData, setNewPrsData] = useState<PersonalRecord[]>([]);
   const [currentPeriodSummary, setCurrentPeriodSummary] = useState<PeriodSummaryStats | null>(null);
   const [isClient, setIsClient] = useState(false);
@@ -184,19 +186,24 @@ export default function AnalysisPage() {
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-      const repsByCat: Record<string, number> = {
-        'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0,
-      };
+      const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
+      const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
+
       logsForCurrentPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
+          const category = ex.category || 'Other';
           const reps = ex.reps || 0;
-          if (ex.category === 'Upper Body') repsByCat['Upper Body'] += reps;
-          else if (ex.category === 'Lower Body') repsByCat['Lower Body'] += reps;
-          else if (ex.category === 'Cardio') repsByCat['Cardio'] += reps; 
-          else if (ex.category === 'Core') repsByCat['Core'] += reps;
-          else repsByCat['Other'] += reps;
+          const calories = ex.calories || 0;
+          
+          if (repsByCat[category] !== undefined) {
+            repsByCat[category] += reps;
+          }
+          if (caloriesByCat[category] !== undefined) {
+             caloriesByCat[category] += calories;
+          }
         });
       });
+
       const pieChartColors: Record<string, string> = {
         'Upper Body': chartConfig['Upper Body'].color!,
         'Lower Body': chartConfig['Lower Body'].color!,
@@ -204,10 +211,16 @@ export default function AnalysisPage() {
         'Core': chartConfig['Core'].color!,
         'Other': chartConfig['Other'].color!,
       };
+
       const newCategoryRepData = Object.entries(repsByCat)
         .filter(([, value]) => value > 0)
         .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
       setCategoryRepData(newCategoryRepData);
+
+      const newCategoryCalorieData = Object.entries(caloriesByCat)
+        .filter(([, value]) => value > 0)
+        .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
+      setCategoryCalorieData(newCategoryCalorieData);
       
 
       let currentPeriodWorkoutDays = 0;
@@ -265,15 +278,19 @@ export default function AnalysisPage() {
   }, [isClient, timeRange]);
 
   const RADIAN = Math.PI / 180;
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name, value }: any) => {
-    if (percent < 0.05 && categoryRepData.length > 3) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
-    const x = cx + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.cos(-midAngle * RADIAN);
-    const y = cy + (radius + (categoryRepData.length > 4 ? 15 : 10)) * Math.sin(-midAngle * RADIAN);
+  const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
+    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
+    if (percent < 0.05) return null;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 15;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    const displayValue = unit === 'kcal' ? Math.round(value) : value;
+    const unitString = unit ? ` ${unit}` : '';
 
     return (
       <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">
-        {`${name} (${value})`}
+        {`${name} (${displayValue}${unitString})`}
       </text>
     );
   };
@@ -373,39 +390,69 @@ export default function AnalysisPage() {
             )}
           </CardContent>
         </Card>
-        
+
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Reps by Category</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Flame className="h-6 w-6 text-primary" />
+              Category Breakdown
+            </CardTitle>
             <CardDescription>
-              {isClient && categoryRepData.length > 0
-                ? `Repetitions distribution for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
-                : (isClient ? `No repetition data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
+                Distribution for {timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isClient && categoryRepData.length > 0 ? (
-              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <Pie data={categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={renderCustomizedLabel}>
-                      {categoryRepData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                    <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No repetition data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
-              </div>
-            )}
+            <Tabs defaultValue="reps" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="reps">Reps</TabsTrigger>
+                    <TabsTrigger value="calories">Calories</TabsTrigger>
+                </TabsList>
+                <TabsContent value="reps">
+                  {isClient && categoryRepData.length > 0 ? (
+                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                          <Pie data={categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>
+                            {categoryRepData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                          <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      <p>{isClient ? `No repetition data available.` : "Loading chart data..."}</p>
+                    </div>
+                  )}
+                </TabsContent>
+                <TabsContent value="calories">
+                   {isClient && categoryCalorieData.length > 0 ? (
+                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                          <Pie data={categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>
+                            {categoryCalorieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                          <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      <p>{isClient ? `No calorie data available.` : "Loading chart data..."}</p>
+                    </div>
+                  )}
+                </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
-
+        
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Weight Progress</CardTitle>
@@ -473,5 +520,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
