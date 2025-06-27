@@ -39,6 +39,14 @@ User Profile Context: {{{userProfileContext}}}
 
 The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{weekStartDate}}){{/if}} and continue through Saturday.
 
+**NEW REQUIREMENT: Introductory Analysis**
+Before generating the daily breakdown, you MUST start the plan with a brief introductory paragraph (2-4 sentences). This paragraph MUST:
+1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their \`Workout History Summary\` in the provided context. For example, mention their consistency or focus areas.
+2.  **State This Week's Purpose**: Explicitly connect this week's plan to the user's primary \`Fitness Goal\`. Explain how the upcoming workouts will help them progress towards that goal.
+3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
+
+After writing the introduction, proceed with generating the full weekly workout plan as described in the "Key Requirements" below.
+
 **Key Requirements for the Weekly Plan:**
 
 1.  **Structure**: The output MUST be a single string containing the entire week's plan.
@@ -95,4 +103,3 @@ const weeklyWorkoutPlannerFlow = ai.defineFlow(
     return output;
   }
 );
-
