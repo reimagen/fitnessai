@@ -157,7 +157,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                     <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
                     <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
                     <TableCell className="text-right">
-                        {exercise.weight && exercise.weight > 0 ? `${exercise.weight}${exercise.weightUnit || 'kg'}` : "-"}
+                        {exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : "-"}
                     </TableCell>
                     <TableCell className="text-right">
                         {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
