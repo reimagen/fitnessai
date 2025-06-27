@@ -30,10 +30,6 @@ const chartConfig = {
     label: "Exercises",
     color: "hsl(var(--primary))",
   },
-  duration: {
-    label: "Duration (min)",
-    color: "hsl(var(--chart-2))",
-  },
   weight: {
     label: "Weight (kg)",
     color: "hsl(var(--primary))",
@@ -52,7 +48,6 @@ const chartConfig = {
 interface ChartDataPoint {
   dateLabel: string;
   exercises: number;
-  duration: number;
 }
 
 interface CategoryDataPoint {
@@ -192,7 +187,6 @@ export default function AnalysisPage() {
       const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
         dateLabel: format(summary.date, 'MMM d'),
         exercises: summary.totalExercises,
-        duration: Math.round(summary.totalDurationMinutes),
       }));
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
@@ -440,10 +434,10 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
+            <CardTitle className="font-headline">Workout Frequency</CardTitle>
             <CardDescription>
               {isClient && workoutFrequencyData.length > 0
-                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
+                ? `Number of exercises per workout day for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}.`
                 : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
@@ -454,12 +448,10 @@ export default function AnalysisPage() {
                   <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                     <XAxis dataKey="dateLabel" />
-                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
-                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--chart-2))" allowDecimals={false} />
+                    <YAxis dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
-                    <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -634,5 +626,7 @@ export default function AnalysisPage() {
       </div>
     </div>
   );
+
+    
 
     
