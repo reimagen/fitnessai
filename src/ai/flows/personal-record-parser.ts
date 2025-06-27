@@ -54,9 +54,20 @@ Key Instructions:
 2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Chest Press" should become "Chest Press".
-3.  **Exercise Category - NEW**:
-    *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
-    *   Infer the category based on the exercise name. For example, "Abductor" and "Adductor" and "Glutes" are "Lower Body". "Back Extension" can be "Core" or "Lower Body", prefer "Core". "Abdominal Crunch" and "Rotary Torso" are "Core". "Bench Press" is "Upper Body".
+3.  **Exercise Category - CRITICAL**:
+    *   For each exercise, you MUST assign a category. The category MUST be one of the following exact strings: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
+    *   You MUST infer the category based on the exercise name. Do not default to "Other" unless you are absolutely certain the exercise does not fit into the other categories.
+    *   **Specific examples for categorization:**
+        *   "Abductor" is **Lower Body**.
+        *   "Adductor" is **Lower Body**.
+        *   "Glutes" is **Lower Body**.
+        *   "Leg Press" is **Lower Body**.
+        *   "Abdominal Crunch" is **Core**.
+        *   "Rotary Torso" is **Core**.
+        *   "Back Extension" is **Core**. (Prefer Core over Lower Body for this exercise).
+        *   "Chest Press" is **Upper Body**.
+        *   "Bench Press" is **Upper Body**.
+        *   "Lat Pulldown" is **Upper Body**.
 4.  **Weight and Unit**:
     *   Extract the numerical weight value and its unit (kg or lbs).
 5.  **Date - CRITICAL**:
