@@ -6,7 +6,7 @@ import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useEffect } from 'react';
-import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
+import type { WorkoutLog, Exercise, PersonalRecord, ExerciseCategory } from '@/lib/types';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw } from 'lucide-react';
 
@@ -14,26 +14,25 @@ const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
 const chartConfig = {
-  distance: {
-    label: "Distance (mi)",
-    color: "hsl(var(--accent))",
-  },
-  'Upper Body': { label: "Upper Body", color: "hsl(var(--chart-1))" },
-  'Lower Body': { label: "Lower Body", color: "hsl(var(--chart-2))" },
-  'Cardio': { label: "Cardio", color: "hsl(var(--chart-3))" },
-  'Core': { label: "Core", color: "hsl(var(--chart-4))" },
-  'Other': { label: "Other", color: "hsl(var(--chart-5))" },
-  'Full Body': { label: "Full Body", color: "hsl(var(--chart-6))" },
+  distance: { label: "Distance (mi)", color: "hsl(var(--accent))" },
+  upperBody: { label: "Upper Body", color: "hsl(var(--chart-1))" },
+  fullBody: { label: "Full Body", color: "hsl(var(--chart-2))" },
+  lowerBody: { label: "Lower Body", color: "hsl(var(--chart-3))" },
+  cardio: { label: "Cardio", color: "hsl(var(--chart-4))" },
+  core: { label: "Core", color: "hsl(var(--chart-5))" },
+  other: { label: "Other", color: "hsl(var(--chart-6))" },
 } satisfies ChartConfig;
+
+type ChartDataKey = keyof typeof chartConfig;
 
 interface ChartDataPoint {
   dateLabel: string;
-  'Upper Body': number;
-  'Lower Body': number;
-  'Cardio': number;
-  'Core': number;
-  'Other': number;
-  'Full Body': number;
+  upperBody: number;
+  lowerBody: number;
+  cardio: number;
+  core: number;
+  other: number;
+  fullBody: number;
 }
 
 interface CategoryDataPoint {
@@ -62,6 +61,17 @@ const timeRangeDisplayNames: Record<string, string> = {
   'monthly': 'This Month',
   'yearly': 'This Year',
   'all-time': 'All Time',
+};
+
+const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPoint, 'dateLabel'> => {
+  switch (category) {
+    case 'Upper Body': return 'upperBody';
+    case 'Lower Body': return 'lowerBody';
+    case 'Full Body': return 'fullBody';
+    case 'Cardio': return 'cardio';
+    case 'Core': return 'core';
+    default: return 'other';
+  }
 };
 
 export default function AnalysisPage() {
@@ -167,43 +177,33 @@ export default function AnalysisPage() {
       // Update PR state
       setNewPrsData(prsForCurrentPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()));
 
-      const dailyCategoryCounts: { [dateKey: string]: { [category: string]: number } } = {};
+      const dailyCategoryCounts: { [dateKey: string]: ChartDataPoint } = {};
       
       logsForCurrentPeriod.forEach(log => {
         const dateKey = format(log.date, 'yyyy-MM-dd');
         if (!dailyCategoryCounts[dateKey]) {
           dailyCategoryCounts[dateKey] = {
-            'Upper Body': 0,
-            'Lower Body': 0,
-            'Cardio': 0,
-            'Core': 0,
-            'Full Body': 0,
-            'Other': 0
+            dateLabel: format(log.date, 'MMM d'),
+            upperBody: 0,
+            lowerBody: 0,
+            cardio: 0,
+            core: 0,
+            fullBody: 0,
+            other: 0,
           };
         }
         log.exercises.forEach(ex => {
           const category = ex.category || 'Other';
-          if (dailyCategoryCounts[dateKey][category] !== undefined) {
-            dailyCategoryCounts[dateKey][category]++;
+          const camelCaseCategory = categoryToCamelCase(category);
+          if (dailyCategoryCounts[dateKey][camelCaseCategory] !== undefined) {
+             dailyCategoryCounts[dateKey][camelCaseCategory]++;
           }
         });
       });
 
-      const newWorkoutFrequencyData = Object.keys(dailyCategoryCounts)
-        .map(dateKey => ({
-          date: parseISO(dateKey),
-          ...dailyCategoryCounts[dateKey]
-        }))
-        .sort((a, b) => a.date.getTime() - b.date.getTime())
-        .map(data => ({
-          dateLabel: format(data.date, 'MMM d'),
-          'Upper Body': data['Upper Body'],
-          'Lower Body': data['Lower Body'],
-          'Cardio': data['Cardio'],
-          'Core': data['Core'],
-          'Full Body': data['Full Body'],
-          'Other': data['Other'],
-        }));
+      const newWorkoutFrequencyData = Object.values(dailyCategoryCounts)
+        .sort((a, b) => parseISO(a.dateLabel.replace(/(\w{3} \d+)/, `$1, ${getYear(new Date())}`)).getTime() - parseISO(b.dateLabel.replace(/(\w{3} \d+)/, `$1, ${getYear(new Date())}`)).getTime());
+      
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
@@ -272,12 +272,12 @@ export default function AnalysisPage() {
       });
 
       const pieChartColors: Record<string, string> = {
-        'Upper Body': chartConfig['Upper Body'].color!,
-        'Lower Body': chartConfig['Lower Body'].color!,
-        'Cardio': chartConfig['Cardio'].color!,
-        'Core': chartConfig['Core'].color!,
-        'Other': chartConfig['Other'].color!,
-        'Full Body': chartConfig['Full Body'].color!,
+        'Upper Body': chartConfig.upperBody.color!,
+        'Lower Body': chartConfig.lowerBody.color!,
+        'Cardio': chartConfig.cardio.color!,
+        'Core': chartConfig.core.color!,
+        'Other': chartConfig.other.color!,
+        'Full Body': chartConfig.fullBody.color!,
       };
 
       const newCategoryRepData = Object.entries(repsByCat)
@@ -386,13 +386,12 @@ export default function AnalysisPage() {
   };
 
   const CustomBarChartLegend = ({ payload }: any) => {
-    const legendOrder: (keyof typeof chartConfig)[] = [
-      'Upper Body', 'Lower Body', 'Core',
-      'Full Body', 'Cardio', 'Other'
+    const legendOrder: ChartDataKey[] = [
+      'upperBody', 'lowerBody', 'core', 'fullBody', 'cardio', 'other'
     ];
   
     const payloadMap = payload.reduce((acc: any, entry: any) => {
-      acc[entry.value] = entry;
+      acc[entry.value] = entry; // entry.value is the dataKey, e.g., "upperBody"
       return acc;
     }, {});
   
@@ -400,14 +399,14 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">
         {legendOrder.map((name) => {
           const entry = payloadMap[name];
-          if (!entry) return null;
+          if (!entry || !chartConfig[name]) return null;
           return (
             <div key={`item-${entry.value}`} className="flex items-center justify-center gap-1.5">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                 style={{ backgroundColor: entry.color }}
               />
-              <span className="text-muted-foreground">{entry.value}</span>
+              <span className="text-muted-foreground">{chartConfig[name].label}</span>
             </div>
           );
         })}
@@ -492,12 +491,12 @@ export default function AnalysisPage() {
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend content={<CustomBarChartLegend />} />
-                    <Bar dataKey="Upper Body" stackId="a" fill="hsl(var(--chart-1))" />
-                    <Bar dataKey="Lower Body" stackId="a" fill="hsl(var(--chart-2))" />
-                    <Bar dataKey="Cardio" stackId="a" fill="hsl(var(--chart-3))" />
-                    <Bar dataKey="Core" stackId="a" fill="hsl(var(--chart-4))" />
-                    <Bar dataKey="Full Body" stackId="a" fill="hsl(var(--chart-6))" />
-                    <Bar dataKey="Other" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" />
+                    <Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" />
+                    <Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" />
+                    <Bar dataKey="core" stackId="a" fill="var(--color-core)" />
+                    <Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" />
+                    <Bar dataKey="other" stackId="a" fill="var(--color-other)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -656,6 +655,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
-

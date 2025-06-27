@@ -46,18 +46,18 @@
     --sidebar-ring: 345 90% 62%;
 
     /* Chart colors from user's brand theme */
-    --chart-1: hsl(343 83% 72%); /* Upper Body: #f280a1 */
-    --chart-1-foreground: hsl(343 80% 20%);
-    --chart-2: hsl(41 92% 67%); /* Lower Body: #f8c35c */
-    --chart-2-foreground: hsl(41 80% 20%);
-    --chart-3: hsl(23 89% 62%); /* Cardio: #f48b49 */
-    --chart-3-foreground: hsl(23 80% 20%);
-    --chart-4: hsl(320 68% 74%); /* Core: #e890bd */
-    --chart-4-foreground: hsl(320 80% 20%);
-    --chart-5: hsl(19 86% 80%); /* Other: #f7b9a2 */
-    --chart-5-foreground: hsl(19 80% 20%);
-    --chart-6: hsl(1 85% 67%); /* Full Body: #f26462 */
-    --chart-6-foreground: hsl(1 80% 20%);
+    --chart-1: 347 85% 76%; /* Upper Body: #f280a1 */
+    --chart-1-foreground: 22.2 87.5% 9.8%;
+    --chart-2: 1 87% 67%; /* Full Body: #f26462 */
+    --chart-2-foreground: 22.2 87.5% 9.8%;
+    --chart-3: 44 93% 67%; /* Lower Body: #f8c35c */
+    --chart-3-foreground: 22.2 87.5% 9.8%;
+    --chart-4: 21 89% 62%; /* Cardio: #f48b49 */
+    --chart-4-foreground: 22.2 87.5% 9.8%;
+    --chart-5: 329 68% 79%; /* Core: #e890bd */
+    --chart-5-foreground: 22.2 87.5% 9.8%;
+    --chart-6: 18 85% 80%; /* Other: #f7b9a2 */
+    --chart-6-foreground: 22.2 87.5% 9.8%;
   }
 
   .dark {
@@ -91,18 +91,18 @@
     --ring: 345 85% 65%;
 
     /* Chart colors for dark theme */
-    --chart-1: hsl(343 83% 78%);
-    --chart-1-foreground: hsl(343 80% 95%);
-    --chart-2: hsl(41 92% 73%);
-    --chart-2-foreground: hsl(41 80% 95%);
-    --chart-3: hsl(23 89% 68%);
-    --chart-3-foreground: hsl(23 80% 95%);
-    --chart-4: hsl(320 68% 80%);
-    --chart-4-foreground: hsl(320 80% 95%);
-    --chart-5: hsl(19 86% 86%);
-    --chart-5-foreground: hsl(19 80% 95%);
-    --chart-6: hsl(1 85% 73%);
-    --chart-6-foreground: hsl(1 80% 95%);
+    --chart-1: 347 85% 76%; /* Upper Body: #f280a1 */
+    --chart-1-foreground: 22.2 87.5% 9.8%;
+    --chart-2: 1 87% 67%; /* Full Body: #f26462 */
+    --chart-2-foreground: 22.2 87.5% 9.8%;
+    --chart-3: 44 93% 67%; /* Lower Body: #f8c35c */
+    --chart-3-foreground: 22.2 87.5% 9.8%;
+    --chart-4: 21 89% 62%; /* Cardio: #f48b49 */
+    --chart-4-foreground: 22.2 87.5% 9.8%;
+    --chart-5: 329 68% 79%; /* Core: #e890bd */
+    --chart-5-foreground: 22.2 87.5% 9.8%;
+    --chart-6: 18 85% 80%; /* Other: #f7b9a2 */
+    --chart-6-foreground: 22.2 87.5% 9.8%;
 
 
     /* Sidebar specific colors for dark theme */
