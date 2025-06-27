@@ -47,17 +47,17 @@
 
     /* Chart colors from user's brand theme */
     --chart-1: 347 85% 76%; /* Upper Body: #f280a1 */
-    --chart-1-foreground: 22.2 87.5% 9.8%;
-    --chart-2: 1 87% 67%; /* Full Body: #f26462 */
-    --chart-2-foreground: 22.2 87.5% 9.8%;
-    --chart-3: 44 93% 67%; /* Lower Body: #f8c35c */
-    --chart-3-foreground: 22.2 87.5% 9.8%;
-    --chart-4: 21 89% 62%; /* Cardio: #f48b49 */
-    --chart-4-foreground: 22.2 87.5% 9.8%;
-    --chart-5: 329 68% 79%; /* Core: #e890bd */
-    --chart-5-foreground: 22.2 87.5% 9.8%;
+    --chart-1-foreground: 0 0% 100%;
+    --chart-2: 329 68% 79%; /* Full Body: #e890bd */
+    --chart-2-foreground: 0 0% 100%;
+    --chart-3: 1 87% 67%; /* Lower Body: #f26462 */
+    --chart-3-foreground: 0 0% 100%;
+    --chart-4: 44 93% 67%; /* Cardio: #f8c35c */
+    --chart-4-foreground: 355 11% 26%; /* Dark text for yellow */
+    --chart-5: 21 89% 62%; /* Core: #f48b49 */
+    --chart-5-foreground: 0 0% 100%;
     --chart-6: 18 85% 80%; /* Other: #f7b9a2 */
-    --chart-6-foreground: 22.2 87.5% 9.8%;
+    --chart-6-foreground: 355 11% 26%; /* Dark text for beige */
   }
 
   .dark {
@@ -92,17 +92,17 @@
 
     /* Chart colors for dark theme */
     --chart-1: 347 85% 76%; /* Upper Body: #f280a1 */
-    --chart-1-foreground: 22.2 87.5% 9.8%;
-    --chart-2: 1 87% 67%; /* Full Body: #f26462 */
-    --chart-2-foreground: 22.2 87.5% 9.8%;
-    --chart-3: 44 93% 67%; /* Lower Body: #f8c35c */
-    --chart-3-foreground: 22.2 87.5% 9.8%;
-    --chart-4: 21 89% 62%; /* Cardio: #f48b49 */
-    --chart-4-foreground: 22.2 87.5% 9.8%;
-    --chart-5: 329 68% 79%; /* Core: #e890bd */
-    --chart-5-foreground: 22.2 87.5% 9.8%;
+    --chart-1-foreground: 0 0% 100%;
+    --chart-2: 329 68% 79%; /* Full Body: #e890bd */
+    --chart-2-foreground: 0 0% 100%;
+    --chart-3: 1 87% 67%; /* Lower Body: #f26462 */
+    --chart-3-foreground: 0 0% 100%;
+    --chart-4: 44 93% 67%; /* Cardio: #f8c35c */
+    --chart-4-foreground: 355 11% 26%; /* Dark text for yellow */
+    --chart-5: 21 89% 62%; /* Core: #f48b49 */
+    --chart-5-foreground: 0 0% 100%;
     --chart-6: 18 85% 80%; /* Other: #f7b9a2 */
-    --chart-6-foreground: 22.2 87.5% 9.8%;
+    --chart-6-foreground: 355 11% 26%; /* Dark text for beige */
 
 
     /* Sidebar specific colors for dark theme */
