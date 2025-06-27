@@ -10,6 +10,9 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type { ExerciseCategory } from '@/lib/types';
+
+const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 const ParsePersonalRecordsInputSchema = z.object({
   photoDataUri: z
@@ -24,7 +27,8 @@ const PersonalRecordSchema = z.object({
     exerciseName: z.string().describe("The name of the exercise. If the original name starts with 'EGYM ', remove this prefix."),
     weight: z.number().describe("The weight lifted for the record."),
     weightUnit: z.enum(['kg', 'lbs']).describe("The unit for the weight (kg or lbs)."),
-    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. If the year is not specified, default to 2025. If the year 2024 is visible, it must be changed to 2025.")
+    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. If the year is not specified, default to 2025. If the year 2024 is visible, it must be changed to 2025."),
+    category: z.enum(CATEGORY_OPTIONS).describe("The category of the exercise. Infer based on the exercise name. Must be one of: 'Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', or 'Other'.")
 });
 
 const ParsePersonalRecordsOutputSchema = z.object({
@@ -50,9 +54,12 @@ Key Instructions:
 2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Chest Press" should become "Chest Press".
-3.  **Weight and Unit**:
+3.  **Exercise Category - NEW**:
+    *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
+    *   Infer the category based on the exercise name. For example, "Abductor" and "Adductor" and "Glutes" are "Lower Body". "Back Extension" can be "Core" or "Lower Body", prefer "Core". "Abdominal Crunch" and "Rotary Torso" are "Core". "Bench Press" is "Upper Body".
+4.  **Weight and Unit**:
     *   Extract the numerical weight value and its unit (kg or lbs).
-4.  **Date - CRITICAL**:
+5.  **Date - CRITICAL**:
     *   Each record has its own date. You must extract the date associated with each specific record.
     *   Format the date as YYYY-MM-DD.
     *   **Rule 1: If the year \`2024\` is visible for a record, you MUST IGNORE it and use the year \`2025\` in your output for that record.** For example, if a line says "Bench Press 100 kg Jun 26, 2024", the \`dateString\` MUST be "2025-06-26".

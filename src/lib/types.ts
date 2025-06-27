@@ -60,6 +60,7 @@ export interface PersonalRecord {
   weightUnit: 'kg' | 'lbs';
   date: Date;
   dateString: string;
+  category?: ExerciseCategory;
 }
 
 export interface AggregatedWorkoutDaySummary {

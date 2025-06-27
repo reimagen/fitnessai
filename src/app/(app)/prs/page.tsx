@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Award, Trophy, UploadCloud } from "lucide-react";
-import type { PersonalRecord } from "@/lib/types";
+import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +56,7 @@ export default function PRsPage() {
           const parsedRecords: PersonalRecord[] = JSON.parse(savedPrsString).map((rec: any) => ({
             ...rec,
             date: parseISO(rec.date), // Rehydrate date object
+            category: rec.category || 'Other', // Handle old data that might not have a category
           }));
           setAllRecords(parsedRecords);
         } catch (error) {
@@ -89,6 +90,7 @@ export default function PRsPage() {
                 weightUnit: rec.weightUnit,
                 date: new Date(rec.dateString.replace(/-/g, '/')),
                 dateString: rec.dateString,
+                category: rec.category,
             };
             newRecords.push(newRecord);
             existingRecordKeys.add(key); // Add to set to prevent duplicates within the same upload
@@ -110,6 +112,17 @@ export default function PRsPage() {
         });
     }
   };
+
+  const groupedRecords = bestRecords.reduce((acc, record) => {
+    const category = record.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(record);
+    return acc;
+  }, {} as Record<string, PersonalRecord[]>);
+
+  const categoryOrder: ExerciseCategory[] = ['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Cardio', 'Other'];
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -142,20 +155,29 @@ export default function PRsPage() {
             Your Personal Bests
           </CardTitle>
           <CardDescription>
-            Your top recorded lift for each exercise.
+            Your top recorded lift for each exercise, grouped by category.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isClient && bestRecords.length > 0 ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {bestRecords.map(record => (
-                    <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
-                        <div>
-                            <p className="font-bold text-lg text-primary">{record.exerciseName}</p>
-                            <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
+             <div className="space-y-8">
+                {categoryOrder.map(category => (
+                  groupedRecords[category] && groupedRecords[category].length > 0 && (
+                    <div key={category}>
+                        <h3 className="text-xl font-headline font-semibold mb-4 text-primary border-b pb-2">{category}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                            {groupedRecords[category].map(record => (
+                                <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
+                                    <div>
+                                        <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                        <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
+                                </Card>
+                            ))}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-2">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
-                    </Card>
+                    </div>
+                  )
                 ))}
             </div>
           ) : (
