@@ -72,8 +72,16 @@ Key Instructions:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
 4.  **Exercise Category**:
-    *   For each exercise, assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
-    *   Infer the category based on the exercise name. For example, "Bench Press" is "Upper Body", "Squats" is "Lower Body", "Running" is "Cardio", "Plank" is "Core". If it's a compound exercise like "Clean and Jerk", use "Full Body". If truly unsure or it doesn't fit these standard categories (or a tag like "Endurance" is present for a cardio activity), default to "Other".
+    *   For each exercise, you MUST assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
+    *   You MUST infer the category from the exercise name based on the guide below.
+    *   **DO NOT default to "Other"** for common exercises listed in this guide.
+
+    **MANDATORY CATEGORIZATION GUIDE:**
+    *   **Upper Body**: Use for exercises like "Chest Press", "Bench Press", "Lat Pulldown", "Seated Dip", "Rowing", "Shoulder Press", "Overhead Press".
+    *   **Lower Body**: Use for exercises like "Abductor", "Adductor", "Glutes", "Leg Press", "Leg Extension", "Leg Curl", "Squats", "Hip Thrust".
+    *   **Core**: Use for exercises like "Abdominal Crunch", "Rotary Torso", "Back Extension". You must categorize "Back Extension" as "Core".
+    *   **Full Body**: Use for exercises like "Deadlift", "Clean and Jerk".
+    *   **Cardio**: Use for exercises like "Treadmill", "Cycling", "Running".
 5.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
         *   Prioritize extracting \\\`distance\\\`, \\\`distanceUnit\\\`, \\\`duration\\\`, \\\`durationUnit\\\`, and \\\`calories\\\`. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
@@ -209,5 +217,6 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     return output!;
   }
 );
+
 
 
