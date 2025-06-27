@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -72,61 +72,71 @@ export function RecentHistory() {
   
   if (!isClient) {
     return (
-        <div className="mt-12">
-            <h2 className="font-headline text-2xl font-semibold mb-4">Recent Workout History (This Week)</h2>
-            <div className="grid grid-cols-7 gap-2">
-                {Array.from({ length: 7 }).map((_, index) => (
-                    <div key={index} className="h-32 rounded-lg bg-muted animate-pulse"></div>
-                ))}
-            </div>
-        </div>
+      <Card className="mt-12 shadow-lg animate-pulse">
+        <CardHeader>
+          <div className="h-6 w-3/4 rounded-md bg-muted"></div>
+          <div className="h-4 w-1/2 rounded-md bg-muted"></div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-7 gap-2 md:gap-4">
+            {Array.from({ length: 7 }).map((_, index) => (
+              <div key={index} className="h-32 rounded-lg bg-muted"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="mt-12">
-      <h2 className="font-headline text-2xl font-semibold mb-4">Recent Workout History (This Week)</h2>
-      <div className="grid grid-cols-7 gap-2 md:gap-4">
-        {daysOfWeek.map(day => {
-          const dateKey = format(day, 'yyyy-MM-dd');
-          const categories = dailyCategories.get(dateKey);
-          const isCurrentDay = isToday(day);
+    <Card className="mt-12 shadow-lg">
+      <CardHeader>
+        <CardTitle className="font-headline text-2xl font-semibold">Recent Workout History (This Week)</CardTitle>
+        <CardDescription>A summary of your completed workout categories.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-7 gap-2 md:gap-4">
+          {daysOfWeek.map(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const categories = dailyCategories.get(dateKey);
+            const isCurrentDay = isToday(day);
 
-          return (
-            <div
-              key={dateKey}
-              className={cn(
-                "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[120px]",
-                isCurrentDay && "border-2 border-primary"
-              )}
-            >
-              <div className="flex flex-col items-center text-center">
-                <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
-                <p className="font-bold text-lg">{format(day, 'd')}</p>
-              </div>
-              <div className="mt-2 flex-grow space-y-1 overflow-y-auto">
-                {categories && categories.size > 0 ? (
-                  Array.from(categories).map(category => (
-                    <span
-                      key={category}
-                      className={cn(
-                        'block w-full text-center text-xs font-medium p-1 rounded-md truncate',
-                        categoryColors[category] || categoryColors['Other']
-                      )}
-                    >
-                      {category}
-                    </span>
-                  ))
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                     <span className="text-muted-foreground">·</span>
-                  </div>
+            return (
+              <div
+                key={dateKey}
+                className={cn(
+                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[120px]",
+                  isCurrentDay && "border-2 border-primary"
                 )}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
+                  <p className="font-bold text-lg">{format(day, 'd')}</p>
+                </div>
+                <div className="mt-2 flex-grow space-y-1 overflow-y-auto">
+                  {categories && categories.size > 0 ? (
+                    Array.from(categories).map(category => (
+                      <span
+                        key={category}
+                        className={cn(
+                          'block w-full text-center text-xs font-medium p-1 rounded-md truncate',
+                          categoryColors[category] || categoryColors['Other']
+                        )}
+                      >
+                        {category}
+                      </span>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <span className="text-muted-foreground">·</span>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
