@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
-import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw } from 'lucide-react';
 
@@ -15,10 +14,6 @@ const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
 const chartConfig = {
-  exercises: {
-    label: "Exercises",
-    color: "hsl(var(--primary))",
-  },
   distance: {
     label: "Distance (mi)",
     color: "hsl(var(--accent))",
@@ -28,11 +23,17 @@ const chartConfig = {
   'Cardio': { label: "Cardio", color: "hsl(var(--chart-3))" },
   'Core': { label: "Core", color: "hsl(var(--chart-4))" },
   'Other': { label: "Other", color: "hsl(var(--chart-5))" },
+  'Full Body': { label: "Full Body", color: "hsl(var(--chart-6))" },
 } satisfies ChartConfig;
 
 interface ChartDataPoint {
   dateLabel: string;
-  exercises: number;
+  'Upper Body': number;
+  'Lower Body': number;
+  'Cardio': number;
+  'Core': number;
+  'Other': number;
+  'Full Body': number;
 }
 
 interface CategoryDataPoint {
@@ -166,13 +167,43 @@ export default function AnalysisPage() {
       // Update PR state
       setNewPrsData(prsForCurrentPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()));
 
-      const frequencySummaries = generateWorkoutSummaries(logsForCurrentPeriod);
-      const displayFrequencySummaries = frequencySummaries.sort((a,b) => a.date.getTime() - b.date.getTime());
+      const dailyCategoryCounts: { [dateKey: string]: { [category: string]: number } } = {};
       
-      const newWorkoutFrequencyData = displayFrequencySummaries.map(summary => ({
-        dateLabel: format(summary.date, 'MMM d'),
-        exercises: summary.totalExercises,
-      }));
+      logsForCurrentPeriod.forEach(log => {
+        const dateKey = format(log.date, 'yyyy-MM-dd');
+        if (!dailyCategoryCounts[dateKey]) {
+          dailyCategoryCounts[dateKey] = {
+            'Upper Body': 0,
+            'Lower Body': 0,
+            'Cardio': 0,
+            'Core': 0,
+            'Full Body': 0,
+            'Other': 0
+          };
+        }
+        log.exercises.forEach(ex => {
+          const category = ex.category || 'Other';
+          if (dailyCategoryCounts[dateKey][category] !== undefined) {
+            dailyCategoryCounts[dateKey][category]++;
+          }
+        });
+      });
+
+      const newWorkoutFrequencyData = Object.keys(dailyCategoryCounts)
+        .map(dateKey => ({
+          date: parseISO(dateKey),
+          ...dailyCategoryCounts[dateKey]
+        }))
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(data => ({
+          dateLabel: format(data.date, 'MMM d'),
+          'Upper Body': data['Upper Body'],
+          'Lower Body': data['Lower Body'],
+          'Cardio': data['Cardio'],
+          'Core': data['Core'],
+          'Full Body': data['Full Body'],
+          'Other': data['Other'],
+        }));
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
@@ -415,7 +446,7 @@ export default function AnalysisPage() {
             <CardTitle className="font-headline">Exercise Variety</CardTitle>
             <CardDescription>
               {isClient && workoutFrequencyData.length > 0
-                ? `Number of exercises per workout day for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}.`
+                ? `Breakdown of exercises by category per workout day for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}.`
                 : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
@@ -426,10 +457,15 @@ export default function AnalysisPage() {
                   <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                     <XAxis dataKey="dateLabel" />
-                    <YAxis dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} />
+                    <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend />
-                    <Bar dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Upper Body" stackId="a" fill="hsl(var(--chart-1))" />
+                    <Bar dataKey="Lower Body" stackId="a" fill="hsl(var(--chart-2))" />
+                    <Bar dataKey="Cardio" stackId="a" fill="hsl(var(--chart-3))" />
+                    <Bar dataKey="Core" stackId="a" fill="hsl(var(--chart-4))" />
+                    <Bar dataKey="Full Body" stackId="a" fill="hsl(var(--chart-6))" />
+                    <Bar dataKey="Other" stackId="a" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>

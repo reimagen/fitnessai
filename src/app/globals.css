@@ -53,6 +53,7 @@
     --chart-3: 30 90% 70%;  /* Peach */
     --chart-4: 50 90% 75%;  /* Lighter Yellow */
     --chart-5: 350 85% 80%; /* Very Soft Desaturated Pink */
+    --chart-6: 270 80% 75%; /* Soft Lavender */
   }
 
   .dark {
@@ -91,6 +92,7 @@
     --chart-3: 25 80% 60%;  /* Peachy-Orange */
     --chart-4: 45 80% 65%;  /* Pale Yellow */
     --chart-5: 330 50% 45%; /* Muted Dark Pink/Plum */
+    --chart-6: 270 70% 65%; /* Lavender */
 
     /* Sidebar specific colors for dark theme */
     --sidebar-background: 335 40% 25%;
