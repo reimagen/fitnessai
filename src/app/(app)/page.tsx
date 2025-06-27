@@ -5,6 +5,7 @@ import { Dumbbell, Target, BarChartBig, Camera, FilePenLine } from "lucide-react
 import Link from "next/link";
 import Image from "next/image";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
+import { RecentHistory } from "@/components/home/RecentHistory";
 
 export default function HomePage() {
   return (
@@ -81,6 +82,7 @@ export default function HomePage() {
 
       <section className="mt-12">
         <WeeklyProgressTracker />
+        <RecentHistory />
       </section>
     </div>
   );

@@ -1,0 +1,132 @@
+
+"use client";
+
+import { useState, useEffect } from 'react';
+import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
+
+const categoryColors: Record<ExerciseCategory, string> = {
+  'Upper Body': 'bg-blue-100 text-blue-800',
+  'Lower Body': 'bg-yellow-100 text-yellow-800',
+  'Cardio': 'bg-green-100 text-green-800',
+  'Core': 'bg-purple-100 text-purple-800',
+  'Full Body': 'bg-indigo-100 text-indigo-800',
+  'Other': 'bg-gray-100 text-gray-800',
+};
+
+export function RecentHistory() {
+  const [dailyCategories, setDailyCategories] = useState<Map<string, Set<ExerciseCategory>>>(new Map());
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      const logsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
+      if (logsString) {
+        try {
+          const logs: WorkoutLog[] = JSON.parse(logsString).map((log: any) => ({
+            ...log,
+            date: parseISO(log.date),
+          }));
+
+          const today = new Date();
+          const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+          const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+
+          const categoriesMap = new Map<string, Set<ExerciseCategory>>();
+
+          logs.forEach(log => {
+            const logDate = log.date instanceof Date ? log.date : parseISO(log.date);
+            if (logDate >= weekStart && logDate <= weekEnd) {
+              const dateKey = format(logDate, 'yyyy-MM-dd');
+              if (!categoriesMap.has(dateKey)) {
+                categoriesMap.set(dateKey, new Set());
+              }
+              const categoriesSet = categoriesMap.get(dateKey)!;
+              log.exercises.forEach(ex => {
+                if (ex.category) {
+                  categoriesSet.add(ex.category);
+                }
+              });
+            }
+          });
+          setDailyCategories(categoriesMap);
+        } catch (e) {
+          console.error("Failed to parse workout logs for recent history", e);
+        }
+      }
+    }
+  }, [isClient]);
+
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  
+  if (!isClient) {
+    return (
+        <div className="mt-12">
+            <h2 className="font-headline text-2xl font-semibold mb-4">Recent Workout History (This Week)</h2>
+            <div className="grid grid-cols-7 gap-2">
+                {Array.from({ length: 7 }).map((_, index) => (
+                    <div key={index} className="h-32 rounded-lg bg-muted animate-pulse"></div>
+                ))}
+            </div>
+        </div>
+    );
+  }
+
+  return (
+    <div className="mt-12">
+      <h2 className="font-headline text-2xl font-semibold mb-4">Recent Workout History (This Week)</h2>
+      <div className="grid grid-cols-7 gap-2 md:gap-4">
+        {daysOfWeek.map(day => {
+          const dateKey = format(day, 'yyyy-MM-dd');
+          const categories = dailyCategories.get(dateKey);
+          const isCurrentDay = isToday(day);
+
+          return (
+            <div
+              key={dateKey}
+              className={cn(
+                "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[120px]",
+                isCurrentDay && "border-2 border-primary"
+              )}
+            >
+              <div className="flex flex-col items-center text-center">
+                <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
+                <p className="font-bold text-lg">{format(day, 'd')}</p>
+              </div>
+              <div className="mt-2 flex-grow space-y-1 overflow-y-auto">
+                {categories && categories.size > 0 ? (
+                  Array.from(categories).map(category => (
+                    <span
+                      key={category}
+                      className={cn(
+                        'block w-full text-center text-xs font-medium p-1 rounded-md truncate',
+                        categoryColors[category] || categoryColors['Other']
+                      )}
+                    >
+                      {category}
+                    </span>
+                  ))
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                     <span className="text-muted-foreground">·</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
