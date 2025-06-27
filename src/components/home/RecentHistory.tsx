@@ -118,7 +118,7 @@ export function RecentHistory() {
                     Array.from(categories).map(category => (
                       <span
                         key={category}
-                        className={'block w-full text-center text-xs font-medium p-1 rounded-md truncate'}
+                        className={'block w-full text-center text-xs font-medium p-1 rounded-full truncate'}
                         style={categoryStyles[category] || categoryStyles['Other']}
                       >
                         {category}
