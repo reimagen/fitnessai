@@ -1,9 +1,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Target, FileText, BarChartBig, Camera, FilePenLine } from "lucide-react"; // Added Camera, FilePenLine
+import { Dumbbell, Target, BarChartBig, Camera, FilePenLine } from "lucide-react"; // Added Camera, FilePenLine
 import Link from "next/link";
 import Image from "next/image";
+import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 
 export default function HomePage() {
   return (
@@ -79,30 +80,7 @@ export default function HomePage() {
       </section>
 
       <section className="mt-12">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline">Quick Stats</CardTitle>
-            <CardDescription>Your recent activity at a glance.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-lg bg-secondary p-4 text-center">
-              <p className="text-sm text-muted-foreground">Workouts This Week</p>
-              <p className="text-2xl font-bold text-primary">3</p>
-            </div>
-            <div className="rounded-lg bg-secondary p-4 text-center">
-              <p className="text-sm text-muted-foreground">Current Goal</p>
-              <p className="text-lg font-semibold text-accent truncate">Muscle Gain</p>
-            </div>
-            <div className="rounded-lg bg-secondary p-4 text-center">
-              <p className="text-sm text-muted-foreground">Streak</p>
-              <p className="text-2xl font-bold text-primary">7 <span className="text-sm">days</span></p>
-            </div>
-             <div className="rounded-lg bg-secondary p-4 text-center">
-              <p className="text-sm text-muted-foreground">Last Logged</p>
-              <p className="text-lg font-semibold text-accent">Yesterday</p>
-            </div>
-          </CardContent>
-        </Card>
+        <WeeklyProgressTracker />
       </section>
     </div>
   );
