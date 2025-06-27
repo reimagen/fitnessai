@@ -296,7 +296,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                 </div>
             </>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
               <div>
                 <span className="font-medium text-muted-foreground">Age: </span>
                 <span>{user.age || "Not set"}</span>
