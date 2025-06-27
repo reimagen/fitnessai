@@ -459,7 +459,7 @@ export default function AnalysisPage() {
                     <XAxis dataKey="dateLabel" />
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
+                    <Legend content={<ChartLegendContent className="flex-wrap" />} />
                     <Bar dataKey="Upper Body" stackId="a" fill="hsl(var(--chart-1))" />
                     <Bar dataKey="Lower Body" stackId="a" fill="hsl(var(--chart-2))" />
                     <Bar dataKey="Cardio" stackId="a" fill="hsl(var(--chart-3))" />
