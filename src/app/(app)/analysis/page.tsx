@@ -606,10 +606,16 @@ export default function AnalysisPage() {
                     <XAxis dataKey="dateLabel" />
                     <YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5 }} />
                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                    <Legend />
+                    <Legend
+                      iconSize={0}
+                      formatter={(value) => (
+                        <span className="text-muted-foreground">{value}</span>
+                      )}
+                    />
                     <Line 
                         type="monotone" 
                         dataKey="distance" 
+                        name="distance"
                         stroke="hsl(var(--accent))" 
                         strokeWidth={2} 
                         dot={<CustomizedDot />} 
@@ -628,4 +634,5 @@ export default function AnalysisPage() {
       </div>
     </div>
   );
-}
+
+    
