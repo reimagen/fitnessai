@@ -207,21 +207,22 @@ export default function AnalysisPage() {
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-      const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0, 'Full Body': 0 };
-      const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0, 'Full Body': 0 };
+      const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
+      const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
       const runningDataPoints: { date: Date, distance: number, type: 'outdoor' | 'treadmill' }[] = [];
 
       logsForCurrentPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
           const category = ex.category || 'Other';
+          const camelCaseCategory = categoryToCamelCase(category);
           const reps = ex.reps || 0;
           const calories = ex.calories || 0;
           
-          if (repsByCat[category] !== undefined) {
-            repsByCat[category] += reps;
+          if (repsByCat[camelCaseCategory] !== undefined) {
+            repsByCat[camelCaseCategory] += reps;
           }
-          if (caloriesByCat[category] !== undefined) {
-             caloriesByCat[category] += calories;
+          if (caloriesByCat[camelCaseCategory] !== undefined) {
+             caloriesByCat[camelCaseCategory] += calories;
           }
 
           // Running progression logic
@@ -271,23 +272,22 @@ export default function AnalysisPage() {
         });
       });
 
-      const pieChartColors: Record<string, string> = {
-        'Upper Body': chartConfig.upperBody.color!,
-        'Lower Body': chartConfig.lowerBody.color!,
-        'Cardio': chartConfig.cardio.color!,
-        'Core': chartConfig.core.color!,
-        'Other': chartConfig.other.color!,
-        'Full Body': chartConfig.fullBody.color!,
-      };
-
       const newCategoryRepData = Object.entries(repsByCat)
         .filter(([, value]) => value > 0)
-        .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
+        .map(([name, value]) => ({ 
+            name, 
+            value, 
+            fill: chartConfig[name as keyof typeof chartConfig]?.color || 'hsl(var(--muted))' 
+        }));
       setCategoryRepData(newCategoryRepData);
 
       const newCategoryCalorieData = Object.entries(caloriesByCat)
         .filter(([, value]) => value > 0)
-        .map(([name, value]) => ({ name, value, fill: pieChartColors[name] || 'hsl(var(--muted))' }));
+        .map(([name, value]) => ({ 
+            name, 
+            value, 
+            fill: chartConfig[name as keyof typeof chartConfig]?.color || 'hsl(var(--muted))' 
+        }));
       setCategoryCalorieData(newCategoryCalorieData);
       
       const sortedRunningData = runningDataPoints
@@ -364,9 +364,11 @@ export default function AnalysisPage() {
     const displayValue = unit === 'kcal' ? Math.round(value) : value;
     const unitString = unit ? ` ${unit}` : '';
 
+    const displayName = chartConfig[name as keyof typeof chartConfig]?.label || name;
+
     return (
       <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">
-        {`${name} (${displayValue}${unitString})`}
+        {`${displayName} (${displayValue}${unitString})`}
       </text>
     );
   };
