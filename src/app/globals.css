@@ -46,18 +46,18 @@
     --sidebar-ring: 345 90% 62%;       /* Matches new ring */
 
     /* Chart colors from screenshot */
-    --chart-1: 348 83% 67%; /* Upper Body - Pink */
-    --chart-1-foreground: 348 80% 15%;
-    --chart-2: 16 84% 64%;  /* Lower Body - Coral/Orange */
-    --chart-2-foreground: 16 80% 15%;
-    --chart-3: 28 89% 78%; /* Cardio - Peach */
-    --chart-3-foreground: 28 80% 15%;
-    --chart-4: 45 93% 77%; /* Core - Yellow */
+    --chart-1: 340 82% 66%; /* Upper Body - Pink */
+    --chart-1-foreground: 340 80% 15%;
+    --chart-2: 14 100% 70%;  /* Lower Body - Coral/Orange */
+    --chart-2-foreground: 14 80% 15%;
+    --chart-3: 33 100% 65%; /* Cardio - Peach */
+    --chart-3-foreground: 33 80% 15%;
+    --chart-4: 45 100% 65%; /* Core - Yellow */
     --chart-4-foreground: 45 80% 15%;
-    --chart-5: 340 20% 90%; /* Other - Light Pinkish Grey */
-    --chart-5-foreground: 340 10% 30%;
-    --chart-6: 278 80% 75%; /* Full Body - Purple */
-    --chart-6-foreground: 278 70% 20%;
+    --chart-5: 0 0% 88%; /* Other - Light Grey */
+    --chart-5-foreground: 0 0% 20%;
+    --chart-6: 288 48% 60%; /* Full Body - Purple */
+    --chart-6-foreground: 288 50% 15%;
   }
 
   .dark {
@@ -91,18 +91,18 @@
     --ring: 345 85% 65%; /* Matches new primary dark */
 
     /* Chart colors for dark theme */
-    --chart-1: 348 83% 72%;
-    --chart-1-foreground: 348 80% 95%;
-    --chart-2: 16 84% 70%;
-    --chart-2-foreground: 16 80% 95%;
-    --chart-3: 28 89% 82%;
-    --chart-3-foreground: 28 80% 15%;
-    --chart-4: 45 93% 80%;
-    --chart-4-foreground: 45 80% 15%;
-    --chart-5: 340 15% 40%;
-    --chart-5-foreground: 340 10% 80%;
-    --chart-6: 278 80% 80%;
-    --chart-6-foreground: 278 70% 95%;
+    --chart-1: 340 82% 70%;
+    --chart-1-foreground: 340 80% 95%;
+    --chart-2: 14 100% 75%;
+    --chart-2-foreground: 14 80% 95%;
+    --chart-3: 33 100% 70%;
+    --chart-3-foreground: 33 80% 95%;
+    --chart-4: 45 100% 70%;
+    --chart-4-foreground: 45 80% 95%;
+    --chart-5: 0 0% 50%;
+    --chart-5-foreground: 0 0% 95%;
+    --chart-6: 288 48% 65%;
+    --chart-6-foreground: 288 50% 95%;
 
 
     /* Sidebar specific colors for dark theme */
