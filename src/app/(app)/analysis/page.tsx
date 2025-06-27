@@ -14,23 +14,9 @@ import { TrendingUp, Award, Flame, Route, IterationCw } from 'lucide-react';
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
-// Static data for weight progress - this will be updated later
-const weightProgressData = [
-  { month: 'Jan', weight: 80 },
-  { month: 'Feb', weight: 79 },
-  { month: 'Mar', weight: 78.5 },
-  { month: 'Apr', weight: 77 },
-  { month: 'May', weight: 76 },
-  { month: 'Jun', weight: 75.5 },
-];
-
 const chartConfig = {
   exercises: {
     label: "Exercises",
-    color: "hsl(var(--primary))",
-  },
-  weight: {
-    label: "Weight (kg)",
     color: "hsl(var(--primary))",
   },
   distance: {
@@ -209,20 +195,13 @@ export default function AnalysisPage() {
 
           // Running progression logic
           if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
-            let distanceInMiles = 0;
+            let distanceInMiles = ex.distance;
             
             // Correctly convert distance to miles before any checks
-            switch (ex.distanceUnit) {
-              case 'km': 
-                distanceInMiles = ex.distance * 0.621371; 
-                break;
-              case 'ft': 
-                distanceInMiles = ex.distance * 0.000189394; 
-                break;
-              case 'mi': 
-              default: 
-                distanceInMiles = ex.distance; 
-                break;
+            if (ex.distanceUnit === 'km') {
+              distanceInMiles = ex.distance * 0.621371; 
+            } else if (ex.distanceUnit === 'ft') {
+              distanceInMiles = ex.distance * 0.000189394;
             }
 
             const exerciseName = ex.name.trim().toLowerCase();
@@ -561,27 +540,6 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-headline">Weight Progress</CardTitle>
-            <CardDescription>Your weight trend over time (Placeholder)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={weightProgressData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="month" />
-                        <YAxis />
-                        <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                        <Legend />
-                        <Bar dataKey="weight" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
         <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
@@ -630,3 +588,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
