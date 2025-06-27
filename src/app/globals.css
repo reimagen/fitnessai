@@ -6,103 +6,103 @@
 
 @layer base {
   :root {
-    --background: 340 80% 96%; /* Cooler, Light Pink */
-    --foreground: 355 11% 26%; /* Dark Brownish-Grey */
+    --background: 340 80% 96%;
+    --foreground: 355 11% 26%;
 
-    --muted: 340 60% 93%; /* Desaturated Pink */
-    --muted-foreground: 355 10% 45%; /* Lighter Brownish-Grey */
+    --muted: 340 60% 93%;
+    --muted-foreground: 355 10% 45%;
 
-    --popover: 0 0% 100%; /* White */
+    --popover: 0 0% 100%;
     --popover-foreground: 355 11% 26%;
 
-    --card: 0 0% 100%; /* White cards */
+    --card: 0 0% 100%;
     --card-foreground: 355 11% 26%;
 
-    --border: 350 80% 90%; /* Very Soft Pink (less orange) */
-    --input: 350 80% 90%; /* Very Soft Pink (less orange) */
+    --border: 350 80% 90%;
+    --input: 350 80% 90%;
 
-    --primary: 345 90% 62%; /* Vibrant Pink/Rose */
-    --primary-foreground: 0 0% 100%; /* White text on primary */
+    --primary: 345 90% 62%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 335 70% 97%; /* Very Light Pink */
+    --secondary: 335 70% 97%;
     --secondary-foreground: 355 11% 26%;
 
-    --accent: 5 85% 68%; /* Reddish Coral (less orange) */
-    --accent-foreground: 355 11% 26%; /* Dark Brownish-Grey text on accent */
+    --accent: 5 85% 68%;
+    --accent-foreground: 355 11% 26%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 345 90% 62%; /* Primary color for rings (matches new primary) */
+    --ring: 345 90% 62%;
 
     /* Sidebar specific colors */
     --sidebar-background: 335 70% 97%;
     --sidebar-foreground: 355 11% 26%;
-    --sidebar-primary: 345 90% 62%;    /* Matches new primary */
+    --sidebar-primary: 345 90% 62%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 5 85% 75%;     /* Lighter Reddish Coral */
+    --sidebar-accent: 5 85% 75%;
     --sidebar-accent-foreground: 355 11% 26%;
-    --sidebar-border: 350 80% 90%;    /* Matches new border */
-    --sidebar-ring: 345 90% 62%;       /* Matches new ring */
+    --sidebar-border: 350 80% 90%;
+    --sidebar-ring: 345 90% 62%;
 
-    /* Chart colors from screenshot */
-    --chart-1: hsl(335 87% 70%); /* Upper Body - Pink */
-    --chart-1-foreground: hsl(335 80% 15%);
-    --chart-2: hsl(27 96% 60%);  /* Lower Body - Orange */
-    --chart-2-foreground: hsl(27 80% 15%);
-    --chart-3: hsl(50 95% 60%); /* Cardio - Yellow */
-    --chart-3-foreground: hsl(50 80% 15%);
-    --chart-4: hsl(30 90% 70%); /* Core - Peach */
-    --chart-4-foreground: hsl(30 80% 15%);
-    --chart-5: hsl(15 90% 60%); /* Other - Red-orange */
-    --chart-5-foreground: hsl(15 80% 15%);
-    --chart-6: hsl(300 90% 65%); /* Full Body - Magenta */
-    --chart-6-foreground: hsl(300 80% 15%);
+    /* Chart colors from user's brand theme */
+    --chart-1: hsl(343 83% 72%); /* Upper Body: #f280a1 */
+    --chart-1-foreground: hsl(343 80% 20%);
+    --chart-2: hsl(41 92% 67%); /* Lower Body: #f8c35c */
+    --chart-2-foreground: hsl(41 80% 20%);
+    --chart-3: hsl(23 89% 62%); /* Cardio: #f48b49 */
+    --chart-3-foreground: hsl(23 80% 20%);
+    --chart-4: hsl(320 68% 74%); /* Core: #e890bd */
+    --chart-4-foreground: hsl(320 80% 20%);
+    --chart-5: hsl(19 86% 80%); /* Other: #f7b9a2 */
+    --chart-5-foreground: hsl(19 80% 20%);
+    --chart-6: hsl(1 85% 67%); /* Full Body: #f26462 */
+    --chart-6-foreground: hsl(1 80% 20%);
   }
 
   .dark {
-    --background: 340 20% 15%; /* Dark Desaturated Pink/Plum */
-    --foreground: 340 60% 90%; /* Light Pinkish tint */
+    --background: 340 20% 15%;
+    --foreground: 340 60% 90%;
 
-    --muted: 340 15% 20%; /* Darker Desaturated Pink/Plum */
-    --muted-foreground: 340 40% 70%; /* Lighter Pinkish tint */
+    --muted: 340 15% 20%;
+    --muted-foreground: 340 40% 70%;
 
-    --popover: 340 10% 12%; /* Very Dark Desaturated Pink/Plum */
+    --popover: 340 10% 12%;
     --popover-foreground: 340 60% 90%;
 
-    --card: 340 10% 12%; /* Very Dark Desaturated Pink/Plum */
+    --card: 340 10% 12%;
     --card-foreground: 340 60% 90%;
 
-    --border: 350 50% 35%; /* Darker, slightly desaturated soft pink */
+    --border: 350 50% 35%;
     --input: 350 50% 35%;
 
-    --primary: 345 85% 65%; /* Pink/Rose (brighter for dark mode) */
-    --primary-foreground: 0 0% 10%; /* Dark text on primary */
+    --primary: 345 85% 65%;
+    --primary-foreground: 0 0% 10%;
 
-    --secondary: 335 40% 25%; /* Dark Pink */
+    --secondary: 335 40% 25%;
     --secondary-foreground: 340 60% 90%;
 
-    --accent: 5 75% 65%; /* Reddish Coral (for dark mode) */
-    --accent-foreground: 340 10% 15%; /* Dark text on accent */
+    --accent: 5 75% 65%;
+    --accent-foreground: 340 10% 15%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --ring: 345 85% 65%; /* Matches new primary dark */
+    --ring: 345 85% 65%;
 
     /* Chart colors for dark theme */
-    --chart-1: hsl(335 87% 75%);
-    --chart-1-foreground: hsl(335 80% 95%);
-    --chart-2: hsl(27 96% 65%);
-    --chart-2-foreground: hsl(27 80% 95%);
-    --chart-3: hsl(50 95% 65%);
-    --chart-3-foreground: hsl(50 80% 95%);
-    --chart-4: hsl(30 90% 75%);
-    --chart-4-foreground: hsl(30 80% 95%);
-    --chart-5: hsl(15 90% 65%);
-    --chart-5-foreground: hsl(15 80% 95%);
-    --chart-6: hsl(300 90% 70%);
-    --chart-6-foreground: hsl(300 80% 95%);
+    --chart-1: hsl(343 83% 78%);
+    --chart-1-foreground: hsl(343 80% 95%);
+    --chart-2: hsl(41 92% 73%);
+    --chart-2-foreground: hsl(41 80% 95%);
+    --chart-3: hsl(23 89% 68%);
+    --chart-3-foreground: hsl(23 80% 95%);
+    --chart-4: hsl(320 68% 80%);
+    --chart-4-foreground: hsl(320 80% 95%);
+    --chart-5: hsl(19 86% 86%);
+    --chart-5-foreground: hsl(19 80% 95%);
+    --chart-6: hsl(1 85% 73%);
+    --chart-6-foreground: hsl(1 80% 95%);
 
 
     /* Sidebar specific colors for dark theme */
