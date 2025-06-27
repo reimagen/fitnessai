@@ -216,43 +216,6 @@ export default function MilestonesPage() {
           )}
         </CardContent>
       </Card>
-
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <Flag className="h-6 w-6 text-primary"/>
-            Completed Goals
-          </CardTitle>
-          <CardDescription>
-            All the goals you've set and conquered.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isClient && completedGoals.length > 0 ? (
-             <div className="space-y-3">
-                {completedGoals.map(goal => (
-                    <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
-                        <div className="flex flex-col">
-                            <p className="font-semibold text-primary">{goal.description}</p>
-                            {goal.targetDate && <p className="text-xs text-muted-foreground">Target Date: {format(goal.targetDate, "MMM d, yyyy")}</p>}
-                        </div>
-                        <div className="flex items-center gap-2 text-green-600">
-                            <CheckCircle className="h-5 w-5"/>
-                            <span className="text-sm font-bold">Done!</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-          ) : (
-             <div className="flex flex-col items-center justify-center h-40 text-center">
-                <Flag className="h-16 w-16 text-primary/30 mb-4" />
-                <p className="text-muted-foreground">
-                    {isClient ? "No completed goals yet. Set and achieve goals on your profile!" : "Loading goals..."}
-                </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
       
       <Card className="shadow-lg">
         <CardHeader>
@@ -291,6 +254,43 @@ export default function MilestonesPage() {
                 <Trophy className="h-16 w-16 text-primary/30 mb-4" />
                 <p className="text-muted-foreground">
                     {isClient ? "No personal records logged yet. Upload a screenshot to get started!" : "Loading records..."}
+                </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline flex items-center gap-2">
+            <Flag className="h-6 w-6 text-primary"/>
+            Completed Goals
+          </CardTitle>
+          <CardDescription>
+            All the goals you've set and conquered.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isClient && completedGoals.length > 0 ? (
+             <div className="space-y-3">
+                {completedGoals.map(goal => (
+                    <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                        <div className="flex flex-col">
+                            <p className="font-semibold text-primary">{goal.description}</p>
+                            {goal.targetDate && <p className="text-xs text-muted-foreground">Target Date: {format(goal.targetDate, "MMM d, yyyy")}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5"/>
+                            <span className="text-sm font-bold">Done!</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+          ) : (
+             <div className="flex flex-col items-center justify-center h-40 text-center">
+                <Flag className="h-16 w-16 text-primary/30 mb-4" />
+                <p className="text-muted-foreground">
+                    {isClient ? "No completed goals yet. Set and achieve goals on your profile!" : "Loading goals..."}
                 </p>
             </div>
           )}
