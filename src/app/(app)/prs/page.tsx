@@ -116,6 +116,9 @@ export default function PRsPage() {
 
   const handleClearRecords = () => {
     if (window.confirm("Are you sure you want to delete all personal records? This cannot be undone.")) {
+      if (isClient) {
+        localStorage.removeItem(LOCAL_STORAGE_KEY_PRS);
+      }
       setAllRecords([]);
       toast({
         title: "Records Cleared",
