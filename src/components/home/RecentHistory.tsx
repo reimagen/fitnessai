@@ -91,7 +91,7 @@ export function RecentHistory() {
   return (
     <Card className="mt-12 shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl font-semibold">Recent Workout History (This Week)</CardTitle>
+        <CardTitle className="font-headline text-2xl font-semibold">Daily Exercises By Category</CardTitle>
         <CardDescription>A summary of your completed workout categories.</CardDescription>
       </CardHeader>
       <CardContent>
