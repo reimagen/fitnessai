@@ -10,6 +10,8 @@ import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, FitnessGoal, Exercise } from "@/lib/types";
 import { format, parseISO, differenceInWeeks, addDays, nextSunday as getNextSunday } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 
 const USER_PROFILE_KEY = "fitnessAppUserProfile";
 const WORKOUT_LOGS_KEY = "fitnessAppWorkoutLogs";
@@ -35,6 +37,7 @@ export default function PlanPage() {
   const [error, setError] = useState<string | null>(null);
   const [generatedPlan, setGeneratedPlan] = useState<StoredWeeklyPlan | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [regenerationFeedback, setRegenerationFeedback] = useState("");
 
   useEffect(() => {
     setIsClient(true);
@@ -179,9 +182,14 @@ export default function PlanPage() {
     setIsLoading(true);
     setError(null);
 
+    let contextForGeneration = userProfileContextString;
+    if (regenerationFeedback.trim()) {
+      contextForGeneration += `\n\n**CRITICAL REGENERATION INSTRUCTIONS:** The user has provided feedback on the previous plan. You MUST incorporate the following adjustments: "${regenerationFeedback}"`;
+    }
+
     const result = await generateWeeklyWorkoutPlanAction({
       userId: userProfile.id,
-      userProfileContext: userProfileContextString,
+      userProfileContext: contextForGeneration,
       weekStartDate: currentWeekStartDate,
     });
 
@@ -189,12 +197,13 @@ export default function PlanPage() {
       const newPlanData: StoredWeeklyPlan = {
         plan: result.data.weeklyPlan,
         generatedDate: new Date().toISOString(),
-        contextUsed: userProfileContextString,
+        contextUsed: contextForGeneration,
         userId: userProfile.id,
         weekStartDate: currentWeekStartDate,
       };
       setGeneratedPlan(newPlanData);
       localStorage.setItem(AI_WEEKLY_PLAN_KEY, JSON.stringify(newPlanData));
+      setRegenerationFeedback(""); // Clear feedback box on success
       toast({ title: "Plan Generated!", description: "Your new weekly workout plan is ready." });
     } else {
       setError(result.error || "Failed to generate workout plan. The AI might be busy or an unexpected error occurred.");
@@ -235,10 +244,25 @@ export default function PlanPage() {
               </div>
             </div>
           ) : (
-            <Button onClick={handleGeneratePlan} disabled={isLoading || !userProfileContextString} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-              {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-              {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
-            </Button>
+            <div className="space-y-4">
+              {isClient && generatedPlan && (
+                <div className="space-y-2">
+                  <Label htmlFor="regeneration-feedback">Not quite right? Tell the AI what to change.</Label>
+                  <Textarea
+                    id="regeneration-feedback"
+                    placeholder="e.g., 'Replace squats with lunges due to a knee issue' or 'Can you add more cardio?'"
+                    value={regenerationFeedback}
+                    onChange={(e) => setRegenerationFeedback(e.target.value)}
+                    className="min-h-[80px]"
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
+              <Button onClick={handleGeneratePlan} disabled={isLoading || !userProfileContextString} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
+              </Button>
+            </div>
           )}
           {error && (
             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
@@ -272,7 +296,7 @@ export default function PlanPage() {
         <details className="mt-6 text-xs text-muted-foreground">
             <summary className="cursor-pointer hover:text-foreground">View context used for AI plan generation</summary>
             <pre className="mt-2 p-2 border bg-secondary/50 rounded-md whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
-                {userProfileContextString}
+                {generatedPlan?.contextUsed || userProfileContextString}
             </pre>
         </details>
       )}
