@@ -49,8 +49,8 @@ const workoutLogSchema = z.object({
 type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
 
 type WorkoutLogFormProps = {
-  onSubmitLog: (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => void;
-  initialData?: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>};
+  onSubmitLog: (data: Omit<WorkoutLog, 'id' | 'dateString'>) => void;
+  initialData?: WorkoutLog;
   editingLogId?: string | null;
   onCancelEdit?: () => void;
 };
@@ -122,8 +122,8 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
     onSubmitLog({
-        ...values,
         date: normalizedDate,
+        notes: values.notes,
         exercises: values.exercises.map(ex => ({
           id: ex.id || Math.random().toString(36).substring(2,9),
           name: ex.name,

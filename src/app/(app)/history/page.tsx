@@ -22,6 +22,7 @@ const initialSampleLogs: WorkoutLog[] = [
   {
     id: "1",
     date: new Date("2024-07-20"),
+    dateString: "2024-07-20",
     exercises: [
       { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80, weightUnit: "kg", category: "Upper Body", calories: 150, distance: 0, duration: 0 },
       { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100, weightUnit: "kg", category: "Lower Body", calories: 200, distance: 0, duration: 0 },
@@ -31,6 +32,7 @@ const initialSampleLogs: WorkoutLog[] = [
   {
     id: "2",
     date: new Date("2024-07-18"),
+    dateString: "2024-07-18",
     exercises: [
       { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120, weightUnit: "kg", category: "Full Body", distance: 0, duration: 0, calories: 0 },
       { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50, weightUnit: "kg", category: "Upper Body", distance: 0, duration: 0, calories: 0 },
@@ -67,9 +69,12 @@ export default function HistoryPage() {
       const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
       if (savedLogsString) {
         try {
-          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => ({
+          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => {
+            const date = parseISO(log.date);
+            return {
             ...log,
-            date: parseISO(log.date), 
+            date,
+            dateString: log.dateString || format(date, 'yyyy-MM-dd'),
             exercises: log.exercises.map((ex: any) => ({ 
               id: ex.id || Math.random().toString(36).substring(2,9),
               name: ex.name,
@@ -84,7 +89,7 @@ export default function HistoryPage() {
               durationUnit: ex.durationUnit,
               calories: ex.calories ?? 0,
             }))
-          }));
+          }});
           setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
         } catch (error) {
           console.error("Error parsing workout logs from localStorage. Initializing with empty logs.", error);
@@ -118,7 +123,7 @@ export default function HistoryPage() {
     }
   }, [editingLogId, activeTab]);
 
-  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'> & { exercises: Array<Omit<Exercise, 'id'> & {id?: string}>}) => {
+  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id' | 'dateString'>) => {
     const processedExercises = data.exercises.map(ex => ({
         id: ex.id || Math.random().toString(36).substring(2,9),
         name: ex.name,
@@ -134,12 +139,15 @@ export default function HistoryPage() {
         calories: ex.calories ?? 0,
     }));
 
+    const logDateString = format(data.date, 'yyyy-MM-dd');
+
     if (editingLogId) {
       const updatedLogs = workoutLogs.map(log => {
         if (log.id === editingLogId) {
           return {
             ...log,
             ...data, 
+            dateString: logDateString,
             exercises: processedExercises
           };
         }
@@ -156,6 +164,7 @@ export default function HistoryPage() {
       const newLog: WorkoutLog = {
         id: Date.now().toString(),
         date: data.date,
+        dateString: logDateString,
         notes: data.notes,
         exercises: processedExercises
       };
@@ -175,10 +184,6 @@ export default function HistoryPage() {
     if (parsedData.workoutDate) {
       // Use replace() to hint local timezone parsing, then startOfDay to normalize
       targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
-      const currentYear = new Date().getFullYear();
-      if (targetDate.getFullYear() !== currentYear) {
-        notesSuffix = ` (Original year ${targetDate.getFullYear()} from screenshot was used).`;
-      }
     } else {
       targetDate = startOfDay(new Date()); 
       notesSuffix = " (Date not found in screenshot; used current date).";
@@ -186,7 +191,7 @@ export default function HistoryPage() {
 
     const targetDateString = format(targetDate, 'yyyy-MM-dd');
     const existingLogIndex = workoutLogs.findIndex(
-      (log) => format(log.date, 'yyyy-MM-dd') === targetDateString
+      (log) => log.dateString === targetDateString
     );
 
     const parsedExercises: Exercise[] = parsedData.exercises.map(ex => ({
@@ -235,6 +240,7 @@ export default function HistoryPage() {
       const newLog: WorkoutLog = {
         id: Date.now().toString(),
         date: targetDate,
+        dateString: targetDateString,
         exercises: parsedExercises,
         notes: `Parsed from screenshot.${notesSuffix}`,
       };

@@ -19,6 +19,7 @@ export interface Exercise {
 export interface WorkoutLog {
   id: string;
   date: Date;
+  dateString: string;
   exercises: Exercise[];
   notes?: string;
 }
@@ -62,4 +63,3 @@ export interface AggregatedWorkoutDaySummary {
   // totalWeightLifted: number; // Could be sum of weight * reps * sets
   // exerciseCategoriesCount: Record<string, number>; // e.g., { "Cardio": 2, "Upper Body": 3 }
 }
-
