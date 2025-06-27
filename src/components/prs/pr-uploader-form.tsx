@@ -71,10 +71,16 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
   return (
     <div className="space-y-6">
       <div className={cn(isLoading && "opacity-50")}>
-         <div className="flex h-10 w-full items-center rounded-md border border-primary bg-background pl-1 pr-3 py-1 text-sm">
+         <div className={cn(
+            "flex h-10 w-full items-center rounded-md border border-primary bg-background pl-1 pr-3 py-1 text-sm",
+            (isLoading) && "cursor-not-allowed opacity-70"
+            )}>
           <Label
             htmlFor="pr-screenshot-upload"
-            className="whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium border border-primary text-primary bg-card hover:bg-primary/10 cursor-pointer shadow-sm"
+            className={cn(
+                "whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium border border-primary text-primary bg-card hover:bg-primary/10 cursor-pointer shadow-sm",
+                (isLoading) && "pointer-events-none"
+                )}
           >
             Choose File
           </Label>
