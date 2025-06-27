@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
@@ -263,6 +263,25 @@ export default function MilestonesPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
+            <Milestone className="h-6 w-6 text-primary"/>
+            Key Milestones
+          </CardTitle>
+          <CardDescription>
+            Automatic recognition of your major achievements.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-40 text-center">
+            <Milestone className="h-16 w-16 text-primary/30 mb-4" />
+            <p className="text-muted-foreground">Coming Soon!</p>
+            <p className="text-xs text-center mt-1">This feature is under development.</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline flex items-center gap-2">
             <Flag className="h-6 w-6 text-primary"/>
             Completed Goals
           </CardTitle>
@@ -300,3 +319,5 @@ export default function MilestonesPage() {
     </div>
   );
 }
+
+    
