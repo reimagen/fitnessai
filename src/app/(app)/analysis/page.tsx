@@ -218,11 +218,18 @@ export default function AnalysisPage() {
             let isConsideredRun = false;
             let distanceInMiles = 0;
             
-            // First, convert distance to miles regardless of other conditions
+            // Correctly convert distance to miles before any checks
             switch (ex.distanceUnit) {
-              case 'km': distanceInMiles = ex.distance * 0.621371; break;
-              case 'ft': distanceInMiles = ex.distance * 0.000189394; break;
-              case 'mi': default: distanceInMiles = ex.distance; break;
+              case 'km': 
+                distanceInMiles = ex.distance * 0.621371; 
+                break;
+              case 'ft': 
+                distanceInMiles = ex.distance * 0.000189394; 
+                break;
+              case 'mi': 
+              default: 
+                distanceInMiles = ex.distance; 
+                break;
             }
 
             const exerciseName = ex.name.trim().toLowerCase();
