@@ -21,7 +21,7 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
-import { parseISO, startOfDay } from 'date-fns';
+import { startOfDay } from 'date-fns';
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
@@ -118,8 +118,8 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
 
 
   function onSubmit(values: WorkoutLogFormData) {
-    // Standardize date parsing to ensure consistency
-    const normalizedDate = startOfDay(parseISO(values.date));
+    // Use replace() to hint local timezone parsing, then startOfDay to normalize
+    const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
     onSubmitLog({
         ...values,

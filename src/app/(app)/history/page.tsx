@@ -173,7 +173,8 @@ export default function HistoryPage() {
     let notesSuffix = "";
 
     if (parsedData.workoutDate) {
-      targetDate = startOfDay(parseISO(parsedData.workoutDate));
+      // Use replace() to hint local timezone parsing, then startOfDay to normalize
+      targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
       const currentYear = new Date().getFullYear();
       if (targetDate.getFullYear() !== currentYear) {
         notesSuffix = ` (Original year ${targetDate.getFullYear()} from screenshot was used).`;
