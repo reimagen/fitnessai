@@ -213,33 +213,44 @@ export default function AnalysisPage() {
              caloriesByCat[category] += calories;
           }
 
-          if (
-            ex.category === 'Cardio' &&
-            ex.distance && ex.distance > 0 &&
-            ex.duration && ex.duration > 0
-          ) {
+          // Running progression logic
+          if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
+            let isConsideredRun = false;
             let distanceInMiles = 0;
+            
+            // First, convert distance to miles regardless of other conditions
             switch (ex.distanceUnit) {
               case 'km': distanceInMiles = ex.distance * 0.621371; break;
               case 'ft': distanceInMiles = ex.distance * 0.000189394; break;
               case 'mi': default: distanceInMiles = ex.distance; break;
             }
-      
-            let durationInHours = 0;
-            switch (ex.durationUnit) {
-              case 'sec': durationInHours = ex.duration / 3600; break;
-              case 'hr': durationInHours = ex.duration; break;
-              case 'min': default: durationInHours = ex.duration / 60; break;
-            }
-      
-            if (durationInHours > 0) {
-              const speedMph = distanceInMiles / durationInHours;
-              if (speedMph >= 4.5) {
-                runningDataPoints.push({
-                  date: log.date,
-                  distance: parseFloat(distanceInMiles.toFixed(2))
-                });
+
+            // Condition 1: Is the exercise explicitly named "Running"?
+            if (ex.name.trim().toLowerCase() === 'running') {
+              isConsideredRun = true;
+            } 
+            // Condition 2: Is it a cardio session with enough duration to calculate speed?
+            else if (ex.duration && ex.duration > 0) {
+              let durationInHours = 0;
+              switch (ex.durationUnit) {
+                case 'sec': durationInHours = ex.duration / 3600; break;
+                case 'hr': durationInHours = ex.duration; break;
+                case 'min': default: durationInHours = ex.duration / 60; break;
               }
+        
+              if (durationInHours > 0) {
+                const speedMph = distanceInMiles / durationInHours;
+                if (speedMph >= 4.5) {
+                  isConsideredRun = true;
+                }
+              }
+            }
+            
+            if (isConsideredRun) {
+              runningDataPoints.push({
+                date: log.date,
+                distance: parseFloat(distanceInMiles.toFixed(2))
+              });
             }
           }
         });
@@ -588,5 +599,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
