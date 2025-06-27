@@ -493,11 +493,11 @@ export default function AnalysisPage() {
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend content={<CustomBarChartLegend />} />
-                    <Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" />
-                    <Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" />
-                    <Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" />
-                    <Bar dataKey="core" stackId="a" fill="var(--color-core)" />
-                    <Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" />
+                    <Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="core" stackId="a" fill="var(--color-core)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="other" stackId="a" fill="var(--color-other)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
