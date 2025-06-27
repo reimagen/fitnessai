@@ -3,13 +3,14 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
+import { Button } from "@/components/ui/button";
 
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
 
@@ -113,6 +114,17 @@ export default function PRsPage() {
     }
   };
 
+  const handleClearRecords = () => {
+    if (window.confirm("Are you sure you want to delete all personal records? This cannot be undone.")) {
+      setAllRecords([]);
+      toast({
+        title: "Records Cleared",
+        description: "All personal records have been removed. You can now re-upload.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const groupedRecords = bestRecords.reduce((acc, record) => {
     const category = record.category || 'Other';
     if (!acc[category]) {
@@ -145,6 +157,15 @@ export default function PRsPage() {
         </CardHeader>
         <CardContent>
           <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+          {isClient && allRecords.length > 0 && (
+            <Button
+              variant="destructive"
+              className="w-full mt-4"
+              onClick={handleClearRecords}
+            >
+              <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+            </Button>
+          )}
         </CardContent>
       </Card>
       
