@@ -434,7 +434,7 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Workout Frequency</CardTitle>
+            <CardTitle className="font-headline">Exercise Variety</CardTitle>
             <CardDescription>
               {isClient && workoutFrequencyData.length > 0
                 ? `Number of exercises per workout day for ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}.`
@@ -596,7 +596,7 @@ export default function AnalysisPage() {
                   <LineChart data={runningProgressData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="dateLabel" />
-                    <YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5 }} />
+                    <YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                     <Legend
                       iconSize={0}
