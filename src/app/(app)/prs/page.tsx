@@ -175,6 +175,48 @@ export default function MilestonesPage() {
         <p className="text-muted-foreground">A showcase of your best lifts and completed goals.</p>
       </header>
 
+       <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline flex items-center gap-2">
+            <UploadCloud className="h-6 w-6 text-accent" />
+            Upload Personal Records
+          </CardTitle>
+          <CardDescription>
+            Upload a screenshot of your achievements to update your PR history.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+          {isClient && allRecords.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full mt-4"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all
+                    your personal records from this device.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={performClearRecords}>
+                    Continue
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
@@ -255,47 +297,6 @@ export default function MilestonesPage() {
         </CardContent>
       </Card>
 
-       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <UploadCloud className="h-6 w-6 text-accent" />
-            Upload Personal Records
-          </CardTitle>
-          <CardDescription>
-            Upload a screenshot of your achievements to update your PR history.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          {isClient && allRecords.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full mt-4"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all
-                    your personal records from this device.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={performClearRecords}>
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
