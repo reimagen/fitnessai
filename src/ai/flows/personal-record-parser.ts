@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const ParsePersonalRecordsInputSchema = z.object({
+const ParsePersonalRecordsInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
@@ -27,7 +27,7 @@ const PersonalRecordSchema = z.object({
     dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. If the year is not specified, default to 2025. If the year 2024 is visible, it must be changed to 2025.")
 });
 
-export const ParsePersonalRecordsOutputSchema = z.object({
+const ParsePersonalRecordsOutputSchema = z.object({
   records: z.array(PersonalRecordSchema).describe('A list of personal records parsed from the screenshot.'),
 });
 export type ParsePersonalRecordsOutput = z.infer<typeof ParsePersonalRecordsOutputSchema>;
