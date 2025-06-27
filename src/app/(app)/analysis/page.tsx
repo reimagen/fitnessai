@@ -36,6 +36,7 @@ interface ChartDataPoint {
 }
 
 interface CategoryDataPoint {
+  key: string;
   name: string;
   value: number;
   fill: string;
@@ -316,19 +317,21 @@ export default function AnalysisPage() {
 
       const newCategoryRepData = Object.entries(repsByCat)
         .filter(([, value]) => value > 0)
-        .map(([name, value]) => ({ 
+        .map(([name, value]) => ({
+            key: name,
             name: (chartConfig[name as ChartDataKey]?.label || name) as string,
             value, 
-            fill: chartConfig[name as ChartDataKey]?.color || 'hsl(var(--muted))' 
+            fill: `var(--color-${name})`
         }));
       setCategoryRepData(newCategoryRepData);
 
       const newCategoryCalorieData = Object.entries(caloriesByCat)
         .filter(([, value]) => value > 0)
         .map(([name, value]) => ({ 
+            key: name,
             name: (chartConfig[name as ChartDataKey]?.label || name) as string,
             value, 
-            fill: chartConfig[name as ChartDataKey]?.color || 'hsl(var(--muted))' 
+            fill: `var(--color-${name})`
         }));
       setCategoryCalorieData(newCategoryCalorieData);
       
@@ -606,7 +609,7 @@ export default function AnalysisPage() {
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                    <Legend content={<ChartLegendContent />} wrapperStyle={{paddingTop: "20px"}}/>
+                    <Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/>
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -639,7 +642,7 @@ export default function AnalysisPage() {
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                    <Legend content={<ChartLegendContent />} wrapperStyle={{paddingTop: "20px"}}/>
+                    <Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/>
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
