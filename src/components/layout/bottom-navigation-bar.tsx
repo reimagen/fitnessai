@@ -3,13 +3,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, BarChart3, Award, CalendarCheck, History, User } from 'lucide-react'; // Added Award icon
+import { Home, BarChart3, Award, CalendarCheck, History, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
   { href: '/analysis', label: 'Analysis', icon: BarChart3 },
-  { href: '/prs', label: 'PRs', icon: Award }, // New PRs item
+  { href: '/prs', label: 'Milestones', icon: Award }, // Changed label
   { href: '/plan', label: 'Plan', icon: CalendarCheck },
   { href: '/history', label: 'History', icon: History },
   { href: '/profile', label: 'Profile', icon: User },

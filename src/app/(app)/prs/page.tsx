@@ -3,8 +3,8 @@
 
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2 } from "lucide-react";
-import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle } from "lucide-react";
+import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
+const LOCAL_STORAGE_KEY_PROFILE = "fitnessAppUserProfile";
 
 // Function to group records and find the best for each exercise
 const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
@@ -50,9 +51,10 @@ const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
     return bestRecords.sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
-export default function PRsPage() {
+export default function MilestonesPage() {
   const [allRecords, setAllRecords] = useState<PersonalRecord[]>([]);
   const [bestRecords, setBestRecords] = useState<PersonalRecord[]>([]);
+  const [completedGoals, setCompletedGoals] = useState<FitnessGoal[]>([]);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
 
@@ -62,18 +64,34 @@ export default function PRsPage() {
 
   useEffect(() => {
     if (isClient) {
+      // Load Personal Records
       const savedPrsString = localStorage.getItem(LOCAL_STORAGE_KEY_PRS);
       if (savedPrsString) {
         try {
           const parsedRecords: PersonalRecord[] = JSON.parse(savedPrsString).map((rec: any) => ({
             ...rec,
-            date: parseISO(rec.date), // Rehydrate date object
-            category: rec.category || 'Other', // Handle old data that might not have a category
+            date: parseISO(rec.date),
+            category: rec.category || 'Other',
           }));
           setAllRecords(parsedRecords);
         } catch (error) {
           console.error("Error parsing PRs from localStorage", error);
           setAllRecords([]);
+        }
+      }
+      
+      // Load Completed Goals
+      const savedProfileString = localStorage.getItem(LOCAL_STORAGE_KEY_PROFILE);
+      if (savedProfileString) {
+        try {
+          const profile: UserProfile = JSON.parse(savedProfileString);
+          const goals = profile.fitnessGoals.map(goal => ({
+            ...goal,
+            targetDate: goal.targetDate ? parseISO(goal.targetDate.toString()) : undefined,
+          }));
+          setCompletedGoals(goals.filter(g => g.achieved));
+        } catch (error) {
+          console.error("Error parsing user profile for milestones", error);
         }
       }
     }
@@ -105,7 +123,7 @@ export default function PRsPage() {
                 category: rec.category,
             };
             newRecords.push(newRecord);
-            existingRecordKeys.add(key); // Add to set to prevent duplicates within the same upload
+            existingRecordKeys.add(key);
             addedCount++;
         }
     });
@@ -152,49 +170,44 @@ export default function PRsPage() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-4">
         <h1 className="font-headline text-3xl font-bold text-primary flex items-center">
-          <Award className="mr-3 h-8 w-8" /> Personal Records
+          <Award className="mr-3 h-8 w-8" /> Milestones & Achievements
         </h1>
-        <p className="text-muted-foreground">Your best lifts and achievements.</p>
+        <p className="text-muted-foreground">A showcase of your best lifts and completed goals.</p>
       </header>
 
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
-            <UploadCloud className="h-6 w-6 text-accent" />
-            Upload New Records
+            <Flag className="h-6 w-6 text-primary"/>
+            Completed Goals
           </CardTitle>
           <CardDescription>
-            Upload a screenshot of your achievements to update your PR history.
+            All the goals you've set and conquered.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          {isClient && allRecords.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full mt-4"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all
-                    your personal records from this device.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={performClearRecords}>
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          {isClient && completedGoals.length > 0 ? (
+             <div className="space-y-3">
+                {completedGoals.map(goal => (
+                    <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                        <div className="flex flex-col">
+                            <p className="font-semibold text-primary">{goal.description}</p>
+                            {goal.targetDate && <p className="text-xs text-muted-foreground">Target Date: {format(goal.targetDate, "MMM d, yyyy")}</p>}
+                        </div>
+                        <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-5 w-5"/>
+                            <span className="text-sm font-bold">Done!</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+          ) : (
+             <div className="flex flex-col items-center justify-center h-40 text-center">
+                <Flag className="h-16 w-16 text-primary/30 mb-4" />
+                <p className="text-muted-foreground">
+                    {isClient ? "No completed goals yet. Set and achieve goals on your profile!" : "Loading goals..."}
+                </p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -203,7 +216,7 @@ export default function PRsPage() {
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
             <Trophy className="h-6 w-6 text-primary"/>
-            Your Personal Bests
+            Personal Records
           </CardTitle>
           <CardDescription>
             Your top recorded lift for each exercise, grouped by category.
@@ -238,6 +251,48 @@ export default function PRsPage() {
                     {isClient ? "No personal records logged yet. Upload a screenshot to get started!" : "Loading records..."}
                 </p>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+       <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="font-headline flex items-center gap-2">
+            <UploadCloud className="h-6 w-6 text-accent" />
+            Upload Personal Records
+          </CardTitle>
+          <CardDescription>
+            Upload a screenshot of your achievements to update your PR history.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+          {isClient && allRecords.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  className="w-full mt-4"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all
+                    your personal records from this device.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={performClearRecords}>
+                    Continue
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           )}
         </CardContent>
       </Card>
