@@ -19,7 +19,9 @@ const initialMockUser: UserProfile = {
   age: 36,
   gender: "Female",
   heightValue: 162.56, 
-  heightUnit: 'ft/in',   
+  heightUnit: 'ft/in',
+  weightValue: 135,
+  weightUnit: 'lbs',
   fitnessGoals: [
     { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
     { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
@@ -60,6 +62,8 @@ export default function ProfilePage() {
           parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
           parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
           parsedProfile.heightUnit = parsedProfile.heightUnit !== undefined ? parsedProfile.heightUnit : initialMockUser.heightUnit;
+          parsedProfile.weightValue = parsedProfile.weightValue !== undefined ? parsedProfile.weightValue : initialMockUser.weightValue;
+          parsedProfile.weightUnit = parsedProfile.weightUnit !== undefined ? parsedProfile.weightUnit : initialMockUser.weightUnit;
           
           parsedProfile.workoutsPerWeek = parsedProfile.workoutsPerWeek !== undefined ? parsedProfile.workoutsPerWeek : initialMockUser.workoutsPerWeek;
           parsedProfile.sessionTimeMinutes = parsedProfile.sessionTimeMinutes !== undefined ? parsedProfile.sessionTimeMinutes : initialMockUser.sessionTimeMinutes;
@@ -95,7 +99,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => {
+  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit'>>) => {
     setUserProfile(prevProfile => ({
       ...prevProfile,
       ...updatedDetails,
@@ -211,4 +215,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-

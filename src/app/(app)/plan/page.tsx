@@ -116,6 +116,12 @@ export default function PlanPage() {
       context += `Height: Not specified\n`;
     }
 
+    if (userProfile.weightValue && userProfile.weightUnit) {
+      context += `Weight: ${userProfile.weightValue} ${userProfile.weightUnit}\n`;
+    } else {
+      context += `Weight: Not specified\n`;
+    }
+
     context += "\nFitness Goals:\n";
     const primaryGoal = userProfile.fitnessGoals.find(g => g.isPrimary);
     if (primaryGoal) {

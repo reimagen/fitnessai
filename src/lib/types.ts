@@ -47,6 +47,8 @@ export interface UserProfile {
   gender?: string;
   heightValue?: number; 
   heightUnit?: 'cm' | 'ft/in'; 
+  weightValue?: number;
+  weightUnit?: 'kg' | 'lbs';
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;

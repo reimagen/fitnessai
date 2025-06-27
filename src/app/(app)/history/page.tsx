@@ -7,7 +7,8 @@ import { ScreenshotParserForm } from "@/components/history/screenshot-parser-for
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
 import { WorkoutList } from "@/components/history/workout-list";
 import { parseWorkoutScreenshotAction } from "./actions";
-import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
+import type { WorkoutLog, Exercise, ExerciseCategory, UserProfile } from "@/lib/types";
+import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +43,7 @@ const initialSampleLogs: WorkoutLog[] = [
 ];
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
+const LOCAL_STORAGE_KEY_PROFILE = "fitnessAppUserProfile";
 
 const isValidCategory = (category: any): category is ExerciseCategory => {
   return CATEGORY_OPTIONS.includes(category);
@@ -55,6 +57,7 @@ export default function HistoryPage() {
   const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
 
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(defaultTabValue);
@@ -66,6 +69,17 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (isClient) {
+      // Load Profile
+      const savedProfileString = localStorage.getItem(LOCAL_STORAGE_KEY_PROFILE);
+      if (savedProfileString) {
+        try {
+          setUserProfile(JSON.parse(savedProfileString));
+        } catch (e) {
+          console.error("Failed to parse user profile from localStorage", e);
+        }
+      }
+
+      // Load Workout Logs
       const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
       if (savedLogsString) {
         try {
@@ -125,20 +139,45 @@ export default function HistoryPage() {
   }, [editingLogId, activeTab]);
 
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id' | 'dateString'>) => {
-    const processedExercises = data.exercises.map(ex => ({
-        id: ex.id || Math.random().toString(36).substring(2,9),
-        name: ex.name,
-        category: ex.category, 
-        sets: ex.sets ?? 0,
-        reps: ex.reps ?? 0,
-        weight: ex.weight ?? 0,
-        weightUnit: ex.weightUnit || 'kg',
-        distance: ex.distance ?? 0,
-        distanceUnit: ex.distanceUnit,
-        duration: ex.duration ?? 0,
-        durationUnit: ex.durationUnit,
-        calories: ex.calories ?? 0,
-    }));
+    let weightWarningShown = false;
+
+    const processedExercises = data.exercises.map(ex => {
+        let calculatedCalories = ex.calories ?? 0;
+        if (
+            ex.category === 'Cardio' && 
+            (!ex.calories || ex.calories === 0) &&
+            userProfile && userProfile.weightValue && userProfile.weightValue > 0
+        ) {
+            calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs);
+        } else if (
+            ex.category === 'Cardio' && 
+            (!ex.calories || ex.calories === 0) &&
+            (!userProfile?.weightValue || userProfile.weightValue <= 0) &&
+            !weightWarningShown
+        ) {
+            toast({
+                title: "Weight Not Set",
+                description: "Set your weight on the Profile page to auto-calculate calories for Cardio.",
+                variant: "default",
+            });
+            weightWarningShown = true;
+        }
+
+        return {
+            id: ex.id || Math.random().toString(36).substring(2,9),
+            name: ex.name,
+            category: ex.category, 
+            sets: ex.sets ?? 0,
+            reps: ex.reps ?? 0,
+            weight: ex.weight ?? 0,
+            weightUnit: ex.weightUnit || 'kg',
+            distance: ex.distance ?? 0,
+            distanceUnit: ex.distanceUnit,
+            duration: ex.duration ?? 0,
+            durationUnit: ex.durationUnit,
+            calories: calculatedCalories,
+        };
+    });
 
     const logDateString = format(data.date, 'yyyy-MM-dd');
 

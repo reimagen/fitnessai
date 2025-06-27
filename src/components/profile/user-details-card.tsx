@@ -14,13 +14,17 @@ import { format } from "date-fns";
 
 type UserDetailsCardProps = {
   user: UserProfile;
-  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit'>>) => void;
+  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit'>>) => void;
 };
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 const HEIGHT_UNIT_OPTIONS = [
     { label: "Centimeters", value: "cm" },
     { label: "Feet/Inches", value: "ft/in" },
+];
+const WEIGHT_UNIT_OPTIONS = [
+    { label: "Kilograms", value: "kg" },
+    { label: "Pounds", value: "lbs" },
 ];
 const INCH_TO_CM = 2.54;
 const FT_TO_INCHES = 12;
@@ -44,6 +48,9 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedHeightCm, setEditedHeightCm] = useState("");
   const [editedHeightFt, setEditedHeightFt] = useState("");
   const [editedHeightIn, setEditedHeightIn] = useState("");
+  const [editedWeightUnit, setEditedWeightUnit] = useState<'kg' | 'lbs'>(user.weightUnit || "lbs");
+  const [editedWeight, setEditedWeight] = useState("");
+
 
   useEffect(() => {
     if (isEditing) {
@@ -51,11 +58,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       setEditedJoinedDate(formatDateForInput(user.joinedDate));
       setEditedAge(user.age?.toString() || "");
       setEditedGender(user.gender || "");
-      const initialUnit = user.heightUnit || "cm";
-      setEditedHeightUnit(initialUnit);
+      const initialHeightUnit = user.heightUnit || "cm";
+      setEditedHeightUnit(initialHeightUnit);
 
       if (user.heightValue !== undefined) {
-        if (initialUnit === "cm") {
+        if (initialHeightUnit === "cm") {
           setEditedHeightCm(user.heightValue.toString());
           setEditedHeightFt("");
           setEditedHeightIn("");
@@ -70,6 +77,10 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         setEditedHeightFt("");
         setEditedHeightIn("");
       }
+
+      setEditedWeightUnit(user.weightUnit || "lbs");
+      setEditedWeight(user.weightValue?.toString() || "");
+
     }
   }, [isEditing, user]);
 
@@ -147,6 +158,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         finalHeightCmValue = totalInches > 0 ? totalInches * INCH_TO_CM : undefined;
       }
     }
+
+    const weightVal = parseFloat(editedWeight);
+    if (editedWeight !== "" && (isNaN(weightVal) || weightVal <= 0)) {
+        toast({ title: "Invalid Weight", description: "Please enter a valid weight.", variant: "destructive" }); return;
+    }
     
     const dateParts = editedJoinedDate.split('-').map(Number);
     // Create date object from parts to ensure local timezone interpretation
@@ -160,6 +176,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       gender: editedGender === "" ? undefined : editedGender,
       heightValue: finalHeightCmValue,
       heightUnit: finalHeightCmValue !== undefined ? editedHeightUnit : undefined,
+      weightValue: editedWeight !== "" ? weightVal : undefined,
+      weightUnit: editedWeight !== "" ? editedWeightUnit : undefined,
     });
     setIsEditing(false);
   };
@@ -171,6 +189,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     const feet = Math.floor(totalInches / FT_TO_INCHES);
     const inches = Math.round(totalInches % FT_TO_INCHES);
     return `${feet} ft ${inches} in`;
+  };
+
+  const displayWeight = () => {
+    if (user.weightValue === undefined || user.weightUnit === undefined) return "Not set";
+    return `${user.weightValue} ${user.weightUnit}`;
   };
 
   return (
@@ -261,6 +284,16 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                   </div>
                 </div>
               )}
+               <div>
+                  <Label className="text-sm font-medium">Weight</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input id="weight-input" type="number" value={editedWeight} onChange={(e) => setEditedWeight(e.target.value)} placeholder="e.g., 150" className="w-2/3" aria-label="Weight" />
+                     <Select value={editedWeightUnit} onValueChange={(v) => setEditedWeightUnit(v as 'kg' | 'lbs')}>
+                        <SelectTrigger id="weight-unit-select" className="w-1/3"><SelectValue placeholder="Unit" /></SelectTrigger>
+                        <SelectContent>{WEIGHT_UNIT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
             </>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2 text-sm">
@@ -275,6 +308,10 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               <div>
                 <span className="font-medium text-muted-foreground">Height: </span>
                 <span>{displayHeight()}</span>
+              </div>
+               <div>
+                <span className="font-medium text-muted-foreground">Weight: </span>
+                <span>{displayWeight()}</span>
               </div>
             </div>
           )}
