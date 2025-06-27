@@ -46,18 +46,18 @@
     --sidebar-ring: 345 90% 62%;       /* Matches new ring */
 
     /* Chart colors from screenshot */
-    --chart-1: 335 87% 70%; /* Upper Body - Pink */
-    --chart-1-foreground: 335 80% 15%;
-    --chart-2: 27 96% 60%;  /* Lower Body - Orange */
-    --chart-2-foreground: 27 80% 15%;
-    --chart-3: 45 96% 56%; /* Cardio - Yellow-Orange */
-    --chart-3-foreground: 45 80% 15%;
-    --chart-4: 47 96% 53%; /* Core - Yellow */
-    --chart-4-foreground: 47 80% 15%;
-    --chart-5: 220 13% 91%; /* Other - Light Grey */
-    --chart-5-foreground: 220 10% 20%;
-    --chart-6: 256 92% 76%; /* Full Body - Lavender */
-    --chart-6-foreground: 256 80% 15%;
+    --chart-1: hsl(335 87% 70%); /* Upper Body - Pink */
+    --chart-1-foreground: hsl(335 80% 15%);
+    --chart-2: hsl(27 96% 60%);  /* Lower Body - Orange */
+    --chart-2-foreground: hsl(27 80% 15%);
+    --chart-3: hsl(50 95% 60%); /* Cardio - Yellow */
+    --chart-3-foreground: hsl(50 80% 15%);
+    --chart-4: hsl(30 90% 70%); /* Core - Peach */
+    --chart-4-foreground: hsl(30 80% 15%);
+    --chart-5: hsl(15 90% 60%); /* Other - Red-orange */
+    --chart-5-foreground: hsl(15 80% 15%);
+    --chart-6: hsl(300 90% 65%); /* Full Body - Magenta */
+    --chart-6-foreground: hsl(300 80% 15%);
   }
 
   .dark {
@@ -91,18 +91,18 @@
     --ring: 345 85% 65%; /* Matches new primary dark */
 
     /* Chart colors for dark theme */
-    --chart-1: 335 87% 75%;
-    --chart-1-foreground: 335 80% 95%;
-    --chart-2: 27 96% 65%;
-    --chart-2-foreground: 27 80% 95%;
-    --chart-3: 45 96% 61%;
-    --chart-3-foreground: 45 80% 95%;
-    --chart-4: 47 96% 58%;
-    --chart-4-foreground: 47 80% 95%;
-    --chart-5: 220 13% 50%;
-    --chart-5-foreground: 220 10% 95%;
-    --chart-6: 256 92% 81%;
-    --chart-6-foreground: 256 80% 95%;
+    --chart-1: hsl(335 87% 75%);
+    --chart-1-foreground: hsl(335 80% 95%);
+    --chart-2: hsl(27 96% 65%);
+    --chart-2-foreground: hsl(27 80% 95%);
+    --chart-3: hsl(50 95% 65%);
+    --chart-3-foreground: hsl(50 80% 95%);
+    --chart-4: hsl(30 90% 75%);
+    --chart-4-foreground: hsl(30 80% 95%);
+    --chart-5: hsl(15 90% 65%);
+    --chart-5-foreground: hsl(15 80% 95%);
+    --chart-6: hsl(300 90% 70%);
+    --chart-6-foreground: hsl(300 80% 95%);
 
 
     /* Sidebar specific colors for dark theme */
