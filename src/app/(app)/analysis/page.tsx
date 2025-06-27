@@ -74,6 +74,48 @@ const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPo
   }
 };
 
+const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
+  const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
+  return `M${x + tl},${y}
+          L${x + width - tr},${y}
+          C${x + width - tr},${y} ${x + width},${y} ${x + width},${y + tr}
+          L${x + width},${y + height - br}
+          C${x + width},${y + height - br} ${x + width},${y + height} ${x + width - br},${y + height}
+          L${x + bl},${y + height}
+          C${x + bl},${y + height} ${x},${y + height} ${x},${y + height - bl}
+          L${x},${y + tl}
+          C${x},${y + tl} ${x},${y} ${x + tl},${y}
+          Z`;
+};
+
+const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
+
+const RoundedBar = (props: any) => {
+  const { fill, x, y, width, height, payload, dataKey } = props;
+
+  if (!payload || !dataKey || props.value === 0 || height === 0) {
+    return null;
+  }
+
+  const myIndex = stackOrder.indexOf(dataKey as any);
+  let isTop = true;
+  
+  if (myIndex !== -1) {
+    for (let i = myIndex + 1; i < stackOrder.length; i++) {
+      const nextCategory = stackOrder[i];
+      if (payload[nextCategory] > 0) {
+        isTop = false;
+        break;
+      }
+    }
+  }
+
+  const radius = isTop ? [4, 4, 0, 0] : [0, 0, 0, 0];
+
+  return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
+};
+
+
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('all-time');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
@@ -275,7 +317,7 @@ export default function AnalysisPage() {
       const newCategoryRepData = Object.entries(repsByCat)
         .filter(([, value]) => value > 0)
         .map(([name, value]) => ({ 
-            name, 
+            name: (chartConfig[name as ChartDataKey]?.label || name) as string,
             value, 
             fill: chartConfig[name as ChartDataKey]?.color || 'hsl(var(--muted))' 
         }));
@@ -284,7 +326,7 @@ export default function AnalysisPage() {
       const newCategoryCalorieData = Object.entries(caloriesByCat)
         .filter(([, value]) => value > 0)
         .map(([name, value]) => ({ 
-            name, 
+            name: (chartConfig[name as ChartDataKey]?.label || name) as string,
             value, 
             fill: chartConfig[name as ChartDataKey]?.color || 'hsl(var(--muted))' 
         }));
@@ -364,7 +406,7 @@ export default function AnalysisPage() {
     const displayValue = unit === 'kcal' ? Math.round(value) : value;
     const unitString = unit ? ` ${unit}` : '';
 
-    const displayName = chartConfig[name as ChartDataKey]?.label || name;
+    const displayName = name;
 
     return (
       <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">
@@ -393,7 +435,7 @@ export default function AnalysisPage() {
     ];
   
     const payloadMap = payload.reduce((acc: any, entry: any) => {
-      acc[entry.value] = entry; // entry.value is the dataKey, e.g., "upperBody"
+      acc[entry.dataKey] = entry; // entry.dataKey is the dataKey, e.g., "upperBody"
       return acc;
     }, {});
   
@@ -403,7 +445,7 @@ export default function AnalysisPage() {
           const entry = payloadMap[name];
           if (!entry || !chartConfig[name]) return null;
           return (
-            <div key={`item-${entry.value}`} className="flex items-center justify-center gap-1.5">
+            <div key={`item-${entry.dataKey}`} className="flex items-center justify-center gap-1.5">
               <span
                 className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                 style={{ backgroundColor: entry.color }}
@@ -493,12 +535,12 @@ export default function AnalysisPage() {
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
                     <Legend content={<CustomBarChartLegend />} />
-                    <Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="core" stackId="a" fill="var(--color-core)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="other" stackId="a" fill="var(--color-other)" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} />
+                    <Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} />
+                    <Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} />
+                    <Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} />
+                    <Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} />
+                    <Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} />
                   </BarChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -564,7 +606,7 @@ export default function AnalysisPage() {
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                    <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                    <Legend content={<ChartLegendContent />} wrapperStyle={{paddingTop: "20px"}}/>
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
@@ -597,7 +639,7 @@ export default function AnalysisPage() {
                       ))}
                     </Pie>
                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                    <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                    <Legend content={<ChartLegendContent />} wrapperStyle={{paddingTop: "20px"}}/>
                   </PieChart>
                 </ResponsiveContainer>
               </ChartContainer>
