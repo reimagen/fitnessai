@@ -53,6 +53,15 @@ export interface UserProfile {
   aiPreferencesNotes?: string; 
 }
 
+export interface PersonalRecord {
+  id: string;
+  exerciseName: string;
+  weight: number;
+  weightUnit: 'kg' | 'lbs';
+  date: Date;
+  dateString: string;
+}
+
 export interface AggregatedWorkoutDaySummary {
   date: Date;
   totalExercises: number;
