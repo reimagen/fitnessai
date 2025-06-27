@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday, parseISO } from 'date-fns';
@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
-const categoryColors: Record<ExerciseCategory, string> = {
-  'Upper Body': 'bg-blue-100 text-blue-800',
-  'Lower Body': 'bg-yellow-100 text-yellow-800',
-  'Cardio': 'bg-green-100 text-green-800',
-  'Core': 'bg-purple-100 text-purple-800',
-  'Full Body': 'bg-indigo-100 text-indigo-800',
-  'Other': 'bg-gray-100 text-gray-800',
+const categoryStyles: Record<ExerciseCategory, React.CSSProperties> = {
+  'Upper Body': { backgroundColor: 'hsl(var(--chart-1))', color: 'hsl(var(--chart-1-foreground))' },
+  'Lower Body': { backgroundColor: 'hsl(var(--chart-2))', color: 'hsl(var(--chart-2-foreground))' },
+  'Cardio':     { backgroundColor: 'hsl(var(--chart-3))', color: 'hsl(var(--chart-3-foreground))' },
+  'Core':       { backgroundColor: 'hsl(var(--chart-4))', color: 'hsl(var(--chart-4-foreground))' },
+  'Full Body':  { backgroundColor: 'hsl(var(--chart-6))', color: 'hsl(var(--chart-6-foreground))' },
+  'Other':      { backgroundColor: 'hsl(var(--chart-5))', color: 'hsl(var(--chart-5-foreground))' },
 };
 
 export function RecentHistory() {
@@ -118,10 +118,8 @@ export function RecentHistory() {
                     Array.from(categories).map(category => (
                       <span
                         key={category}
-                        className={cn(
-                          'block w-full text-center text-xs font-medium p-1 rounded-md truncate',
-                          categoryColors[category] || categoryColors['Other']
-                        )}
+                        className={'block w-full text-center text-xs font-medium p-1 rounded-md truncate'}
+                        style={categoryStyles[category] || categoryStyles['Other']}
                       >
                         {category}
                       </span>
