@@ -225,8 +225,9 @@ export default function AnalysisPage() {
               case 'mi': default: distanceInMiles = ex.distance; break;
             }
 
-            // Condition 1: Is the exercise explicitly named "Running"?
-            if (ex.name.trim().toLowerCase() === 'running') {
+            const exerciseName = ex.name.trim().toLowerCase();
+            // Condition 1: Is the exercise explicitly named "Running" or "Run"?
+            if (exerciseName === 'running' || exerciseName === 'run') {
               isConsideredRun = true;
             } 
             // Condition 2: Is it a cardio session with enough duration to calculate speed?
@@ -419,39 +420,6 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <Award className="h-6 w-6 text-accent" />
-              New Personal Records
-            </CardTitle>
-            <CardDescription>
-              {isClient && newPrsData.length > 0
-                ? `Achievements in ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
-                : (isClient ? `No new PRs achieved in this period.` : "Checking for new records...")}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isClient && newPrsData.length > 0 ? (
-              <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">
-                {newPrsData.map(pr => (
-                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
-                    <div className="flex flex-col">
-                      <p className="font-semibold text-primary">{pr.exerciseName}</p>
-                      <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
-                    </div>
-                    <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No new PRs for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading records..."}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg">
-          <CardHeader>
             <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
             <CardDescription>
               {isClient && workoutFrequencyData.length > 0
@@ -483,6 +451,39 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
         
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Award className="h-6 w-6 text-accent" />
+              New Personal Records
+            </CardTitle>
+            <CardDescription>
+              {isClient && newPrsData.length > 0
+                ? `Achievements in ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
+                : (isClient ? `No new PRs achieved in this period.` : "Checking for new records...")}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isClient && newPrsData.length > 0 ? (
+              <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">
+                {newPrsData.map(pr => (
+                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                    <div className="flex flex-col">
+                      <p className="font-semibold text-primary">{pr.exerciseName}</p>
+                      <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
+                    </div>
+                    <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <p>{isClient ? `No new PRs for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading records..."}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
@@ -572,7 +573,7 @@ export default function AnalysisPage() {
               <Route className="h-6 w-6 text-accent" />
               Running Distance Progression
             </CardTitle>
-            <CardDescription>Your running distance over time (for sessions faster than 4.5 mph).</CardDescription>
+            <CardDescription>Your running distance over time (for exercises named "Run" or sessions faster than 4.5 mph).</CardDescription>
           </CardHeader>
           <CardContent>
             {isClient && runningProgressData.length > 0 ? (
