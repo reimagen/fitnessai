@@ -343,37 +343,37 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Award className="h-6 w-6 text-accent" />
+              New Personal Records
+            </CardTitle>
             <CardDescription>
-              {isClient && workoutFrequencyData.length > 0
-                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
-                : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
+              {isClient && newPrsData.length > 0
+                ? `Achievements in ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
+                : (isClient ? `No new PRs achieved in this period.` : "Checking for new records...")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isClient && workoutFrequencyData.length > 0 ? (
-              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                    <XAxis dataKey="dateLabel" />
-                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
-                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--accent))" allowDecimals={false} />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
-                    <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
+            {isClient && newPrsData.length > 0 ? (
+              <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">
+                {newPrsData.map(pr => (
+                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                    <div className="flex flex-col">
+                      <p className="font-semibold text-primary">{pr.exerciseName}</p>
+                      <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
+                    </div>
+                    <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
+                  </div>
+                ))}
+              </div>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No workout data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
+                <p>{isClient ? `No new PRs for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading records..."}</p>
               </div>
             )}
           </CardContent>
         </Card>
-
+        
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Reps by Category</CardTitle>
@@ -426,35 +426,35 @@ export default function AnalysisPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-        
+
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <Award className="h-6 w-6 text-accent" />
-              New Personal Records
-            </CardTitle>
+            <CardTitle className="font-headline">Workout Frequency & Duration</CardTitle>
             <CardDescription>
-              {isClient && newPrsData.length > 0
-                ? `Achievements in ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}`
-                : (isClient ? `No new PRs achieved in this period.` : "Checking for new records...")}
+              {isClient && workoutFrequencyData.length > 0
+                ? `Based on ${timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))} data`
+                : (isClient ? `No workout data for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Log some workouts to see your data")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isClient && newPrsData.length > 0 ? (
-              <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">
-                {newPrsData.map(pr => (
-                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
-                    <div className="flex flex-col">
-                      <p className="font-semibold text-primary">{pr.exerciseName}</p>
-                      <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
-                    </div>
-                    <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
-                  </div>
-                ))}
-              </div>
+            {isClient && workoutFrequencyData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                    <XAxis dataKey="dateLabel" />
+                    <YAxis yAxisId="left" dataKey="exercises" stroke="hsl(var(--primary))" allowDecimals={false} /> 
+                    <YAxis yAxisId="right" dataKey="duration" orientation="right" stroke="hsl(var(--accent))" allowDecimals={false} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Legend />
+                    <Bar yAxisId="left" dataKey="exercises" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /> 
+                    <Bar yAxisId="right" dataKey="duration" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                <p>{isClient ? `No new PRs for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading records..."}</p>
+                <p>{isClient ? `No workout data available for ${timeRangeDisplayNames[timeRange] || timeRange}.` : "Loading chart data..."}</p>
               </div>
             )}
           </CardContent>
