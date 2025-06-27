@@ -60,6 +60,34 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     if (calories === undefined || calories === null || calories <= 0) return "-";
     return `${calories} kcal`;
   }
+  
+  const formatDurationForDisplay = (duration?: number, unit?: 'min' | 'hr' | 'sec'): string => {
+    if (duration === undefined || duration === null || duration <= 0) {
+      return "-";
+    }
+
+    let totalSeconds = 0;
+    switch (unit) {
+      case 'hr':
+        totalSeconds = duration * 3600;
+        break;
+      case 'min':
+        totalSeconds = duration * 60;
+        break;
+      case 'sec':
+        totalSeconds = duration;
+        break;
+      default:
+        // Fallback for when unit is missing. Assume minutes as it's the form default.
+        totalSeconds = duration * 60;
+        break;
+    }
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${minutes}m ${seconds}s`;
+  };
 
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
@@ -135,7 +163,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                         {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
                     </TableCell>
                     <TableCell className="text-right">
-                        {exercise.duration && exercise.duration > 0 ? `${exercise.duration} ${exercise.durationUnit || ''}`.trim() : "-"}
+                        {formatDurationForDisplay(exercise.duration, exercise.durationUnit)}
                     </TableCell>
                     <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
                   </TableRow>
