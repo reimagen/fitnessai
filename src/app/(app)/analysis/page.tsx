@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord, ExerciseCategory } from '@/lib/types';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp, Award, Flame, Route, IterationCw, Balance, Move, Scale } from 'lucide-react';
+import { TrendingUp, Award, Flame, Route, IterationCw, Move, Scale, PersonStanding } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
@@ -657,7 +657,7 @@ export default function AnalysisPage() {
         <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
-              <Balance className="h-6 w-6 text-primary" />
+              <Scale className="h-6 w-6 text-primary" />
               Imbalances Detected
             </CardTitle>
             <CardDescription>
@@ -666,7 +666,7 @@ export default function AnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-              <Balance className="h-12 w-12 text-primary/30 mb-4" />
+              <Scale className="h-12 w-12 text-primary/30 mb-4" />
               <p className="text-center">Coming Soon!</p>
               <p className="text-xs text-center mt-1">This feature is under development.</p>
             </div>
@@ -695,7 +695,7 @@ export default function AnalysisPage() {
         <Card className="shadow-lg lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
-              <Scale className="h-6 w-6 text-primary" />
+              <PersonStanding className="h-6 w-6 text-primary" />
               Body Stats
             </CardTitle>
             <CardDescription>
@@ -704,7 +704,7 @@ export default function AnalysisPage() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-              <Scale className="h-12 w-12 text-primary/30 mb-4" />
+              <PersonStanding className="h-12 w-12 text-primary/30 mb-4" />
               <p className="text-center">Coming Soon!</p>
               <p className="text-xs text-center mt-1">This feature is under development.</p>
             </div>
