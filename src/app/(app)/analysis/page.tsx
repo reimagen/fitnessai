@@ -5,12 +5,11 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord } from '@/lib/types';
 import { generateWorkoutSummaries } from '@/lib/workout-summary';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp, Award, Flame, Route } from 'lucide-react';
+import { TrendingUp, Award, Flame, Route, IterationCw } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
@@ -499,65 +498,69 @@ export default function AnalysisPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
-              <Flame className="h-6 w-6 text-primary" />
-              Category Breakdown
+              <IterationCw className="h-6 w-6 text-primary" />
+              Repetition Breakdown
             </CardTitle>
             <CardDescription>
-                Distribution for {timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}
+              Total reps per category for {timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="reps" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="reps">Reps</TabsTrigger>
-                    <TabsTrigger value="calories">Calories</TabsTrigger>
-                </TabsList>
-                <TabsContent value="reps">
-                  {isClient && categoryRepData.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <Pie data={categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>
-                            {categoryRepData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                          <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                      <p>{isClient ? `No repetition data available.` : "Loading chart data..."}</p>
-                    </div>
-                  )}
-                </TabsContent>
-                <TabsContent value="calories">
-                   {isClient && categoryCalorieData.length > 0 ? (
-                    <ChartContainer config={chartConfig} className="h-[300px] w-full">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                          <Pie data={categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>
-                            {categoryCalorieData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                          <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </ChartContainer>
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                      <p>{isClient ? `No calorie data available.` : "Loading chart data..."}</p>
-                    </div>
-                  )}
-                </TabsContent>
-            </Tabs>
+            {isClient && categoryRepData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <Pie data={categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>
+                      {categoryRepData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                    <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <p>{isClient ? `No repetition data available.` : "Loading chart data..."}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Flame className="h-6 w-6 text-primary" />
+              Calorie Breakdown
+            </CardTitle>
+            <CardDescription>
+              Total calories burned per category for {timeRangeDisplayNames[timeRange] || (timeRange.charAt(0).toUpperCase() + timeRange.slice(1))}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             {isClient && categoryCalorieData.length > 0 ? (
+              <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <Pie data={categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>
+                      {categoryCalorieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                    <Legend content={<ChartLegendContent nameKey="name"/>} wrapperStyle={{paddingTop: "20px"}}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                <p>{isClient ? `No calorie data available.` : "Loading chart data..."}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="font-headline">Weight Progress</CardTitle>
@@ -626,7 +629,4 @@ export default function AnalysisPage() {
       </div>
     </div>
   );
-
-    
-
-    
+}
