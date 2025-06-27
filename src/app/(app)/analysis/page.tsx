@@ -64,6 +64,7 @@ interface CategoryDataPoint {
 interface RunningDataPoint {
     dateLabel: string;
     distance: number;
+    type: 'outdoor' | 'treadmill';
 }
 
 interface PeriodSummaryStats {
@@ -198,7 +199,7 @@ export default function AnalysisPage() {
 
       const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
       const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
-      const runningDataPoints: { date: Date, distance: number }[] = [];
+      const runningDataPoints: { date: Date, distance: number, type: 'outdoor' | 'treadmill' }[] = [];
 
       logsForCurrentPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
@@ -215,7 +216,6 @@ export default function AnalysisPage() {
 
           // Running progression logic
           if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
-            let isConsideredRun = false;
             let distanceInMiles = 0;
             
             // Correctly convert distance to miles before any checks
@@ -233,6 +233,8 @@ export default function AnalysisPage() {
             }
 
             const exerciseName = ex.name.trim().toLowerCase();
+            let isConsideredRun = false;
+            
             // Condition 1: Is the exercise explicitly named "Running" or "Run"?
             if (exerciseName === 'running' || exerciseName === 'run') {
               isConsideredRun = true;
@@ -255,9 +257,11 @@ export default function AnalysisPage() {
             }
             
             if (isConsideredRun) {
+              const runType = exerciseName.includes('treadmill') ? 'treadmill' : 'outdoor';
               runningDataPoints.push({
                 date: log.date,
-                distance: parseFloat(distanceInMiles.toFixed(2))
+                distance: parseFloat(distanceInMiles.toFixed(2)),
+                type: runType
               });
             }
           }
@@ -286,7 +290,8 @@ export default function AnalysisPage() {
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(data => ({
           dateLabel: format(data.date, 'MMM d'),
-          distance: data.distance
+          distance: data.distance,
+          type: data.type
         }));
       setRunningProgressData(sortedRunningData);
 
@@ -366,6 +371,14 @@ export default function AnalysisPage() {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     return `${hours}h ${minutes}m`;
+  };
+
+  const CustomizedDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    if (payload && payload.type === 'treadmill') {
+      return <circle cx={cx} cy={cy} r={4} stroke="hsl(var(--accent))" strokeWidth={2} fill="hsl(var(--background))" />;
+    }
+    return <circle cx={cx} cy={cy} r={4} fill="hsl(var(--accent))" />;
   };
 
   return (
@@ -580,7 +593,9 @@ export default function AnalysisPage() {
               <Route className="h-6 w-6 text-accent" />
               Running Distance Progression
             </CardTitle>
-            <CardDescription>Your running distance over time (for exercises named "Run" or sessions faster than 4.5 mph).</CardDescription>
+            <CardDescription>
+                Your running distance over time. Solid dots are outdoor runs, open circles are treadmill sessions (faster than 4.5 mph).
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {isClient && runningProgressData.length > 0 ? (
@@ -592,7 +607,14 @@ export default function AnalysisPage() {
                     <YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5 }} />
                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                     <Legend />
-                    <Line type="monotone" dataKey="distance" stroke="hsl(var(--accent))" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <Line 
+                        type="monotone" 
+                        dataKey="distance" 
+                        stroke="hsl(var(--accent))" 
+                        strokeWidth={2} 
+                        dot={<CustomizedDot />} 
+                        activeDot={{ r: 6 }} 
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </ChartContainer>
