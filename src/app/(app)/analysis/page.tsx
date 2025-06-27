@@ -207,8 +207,8 @@ export default function AnalysisPage() {
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-      const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
-      const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0 };
+      const repsByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0, 'Full Body': 0 };
+      const caloriesByCat: Record<string, number> = { 'Upper Body': 0, 'Lower Body': 0, 'Cardio': 0, 'Core': 0, 'Other': 0, 'Full Body': 0 };
       const runningDataPoints: { date: Date, distance: number, type: 'outdoor' | 'treadmill' }[] = [];
 
       logsForCurrentPeriod.forEach(log => { 
@@ -277,6 +277,7 @@ export default function AnalysisPage() {
         'Cardio': chartConfig['Cardio'].color!,
         'Core': chartConfig['Core'].color!,
         'Other': chartConfig['Other'].color!,
+        'Full Body': chartConfig['Full Body'].color!,
       };
 
       const newCategoryRepData = Object.entries(repsByCat)
@@ -384,6 +385,37 @@ export default function AnalysisPage() {
     return <circle cx={cx} cy={cy} r={4} fill="hsl(var(--accent))" />;
   };
 
+  const CustomBarChartLegend = ({ payload }: any) => {
+    const legendOrder: (keyof typeof chartConfig)[] = [
+      'Upper Body', 'Lower Body', 'Core',
+      'Full Body', 'Cardio', 'Other'
+    ];
+  
+    const payloadMap = payload.reduce((acc: any, entry: any) => {
+      acc[entry.value] = entry;
+      return acc;
+    }, {});
+  
+    return (
+      <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">
+        {legendOrder.map((name) => {
+          const entry = payloadMap[name];
+          if (!entry) return null;
+          return (
+            <div key={`item-${entry.value}`} className="flex items-center justify-center gap-1.5">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-muted-foreground">{entry.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
@@ -459,7 +491,7 @@ export default function AnalysisPage() {
                     <XAxis dataKey="dateLabel" />
                     <YAxis allowDecimals={false} />
                     <Tooltip content={<ChartTooltipContent />} />
-                    <Legend content={<ChartLegendContent className="flex-wrap" />} />
+                    <Legend content={<CustomBarChartLegend />} />
                     <Bar dataKey="Upper Body" stackId="a" fill="hsl(var(--chart-1))" />
                     <Bar dataKey="Lower Body" stackId="a" fill="hsl(var(--chart-2))" />
                     <Bar dataKey="Cardio" stackId="a" fill="hsl(var(--chart-3))" />
@@ -626,3 +658,4 @@ export default function AnalysisPage() {
 }
 
     
+
