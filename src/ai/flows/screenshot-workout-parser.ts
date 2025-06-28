@@ -56,12 +56,15 @@ You will be provided with a screenshot of a workout log.
 Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
 
 Key Instructions:
-1.  **Workout Date - IMPORTANT**:
-    *   Your main task is to extract the date from the screenshot and format it as YYYY-MM-DD.
-    *   **Rule 1: If the year \`2024\` is visible in the image, you MUST IGNORE it and use the year \`2025\` in your output.** For example, if the image says "June 26, 2024", the \`workoutDate\` MUST be "2025-06-26".
-    *   **Rule 2: If NO year is visible in the image at all**, you MUST use the year **2025**. For example, if the image says "June 26", the \`workoutDate\` MUST be "2025-06-26".
-    *   **Rule 3: For any other explicit year** (like 2023, 2022, etc.), you should use that year.
-    *   **If no date information can be extracted at all**, you may omit the \`workoutDate\` field.
+1.  **Workout Date - CRITICAL**:
+    *   Your primary goal is to find a date in the image. A valid date **must contain at least a month and a day** (e.g., "June 26", "Jul 4"). The year is secondary.
+    *   **Step 1: Find Month and Day.** First, look for a month and a day. If you cannot find a clear month-day combination, you **MUST** omit the \`workoutDate\` field entirely. Do not guess a date based on stray numbers or years alone.
+    *   **Step 2: Determine the Year (only if Step 1 was successful).**
+        *   If you found a month and day, and the year \`2024\` is visible, you MUST IGNORE it and use \`2025\`. (e.g., "June 26, 2024" becomes "2025-06-26").
+        *   If you found a month and day, but NO year is visible, you MUST use \`2025\`. (e.g., "June 26" becomes "2025-06-26").
+        *   For any other explicit year you find (like 2023, 2022), use that year.
+    *   **Step 3: Format the Date.** If you have a valid month, day, and year, format it as YYYY-MM-DD.
+    *   **Final Rule:** If a month and day cannot be confidently extracted, the \`workoutDate\` field must be omitted from the output.
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
     *   Ignore common OCR (Optical Character Recognition) artifacts. For instance:
@@ -217,6 +220,3 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     return output!;
   }
 );
-
-
-
