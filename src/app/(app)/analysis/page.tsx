@@ -118,7 +118,7 @@ const RoundedBar = (props: any) => {
 
 
 export default function AnalysisPage() {
-  const [timeRange, setTimeRange] = useState('all-time');
+  const [timeRange, setTimeRange] = useState('weekly');
   const [workoutFrequencyData, setWorkoutFrequencyData] = useState<ChartDataPoint[]>([]);
   const [categoryRepData, setCategoryRepData] = useState<CategoryDataPoint[]>([]);
   const [categoryCalorieData, setCategoryCalorieData] = useState<CategoryDataPoint[]>([]);

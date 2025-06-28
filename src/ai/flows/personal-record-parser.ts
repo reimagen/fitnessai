@@ -27,7 +27,7 @@ const PersonalRecordSchema = z.object({
     exerciseName: z.string().describe("The name of the exercise. If the original name starts with 'EGYM ', remove this prefix."),
     weight: z.number().describe("The weight lifted for the record."),
     weightUnit: z.enum(['kg', 'lbs']).describe("The unit for the weight (kg or lbs)."),
-    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. You MUST use the year 2025, regardless of the year shown in the image."),
+    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD."),
     category: z.enum(CATEGORY_OPTIONS).describe("The category of the exercise. Infer based on the exercise name. Must be one of: 'Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', or 'Other'.")
 });
 
@@ -69,12 +69,11 @@ The most important part of your task is to correctly categorize each exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), you must remove this prefix. For example, "EGYM Chest Press" becomes "Chest Press".
 *   **Weight and Unit**: Extract the numerical weight value and its unit (kg or lbs).
 *   **Date - CRITICAL**:
-    *   You must extract the date (month and day) associated with each specific record.
-    *   You **MUST** use the year '2025' for the output, regardless of any year that might be visible in the screenshot (e.g., 2023, 2024) or if no year is visible.
+    *   You must extract the date (year and month and day) associated with each specific record.
     *   Format the final date as YYYY-MM-DD.
-    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2024", the 'dateString' MUST be "2025-06-26".
-    *   **Example 2:** If a line says "Squat 120 kg Jul 1, 2023", the 'dateString' MUST be "2025-07-01".
-    *   **Example 3:** If a line says "Leg Press 200 kg May 15", the 'dateString' MUST be "2025-05-15".
+    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2025", the 'dateString' MUST be "2025-06-26".
+    *   **Example 2:** If a line says "Squat 120 kg July 1, 2025", the 'dateString' MUST be "2025-07-01".
+    *   **Example 3:** If a line says "Leg Press 200 kg May 15 2025", the 'dateString' MUST be "2025-05-15".
 
 Here is the screenshot to parse:
 {{media url=photoDataUri}}
