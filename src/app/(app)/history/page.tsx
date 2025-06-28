@@ -84,7 +84,7 @@ export default function HistoryPage() {
       if (savedLogsString) {
         try {
           const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => {
-            const date = new Date(log.date);
+            const date = log.date ? parseISO(log.date) : new Date();
             return {
             ...log,
             date,
