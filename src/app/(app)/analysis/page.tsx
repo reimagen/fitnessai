@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useEffect } from 'react';
 import type { WorkoutLog, Exercise, PersonalRecord, ExerciseCategory } from '@/lib/types';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval, getYear, startOfYear, endOfYear } from 'date-fns';
-import { TrendingUp, Award, Flame, Route, IterationCw, Move, Scale, PersonStanding } from 'lucide-react';
+import { TrendingUp, Award, Flame, Route, IterationCw, Scale } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
@@ -656,7 +656,7 @@ export default function AnalysisPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg lg:col-span-2">
+        <Card className="shadow-lg lg:col-span-6">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2">
               <Scale className="h-6 w-6 text-primary" />
@@ -669,44 +669,6 @@ export default function AnalysisPage() {
           <CardContent>
             <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
               <Scale className="h-12 w-12 text-primary/30 mb-4" />
-              <p className="text-center">Coming Soon!</p>
-              <p className="text-xs text-center mt-1">This feature is under development.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <Move className="h-6 w-6 text-primary" />
-              Mobility Progress
-            </CardTitle>
-            <CardDescription>
-              Track improvements in your mobility and flexibility over time.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-              <Move className="h-12 w-12 text-primary/30 mb-4" />
-              <p className="text-center">Coming Soon!</p>
-              <p className="text-xs text-center mt-1">This feature is under development.</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="font-headline flex items-center gap-2">
-              <PersonStanding className="h-6 w-6 text-primary" />
-              Body Stats
-            </CardTitle>
-            <CardDescription>
-              Visualize changes in your weight, body fat, and measurements.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px] flex flex-col items-center justify-center text-muted-foreground">
-              <PersonStanding className="h-12 w-12 text-primary/30 mb-4" />
               <p className="text-center">Coming Soon!</p>
               <p className="text-xs text-center mt-1">This feature is under development.</p>
             </div>
