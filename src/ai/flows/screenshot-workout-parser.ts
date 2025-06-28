@@ -22,7 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
-  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. If the year 2024 is visible, it must be changed to 2025. If no year is visible, default to 2025.'),
+  workoutDate: z.string().optional().describe('The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. You MUST use the year 2025. If no date (month and day) is found, omit this field.'),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -57,13 +57,10 @@ Your goal is to extract the workout date and exercise data from the screenshot a
 
 Key Instructions:
 1.  **Workout Date - CRITICAL**:
-    *   Your primary goal is to find a date in the image. A valid date **must contain at least a month and a day** (e.g., "June 26", "Jul 4"). The year is secondary.
-    *   **Step 1: Find Month and Day.** First, look for a month and a day. If you cannot find a clear month-day combination, you **MUST** omit the \`workoutDate\` field entirely. Do not guess a date based on stray numbers or years alone.
-    *   **Step 2: Determine the Year (only if Step 1 was successful).**
-        *   If you found a month and day, and the year \`2024\` is visible, you MUST IGNORE it and use \`2025\`. (e.g., "June 26, 2024" becomes "2025-06-26").
-        *   If you found a month and day, but NO year is visible, you MUST use \`2025\`. (e.g., "June 26" becomes "2025-06-26").
-        *   For any other explicit year you find (like 2023, 2022), use that year.
-    *   **Step 3: Format the Date.** If you have a valid month, day, and year, format it as YYYY-MM-DD.
+    *   Your primary goal is to find a date in the image. A valid date **must contain at least a month and a day** (e.g., "June 26", "Jul 4").
+    *   **Step 1: Find Month and Day.** First, look for a month and a day. If you cannot find a clear month-day combination, you **MUST** omit the \`workoutDate\` field entirely. Do not guess a date.
+    *   **Step 2: Set the Year.** If, and only if, you found a valid month and day, you **MUST** use the year \`2025\` for the output. This rule applies regardless of any year that might be visible in the screenshot (e.g., 2023, 2024). For example, "June 26, 2023", "June 26, 2024", and "June 26" should all result in a \`workoutDate\` of "2025-06-26".
+    *   **Step 3: Format the Date.** If you have a valid month, day, and year (which must be 2025), format it as YYYY-MM-DD.
     *   **Final Rule:** If a month and day cannot be confidently extracted, the \`workoutDate\` field must be omitted from the output.
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
