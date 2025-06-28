@@ -25,78 +25,7 @@ interface StoredWeeklyPlan {
   weekStartDate: string;
 }
 
-export default function PlanPage() {
-  const { toast } = useToast();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
-  
-  const [userProfileContextString, setUserProfileContextString] = useState<string | null>(null);
-  const [currentWeekStartDate, setCurrentWeekStartDate] = useState<string>("");
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [generatedPlan, setGeneratedPlan] = useState<StoredWeeklyPlan | null>(null);
-  const [isClient, setIsClient] = useState(false);
-  const [regenerationFeedback, setRegenerationFeedback] = useState("");
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const loadDataFromLocalStorage = useCallback(() => {
-    const profileString = localStorage.getItem(USER_PROFILE_KEY);
-    if (profileString) {
-      try {
-        const parsedProfile = JSON.parse(profileString);
-        parsedProfile.fitnessGoals = parsedProfile.fitnessGoals.map((goal: FitnessGoal) => ({
-          ...goal,
-          targetDate: goal.targetDate ? parseISO(goal.targetDate) : undefined,
-        }));
-        parsedProfile.joinedDate = parsedProfile.joinedDate ? parseISO(parsedProfile.joinedDate) : new Date();
-        setUserProfile(parsedProfile);
-      } catch (e) {
-        console.error("Failed to parse user profile from localStorage", e);
-        toast({ title: "Error", description: "Could not load your profile data.", variant: "destructive" });
-      }
-    }
-
-    const logsString = localStorage.getItem(WORKOUT_LOGS_KEY);
-    if (logsString) {
-      try {
-        const parsedLogs = JSON.parse(logsString).map((log: any) => ({
-          ...log,
-          date: parseISO(log.date),
-          exercises: log.exercises.map((ex: any) => ({
-            ...ex,
-            id: ex.id || Math.random().toString(36).substring(2,9)
-          }))
-        }));
-        setWorkoutLogs(parsedLogs);
-      } catch (e) {
-        console.error("Failed to parse workout logs from localStorage", e);
-      }
-    }
-
-    const storedPlanString = localStorage.getItem(AI_WEEKLY_PLAN_KEY);
-    if (storedPlanString) {
-      try {
-        const planData = JSON.parse(storedPlanString) as StoredWeeklyPlan;
-        setGeneratedPlan(planData);
-      } catch (e) {
-        console.error("Failed to parse stored weekly plan", e);
-      }
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    if (isClient) {
-      loadDataFromLocalStorage();
-      const nextSundayDate = getNextSunday(new Date());
-      setCurrentWeekStartDate(format(nextSundayDate, 'yyyy-MM-dd'));
-    }
-  }, [isClient, loadDataFromLocalStorage]);
-
-  const constructUserProfileContext = useCallback(() => {
+const constructUserProfileContext = (userProfile: UserProfile | null, workoutLogs: WorkoutLog[]): string | null => {
     if (!userProfile) return null;
 
     let context = "User Profile Context for AI Workout Plan Generation:\n";
@@ -165,31 +94,150 @@ export default function PlanPage() {
       context += "- No workout history logged.\n";
     }
     return context;
-  }, [userProfile, workoutLogs]);
+};
+
+export default function PlanPage() {
+  const { toast } = useToast();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  
+  const [userProfileContextString, setUserProfileContextString] = useState<string | null>(null);
+  const [currentWeekStartDate, setCurrentWeekStartDate] = useState<string>("");
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [generatedPlan, setGeneratedPlan] = useState<StoredWeeklyPlan | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [regenerationFeedback, setRegenerationFeedback] = useState("");
+
+  const loadDataFromLocalStorage = useCallback(() => {
+    const profileString = localStorage.getItem(USER_PROFILE_KEY);
+    if (profileString) {
+      try {
+        const parsedProfile = JSON.parse(profileString);
+        parsedProfile.fitnessGoals = parsedProfile.fitnessGoals.map((goal: FitnessGoal) => ({
+          ...goal,
+          targetDate: goal.targetDate ? parseISO(goal.targetDate) : undefined,
+        }));
+        parsedProfile.joinedDate = parsedProfile.joinedDate ? parseISO(parsedProfile.joinedDate) : new Date();
+        setUserProfile(parsedProfile);
+      } catch (e) {
+        console.error("Failed to parse user profile from localStorage", e);
+        toast({ title: "Error", description: "Could not load your profile data.", variant: "destructive" });
+      }
+    }
+
+    const logsString = localStorage.getItem(WORKOUT_LOGS_KEY);
+    if (logsString) {
+      try {
+        const parsedLogs = JSON.parse(logsString).map((log: any) => ({
+          ...log,
+          date: parseISO(log.date),
+          exercises: log.exercises.map((ex: any) => ({
+            ...ex,
+            id: ex.id || Math.random().toString(36).substring(2,9)
+          }))
+        }));
+        setWorkoutLogs(parsedLogs);
+      } catch (e) {
+        console.error("Failed to parse workout logs from localStorage", e);
+      }
+    }
+
+    const storedPlanString = localStorage.getItem(AI_WEEKLY_PLAN_KEY);
+    if (storedPlanString) {
+      try {
+        const planData = JSON.parse(storedPlanString) as StoredWeeklyPlan;
+        setGeneratedPlan(planData);
+      } catch (e) {
+        console.error("Failed to parse stored weekly plan", e);
+      }
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient) {
+      loadDataFromLocalStorage();
+      const nextSundayDate = getNextSunday(new Date());
+      setCurrentWeekStartDate(format(nextSundayDate, 'yyyy-MM-dd'));
+
+      const handleFocus = () => loadDataFromLocalStorage();
+      window.addEventListener('focus', handleFocus);
+      return () => {
+        window.removeEventListener('focus', handleFocus);
+      };
+    }
+  }, [isClient, loadDataFromLocalStorage]);
+
 
   useEffect(() => {
     if (userProfile) {
-      setUserProfileContextString(constructUserProfileContext());
+      setUserProfileContextString(constructUserProfileContext(userProfile, workoutLogs));
     }
-  }, [userProfile, workoutLogs, constructUserProfileContext]);
+  }, [userProfile, workoutLogs]);
 
 
   const handleGeneratePlan = async () => {
-    if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
-      toast({ title: "Missing Data", description: "User profile or context is not available. Please complete your profile.", variant: "destructive"});
+    if (!isClient || !currentWeekStartDate) {
+      toast({ title: "Client not ready", description: "Please wait a moment and try again.", variant: "destructive" });
       return;
     }
+
     setIsLoading(true);
     setError(null);
 
-    let contextForGeneration = userProfileContextString;
+    // Read fresh data directly from localStorage to ensure it's up-to-date
+    const profileString = localStorage.getItem(USER_PROFILE_KEY);
+    const logsString = localStorage.getItem(WORKOUT_LOGS_KEY);
+    
+    let freshProfile: UserProfile | null = null;
+    let freshLogs: WorkoutLog[] = [];
+
+    if (profileString) {
+      try {
+        const parsed = JSON.parse(profileString);
+        parsed.fitnessGoals = parsed.fitnessGoals.map((g: FitnessGoal) => ({ ...g, targetDate: g.targetDate ? parseISO(g.targetDate) : undefined }));
+        parsed.joinedDate = parsed.joinedDate ? parseISO(parsed.joinedDate) : new Date();
+        freshProfile = parsed;
+      } catch {
+        toast({ title: "Profile Error", description: "Could not read latest profile.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+    }
+    
+    if (logsString) {
+      try {
+        freshLogs = JSON.parse(logsString).map((l: any) => ({ ...l, date: parseISO(l.date) }));
+      } catch {
+        // Log parsing errors are less critical for this operation.
+      }
+    }
+
+    // Update state to ensure UI is in sync after generation
+    if(freshProfile) setUserProfile(freshProfile);
+    setWorkoutLogs(freshLogs);
+
+    const contextForGeneration = constructUserProfileContext(freshProfile, freshLogs);
+
+    if (!freshProfile || !contextForGeneration) {
+      toast({ title: "Missing Data", description: "User profile or context is not available. Please complete your profile.", variant: "destructive"});
+      setIsLoading(false);
+      return;
+    }
+
+    let finalContext = contextForGeneration;
     if (regenerationFeedback.trim()) {
-      contextForGeneration += `\n\n**CRITICAL REGENERATION INSTRUCTIONS:** The user has provided feedback on the previous plan. You MUST incorporate the following adjustments: "${regenerationFeedback}"`;
+      finalContext += `\n\n**CRITICAL REGENERATION INSTRUCTIONS:** The user has provided feedback on the previous plan. You MUST incorporate the following adjustments: "${regenerationFeedback}"`;
     }
 
     const result = await generateWeeklyWorkoutPlanAction({
-      userId: userProfile.id,
-      userProfileContext: contextForGeneration,
+      userId: freshProfile.id,
+      userProfileContext: finalContext,
       weekStartDate: currentWeekStartDate,
     });
 
@@ -197,8 +245,8 @@ export default function PlanPage() {
       const newPlanData: StoredWeeklyPlan = {
         plan: result.data.weeklyPlan,
         generatedDate: new Date().toISOString(),
-        contextUsed: contextForGeneration,
-        userId: userProfile.id,
+        contextUsed: finalContext,
+        userId: freshProfile.id,
         weekStartDate: currentWeekStartDate,
       };
       setGeneratedPlan(newPlanData);
@@ -258,7 +306,7 @@ export default function PlanPage() {
                   />
                 </div>
               )}
-              <Button onClick={handleGeneratePlan} disabled={isLoading || !userProfileContextString} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button onClick={handleGeneratePlan} disabled={isLoading || !userProfile} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
                 {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
               </Button>
@@ -303,3 +351,5 @@ export default function PlanPage() {
     </div>
   );
 }
+
+    
