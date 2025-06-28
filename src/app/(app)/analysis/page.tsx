@@ -26,6 +26,7 @@ const chartConfig = {
 type ChartDataKey = keyof typeof chartConfig;
 
 interface ChartDataPoint {
+  date: string;
   dateLabel: string;
   upperBody: number;
   lowerBody: number;
@@ -64,7 +65,7 @@ const timeRangeDisplayNames: Record<string, string> = {
   'all-time': 'All Time',
 };
 
-const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPoint, 'dateLabel'> => {
+const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPoint, 'dateLabel' | 'date'> => {
   switch (category) {
     case 'Upper Body': return 'upperBody';
     case 'Lower Body': return 'lowerBody';
@@ -89,7 +90,7 @@ const getPath = (x: number, y: number, width: number, height: number, radius: nu
           Z`;
 };
 
-const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
+const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
 
 const RoundedBar = (props: any) => {
   const { fill, x, y, width, height, payload, dataKey } = props;
@@ -226,6 +227,7 @@ export default function AnalysisPage() {
         const dateKey = format(log.date, 'yyyy-MM-dd');
         if (!dailyCategoryCounts[dateKey]) {
           dailyCategoryCounts[dateKey] = {
+            date: dateKey,
             dateLabel: format(log.date, 'MMM d'),
             upperBody: 0,
             lowerBody: 0,
@@ -245,13 +247,13 @@ export default function AnalysisPage() {
       });
 
       const newWorkoutFrequencyData = Object.values(dailyCategoryCounts)
-        .sort((a, b) => parseISO(a.dateLabel.replace(/(\w{3} \d+)/, `$1, ${getYear(new Date())}`)).getTime() - parseISO(b.dateLabel.replace(/(\w{3} \d+)/, `$1, ${getYear(new Date())}`)).getTime());
+        .sort((a, b) => a.date.localeCompare(b.date));
       
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
 
-      const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
-      const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
+      const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
+      const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
       const runningDataPoints: { date: Date, distance: number, type: 'outdoor' | 'treadmill' }[] = [];
 
       logsForCurrentPeriod.forEach(log => { 
