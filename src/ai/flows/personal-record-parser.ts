@@ -70,11 +70,11 @@ The most important part of your task is to correctly categorize each exercise.
 *   **Weight and Unit**: Extract the numerical weight value and its unit (kg or lbs).
 *   **Date - CRITICAL**:
     *   You must extract the date (month and day) associated with each specific record.
-    *   You **MUST** use the year `2025` for the output, regardless of any year that might be visible in the screenshot (e.g., 2023, 2024) or if no year is visible.
+    *   You **MUST** use the year '2025' for the output, regardless of any year that might be visible in the screenshot (e.g., 2023, 2024) or if no year is visible.
     *   Format the final date as YYYY-MM-DD.
-    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2024", the \`dateString\` MUST be "2025-06-26".
-    *   **Example 2:** If a line says "Squat 120 kg Jul 1, 2023", the \`dateString\` MUST be "2025-07-01".
-    *   **Example 3:** If a line says "Leg Press 200 kg May 15", the \`dateString\` MUST be "2025-05-15".
+    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2024", the 'dateString' MUST be "2025-06-26".
+    *   **Example 2:** If a line says "Squat 120 kg Jul 1, 2023", the 'dateString' MUST be "2025-07-01".
+    *   **Example 3:** If a line says "Leg Press 200 kg May 15", the 'dateString' MUST be "2025-05-15".
 
 Here is the screenshot to parse:
 {{media url=photoDataUri}}

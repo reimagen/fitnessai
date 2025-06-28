@@ -19,7 +19,7 @@ const WeeklyWorkoutPlanInputSchema = z.object({
 export type WeeklyWorkoutPlanInput = z.infer<typeof WeeklyWorkoutPlanInputSchema>;
 
 const WeeklyWorkoutPlanOutputSchema = z.object({
-  weeklyPlan: z.string().describe('The detailed weekly workout plan, formatted as a single string. The plan should cover Sunday through Saturday, with daily breakdowns including exercises, sets, reps, rest periods, warm-up, and cool-down routines. NO lines in the output should begin with markdown list markers like `*` or `-`.'),
+  weeklyPlan: z.string().describe("The detailed weekly workout plan, formatted as a single string. The plan should cover Sunday through Saturday, with daily breakdowns including exercises, sets, reps, rest periods, warm-up, and cool-down routines. NO lines in the output should begin with markdown list markers like '*' or '-'."),
 });
 export type WeeklyWorkoutPlanOutput = z.infer<typeof WeeklyWorkoutPlanOutputSchema>;
 
@@ -41,8 +41,8 @@ The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{w
 
 **NEW REQUIREMENT: Introductory Analysis**
 Before generating the daily breakdown, you MUST start the plan with a brief introductory paragraph (2-4 sentences). This paragraph MUST:
-1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their \`Workout History Summary\` in the provided context. For example, mention their consistency or focus areas.
-2.  **State This Week's Purpose**: Explicitly connect this week's plan to the user's primary \`Fitness Goal\`. Explain how the upcoming workouts will help them progress towards that goal.
+1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their 'Workout History Summary' in the provided context. For example, mention their consistency or focus areas.
+2.  **State This Week's Purpose**: Explicitly connect this week's plan to the user's primary 'Fitness Goal'. Explain how the upcoming workouts will help them progress towards that goal.
 3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
 
 After writing the introduction, proceed with generating the full weekly workout plan as described in the "Key Requirements" below.
@@ -54,7 +54,7 @@ After writing the introduction, proceed with generating the full weekly workout 
 3.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description, or "Rest Day" note) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading (e.g., before **Monday: Focus**). This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
 4.  **Detailed Workout Session Structure and Formatting**:
     For *each* individual workout day or session detailed in the plan (not rest days), you MUST structure it clearly with the following components in order.
-    CRITICAL: NO lines in the output should begin with markdown list markers such as \`*\` or \`-\`. Each piece of information (exercise name, sets/reps, rest periods, etc.) should be on its own line.
+    CRITICAL: NO lines in the output should begin with markdown list markers such as '*' or '-'. Each piece of information (exercise name, sets/reps, rest periods, etc.) should be on its own line.
     *   **Day Heading**: Each day's section MUST start with the day of the week and a brief focus, both bolded. For example: **Sunday: Full Body Strength**. This line MUST NOT begin with any list marker.
     *   **Warm-up Section**:
         *   This section MUST begin with the exact bolded heading: **Warm-up:**
