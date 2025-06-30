@@ -247,7 +247,7 @@ export default function AnalysisPage() {
       });
 
       const newWorkoutFrequencyData = Object.values(dailyCategoryCounts)
-        .sort((a, b) => a.date.localeCompare(b.date));
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       setWorkoutFrequencyData(newWorkoutFrequencyData);
 
@@ -435,6 +435,8 @@ export default function AnalysisPage() {
   };
 
   const CustomBarChartLegend = ({ payload }: any) => {
+    if (!payload) return null; // Added safety check
+
     const legendOrder: ChartDataKey[] = [
       'upperBody', 'lowerBody', 'core', 'fullBody', 'cardio', 'other'
     ];
