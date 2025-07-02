@@ -5,25 +5,24 @@ import {googleAI} from '@genkit-ai/googleai';
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 if (!geminiApiKey && process.env.NODE_ENV !== 'production') {
-  // This warning will appear in the server console when Next.js starts
+  // This error will appear in the server console when Next.js starts
   // or when this module is first loaded during development.
-  console.warn(`
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ERROR: Missing Gemini API Key for FitnessAI
-    --------------------------------------------------------------------------
-    The FitnessAI app's AI features require a Gemini API Key.
-    Please set either GEMINI_API_KEY or GOOGLE_API_KEY in your .env file.
+  console.error(`
+    ================================================================================
+    [ERROR] FITNESSAI: MISSING GEMINI API KEY
+    --------------------------------------------------------------------------------
+    The AI features of this application require a Gemini API Key.
 
-    Example (.env file content):
-    GEMINI_API_KEY=YOUR_ACTUAL_API_KEY_HERE
-
-    You can obtain an API key from Google AI Studio:
-    https://aistudio.google.com/app/apikey
+    To fix this:
+      1. Go to Google AI Studio to get a key: https://aistudio.google.com/app/apikey
+      2. Create a file named '.env.local' in the root of your project.
+      3. Add the following line to the file, replacing with your actual key:
+         GEMINI_API_KEY=YOUR_API_KEY_HERE
 
     After adding the key, please restart your development server.
     For more details on Genkit Google AI plugin setup, see:
     https://firebase.google.com/docs/genkit/plugins/google-genai
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ================================================================================
   `);
 }
 
