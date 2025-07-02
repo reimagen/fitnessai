@@ -2,8 +2,8 @@
 "use client";
 
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, serverTimestamp, query, orderBy } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, FitnessGoal, Exercise } from './types';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
+import type { WorkoutLog, PersonalRecord, UserProfile, FitnessGoal, Exercise, SessionTime, ExperienceLevel } from './types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // --- Data Converters ---
@@ -45,15 +45,18 @@ const personalRecordConverter = {
 };
 
 const userProfileConverter = {
-    toFirestore: (profile: Omit<UserProfile, 'id'>) => {
-        return {
-            ...profile,
-            joinedDate: Timestamp.fromDate(profile.joinedDate),
-            fitnessGoals: profile.fitnessGoals.map(goal => ({
+    toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
+        const dataToStore: { [key: string]: any } = { ...profile };
+        if (profile.joinedDate) {
+            dataToStore.joinedDate = Timestamp.fromDate(profile.joinedDate);
+        }
+        if (profile.fitnessGoals) {
+            dataToStore.fitnessGoals = profile.fitnessGoals.map(goal => ({
                 ...goal,
                 targetDate: goal.targetDate ? Timestamp.fromDate(goal.targetDate) : undefined,
-            }))
-        };
+            }));
+        }
+        return dataToStore;
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
         const data = snapshot.data(options);
@@ -116,38 +119,54 @@ const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) => {
 
 
 // User Profile (assuming a single user, single profile document)
-const getProfileDocRef = async () => {
+const USER_PROFILE_DOC_ID = "main-user-profile";
+
+const getUserProfile = async (): Promise<UserProfile> => {
     const profileCollection = collection(db, 'profiles').withConverter(userProfileConverter);
-    const snapshot = await getDocs(profileCollection);
-    if (snapshot.empty) {
-        // If no profile, create one with the ID 'main-user-profile'
-        const newProfile: Omit<UserProfile, 'id'> = {
+    const profileDocRef = doc(profileCollection, USER_PROFILE_DOC_ID);
+    let snapshot = await getDoc(profileDocRef);
+
+    if (!snapshot.exists()) {
+        console.log("No user profile found, creating a new default profile.");
+        const defaultProfile: Omit<UserProfile, 'id'> = {
             name: "New User",
             email: "user@example.com",
             joinedDate: new Date(),
             fitnessGoals: [],
+            workoutsPerWeek: 3,
+            sessionTimeMinutes: 45 as SessionTime,
+            experienceLevel: 'intermediate' as ExperienceLevel,
+            aiPreferencesNotes: "",
         };
-        const newDocRef = doc(profileCollection, "main-user-profile");
-        await updateDoc(newDocRef, userProfileConverter.toFirestore(newProfile), { merge: true });
-        return newDocRef;
-    }
-    return snapshot.docs[0].ref;
-}
+        await setDoc(profileDocRef, defaultProfile);
+        snapshot = await getDoc(profileDocRef);
 
-const getUserProfile = async (): Promise<UserProfile> => {
-    const profileDocRef = await getProfileDocRef();
-    const snapshot = await getDocs(collection(db, 'profiles').withConverter(userProfileConverter));
-    return snapshot.docs[0].data();
+        if (!snapshot.exists()) {
+            throw new Error("Failed to create and then fetch the default user profile.");
+        }
+    }
+    
+    return snapshot.data();
 };
 
+
 const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    const profileDocRef = await getProfileDocRef();
-    const convertedData = {
-        ...profileData,
-        joinedDate: profileData.joinedDate ? Timestamp.fromDate(profileData.joinedDate) : undefined,
-        fitnessGoals: profileData.fitnessGoals ? profileData.fitnessGoals.map(g => ({...g, targetDate: g.targetDate ? Timestamp.fromDate(g.targetDate) : undefined })) : undefined,
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
+    
+    // Manually convert date fields for partial updates
+    const dataToUpdate: { [key: string]: any } = { ...profileData };
+    
+    if (profileData.joinedDate) {
+        dataToUpdate.joinedDate = Timestamp.fromDate(profileData.joinedDate);
     }
-    return updateDoc(profileDocRef, convertedData, { merge: true });
+    if (profileData.fitnessGoals) {
+        dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(g => ({
+            ...g,
+            targetDate: g.targetDate ? Timestamp.fromDate(g.targetDate) : undefined,
+        }));
+    }
+
+    return await updateDoc(profileDocRef, dataToUpdate);
 };
 
 // --- React Query Hooks ---
@@ -206,7 +225,7 @@ export function useUserProfile() {
 
 export function useUpdateUserProfile() {
     const queryClient = useQueryClient();
-    return useMutation({
+    return useMutation<void, Error, Partial<Omit<UserProfile, 'id'>>>({
         mutationFn: updateUserProfile,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile'] });
