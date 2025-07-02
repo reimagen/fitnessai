@@ -1,11 +1,53 @@
 import type {Metadata} from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from '@/components/query-provider';
+import { ThemeProvider } from '@/components/theme-provider';
+
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+const APP_NAME = "FitnessAI";
+const APP_DESCRIPTION = "Your personal AI fitness companion to track workouts, plan schedules, and analyze progress.";
 
 export const metadata: Metadata = {
-  title: 'FitnessAI',
-  description: 'Your personal AI fitness companion',
+  applicationName: APP_NAME,
+  title: {
+    default: APP_NAME,
+    template: `%s - ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
+  manifest: "/manifest.json",
+  themeColor: "#FFFFFF",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: APP_NAME,
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: {
+      default: APP_NAME,
+      template: `%s - ${APP_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: {
+      default: APP_NAME,
+      template: `%s - ${APP_NAME}`,
+    },
+    description: APP_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
@@ -14,17 +56,22 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className="font-body antialiased">
-        <QueryProvider>
-          {children}
-        </QueryProvider>
-        <Toaster />
+      <body className={`${inter.variable} font-body antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <QueryProvider>
+            {children}
+          </QueryProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
