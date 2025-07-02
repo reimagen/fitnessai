@@ -12,7 +12,7 @@ import { format } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
 import { usePersonalRecords, useUserProfile, useAddPersonalRecords } from "@/lib/firestore.service";
-import { writeBatch, collection, doc } from "firebase/firestore";
+import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
 
