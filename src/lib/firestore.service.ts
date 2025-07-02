@@ -129,16 +129,44 @@ const getUserProfile = async (): Promise<UserProfile> => {
     let snapshot = await getDoc(profileDocRef);
 
     if (!snapshot.exists()) {
-        console.log("No user profile found, creating a new default profile.");
+        console.log("No user profile found, creating a new default profile from screenshot.");
         const defaultProfile: Omit<UserProfile, 'id'> = {
-            name: "New User",
+            name: "Lisa Gu",
             email: "user@example.com",
-            joinedDate: new Date(),
-            fitnessGoals: [],
-            workoutsPerWeek: 3,
-            sessionTimeMinutes: 45 as SessionTime,
+            joinedDate: new Date("2025-06-01T00:00:00Z"),
+            age: 36,
+            gender: "Female",
+            heightValue: 162.56, // 5ft 4in in cm
+            heightUnit: 'ft/in',
+            weightValue: undefined,
+            weightUnit: 'lbs',
+            workoutsPerWeek: 5,
+            sessionTimeMinutes: 60 as SessionTime,
             experienceLevel: 'intermediate' as ExperienceLevel,
-            aiPreferencesNotes: "",
+            aiPreferencesNotes: "Equipment available: my gym has eGYM machines, free weights, a pull-up bar, and pull up bands I currently have a right wrist sprain and need to reduce stress on push exercises, but pull is ok.",
+            fitnessGoals: [
+              {
+                id: 'goal-1',
+                description: 'Do a pull-up',
+                targetDate: new Date('2025-12-31T00:00:00Z'),
+                achieved: false,
+                isPrimary: true,
+              },
+              {
+                id: 'goal-2',
+                description: 'Increase my run endurance from 3.5mi to 5mi',
+                targetDate: new Date('2025-12-31T00:00:00Z'),
+                achieved: false,
+                isPrimary: false,
+              },
+              {
+                id: 'goal-3',
+                description: 'Build Muscle',
+                targetDate: undefined,
+                achieved: false,
+                isPrimary: false,
+              },
+            ],
         };
         await setDoc(profileDocRef, defaultProfile);
         snapshot = await getDoc(profileDocRef);
