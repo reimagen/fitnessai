@@ -127,17 +127,21 @@ const USER_PROFILE_DOC_ID = "main-user-profile";
 const getUserProfile = async (): Promise<UserProfile> => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
     let snapshot = await getDoc(profileDocRef);
+    const existingData = snapshot.data();
 
-    if (!snapshot.exists()) {
-        console.log("No user profile found, creating a new default profile from screenshot.");
-        const defaultProfile: Omit<UserProfile, 'id'> = {
+    // Check if the profile doesn't exist OR if it's the generic "New User" profile from a previous error.
+    // This ensures we overwrite the bad data one time to restore the user's correct profile.
+    if (!snapshot.exists() || (existingData && existingData.name === 'New User')) {
+        console.log("No valid user profile found, creating/overwriting with correct user data.");
+        
+        const correctProfile: Omit<UserProfile, 'id'> = {
             name: "Lisa Gu",
             email: "user@example.com",
             joinedDate: new Date("2025-06-01T00:00:00Z"),
             age: 36,
             gender: "Female",
-            heightValue: 162.56, // 5ft 4in in cm
-            heightUnit: 'ft/in',
+            heightValue: 162.56, // 5ft 4in converted to cm for storage
+            heightUnit: 'ft/in', // User's preferred display unit
             weightValue: undefined,
             weightUnit: 'lbs',
             workoutsPerWeek: 5,
@@ -168,15 +172,16 @@ const getUserProfile = async (): Promise<UserProfile> => {
               },
             ],
         };
-        await setDoc(profileDocRef, defaultProfile);
-        snapshot = await getDoc(profileDocRef);
+        
+        await setDoc(profileDocRef, correctProfile);
+        snapshot = await getDoc(profileDocRef); // Re-fetch the newly set data
 
         if (!snapshot.exists()) {
-            throw new Error("Failed to create and then fetch the default user profile.");
+            throw new Error("Fatal error: Failed to create and then fetch the user profile.");
         }
     }
     
-    return snapshot.data();
+    return snapshot.data() as UserProfile;
 };
 
 
@@ -196,7 +201,8 @@ const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) 
         }));
     }
 
-    return await updateDoc(profileDocRef, dataToUpdate);
+    // Use setDoc with merge:true to be safe, it will update or create if not exists.
+    return await setDoc(profileDocRef, dataToUpdate, { merge: true });
 };
 
 // --- React Query Hooks ---
