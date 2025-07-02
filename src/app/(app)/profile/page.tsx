@@ -6,10 +6,11 @@ import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Palette, Loader2 } from "lucide-react";
+import { Settings, LogOut, Loader2 } from "lucide-react";
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -102,35 +103,33 @@ export default function ProfilePage() {
           <CardDescription>Customize your FitnessAI experience.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-md border hover:bg-secondary/50 transition-colors">
+            <div className="flex items-center justify-between p-3 rounded-md border">
                 <div>
                     <h4 className="font-medium">Theme</h4>
-                    <p className="text-sm text-muted-foreground">Switch between light and dark mode.</p>
+                    <p className="text-sm text-muted-foreground">Switch between light, dark, and system modes.</p>
                 </div>
-                <Button variant="outline" size="sm">
-                    <Palette className="mr-2 h-4 w-4" /> Toggle Theme
-                </Button>
+                <ThemeToggle />
             </div>
-             <div className="flex items-center justify-between p-3 rounded-md border hover:bg-secondary/50 transition-colors">
+             <div className="flex items-center justify-between p-3 rounded-md border">
                 <div>
                     <h4 className="font-medium">Notification Preferences</h4>
                     <p className="text-sm text-muted-foreground">Manage your app notifications.</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled>
                     Manage
                 </Button>
             </div>
-             <div className="flex items-center justify-between p-3 rounded-md border hover:bg-secondary/50 transition-colors">
+             <div className="flex items-center justify-between p-3 rounded-md border">
                 <div>
                     <h4 className="font-medium">Account Data</h4>
                     <p className="text-sm text-muted-foreground">Export or delete your account data.</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" disabled>
                     Manage Data
                 </Button>
             </div>
-          <Button variant="destructive" className="w-full mt-4">
-            <LogOut className="mr-2 h-4 w-4" /> Log Out (Placeholder)
+          <Button variant="destructive" className="w-full mt-4" disabled>
+            <LogOut className="mr-2 h-4 w-4" /> Log Out
           </Button>
         </CardContent>
       </Card>
