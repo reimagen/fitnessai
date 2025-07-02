@@ -77,7 +77,7 @@ Key Instructions:
     *   **DO NOT default to "Other"** for common exercises listed in this guide.
 
     **MANDATORY CATEGORIZATION GUIDE:**
-    *   **Upper Body**: Use for exercises like "Chest Press", "Bench Press", "Lat Pulldown", "Seated Dip", "Rowing", "Shoulder Press", "Overhead Press".
+    *   **Upper Body**: Use for exercises like "Chest Press", "Bench Press", "Lat Pulldown", "Seated Dip", "Rowing", "Shoulder Press", "Overhead Press", "Butterfly", "Reverse Flys".
     *   **Lower Body**: Use for exercises like "Abductor", "Adductor", "Glutes", "Leg Press", "Leg Extension", "Leg Curl", "Squats", "Hip Thrust".
     *   **Core**: Use for exercises like "Abdominal Crunch", "Rotary Torso", "Back Extension". You must categorize "Back Extension" as "Core".
     *   **Full Body**: Use for exercises like "Deadlift", "Clean and Jerk".
