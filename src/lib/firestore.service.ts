@@ -126,14 +126,9 @@ const USER_PROFILE_DOC_ID = "main-user-profile";
 
 const getUserProfile = async (): Promise<UserProfile> => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
-    let snapshot = await getDoc(profileDocRef);
-    const existingData = snapshot.data();
 
-    // Check if the profile doesn't exist OR if it's the generic "New User" profile from a previous error.
-    // This ensures we overwrite the bad data one time to restore the user's correct profile.
-    if (!snapshot.exists() || (existingData && existingData.name === 'New User')) {
-        console.log("No valid user profile found, creating/overwriting with correct user data.");
-        
+    const createAndFetchCorrectProfile = async (): Promise<UserProfile> => {
+        console.log("Creating or overwriting user profile with correct default data.");
         const correctProfile: Omit<UserProfile, 'id'> = {
             name: "Lisa Gu",
             email: "user@example.com",
@@ -172,16 +167,39 @@ const getUserProfile = async (): Promise<UserProfile> => {
               },
             ],
         };
-        
         await setDoc(profileDocRef, correctProfile);
-        snapshot = await getDoc(profileDocRef); // Re-fetch the newly set data
-
-        if (!snapshot.exists()) {
-            throw new Error("Fatal error: Failed to create and then fetch the user profile.");
+        const newSnapshot = await getDoc(profileDocRef);
+        if (!newSnapshot.exists()) {
+             throw new Error("Fatal error: Failed to create and then fetch the user profile.");
         }
+        return newSnapshot.data();
+    };
+
+    const snapshot = await getDoc(profileDocRef);
+
+    if (!snapshot.exists()) {
+        return createAndFetchCorrectProfile();
     }
-    
-    return snapshot.data() as UserProfile;
+
+    try {
+        // Try to parse the existing data. This might fail if the data is corrupt.
+        const profileData = snapshot.data();
+        if(!profileData) {
+            // This case can happen if the document exists but is empty.
+            console.warn("Profile document exists but is empty. Overwriting.");
+            return createAndFetchCorrectProfile();
+        }
+        // This is a safety check. If the loaded profile is the generic one, overwrite it.
+        if (profileData.name === 'New User') {
+            console.warn("Generic 'New User' profile found. Overwriting with correct data.");
+            return createAndFetchCorrectProfile();
+        }
+        return profileData;
+    } catch (error) {
+        // If parsing fails, it means the data is corrupt. Overwrite it.
+        console.error("Failed to parse existing profile data, it may be corrupt. Overwriting.", error);
+        return createAndFetchCorrectProfile();
+    }
 };
 
 
@@ -256,7 +274,7 @@ export function useAddPersonalRecords() {
 }
 
 export function useUserProfile() {
-    return useQuery<UserProfile, Error>({ queryKey: ['profile'], queryFn: getUserProfile });
+    return useQuery<UserProfile, Error>({ queryKey: ['profile'], queryFn: getUserProfile, retry: false });
 }
 
 export function useUpdateUserProfile() {
