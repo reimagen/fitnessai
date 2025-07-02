@@ -124,84 +124,50 @@ const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) => {
 // User Profile (assuming a single user, single profile document)
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
-const getUserProfile = async (): Promise<UserProfile> => {
+const createDefaultProfile = async (): Promise<UserProfile> => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
-
-    const createAndFetchCorrectProfile = async (): Promise<UserProfile> => {
-        console.log("Creating or overwriting user profile with correct default data.");
-        const correctProfile: Omit<UserProfile, 'id'> = {
-            name: "Lisa Gu",
-            email: "user@example.com",
-            joinedDate: new Date("2025-06-01T00:00:00Z"),
-            age: 36,
-            gender: "Female",
-            heightValue: 162.56, // 5ft 4in converted to cm for storage
-            heightUnit: 'ft/in', // User's preferred display unit
-            weightValue: undefined,
-            weightUnit: 'lbs',
-            workoutsPerWeek: 5,
-            sessionTimeMinutes: 60 as SessionTime,
-            experienceLevel: 'intermediate' as ExperienceLevel,
-            aiPreferencesNotes: "Equipment available: my gym has eGYM machines, free weights, a pull-up bar, and pull up bands I currently have a right wrist sprain and need to reduce stress on push exercises, but pull is ok.",
-            fitnessGoals: [
-              {
-                id: 'goal-1',
-                description: 'Do a pull-up',
-                targetDate: new Date('2025-12-31T00:00:00Z'),
-                achieved: false,
-                isPrimary: true,
-              },
-              {
-                id: 'goal-2',
-                description: 'Increase my run endurance from 3.5mi to 5mi',
-                targetDate: new Date('2025-12-31T00:00:00Z'),
-                achieved: false,
-                isPrimary: false,
-              },
-              {
-                id: 'goal-3',
-                description: 'Build Muscle',
-                targetDate: undefined,
-                achieved: false,
-                isPrimary: false,
-              },
-            ],
-        };
-        await setDoc(profileDocRef, correctProfile);
-        const newSnapshot = await getDoc(profileDocRef);
-        if (!newSnapshot.exists()) {
-             throw new Error("Fatal error: Failed to create and then fetch the user profile.");
-        }
-        return newSnapshot.data();
+    console.log("Creating a new default user profile.");
+    const defaultProfile: Omit<UserProfile, 'id'> = {
+        name: "New User",
+        email: "user@example.com",
+        joinedDate: new Date(),
+        fitnessGoals: [],
+        workoutsPerWeek: 3,
+        sessionTimeMinutes: 45,
+        experienceLevel: 'intermediate',
     };
-
-    const snapshot = await getDoc(profileDocRef);
-
-    if (!snapshot.exists()) {
-        return createAndFetchCorrectProfile();
+    await setDoc(profileDocRef, defaultProfile);
+    const newSnapshot = await getDoc(profileDocRef);
+    if (!newSnapshot.exists()) {
+         throw new Error("Fatal error: Failed to create and then fetch the user profile.");
     }
-
-    try {
-        // Try to parse the existing data. This might fail if the data is corrupt.
-        const profileData = snapshot.data();
-        if(!profileData) {
-            // This case can happen if the document exists but is empty.
-            console.warn("Profile document exists but is empty. Overwriting.");
-            return createAndFetchCorrectProfile();
-        }
-        // This is a safety check. If the loaded profile is the generic one, overwrite it.
-        if (profileData.name === 'New User') {
-            console.warn("Generic 'New User' profile found. Overwriting with correct data.");
-            return createAndFetchCorrectProfile();
-        }
-        return profileData;
-    } catch (error) {
-        // If parsing fails, it means the data is corrupt. Overwrite it.
-        console.error("Failed to parse existing profile data, it may be corrupt. Overwriting.", error);
-        return createAndFetchCorrectProfile();
-    }
+    return newSnapshot.data();
 };
 
+export const getUserProfile = async (): Promise<UserProfile> => {
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
+
+    try {
+        const snapshot = await getDoc(profileDocRef);
+        if (!snapshot.exists()) {
+            console.warn("No profile found, creating a default one.");
+            return createDefaultProfile();
+        }
+        
+        const profileData = snapshot.data(); 
+        
+        if(!profileData || !profileData.name) {
+            console.warn("Profile document is empty or invalid. Recreating.");
+            return createDefaultProfile();
+        }
+
+        return profileData;
+
+    } catch (error) {
+        console.error("Error fetching or parsing profile, creating a default one.", error);
+        return createDefaultProfile();
+    }
+};
 
 const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
