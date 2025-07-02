@@ -1,30 +1,20 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-
-const LOCAL_STORAGE_KEY_PRS = "fitnessAppPersonalRecords";
-const LOCAL_STORAGE_KEY_PROFILE = "fitnessAppUserProfile";
+import { usePersonalRecords, useUserProfile, useAddPersonalRecords } from "@/lib/firestore.service";
+import { writeBatch, collection, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Function to group records and find the best for each exercise
 const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
@@ -52,87 +42,53 @@ const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
 }
 
 export default function MilestonesPage() {
-  const [allRecords, setAllRecords] = useState<PersonalRecord[]>([]);
-  const [bestRecords, setBestRecords] = useState<PersonalRecord[]>([]);
-  const [completedGoals, setCompletedGoals] = useState<FitnessGoal[]>([]);
-  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const { data: allRecords, isLoading: isLoadingPrs } = usePersonalRecords();
+  const { data: userProfile } = useUserProfile();
+  const addPersonalRecordsMutation = useAddPersonalRecords();
 
-  useEffect(() => {
-    if (isClient) {
-      // Load Personal Records
-      const savedPrsString = localStorage.getItem(LOCAL_STORAGE_KEY_PRS);
-      if (savedPrsString) {
-        try {
-          const parsedRecords: PersonalRecord[] = JSON.parse(savedPrsString).map((rec: any) => ({
-            ...rec,
-            date: parseISO(rec.date),
-            category: rec.category || 'Other',
-          }));
-          setAllRecords(parsedRecords);
-        } catch (error) {
-          console.error("Error parsing PRs from localStorage", error);
-          setAllRecords([]);
-        }
-      }
-      
-      // Load Completed Goals
-      const savedProfileString = localStorage.getItem(LOCAL_STORAGE_KEY_PROFILE);
-      if (savedProfileString) {
-        try {
-          const profile: UserProfile = JSON.parse(savedProfileString);
-          const goals = profile.fitnessGoals.map(goal => ({
-            ...goal,
-            targetDate: goal.targetDate ? parseISO(goal.targetDate.toString()) : undefined,
-          }));
-          setCompletedGoals(goals.filter(g => g.achieved));
-        } catch (error) {
-          console.error("Error parsing user profile for milestones", error);
-        }
-      }
-    }
-  }, [isClient]);
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEY_PRS, JSON.stringify(allRecords));
-      setBestRecords(getBestRecords(allRecords));
-    }
-  }, [allRecords, isClient]);
-
+  const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
+  const completedGoals = useMemo(() => userProfile?.fitnessGoals.filter(g => g.achieved) || [], [userProfile]);
+  
   const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
     let addedCount = 0;
-    const newRecords: PersonalRecord[] = [];
+    const newRecords: Omit<PersonalRecord, 'id'>[] = [];
 
-    const existingRecordKeys = new Set(allRecords.map(r => `${r.exerciseName.trim().toLowerCase()}|${r.dateString}`));
+    const existingRecordKeys = new Set((allRecords || []).map(r => `${r.exerciseName.trim().toLowerCase()}|${format(r.date, 'yyyy-MM-dd')}`));
 
     parsedData.records.forEach(rec => {
         const key = `${rec.exerciseName.trim().toLowerCase()}|${rec.dateString}`;
         if (!existingRecordKeys.has(key)) {
-            const newRecord: PersonalRecord = {
-                id: `${rec.exerciseName}-${rec.dateString}-${Math.random()}`,
+            const newRecord: Omit<PersonalRecord, 'id'> = {
                 exerciseName: rec.exerciseName,
                 weight: rec.weight,
                 weightUnit: rec.weightUnit,
                 date: new Date(rec.dateString.replace(/-/g, '/')),
-                dateString: rec.dateString,
                 category: rec.category,
             };
             newRecords.push(newRecord);
-            existingRecordKeys.add(key);
+            existingRecordKeys.add(key); // prevent duplicates in the same upload
             addedCount++;
         }
     });
 
     if (addedCount > 0) {
-        setAllRecords(prev => [...prev, ...newRecords]);
-        toast({
-            title: "Records Updated",
-            description: `Added ${addedCount} new personal record(s).`,
+        addPersonalRecordsMutation.mutate(newRecords, {
+            onSuccess: () => {
+                toast({
+                    title: "Records Updated",
+                    description: `Added ${addedCount} new personal record(s).`,
+                });
+            },
+            onError: (error) => {
+                 toast({
+                    title: "Update Failed",
+                    description: `Could not save new records: ${error.message}`,
+                    variant: "destructive"
+                });
+            }
         });
     } else {
         toast({
@@ -143,16 +99,28 @@ export default function MilestonesPage() {
     }
   };
 
-  const performClearRecords = () => {
-    if (isClient) {
-      localStorage.removeItem(LOCAL_STORAGE_KEY_PRS);
+  const performClearRecords = async () => {
+    if (!allRecords || allRecords.length === 0) return;
+    try {
+        const batch = writeBatch(db);
+        allRecords.forEach(record => {
+            const docRef = doc(db, 'personalRecords', record.id);
+            batch.delete(docRef);
+        });
+        await batch.commit();
+        queryClient.invalidateQueries({ queryKey: ['prs'] });
+        toast({
+            title: "Records Cleared",
+            description: "All personal records have been removed.",
+            variant: "destructive",
+        });
+    } catch(error: any) {
+        toast({
+            title: "Clear Failed",
+            description: `Could not clear records: ${error.message}`,
+            variant: "destructive"
+        });
     }
-    setAllRecords([]);
-    toast({
-      title: "Records Cleared",
-      description: "All personal records have been removed. You can now re-upload.",
-      variant: "destructive",
-    });
   };
 
   const groupedRecords = bestRecords.reduce((acc, record) => {
@@ -187,32 +155,14 @@ export default function MilestonesPage() {
         </CardHeader>
         <CardContent>
           <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          {isClient && allRecords.length > 0 && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full mt-4"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete all
-                    your personal records from this device.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={performClearRecords}>
-                    Continue
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+          {allRecords && allRecords.length > 0 && (
+              <Button
+                variant="destructive"
+                className="w-full mt-4"
+                onClick={performClearRecords}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+              </Button>
           )}
         </CardContent>
       </Card>
@@ -228,7 +178,11 @@ export default function MilestonesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isClient && bestRecords.length > 0 ? (
+          {isLoadingPrs ? (
+            <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : bestRecords.length > 0 ? (
              <div className="space-y-8">
                 {categoryOrder.map(category => (
                   groupedRecords[category] && groupedRecords[category].length > 0 && (
@@ -253,7 +207,7 @@ export default function MilestonesPage() {
              <div className="flex flex-col items-center justify-center h-40 text-center">
                 <Trophy className="h-16 w-16 text-primary/30 mb-4" />
                 <p className="text-muted-foreground">
-                    {isClient ? "No personal records logged yet. Upload a screenshot to get started!" : "Loading records..."}
+                    No personal records logged yet. Upload a screenshot to get started!
                 </p>
             </div>
           )}
@@ -290,7 +244,7 @@ export default function MilestonesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isClient && completedGoals.length > 0 ? (
+          {completedGoals.length > 0 ? (
              <div className="space-y-3">
                 {completedGoals.map(goal => (
                     <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
@@ -309,7 +263,7 @@ export default function MilestonesPage() {
              <div className="flex flex-col items-center justify-center h-40 text-center">
                 <Flag className="h-16 w-16 text-primary/30 mb-4" />
                 <p className="text-muted-foreground">
-                    {isClient ? "No completed goals yet. Set and achieve goals on your profile!" : "Loading goals..."}
+                    No completed goals yet. Set and achieve goals on your profile!
                 </p>
             </div>
           )}
@@ -319,5 +273,3 @@ export default function MilestonesPage() {
     </div>
   );
 }
-
-    

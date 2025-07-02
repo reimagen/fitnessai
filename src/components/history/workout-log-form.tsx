@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, Loader2 } from "lucide-react";
 import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
@@ -49,10 +49,11 @@ const workoutLogSchema = z.object({
 type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
 
 type WorkoutLogFormProps = {
-  onSubmitLog: (data: Omit<WorkoutLog, 'id' | 'dateString'>) => void;
+  onSubmitLog: (data: Omit<WorkoutLog, 'id'>) => void;
   initialData?: WorkoutLog;
   editingLogId?: string | null;
   onCancelEdit?: () => void;
+  isSubmitting?: boolean;
 };
 
 const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
@@ -69,7 +70,7 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   calories: 0
 };
 
-export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit }: WorkoutLogFormProps) {
+export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting }: WorkoutLogFormProps) {
   const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
     defaultValues: { 
@@ -139,6 +140,10 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           calories: ex.calories ?? 0,
         }))
     });
+
+    if (!editingLogId) {
+        form.reset();
+    }
   }
 
   return (
@@ -384,11 +389,12 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           )}
         />
         <div className="flex gap-2">
-            <Button type="submit" className="w-full">
-            {editingLogId ? "Update Log" : "Log Workout"}
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {editingLogId ? "Update Log" : "Log Workout"}
             </Button>
             {editingLogId && onCancelEdit && (
-            <Button type="button" variant="outline" onClick={onCancelEdit} className="w-full">
+            <Button type="button" variant="outline" onClick={onCancelEdit} className="w-full" disabled={isSubmitting}>
                 Cancel Edit
             </Button>
             )}

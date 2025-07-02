@@ -1,126 +1,62 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import type { UserProfile, FitnessGoal, ExperienceLevel, SessionTime } from "@/lib/types";
 import { UserDetailsCard } from "@/components/profile/user-details-card";
 import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Palette } from "lucide-react";
+import { Settings, LogOut, Palette, Loader2 } from "lucide-react";
+import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
+import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
-const initialMockUser: UserProfile = {
-  id: "user123",
-  name: "Lisa Gu",
-  email: "lisa.gu@example.com",
-  joinedDate: new Date(2025, 5, 1), // June 1st, 2025
-  age: 36,
-  gender: "Female",
-  heightValue: 162.56, 
-  heightUnit: 'ft/in',
-  weightValue: 135,
-  weightUnit: 'lbs',
-  fitnessGoals: [
-    { id: "goal1", description: "Do a pull up", achieved: false, targetDate: new Date("2024-08-31"), isPrimary: true },
-    { id: "goal2", description: "Run a 10k marathon", achieved: false, targetDate: new Date("2024-12-31"), isPrimary: false },
-    { id: "goal3", description: "Workout 4 times a week", achieved: false, isPrimary: false, targetDate: new Date("2024-07-30") },
-  ],
-  workoutsPerWeek: 3,
-  sessionTimeMinutes: 45,
-  experienceLevel: 'intermediate',
-  aiPreferencesNotes: "I prefer outdoor running and have access to a full gym.",
-};
-
-const LOCAL_STORAGE_KEY = "fitnessAppUserProfile";
-
 export default function ProfilePage() {
-  const [userProfile, setUserProfile] = useState<UserProfile>(initialMockUser);
-  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      const savedProfile = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedProfile) {
-        try {
-          const parsedProfile = JSON.parse(savedProfile);
-          
-          parsedProfile.fitnessGoals = parsedProfile.fitnessGoals.map((goal: FitnessGoal) => ({
-            ...goal,
-            targetDate: goal.targetDate ? new Date(goal.targetDate) : undefined,
-          }));
-          
-          parsedProfile.joinedDate = parsedProfile.joinedDate ? new Date(parsedProfile.joinedDate) : initialMockUser.joinedDate;
-          parsedProfile.name = parsedProfile.name !== undefined ? parsedProfile.name : initialMockUser.name;
-          parsedProfile.age = parsedProfile.age !== undefined ? parsedProfile.age : initialMockUser.age;
-          parsedProfile.gender = parsedProfile.gender !== undefined ? parsedProfile.gender : initialMockUser.gender;
-          parsedProfile.heightValue = parsedProfile.heightValue !== undefined ? parsedProfile.heightValue : initialMockUser.heightValue;
-          parsedProfile.heightUnit = parsedProfile.heightUnit !== undefined ? parsedProfile.heightUnit : initialMockUser.heightUnit;
-          parsedProfile.weightValue = parsedProfile.weightValue !== undefined ? parsedProfile.weightValue : initialMockUser.weightValue;
-          parsedProfile.weightUnit = parsedProfile.weightUnit !== undefined ? parsedProfile.weightUnit : initialMockUser.weightUnit;
-          
-          parsedProfile.workoutsPerWeek = parsedProfile.workoutsPerWeek !== undefined ? parsedProfile.workoutsPerWeek : initialMockUser.workoutsPerWeek;
-          parsedProfile.sessionTimeMinutes = parsedProfile.sessionTimeMinutes !== undefined ? parsedProfile.sessionTimeMinutes : initialMockUser.sessionTimeMinutes;
-          parsedProfile.experienceLevel = parsedProfile.experienceLevel !== undefined ? parsedProfile.experienceLevel : initialMockUser.experienceLevel;
-          parsedProfile.aiPreferencesNotes = parsedProfile.aiPreferencesNotes !== undefined ? parsedProfile.aiPreferencesNotes : initialMockUser.aiPreferencesNotes;
-
-
-          setUserProfile(parsedProfile);
-        } catch (error) {
-          console.error("Error parsing user profile from localStorage", error);
-          setUserProfile(initialMockUser);
-        }
-      } else {
-         setUserProfile(initialMockUser);
-      }
-    }
-  }, [isClient]); 
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(userProfile));
-    }
-  }, [userProfile, isClient]); 
-
+  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+  const updateUserMutation = useUpdateUserProfile();
+  
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
-    setUserProfile(prevProfile => ({
-      ...prevProfile,
-      fitnessGoals: updatedGoals,
-    }));
-    toast({
-        title: "Goals Updated!",
-        description: "Your fitness goals have been saved.",
+    updateUserMutation.mutate({ fitnessGoals: updatedGoals }, {
+      onSuccess: () => {
+        toast({
+          title: "Goals Updated!",
+          description: "Your fitness goals have been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+      }
     });
   };
 
   const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit'>>) => {
-    setUserProfile(prevProfile => ({
-      ...prevProfile,
-      ...updatedDetails,
-    }));
-    toast({
-      title: "Profile Updated!",
-      description: "Your profile details have been saved.",
+    updateUserMutation.mutate(updatedDetails, {
+      onSuccess: () => {
+        toast({
+          title: "Profile Updated!",
+          description: "Your profile details have been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+      }
     });
   };
 
   const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes'>>) => {
-    setUserProfile(prevProfile => ({
-      ...prevProfile,
-      ...updatedPreferences,
-    }));
-    toast({
-      title: "Preferences Updated!",
-      description: "Your workout preferences have been saved.",
+    updateUserMutation.mutate(updatedPreferences, {
+      onSuccess: () => {
+        toast({
+          title: "Preferences Updated!",
+          description: "Your workout preferences have been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+      }
     });
   };
-
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -129,7 +65,11 @@ export default function ProfilePage() {
         <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
       </header>
 
-      {isClient ? ( 
+      {isLoadingProfile ? ( 
+        <div className="flex justify-center items-center h-64">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+      ) : userProfile ? (
         <>
           <UserDetailsCard 
             user={userProfile} 
@@ -150,25 +90,7 @@ export default function ProfilePage() {
           />
         </>
       ) : (
-        <>
-            <UserDetailsCard 
-                user={initialMockUser} 
-                onUpdate={handleProfileDetailsUpdate}
-            />
-             <WorkoutPreferencesCard
-                preferences={{
-                  workoutsPerWeek: initialMockUser.workoutsPerWeek,
-                  sessionTimeMinutes: initialMockUser.sessionTimeMinutes,
-                  experienceLevel: initialMockUser.experienceLevel,
-                  aiPreferencesNotes: initialMockUser.aiPreferencesNotes,
-                }}
-                onUpdate={handlePreferencesUpdate}
-          />
-            <GoalSetterCard 
-                initialGoals={initialMockUser.fitnessGoals} 
-                onGoalsChange={handleGoalsUpdate} 
-            />
-        </>
+          <p>Could not load user profile.</p>
       )}
       
       <Card className="shadow-lg">

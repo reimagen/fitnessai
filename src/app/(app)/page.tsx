@@ -1,11 +1,20 @@
 
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dumbbell, Target, BarChartBig } from "lucide-react";
 import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
+import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HomePage() {
+  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
+  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+
+  const isLoading = isLoadingWorkouts || isLoadingProfile;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center">
@@ -37,9 +46,18 @@ export default function HomePage() {
         </Card>
       </section>
 
-      <section className="mt-12">
-        <WeeklyProgressTracker />
-        <RecentHistory />
+      <section className="mt-12 space-y-12">
+        {isLoading ? (
+          <>
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </>
+        ) : (
+          <>
+            <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
+            <RecentHistory workoutLogs={workoutLogs || []} />
+          </>
+        )}
       </section>
     </div>
   );

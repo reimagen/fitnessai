@@ -1,13 +1,11 @@
 
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday, parseISO } from 'date-fns';
+import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-
-const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
 
 const categoryStyles: Record<ExerciseCategory, React.CSSProperties> = {
   'Upper Body': { backgroundColor: 'hsl(var(--chart-1))', color: 'hsl(var(--chart-1-foreground))' },
@@ -18,78 +16,42 @@ const categoryStyles: Record<ExerciseCategory, React.CSSProperties> = {
   'Other':      { backgroundColor: 'hsl(var(--chart-6))', color: 'hsl(var(--chart-6-foreground))' },
 };
 
-export function RecentHistory() {
-  const [dailyCategories, setDailyCategories] = useState<Map<string, Set<ExerciseCategory>>>(new Map());
-  const [isClient, setIsClient] = useState(false);
+type RecentHistoryProps = {
+  workoutLogs: WorkoutLog[];
+};
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
+  const dailyCategories = useMemo(() => {
+    const today = new Date();
+    const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
 
-  useEffect(() => {
-    if (isClient) {
-      const logsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
-      if (logsString) {
-        try {
-          const logs: WorkoutLog[] = JSON.parse(logsString).map((log: any) => ({
-            ...log,
-            date: parseISO(log.date),
-          }));
+    const categoriesMap = new Map<string, Set<ExerciseCategory>>();
 
-          const today = new Date();
-          const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-          const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-
-          const categoriesMap = new Map<string, Set<ExerciseCategory>>();
-
-          logs.forEach(log => {
-            const logDate = log.date instanceof Date ? log.date : parseISO(log.date);
-            if (logDate >= weekStart && logDate <= weekEnd) {
-              const dateKey = format(logDate, 'yyyy-MM-dd');
-              if (!categoriesMap.has(dateKey)) {
-                categoriesMap.set(dateKey, new Set());
-              }
-              const categoriesSet = categoriesMap.get(dateKey)!;
-              log.exercises.forEach(ex => {
-                if (ex.category) {
-                  categoriesSet.add(ex.category);
-                }
-              });
-            }
-          });
-          setDailyCategories(categoriesMap);
-        } catch (e) {
-          console.error("Failed to parse workout logs for recent history", e);
+    workoutLogs.forEach(log => {
+      if (log.date >= weekStart && log.date <= weekEnd) {
+        const dateKey = format(log.date, 'yyyy-MM-dd');
+        if (!categoriesMap.has(dateKey)) {
+          categoriesMap.set(dateKey, new Set());
         }
+        const categoriesSet = categoriesMap.get(dateKey)!;
+        log.exercises.forEach(ex => {
+          if (ex.category) {
+            categoriesSet.add(ex.category);
+          }
+        });
       }
-    }
-  }, [isClient]);
+    });
+    return categoriesMap;
+  }, [workoutLogs]);
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 0 });
   const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
-  
-  if (!isClient) {
-    return (
-      <Card className="mt-12 shadow-lg animate-pulse">
-        <CardHeader>
-          <div className="h-6 w-3/4 rounded-md bg-muted"></div>
-          <div className="h-4 w-1/2 rounded-md bg-muted"></div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2 md:gap-4">
-            {Array.from({ length: 7 }).map((_, index) => (
-              <div key={index} className="h-32 rounded-lg bg-muted"></div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
-    <Card className="mt-12 shadow-lg">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Daily Exercises By Category</CardTitle>
         <CardDescription>A summary of your completed workout categories.</CardDescription>

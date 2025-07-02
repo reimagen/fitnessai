@@ -10,44 +10,15 @@ import { parseWorkoutScreenshotAction } from "./actions";
 import type { WorkoutLog, Exercise, ExerciseCategory, UserProfile } from "@/lib/types";
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
+import { useWorkouts, useAddWorkout, useUpdateWorkout, useDeleteWorkout, useUserProfile } from "@/lib/firestore.service";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUp, Edit, ImageUp } from "lucide-react";
+import { FileUp, Edit, ImageUp, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO, startOfDay } from "date-fns";
+import { format, startOfDay } from "date-fns";
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
-
-const initialSampleLogs: WorkoutLog[] = [
-  {
-    id: "1",
-    date: new Date("2024-07-20"),
-    dateString: "2024-07-20",
-    exercises: [
-      { id: "ex1", name: "Bench Press", sets: 3, reps: 8, weight: 80, weightUnit: "kg", category: "Upper Body", calories: 150, distance: 0, duration: 0 },
-      { id: "ex2", name: "Squats", sets: 4, reps: 10, weight: 100, weightUnit: "kg", category: "Lower Body", calories: 200, distance: 0, duration: 0 },
-    ],
-    notes: "Felt strong today!",
-  },
-  {
-    id: "2",
-    date: new Date("2024-07-18"),
-    dateString: "2024-07-18",
-    exercises: [
-      { id: "ex3", name: "Deadlift", sets: 1, reps: 5, weight: 120, weightUnit: "kg", category: "Full Body", distance: 0, duration: 0, calories: 0 },
-      { id: "ex4", name: "Overhead Press", sets: 3, reps: 8, weight: 50, weightUnit: "kg", category: "Upper Body", distance: 0, duration: 0, calories: 0 },
-      { id: "ex5", name: "Running", sets: 1, reps: 1, weight: 0, category: "Cardio", distance: 5, distanceUnit: "km", duration: 30, durationUnit: "min", calories: 300 },
-    ],
-  },
-];
-
-const LOCAL_STORAGE_KEY_WORKOUTS = "fitnessAppWorkoutLogs";
-const LOCAL_STORAGE_KEY_PROFILE = "fitnessAppUserProfile";
-
-const isValidCategory = (category: any): category is ExerciseCategory => {
-  return CATEGORY_OPTIONS.includes(category);
-};
 
 export default function HistoryPage() {
   const { toast } = useToast();
@@ -56,81 +27,18 @@ export default function HistoryPage() {
   const validTabs = ['log', 'screenshot', 'upload'];
   const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
 
-  const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isClient, setIsClient] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>(defaultTabValue);
   const manualLogCardRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient) {
-      // Load Profile
-      const savedProfileString = localStorage.getItem(LOCAL_STORAGE_KEY_PROFILE);
-      if (savedProfileString) {
-        try {
-          setUserProfile(JSON.parse(savedProfileString));
-        } catch (e) {
-          console.error("Failed to parse user profile from localStorage", e);
-        }
-      }
-
-      // Load Workout Logs
-      const savedLogsString = localStorage.getItem(LOCAL_STORAGE_KEY_WORKOUTS);
-      if (savedLogsString) {
-        try {
-          const parsedLogs: WorkoutLog[] = JSON.parse(savedLogsString).map((log: any) => {
-            const date = log.date ? parseISO(log.date) : new Date();
-            return {
-            ...log,
-            date,
-            dateString: log.dateString || format(date, 'yyyy-MM-dd'),
-            exercises: log.exercises.map((ex: any) => ({ 
-              id: ex.id || Math.random().toString(36).substring(2,9),
-              name: ex.name,
-              sets: ex.sets ?? 0,
-              reps: ex.reps ?? 0,
-              weight: ex.weight ?? 0,
-              weightUnit: ex.weightUnit || 'kg',
-              category: isValidCategory(ex.category) ? ex.category : 'Other',
-              distance: ex.distance ?? 0,
-              distanceUnit: ex.distanceUnit,
-              duration: ex.duration ?? 0,
-              durationUnit: ex.durationUnit,
-              calories: ex.calories ?? 0,
-            }))
-          }});
-          setWorkoutLogs(parsedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
-        } catch (error) {
-          console.error("Error parsing workout logs from localStorage. Initializing with empty logs.", error);
-          setWorkoutLogs([]); 
-        }
-      } else {
-         const logsWithDefaults = initialSampleLogs.map(log => ({
-            ...log,
-            dateString: format(log.date, 'yyyy-MM-dd'),
-            exercises: log.exercises.map(ex => ({
-                ...ex,
-                category: isValidCategory(ex.category) ? ex.category : 'Other',
-                distance: ex.distance ?? 0,
-                duration: ex.duration ?? 0,
-                calories: ex.calories ?? 0,
-            }))
-         }));
-        setWorkoutLogs(logsWithDefaults.sort((a,b) => b.date.getTime() - a.date.getTime()));
-      }
-    }
-  }, [isClient]);
-
-  useEffect(() => {
-    if (isClient) {
-      localStorage.setItem(LOCAL_STORAGE_KEY_WORKOUTS, JSON.stringify(workoutLogs));
-    }
-  }, [workoutLogs, isClient]);
+  // Fetching data with React Query
+  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
+  const { data: userProfile } = useUserProfile();
+  
+  // Mutations
+  const addWorkoutMutation = useAddWorkout();
+  const updateWorkoutMutation = useUpdateWorkout();
+  const deleteWorkoutMutation = useDeleteWorkout();
 
   useEffect(() => {
     if (editingLogId && activeTab === 'log' && manualLogCardRef.current) {
@@ -138,7 +46,7 @@ export default function HistoryPage() {
     }
   }, [editingLogId, activeTab]);
 
-  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id' | 'dateString'>) => {
+  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
     let weightWarningShown = false;
 
     const processedExercises = data.exercises.map(ex => {
@@ -148,7 +56,7 @@ export default function HistoryPage() {
             (!ex.calories || ex.calories === 0) &&
             userProfile && userProfile.weightValue && userProfile.weightValue > 0
         ) {
-            calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs);
+            calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
         } else if (
             ex.category === 'Cardio' && 
             (!ex.calories || ex.calories === 0) &&
@@ -179,40 +87,37 @@ export default function HistoryPage() {
         };
     });
 
-    const logDateString = format(data.date, 'yyyy-MM-dd');
+    const finalLogData = { ...data, exercises: processedExercises };
 
     if (editingLogId) {
-      const updatedLogs = workoutLogs.map(log => {
-        if (log.id === editingLogId) {
-          return {
-            ...log,
-            ...data, 
-            dateString: logDateString,
-            exercises: processedExercises
-          };
+      updateWorkoutMutation.mutate(
+        { id: editingLogId, data: finalLogData },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Workout Updated!",
+              description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been updated.`,
+              variant: "default",
+            });
+            setEditingLogId(null);
+          },
+          onError: (error) => {
+            toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+          }
         }
-        return log;
-      });
-      setWorkoutLogs(updatedLogs.sort((a,b) => b.date.getTime() - a.date.getTime()));
-      toast({
-        title: "Workout Updated!",
-        description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been updated.`,
-        variant: "default",
-      });
-      setEditingLogId(null);
+      );
     } else {
-      const newLog: WorkoutLog = {
-        id: Date.now().toString(),
-        date: data.date,
-        dateString: logDateString,
-        notes: data.notes,
-        exercises: processedExercises
-      };
-      setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a,b) => b.date.getTime() - a.date.getTime()));
-      toast({
-        title: "Workout Logged!",
-        description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been saved.`,
-        variant: "default",
+      addWorkoutMutation.mutate(finalLogData, {
+        onSuccess: () => {
+           toast({
+            title: "Workout Logged!",
+            description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been saved.`,
+            variant: "default",
+          });
+        },
+        onError: (error) => {
+            toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+        }
       });
     }
   };
@@ -228,10 +133,9 @@ export default function HistoryPage() {
     }
 
     const targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
-    const targetDateString = format(targetDate, 'yyyy-MM-dd');
-
-    const existingLogIndex = workoutLogs.findIndex(
-      (log) => log.dateString === targetDateString
+    
+    const existingLog = workoutLogs?.find(
+      (log) => format(log.date, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')
     );
 
     const parsedExercises: Exercise[] = parsedData.exercises.map(ex => ({
@@ -249,70 +153,74 @@ export default function HistoryPage() {
       calories: ex.calories ?? 0,
     }));
 
-    if (existingLogIndex > -1) {
-      const updatedLogs = [...workoutLogs];
-      const logToUpdate = { 
-        ...updatedLogs[existingLogIndex],
-        exercises: [...updatedLogs[existingLogIndex].exercises] 
-      };
-      
-      const existingExerciseNames = new Set(logToUpdate.exercises.map(ex => ex.name.trim().toLowerCase()));
+    if (existingLog) {
+      const existingExerciseNames = new Set(existingLog.exercises.map(ex => ex.name.trim().toLowerCase()));
       let addedCount = 0;
+      const newExercises = [...existingLog.exercises];
 
       parsedExercises.forEach(newEx => {
         if (!existingExerciseNames.has(newEx.name.trim().toLowerCase())) {
-          logToUpdate.exercises.push(newEx);
+          newExercises.push(newEx);
           addedCount++;
         }
       });
       
-      logToUpdate.notes = (logToUpdate.notes ? logToUpdate.notes + " " : "") + `Updated from screenshot.`;
-      updatedLogs[existingLogIndex] = logToUpdate;
-      setWorkoutLogs(updatedLogs.sort((a, b) => b.date.getTime() - a.date.getTime()));
-      
-      toast({
-        title: "Workout Updated!",
-        description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}. Existing exercises were not duplicated.`,
-        variant: "default",
+      const updatedLog = {
+          ...existingLog,
+          exercises: newExercises,
+          notes: (existingLog.notes ? existingLog.notes + " " : "") + `Updated from screenshot.`
+      };
+
+      updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
+        onSuccess: () => {
+            toast({
+                title: "Workout Updated!",
+                description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}.`,
+                variant: "default",
+            });
+        }
       });
 
     } else {
-      const newLog: WorkoutLog = {
-        id: Date.now().toString(),
+      const newLog: Omit<WorkoutLog, 'id'> = {
         date: targetDate,
-        dateString: targetDateString,
         exercises: parsedExercises,
         notes: `Parsed from screenshot.`,
       };
-      setWorkoutLogs(prevLogs => [newLog, ...prevLogs].sort((a, b) => b.date.getTime() - a.date.getTime()));
-      toast({
-        title: "Screenshot Parsed!",
-        description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
-        variant: "default",
+      addWorkoutMutation.mutate(newLog, {
+          onSuccess: () => {
+            toast({
+                title: "Screenshot Parsed!",
+                description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
+                variant: "default",
+            });
+          }
       });
     }
   };
 
   const handleDeleteLog = (logId: string) => {
-    setWorkoutLogs(prevLogs => prevLogs.filter(log => log.id !== logId));
-    toast({
-      title: "Log Deleted",
-      description: "The workout log has been removed.",
-      variant: "destructive"
-    })
+    deleteWorkoutMutation.mutate(logId, {
+        onSuccess: () => {
+            toast({
+              title: "Log Deleted",
+              description: "The workout log has been removed.",
+              variant: "destructive"
+            });
+        },
+        onError: (error) => {
+            toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
+        }
+    });
   }
 
   const handleEditLog = (logId: string) => {
-    const logToEdit = workoutLogs.find(log => log.id === logId);
+    const logToEdit = workoutLogs?.find(log => log.id === logId);
     if (logToEdit) {
       setEditingLogId(logId);
       setActiveTab('log');
     } else {
-      toast({
-        title: "Error",
-        description: "Could not find log to edit.",
-        variant: "destructive"
-      })
+      toast({ title: "Error", description: "Could not find log to edit.", variant: "destructive" });
     }
   }
 
@@ -327,7 +235,7 @@ export default function HistoryPage() {
     }
   }
 
-  const logBeingEdited = editingLogId ? workoutLogs.find(log => log.id === editingLogId) : undefined;
+  const logBeingEdited = editingLogId ? workoutLogs?.find(log => log.id === editingLogId) : undefined;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -356,6 +264,7 @@ export default function HistoryPage() {
                 initialData={logBeingEdited}
                 editingLogId={editingLogId}
                 onCancelEdit={handleCancelEdit}
+                isSubmitting={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
               />
             </CardContent>
           </Card>
@@ -392,14 +301,14 @@ export default function HistoryPage() {
 
       <section className="mt-12">
         <h2 className="mb-6 font-headline text-2xl font-semibold">Logged Workouts</h2>
-        {isClient ? (
-          <WorkoutList workoutLogs={workoutLogs} onDelete={handleDeleteLog} onEdit={handleEditLog} />
+        {isLoadingWorkouts ? (
+            <Card className="shadow-sm">
+                <CardContent className="pt-6 flex justify-center items-center h-40">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </CardContent>
+            </Card>
         ) : (
-          <Card className="shadow-sm">
-            <CardContent className="pt-6">
-              <p className="text-center text-muted-foreground">Loading workout history...</p>
-            </CardContent>
-          </Card>
+          <WorkoutList workoutLogs={workoutLogs || []} onDelete={handleDeleteLog} onEdit={handleEditLog} />
         )}
       </section>
     </div>
