@@ -13,6 +13,12 @@ const WeeklyPlanActionInputSchema = z.object({
 export async function generateWeeklyWorkoutPlanAction(
   values: WeeklyWorkoutPlanInput
 ): Promise<{ success: boolean; data?: WeeklyWorkoutPlanOutput; error?: string }> {
+  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
+    console.error("Missing API Key:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
+
   const validatedFields = WeeklyPlanActionInputSchema.safeParse(values);
 
   if (!validatedFields.success) {
@@ -31,4 +37,3 @@ export async function generateWeeklyWorkoutPlanAction(
     return { success: false, error: errorMessage };
   }
 }
-
