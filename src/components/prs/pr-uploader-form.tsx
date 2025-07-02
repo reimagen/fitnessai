@@ -92,6 +92,7 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            onClick={(event) => { (event.target as HTMLInputElement).value = "" }}
             onChange={handleFileChange}
             className="hidden"
             disabled={isLoading}

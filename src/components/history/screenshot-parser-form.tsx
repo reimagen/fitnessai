@@ -118,6 +118,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            onClick={(event) => { (event.target as HTMLInputElement).value = "" }}
             onChange={handleFileChange}
             className="hidden"
             disabled={isLoading || needsDateConfirmation}
