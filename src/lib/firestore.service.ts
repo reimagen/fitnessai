@@ -60,14 +60,17 @@ const userProfileConverter = {
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
         const data = snapshot.data(options);
+        const joinedDate = data.joinedDate ? data.joinedDate.toDate() : new Date();
+        const fitnessGoals = data.fitnessGoals ? data.fitnessGoals.map((goal: any) => ({
+                ...goal,
+                targetDate: goal.targetDate ? goal.targetDate.toDate() : undefined,
+            })) : [];
+
         return {
             ...data,
             id: snapshot.id,
-            joinedDate: data.joinedDate.toDate(),
-            fitnessGoals: data.fitnessGoals.map((goal: any) => ({
-                ...goal,
-                targetDate: goal.targetDate ? goal.targetDate.toDate() : undefined,
-            }))
+            joinedDate: joinedDate,
+            fitnessGoals: fitnessGoals
         } as UserProfile;
     }
 };
@@ -122,8 +125,7 @@ const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) => {
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
 const getUserProfile = async (): Promise<UserProfile> => {
-    const profileCollection = collection(db, 'profiles').withConverter(userProfileConverter);
-    const profileDocRef = doc(profileCollection, USER_PROFILE_DOC_ID);
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
     let snapshot = await getDoc(profileDocRef);
 
     if (!snapshot.exists()) {
@@ -131,7 +133,7 @@ const getUserProfile = async (): Promise<UserProfile> => {
         const defaultProfile: Omit<UserProfile, 'id'> = {
             name: "New User",
             email: "user@example.com",
-            joinedDate: new Date(2025, 6, 2), // July is month 6 (0-indexed)
+            joinedDate: new Date(),
             fitnessGoals: [],
             workoutsPerWeek: 3,
             sessionTimeMinutes: 45 as SessionTime,
