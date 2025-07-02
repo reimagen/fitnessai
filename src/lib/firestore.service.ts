@@ -131,7 +131,7 @@ const getUserProfile = async (): Promise<UserProfile> => {
         const defaultProfile: Omit<UserProfile, 'id'> = {
             name: "New User",
             email: "user@example.com",
-            joinedDate: new Date(),
+            joinedDate: new Date(2025, 6, 2), // July is month 6 (0-indexed)
             fitnessGoals: [],
             workoutsPerWeek: 3,
             sessionTimeMinutes: 45 as SessionTime,
