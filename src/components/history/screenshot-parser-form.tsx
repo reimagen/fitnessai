@@ -30,8 +30,11 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      handleClearScreenshot();
-      
+      // Clear previous state before setting the new file
+      setError(null);
+      setParsedResult(null);
+      setNeedsDateConfirmation(false);
+
       setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {

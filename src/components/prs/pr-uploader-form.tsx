@@ -28,7 +28,10 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      handleClear();
+      // Clear previous state before setting the new file
+      setError(null);
+      setParsedResult(null);
+
       setFile(selectedFile);
       const reader = new FileReader();
       reader.onloadend = () => {
