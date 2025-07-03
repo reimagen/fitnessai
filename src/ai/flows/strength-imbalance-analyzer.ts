@@ -19,6 +19,9 @@ const PersonalRecordForAnalysisSchema = z.object({
     category: z.string().optional(),
 });
 
+const StrengthImbalanceInputSchema = z.object({
+  personalRecords: z.array(PersonalRecordForAnalysisSchema),
+});
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
 const ImbalanceFindingSchema = z.object({
@@ -98,12 +101,12 @@ You will be given a list of the user's personal records. Use this data to perfor
 5.  **Generate Output**:
     *   Create a concise, encouraging 'summary' of the overall findings.
     *   For each imbalance identified, create a 'finding' object with:
-        *   'imbalanceType': The name of the comparison (e.g., "Horizontal Push vs. Pull").
+        *   'imbalanceType': The name of the comparison (e.g., 'Horizontal Push vs. Pull').
         *   The names, weights, and units of the two lifts being compared.
         *   'userRatio' and 'targetRatio'.
         *   The calculated 'severity'.
-        *   A clear 'insight' explaining the implication of the imbalance (e.g., "Your pressing strength is significantly greater than your pulling strength, which can increase risk of shoulder injury.").
-        *   A simple, 'recommendation' (e.g., "Prioritize increasing strength in your rowing exercises.").
+        *   A clear 'insight' explaining the implication of the imbalance (e.g., 'Your pressing strength is significantly greater than your pulling strength, which can increase risk of shoulder injury.').
+        *   A simple, 'recommendation' (e.g., 'Prioritize increasing strength in your rowing exercises.').
 
 6.  **No Data/No Imbalances**:
     *   If you cannot find any clear opposing lift pairs, state that in the summary and return an empty 'findings' array.
