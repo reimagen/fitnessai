@@ -15,7 +15,7 @@ const PersonalRecordForAnalysisSchema = z.object({
     exerciseName: z.string(),
     weight: z.number(),
     weightUnit: z.enum(['kg', 'lbs']),
-    date: z.date(),
+    date: z.string(),
     category: z.string().optional(),
 });
 

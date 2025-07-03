@@ -1,3 +1,4 @@
+
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
@@ -8,7 +9,7 @@ const PersonalRecordClientSchema = z.object({
   exerciseName: z.string(),
   weight: z.number(),
   weightUnit: z.enum(['kg', 'lbs']),
-  date: z.coerce.date(), // Use z.coerce.date() to handle serialized date strings
+  date: z.any(), // Keep date as a string/any as it's serialized from the client
   category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional(),
 });
 
