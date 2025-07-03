@@ -9,7 +9,7 @@ const PersonalRecordClientSchema = z.object({
   exerciseName: z.string(),
   weight: z.number(),
   weightUnit: z.enum(['kg', 'lbs']),
-  date: z.any(), // Keep date as a string/any as it's serialized from the client
+  date: z.string(), // Changed from z.any() to enforce the correct type.
   category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional(),
 });
 
