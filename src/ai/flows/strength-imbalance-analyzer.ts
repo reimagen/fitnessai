@@ -19,13 +19,10 @@ const PersonalRecordForAnalysisSchema = z.object({
     category: z.string().optional(),
 });
 
-const StrengthImbalanceInputSchema = z.object({
-  personalRecords: z.array(PersonalRecordForAnalysisSchema).describe("An array of the user's best personal records for various exercises."),
-});
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
 const ImbalanceFindingSchema = z.object({
-    imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push/Pull', 'Quad to Hamstring Ratio'."),
+    imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push/Pull', 'Quad to Hamstring Ratio', 'Adductor vs. Abductor'."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
     lift1Weight: z.number().describe("The weight of the first exercise PR."),
     lift1Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the first exercise."),
@@ -74,10 +71,11 @@ You will be given a list of the user's personal records. Use this data to perfor
     *   **Horizontal Push vs. Pull**: Compare a primary horizontal press (e.g., 'Bench Press', 'Chest Press') with a primary horizontal row (e.g., 'Barbell Row', 'Seated Row', 'Cable Row').
     *   **Vertical Push vs. Pull**: Compare a primary vertical press (e.g., 'Overhead Press', 'Shoulder Press') with a primary vertical pull (e.g., 'Lat Pulldown', 'Pull-ups', 'Chin-ups').
     *   **Quad vs. Hamstring Dominance**: Compare a primary quad exercise (e.g., 'Leg Extension', 'Squat') with a primary hamstring exercise (e.g., 'Leg Curl', 'Romanian Deadlift').
+    *   **Adductor vs. Abductor**: Compare an inner thigh exercise (e.g., 'Adductor') with an outer thigh exercise (e.g., 'Abductor').
 
 2.  **Handle Weight Units**: If the units for a pair of lifts are different (kg vs. lbs), you MUST convert them to a common unit before calculating the ratio. Use the conversion: 1 kg = 2.20462 lbs.
 
-3.  **Calculate Ratios**: For each identified pair, calculate the strength ratio. Express this as a simplified string, e.g., "1.25 : 1". The first number should correspond to the first lift type in the pair (e.g., the "Push" lift in Push/Pull).
+3.  **Calculate Ratios**: For each identified pair, calculate the strength ratio. Express this as a simplified string, e.g., "1.25 : 1". The first number should correspond to the first lift type in the pair (e.g., the "Push" lift in Push/Pull, or the "Adductor" in Adductor/Abductor).
 
 4.  **Compare to Ideal Ratios & Assess Severity**:
     *   **Horizontal Push/Pull**: Ideal ratio is **1 : 1**.
@@ -92,6 +90,10 @@ You will be given a list of the user's personal records. Use this data to perfor
         *   Severity 'Low' if ratio is 1.4-1.7.
         *   Severity 'Moderate' if ratio is 1.2-1.4 or 1.7-2.0.
         *   Severity 'High' if ratio is below 1.2 or above 2.0.
+    *   **Adductor/Abductor**: Ideal ratio is **1 : 1**.
+        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
+        *   Severity 'High' if ratio is below 0.75 or above 1.25.
 
 5.  **Generate Output**:
     *   Create a concise, encouraging 'summary' of the overall findings.
