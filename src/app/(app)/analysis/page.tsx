@@ -68,18 +68,17 @@ const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPo
 
 const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
     const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
-    return `
-        M ${x + tl},${y}
-        L ${x + width - tr},${y}
-        Q ${x + width},${y} ${x + width},${y + tr}
-        L ${x + width},${y + height - br}
-        Q ${x + width},${y + height} ${x + width - br},${y + height}
-        L ${x + bl},${y + height}
-        Q ${x},${y + height} ${x},${y + height - bl}
-        L ${x},${y + tl}
-        Q ${x},${y} ${x + tl},${y}
-        Z
-    `;
+    let path = `M ${x + tl},${y}`;
+    path += ` L ${x + width - tr},${y}`;
+    path += ` Q ${x + width},${y} ${x + width},${y + tr}`;
+    path += ` L ${x + width},${y + height - br}`;
+    path += ` Q ${x + width},${y + height} ${x + width - br},${y + height}`;
+    path += ` L ${x + bl},${y + height}`;
+    path += ` Q ${x},${y + height} ${x},${y + height - bl}`;
+    path += ` L ${x},${y + tl}`;
+    path += ` Q ${x},${y} ${x + tl},${y}`;
+    path += ` Z`;
+    return path;
 };
 
 const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
@@ -106,6 +105,7 @@ export default function AnalysisPage() {
   const [analysisResult, setAnalysisResult] = useState<StrengthImbalanceOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisDate, setAnalysisDate] = useState<Date | null>(null);
   const { toast } = useToast();
 
   const filteredData = useMemo(() => {
@@ -209,6 +209,7 @@ export default function AnalysisPage() {
     setIsAnalyzing(true);
     setAnalysisError(null);
     setAnalysisResult(null);
+    setAnalysisDate(null);
 
     // Filter and format records on the client to ensure only valid data is sent.
     const recordsForAnalysis = personalRecords
@@ -232,6 +233,7 @@ export default function AnalysisPage() {
 
     if (result.success && result.data) {
       setAnalysisResult(result.data);
+      setAnalysisDate(new Date());
     } else {
       setAnalysisError(result.error || "An unknown error occurred during analysis.");
       toast({ title: "Analysis Failed", description: result.error, variant: "destructive" });
@@ -294,6 +296,11 @@ export default function AnalysisPage() {
                     : analysisError ? <div className="text-center text-destructive"><AlertTriangle className="mx-auto h-8 w-8 mb-2" /><p className="font-semibold">Analysis Failed</p><p className="text-sm">{analysisError}</p></div>
                     : analysisResult ? (
                         <div className="w-full space-y-4">
+                            {analysisDate && (
+                                <p className="text-xs text-center text-muted-foreground">
+                                    Analysis generated on: {format(analysisDate, "MMMM d, yyyy 'at' h:mm a")}
+                                </p>
+                            )}
                             <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
                             {analysisResult.findings.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
