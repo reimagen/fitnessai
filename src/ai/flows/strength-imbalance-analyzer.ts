@@ -19,7 +19,7 @@ const PersonalRecordForAnalysisSchema = z.object({
     category: z.string().optional(),
 });
 
-export const StrengthImbalanceInputSchema = z.object({
+const StrengthImbalanceInputSchema = z.object({
   personalRecords: z.array(PersonalRecordForAnalysisSchema).describe("An array of the user's best personal records for various exercises."),
 });
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
@@ -39,7 +39,7 @@ const ImbalanceFindingSchema = z.object({
     recommendation: z.string().describe("A simple, actionable recommendation to address the imbalance."),
 });
 
-export const StrengthImbalanceOutputSchema = z.object({
+const StrengthImbalanceOutputSchema = z.object({
     summary: z.string().describe("A brief, high-level summary of the user's overall strength balance."),
     findings: z.array(ImbalanceFindingSchema).describe("A list of specific strength imbalances found."),
 });
