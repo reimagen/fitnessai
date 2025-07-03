@@ -40,8 +40,13 @@ export default function HistoryPage() {
   // Mutations defined directly in the component
   const addWorkoutMutation = useMutation({
     mutationFn: addWorkoutLog,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      toast({
+        title: "Workout Logged!",
+        description: `Your workout on ${format(variables.date, 'MMMM d, yyyy')} has been saved.`,
+        variant: "default",
+      });
     },
     onError: (error) => {
       toast({ title: "Save Failed", description: error.message, variant: "destructive" });
@@ -49,9 +54,15 @@ export default function HistoryPage() {
   });
 
   const updateWorkoutMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<Omit<WorkoutLog, 'id' | 'date'>> & { date?: Date }}) => updateWorkoutLog(id, data),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: string, data: Omit<WorkoutLog, 'id'> }) => updateWorkoutLog(id, data),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      toast({
+        title: "Workout Updated!",
+        description: `Your workout on ${format(variables.data.date, 'MMMM d, yyyy')} has been updated.`,
+        variant: "default",
+      });
+      setEditingLogId(null);
     },
     onError: (error) => {
         toast({ title: "Update Failed", description: error.message, variant: "destructive" });
@@ -116,14 +127,22 @@ export default function HistoryPage() {
             calories: calculatedCalories,
         };
 
-        if (exercise.weight > 0) {
-            exercise.weightUnit = ex.weightUnit || 'kg';
+        if (exercise.weight > 0 && !ex.weightUnit) {
+            exercise.weightUnit = 'kg';
+        } else if (exercise.weight > 0) {
+            exercise.weightUnit = ex.weightUnit;
         }
-        if (exercise.distance > 0) {
-            exercise.distanceUnit = ex.distanceUnit || 'mi';
+
+        if (exercise.distance > 0 && !ex.distanceUnit) {
+            exercise.distanceUnit = 'mi';
+        } else if (exercise.distance > 0) {
+            exercise.distanceUnit = ex.distanceUnit;
         }
-        if (exercise.duration > 0) {
-            exercise.durationUnit = ex.durationUnit || 'min';
+
+        if (exercise.duration > 0 && !ex.durationUnit) {
+            exercise.durationUnit = 'min';
+        } else if (exercise.duration > 0) {
+            exercise.durationUnit = ex.durationUnit;
         }
 
         return exercise;
@@ -132,29 +151,9 @@ export default function HistoryPage() {
     const finalLogData = { ...data, exercises: processedExercises };
 
     if (editingLogId) {
-      updateWorkoutMutation.mutate(
-        { id: editingLogId, data: finalLogData },
-        {
-          onSuccess: () => {
-            toast({
-              title: "Workout Updated!",
-              description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been updated.`,
-              variant: "default",
-            });
-            setEditingLogId(null);
-          },
-        }
-      );
+      updateWorkoutMutation.mutate({ id: editingLogId, data: finalLogData });
     } else {
-      addWorkoutMutation.mutate(finalLogData, {
-        onSuccess: () => {
-           toast({
-            title: "Workout Logged!",
-            description: `Your workout on ${format(data.date, 'MMMM d, yyyy')} has been saved.`,
-            variant: "default",
-          });
-        },
-      });
+      addWorkoutMutation.mutate(finalLogData);
     }
   };
 
@@ -211,13 +210,15 @@ export default function HistoryPage() {
         }
       });
       
-      const updatedLog = {
+      const updatedLog: Omit<WorkoutLog, 'id'> = {
+          date: existingLog.date, // Preserve original date
           exercises: newExercises,
           notes: (existingLog.notes ? existingLog.notes + " " : "") + `Updated from screenshot.`
       };
 
       updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
         onSuccess: () => {
+            // Overwrite the default success message for this specific case
             toast({
                 title: "Workout Updated!",
                 description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}.`,
@@ -234,6 +235,7 @@ export default function HistoryPage() {
       };
       addWorkoutMutation.mutate(newLog, {
           onSuccess: () => {
+            // Overwrite the default success message for this specific case
             toast({
                 title: "Screenshot Parsed!",
                 description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
