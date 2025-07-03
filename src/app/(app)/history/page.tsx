@@ -17,12 +17,14 @@ import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 export default function HistoryPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const initialTabQueryParam = searchParams.get('tab');
   const validTabs = ['log', 'screenshot', 'upload'];
   const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
@@ -178,6 +180,7 @@ export default function HistoryPage() {
                 description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}.`,
                 variant: "default",
             });
+            queryClient.invalidateQueries({ queryKey: ['workouts'] });
         }
       });
 
@@ -194,6 +197,7 @@ export default function HistoryPage() {
                 description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
                 variant: "default",
             });
+            queryClient.invalidateQueries({ queryKey: ['workouts'] });
           }
       });
     }
