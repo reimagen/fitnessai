@@ -1,7 +1,6 @@
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
-import type { PersonalRecord } from "@/lib/types";
 import { z } from "zod";
 
 const PersonalRecordClientSchema = z.object({
@@ -9,7 +8,7 @@ const PersonalRecordClientSchema = z.object({
   exerciseName: z.string(),
   weight: z.number(),
   weightUnit: z.enum(['kg', 'lbs']),
-  date: z.date(), // The useQuery hook provides Date objects
+  date: z.coerce.date(), // Use z.coerce.date() to handle serialized date strings
   category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other']).optional(),
 });
 
@@ -29,6 +28,8 @@ export async function analyzeStrengthImbalancesAction(
   const validatedFields = AnalyzeImbalancesActionSchema.safeParse(values);
 
   if (!validatedFields.success) {
+    // Log the detailed validation error for server-side debugging
+    console.error("Server-side validation failed:", validatedFields.error.flatten());
     return {
       success: false,
       error: "Invalid input data provided for analysis."
