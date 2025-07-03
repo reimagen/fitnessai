@@ -67,17 +67,19 @@ const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPo
 };
 
 const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
-  const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
-  return `M${x + tl},${y}
-          L${x + width - tr},${y}
-          C${x + width - tr},${y} ${x + width},${y} ${x + width},${y + tr}
-          L${x + width},${y + height - br}
-          C${x + width},${y + height - br} ${x},${y + height} ${x + width - br},${y + height}
-          L${x + bl},${y + height}
-          C${x + bl},${y + height} ${x},${y + height} ${x},${y + height - bl}
-          L${x},${y + tl}
-          C${x},${y + tl} ${x},${y} ${x + tl},${y}
-          Z`;
+    const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
+    return `
+        M ${x + tl},${y}
+        L ${x + width - tr},${y}
+        Q ${x + width},${y} ${x + width},${y + tr}
+        L ${x + width},${y + height - br}
+        Q ${x + width},${y + height} ${x + width - br},${y + height}
+        L ${x + bl},${y + height}
+        Q ${x},${y + height} ${x},${y + height - bl}
+        L ${x},${y + tl}
+        Q ${x},${y} ${x + tl},${y}
+        Z
+    `;
 };
 
 const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];

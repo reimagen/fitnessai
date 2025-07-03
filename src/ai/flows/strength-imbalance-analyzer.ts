@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Analyzes user's strength balance based on personal records.
@@ -93,18 +94,18 @@ You will be given a list of the user's personal records. Use this data to perfor
         *   Severity 'High' if ratio is below 1.2 or above 2.0.
 
 5.  **Generate Output**:
-    *   Create a concise, encouraging `summary` of the overall findings.
-    *   For each imbalance identified, create a `finding` object with:
-        *   `imbalanceType`: The name of the comparison (e.g., "Horizontal Push vs. Pull").
+    *   Create a concise, encouraging 'summary' of the overall findings.
+    *   For each imbalance identified, create a 'finding' object with:
+        *   'imbalanceType': The name of the comparison (e.g., "Horizontal Push vs. Pull").
         *   The names, weights, and units of the two lifts being compared.
-        *   `userRatio` and `targetRatio`.
-        *   The calculated `severity`.
-        *   A clear `insight` explaining the implication of the imbalance (e.g., "Your pressing strength is significantly greater than your pulling strength, which can increase risk of shoulder injury.").
-        *   A simple, `recommendation` (e.g., "Prioritize increasing strength in your rowing exercises.").
+        *   'userRatio' and 'targetRatio'.
+        *   The calculated 'severity'.
+        *   A clear 'insight' explaining the implication of the imbalance (e.g., "Your pressing strength is significantly greater than your pulling strength, which can increase risk of shoulder injury.").
+        *   A simple, 'recommendation' (e.g., "Prioritize increasing strength in your rowing exercises.").
 
 6.  **No Data/No Imbalances**:
-    *   If you cannot find any clear opposing lift pairs, state that in the summary and return an empty `findings` array.
-    *   If all found ratios are within the 'Low' severity or ideal range, congratulate the user on their balanced strength in the summary and return an empty `findings` array.
+    *   If you cannot find any clear opposing lift pairs, state that in the summary and return an empty 'findings' array.
+    *   If all found ratios are within the 'Low' severity or ideal range, congratulate the user on their balanced strength in the summary and return an empty 'findings' array.
 
 Here are the user's personal records:
 {{#each personalRecords}}
