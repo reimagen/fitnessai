@@ -82,7 +82,7 @@ export default function HistoryPage() {
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
     let weightWarningShown = false;
 
-    const processedExercises = data.exercises.map(ex => {
+    const processedExercises: Exercise[] = data.exercises.map(ex => {
         let calculatedCalories = ex.calories ?? 0;
         if (
             ex.category === 'Cardio' && 
@@ -104,20 +104,29 @@ export default function HistoryPage() {
             weightWarningShown = true;
         }
 
-        return {
+        const exercise: Exercise = {
             id: ex.id || Math.random().toString(36).substring(2,9),
             name: ex.name,
             category: ex.category, 
             sets: ex.sets ?? 0,
             reps: ex.reps ?? 0,
             weight: ex.weight ?? 0,
-            weightUnit: ex.weightUnit || 'kg',
             distance: ex.distance ?? 0,
-            distanceUnit: ex.distanceUnit,
             duration: ex.duration ?? 0,
-            durationUnit: ex.durationUnit,
             calories: calculatedCalories,
         };
+
+        if (exercise.weight > 0) {
+            exercise.weightUnit = ex.weightUnit || 'kg';
+        }
+        if (exercise.distance > 0) {
+            exercise.distanceUnit = ex.distanceUnit || 'mi';
+        }
+        if (exercise.duration > 0) {
+            exercise.durationUnit = ex.durationUnit || 'min';
+        }
+
+        return exercise;
     });
 
     const finalLogData = { ...data, exercises: processedExercises };
@@ -165,20 +174,30 @@ export default function HistoryPage() {
       (log) => format(log.date, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')
     );
 
-    const parsedExercises: Exercise[] = parsedData.exercises.map(ex => ({
-      id: Math.random().toString(36).substring(2, 9),
-      name: ex.name,
-      sets: ex.sets ?? 0,
-      reps: ex.reps ?? 0,
-      weight: ex.weight ?? 0,
-      weightUnit: ex.weightUnit || 'kg',
-      category: ex.category,
-      distance: ex.distance ?? 0,
-      distanceUnit: ex.distanceUnit,
-      duration: ex.duration ?? 0,
-      durationUnit: ex.durationUnit,
-      calories: ex.calories ?? 0,
-    }));
+    const parsedExercises: Exercise[] = parsedData.exercises.map(ex => {
+        const exercise: Exercise = {
+            id: Math.random().toString(36).substring(2, 9),
+            name: ex.name,
+            sets: ex.sets ?? 0,
+            reps: ex.reps ?? 0,
+            weight: ex.weight ?? 0,
+            category: ex.category,
+            distance: ex.distance ?? 0,
+            duration: ex.duration ?? 0,
+            calories: ex.calories ?? 0,
+        };
+
+        if (exercise.weight > 0) {
+            exercise.weightUnit = ex.weightUnit || 'kg';
+        }
+        if (exercise.distance > 0) {
+            exercise.distanceUnit = ex.distanceUnit || 'mi';
+        }
+        if (exercise.duration > 0) {
+            exercise.durationUnit = ex.durationUnit || 'min';
+        }
+        return exercise;
+    });
 
     if (existingLog) {
       const existingExerciseNames = new Set(existingLog.exercises.map(ex => ex.name.trim().toLowerCase()));
