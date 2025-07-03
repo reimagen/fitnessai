@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory } from '@/lib/types';
 import { useWorkouts, usePersonalRecords } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
@@ -97,6 +97,8 @@ const RoundedBar = (props: any) => {
   return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
 };
 
+const ANALYSIS_STORAGE_KEY = 'fitnessAiStrengthAnalysis';
+
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('weekly');
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
@@ -107,6 +109,20 @@ export default function AnalysisPage() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [analysisDate, setAnalysisDate] = useState<Date | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const storedAnalysis = localStorage.getItem(ANALYSIS_STORAGE_KEY);
+    if (storedAnalysis) {
+      try {
+        const { result, date } = JSON.parse(storedAnalysis);
+        setAnalysisResult(result);
+        setAnalysisDate(new Date(date));
+      } catch (error) {
+        console.error("Failed to parse stored analysis from localStorage:", error);
+        localStorage.removeItem(ANALYSIS_STORAGE_KEY);
+      }
+    }
+  }, []);
 
   const filteredData = useMemo(() => {
     const today = new Date();
@@ -232,11 +248,19 @@ export default function AnalysisPage() {
     const result = await analyzeStrengthImbalancesAction({ personalRecords: recordsForAnalysis });
 
     if (result.success && result.data) {
+      const currentDate = new Date();
       setAnalysisResult(result.data);
-      setAnalysisDate(new Date());
+      setAnalysisDate(currentDate);
+
+      const dataToStore = {
+          result: result.data,
+          date: currentDate.toISOString(),
+      };
+      localStorage.setItem(ANALYSIS_STORAGE_KEY, JSON.stringify(dataToStore));
     } else {
       setAnalysisError(result.error || "An unknown error occurred during analysis.");
       toast({ title: "Analysis Failed", description: result.error, variant: "destructive" });
+      localStorage.removeItem(ANALYSIS_STORAGE_KEY);
     }
     setIsAnalyzing(false);
   };
@@ -340,3 +364,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
