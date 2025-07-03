@@ -210,7 +210,25 @@ export default function AnalysisPage() {
     setAnalysisError(null);
     setAnalysisResult(null);
 
-    const result = await analyzeStrengthImbalancesAction({ personalRecords });
+    // Filter and format records on the client to ensure only valid data is sent.
+    const recordsForAnalysis = personalRecords
+        .filter(pr => pr && pr.weight > 0 && pr.weightUnit) // Ensure record exists and has weight/unit
+        .map(pr => ({
+            id: pr.id,
+            exerciseName: pr.exerciseName,
+            weight: pr.weight,
+            weightUnit: pr.weightUnit,
+            date: pr.date.toISOString(), // Convert Date object to ISO string for serialization
+            category: pr.category,
+        }));
+    
+    if (recordsForAnalysis.length < 2) {
+      toast({ title: "Not Enough Data", description: "Log at least two opposing personal records with weights and units to analyze imbalances.", variant: "default" });
+      setIsAnalyzing(false);
+      return;
+    }
+
+    const result = await analyzeStrengthImbalancesAction({ personalRecords: recordsForAnalysis });
 
     if (result.success && result.data) {
       setAnalysisResult(result.data);
