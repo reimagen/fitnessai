@@ -226,6 +226,8 @@ export default function AnalysisPage() {
     setAnalysisError(null);
     setAnalysisResult(null);
     setAnalysisDate(null);
+    localStorage.removeItem(ANALYSIS_STORAGE_KEY);
+
 
     // Filter and format records on the client to ensure only valid data is sent.
     const recordsForAnalysis = personalRecords
@@ -265,11 +267,11 @@ export default function AnalysisPage() {
     setIsAnalyzing(false);
   };
 
-  const severityBadgeVariant = (severity: 'Low' | 'Moderate' | 'High'): 'default' | 'secondary' | 'destructive' => {
+  const severityBadgeVariant = (severity: 'Balanced' | 'Moderate' | 'Severe'): 'default' | 'secondary' | 'destructive' => {
       switch (severity) {
-          case 'Low': return 'secondary';
+          case 'Balanced': return 'secondary';
           case 'Moderate': return 'default';
-          case 'High': return 'destructive';
+          case 'Severe': return 'destructive';
       }
   };
 
@@ -364,5 +366,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    

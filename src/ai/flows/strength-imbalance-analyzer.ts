@@ -19,11 +19,6 @@ const PersonalRecordForAnalysisSchema = z.object({
     category: z.string().optional(),
 });
 
-const StrengthImbalanceInputSchema = z.object({
-  personalRecords: z.array(PersonalRecordForAnalysisSchema),
-});
-export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
-
 const ImbalanceFindingSchema = z.object({
     imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push/Pull', 'Quad to Hamstring Ratio', 'Adductor vs. Abductor'."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
@@ -34,10 +29,15 @@ const ImbalanceFindingSchema = z.object({
     lift2Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the second exercise."),
     userRatio: z.string().describe("The user's calculated strength ratio, formatted as 'X : Y'."),
     targetRatio: z.string().describe("The ideal or target strength ratio, formatted as 'X : Y'."),
-    severity: z.enum(['Low', 'Moderate', 'High']).describe("The severity of the imbalance."),
+    severity: z.enum(['Balanced', 'Moderate', 'Severe']).describe("The severity of the imbalance. Must be 'Balanced' for ideal ratios, 'Moderate' for noticeable issues, or 'Severe' for significant imbalances."),
     insight: z.string().describe("A concise explanation of what the imbalance means."),
     recommendation: z.string().describe("A simple, actionable recommendation to address the imbalance."),
 });
+
+const StrengthImbalanceInputSchema = z.object({
+  personalRecords: z.array(PersonalRecordForAnalysisSchema),
+});
+export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
 const StrengthImbalanceOutputSchema = z.object({
     summary: z.string().describe("A brief, high-level summary of the user's overall strength balance."),
@@ -86,37 +86,37 @@ You will be given a list of the user's personal records. Use this data to perfor
 
 4.  **Compare to Ideal Ratios & Assess Severity**:
     *   **Horizontal Push/Pull**: Ideal ratio is **1 : 1**.
-        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Balanced' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
-        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
     *   **Vertical Push/Pull**: Ideal ratio for Press:Pull is **1 : 1.3 to 1 : 1.5** (pulling should be stronger).
-        *   Severity 'Low' if pull is 1.2-1.6x press.
+        *   Severity 'Balanced' if pull is 1.2-1.6x press.
         *   Severity 'Moderate' if pull is 1.1-1.2x or 1.6-1.8x press.
-        *   Severity 'High' if pull is less than 1.1x or more than 1.8x press.
+        *   Severity 'Severe' if pull is less than 1.1x or more than 1.8x press.
     *   **Quad/Hamstring**: Ideal ratio for Quad:Hamstring is **3 : 2** (or 1.5 : 1).
-        *   Severity 'Low' if ratio is 1.4-1.7.
+        *   Severity 'Balanced' if ratio is 1.4-1.7.
         *   Severity 'Moderate' if ratio is 1.2-1.4 or 1.7-2.0.
-        *   Severity 'High' if ratio is below 1.2 or above 2.0.
+        *   Severity 'Severe' if ratio is below 1.2 or above 2.0.
     *   **Adductor/Abductor**: Ideal ratio is **1 : 1**.
-        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Balanced' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
-        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
     *   **Chest Fly/Rear Delt (Butterfly/Reverse Fly)**: Ideal ratio is **1 : 1**.
-        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Balanced' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
-        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
     *   **Biceps/Triceps**: Ideal ratio for Bicep:Tricep is **2 : 3** (or 1 : 1.5).
-        *   Severity 'Low' if triceps are 1.3-1.7x stronger than biceps.
+        *   Severity 'Balanced' if triceps are 1.3-1.7x stronger than biceps.
         *   Severity 'Moderate' if triceps are 1.1-1.3x or 1.7-2.0x stronger.
-        *   Severity 'High' if triceps are less than 1.1x or more than 2.0x stronger.
+        *   Severity 'Severe' if triceps are less than 1.1x or more than 2.0x stronger.
     *   **Anterior/Posterior Core (Ab Crunch/Back Extension)**: Ideal ratio is **1 : 1**.
-        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Balanced' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
-        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
     *   **Glute Development (Hip Thrust/Glutes machine)**: Ideal ratio is **1 : 1**. Treat this as a measure of balanced development rather than opposing muscles.
-        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Balanced' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
-        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
 
 5.  **Generate Output**:
     *   Create a concise, encouraging 'summary' of the overall findings.
@@ -130,7 +130,7 @@ You will be given a list of the user's personal records. Use this data to perfor
 
 6.  **No Data/No Imbalances**:
     *   If you cannot find any clear opposing lift pairs, state that in the summary and return an empty 'findings' array.
-    *   If all found ratios are within the 'Low' severity or ideal range, congratulate the user on their balanced strength in the summary and return an empty 'findings' array.
+    *   If all found ratios are within the 'Balanced' severity or ideal range, congratulate the user on their balanced strength in the summary and return an empty 'findings' array.
 
 Here are the user's personal records:
 {{#each personalRecords}}
