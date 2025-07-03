@@ -75,6 +75,10 @@ You will be given a list of the user's personal records. Use this data to perfor
     *   **Vertical Push vs. Pull**: Compare a primary vertical press (e.g., 'Overhead Press', 'Shoulder Press') with a primary vertical pull (e.g., 'Lat Pulldown', 'Pull-ups', 'Chin-ups').
     *   **Quad vs. Hamstring Dominance**: Compare a primary quad exercise (e.g., 'Leg Extension', 'Squat') with a primary hamstring exercise (e.g., 'Leg Curl', 'Romanian Deadlift').
     *   **Adductor vs. Abductor**: Compare an inner thigh exercise (e.g., 'Adductor') with an outer thigh exercise (e.g., 'Abductor').
+    *   **Chest Fly vs. Rear Delts**: Compare 'Butterfly' with 'Reverse Fly'.
+    *   **Biceps vs. Triceps**: Compare a primary bicep curl exercise with a primary tricep extension/press exercise.
+    *   **Anterior vs. Posterior Core**: Compare 'Abdominal Crunch' with 'Back Extension'.
+    *   **Glute Development**: Compare 'Hip Thrust' with 'Glutes' (glute machine). Note that this is not an opposing muscle group, but a comparison of different glute exercises.
 
 2.  **Handle Weight Units**: If the units for a pair of lifts are different (kg vs. lbs), you MUST convert them to a common unit before calculating the ratio. Use the conversion: 1 kg = 2.20462 lbs.
 
@@ -94,6 +98,22 @@ You will be given a list of the user's personal records. Use this data to perfor
         *   Severity 'Moderate' if ratio is 1.2-1.4 or 1.7-2.0.
         *   Severity 'High' if ratio is below 1.2 or above 2.0.
     *   **Adductor/Abductor**: Ideal ratio is **1 : 1**.
+        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
+        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+    *   **Chest Fly/Rear Delt (Butterfly/Reverse Fly)**: Ideal ratio is **1 : 1**.
+        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
+        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+    *   **Biceps/Triceps**: Ideal ratio for Bicep:Tricep is **2 : 3** (or 1 : 1.5).
+        *   Severity 'Low' if triceps are 1.3-1.7x stronger than biceps.
+        *   Severity 'Moderate' if triceps are 1.1-1.3x or 1.7-2.0x stronger.
+        *   Severity 'High' if triceps are less than 1.1x or more than 2.0x stronger.
+    *   **Anterior/Posterior Core (Ab Crunch/Back Extension)**: Ideal ratio is **1 : 1**.
+        *   Severity 'Low' if ratio is between 0.9-1.1.
+        *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
+        *   Severity 'High' if ratio is below 0.75 or above 1.25.
+    *   **Glute Development (Hip Thrust/Glutes machine)**: Ideal ratio is **1 : 1**. Treat this as a measure of balanced development rather than opposing muscles.
         *   Severity 'Low' if ratio is between 0.9-1.1.
         *   Severity 'Moderate' if ratio is between 0.75-0.9 or 1.1-1.25.
         *   Severity 'High' if ratio is below 0.75 or above 1.25.
