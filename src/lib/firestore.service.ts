@@ -80,24 +80,24 @@ const userProfileConverter = {
 // Workout Logs
 const workoutLogsCollection = collection(db, 'workoutLogs').withConverter(workoutLogConverter);
 
-const getWorkoutLogs = async (): Promise<WorkoutLog[]> => {
+export const getWorkoutLogs = async (): Promise<WorkoutLog[]> => {
   const q = query(workoutLogsCollection, orderBy('date', 'desc'));
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => doc.data());
 };
 
-const addWorkoutLog = async (log: Omit<WorkoutLog, 'id'>) => {
+export const addWorkoutLog = async (log: Omit<WorkoutLog, 'id'>) => {
   return await addDoc(workoutLogsCollection, log);
 };
 
-const updateWorkoutLog = async (id: string, log: Partial<WorkoutLog>) => {
+export const updateWorkoutLog = async (id: string, log: Partial<Omit<WorkoutLog, 'id' | 'date'>> & { date?: Date }) => {
   const logDoc = doc(db, 'workoutLogs', id);
   // Convert date back to timestamp if it exists
   const dataToUpdate = log.date ? { ...log, date: Timestamp.fromDate(log.date) } : log;
   return await updateDoc(logDoc, dataToUpdate);
 };
 
-const deleteWorkoutLog = async (id: string) => {
+export const deleteWorkoutLog = async (id: string) => {
   const logDoc = doc(db, 'workoutLogs', id);
   return await deleteDoc(logDoc);
 };
@@ -193,36 +193,6 @@ const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) 
 
 export function useWorkouts() {
   return useQuery<WorkoutLog[], Error>({ queryKey: ['workouts'], queryFn: getWorkoutLogs });
-}
-
-export function useAddWorkout() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: addWorkoutLog,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-    },
-  });
-}
-
-export function useUpdateWorkout() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string, data: Partial<WorkoutLog>}) => updateWorkoutLog(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-    },
-  });
-}
-
-export function useDeleteWorkout() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: deleteWorkoutLog,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['workouts'] });
-    },
-  });
 }
 
 export function usePersonalRecords() {

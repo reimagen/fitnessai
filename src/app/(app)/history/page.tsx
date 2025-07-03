@@ -10,14 +10,14 @@ import { parseWorkoutScreenshotAction } from "./actions";
 import type { WorkoutLog, Exercise, ExerciseCategory, UserProfile } from "@/lib/types";
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
-import { useWorkouts, useAddWorkout, useUpdateWorkout, useDeleteWorkout, useUserProfile } from "@/lib/firestore.service";
+import { useWorkouts, useUserProfile, addWorkoutLog, updateWorkoutLog, deleteWorkoutLog } from "@/lib/firestore.service";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay } from "date-fns";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
@@ -37,10 +37,41 @@ export default function HistoryPage() {
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: userProfile } = useUserProfile();
   
-  // Mutations
-  const addWorkoutMutation = useAddWorkout();
-  const updateWorkoutMutation = useUpdateWorkout();
-  const deleteWorkoutMutation = useDeleteWorkout();
+  // Mutations defined directly in the component
+  const addWorkoutMutation = useMutation({
+    mutationFn: addWorkoutLog,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    },
+    onError: (error) => {
+      toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const updateWorkoutMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string, data: Partial<Omit<WorkoutLog, 'id' | 'date'>> & { date?: Date }}) => updateWorkoutLog(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+    },
+    onError: (error) => {
+        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteWorkoutMutation = useMutation({
+    mutationFn: deleteWorkoutLog,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workouts'] });
+      toast({
+        title: "Log Deleted",
+        description: "The workout log has been removed.",
+        variant: "destructive"
+      });
+    },
+    onError: (error) => {
+        toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
+    }
+  });
 
   useEffect(() => {
     if (editingLogId && activeTab === 'log' && manualLogCardRef.current) {
@@ -103,9 +134,6 @@ export default function HistoryPage() {
             });
             setEditingLogId(null);
           },
-          onError: (error) => {
-            toast({ title: "Update Failed", description: error.message, variant: "destructive" });
-          }
         }
       );
     } else {
@@ -117,9 +145,6 @@ export default function HistoryPage() {
             variant: "default",
           });
         },
-        onError: (error) => {
-            toast({ title: "Save Failed", description: error.message, variant: "destructive" });
-        }
       });
     }
   };
@@ -168,7 +193,6 @@ export default function HistoryPage() {
       });
       
       const updatedLog = {
-          ...existingLog,
           exercises: newExercises,
           notes: (existingLog.notes ? existingLog.notes + " " : "") + `Updated from screenshot.`
       };
@@ -180,7 +204,6 @@ export default function HistoryPage() {
                 description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}.`,
                 variant: "default",
             });
-            queryClient.invalidateQueries({ queryKey: ['workouts'] });
         }
       });
 
@@ -197,25 +220,13 @@ export default function HistoryPage() {
                 description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
                 variant: "default",
             });
-            queryClient.invalidateQueries({ queryKey: ['workouts'] });
           }
       });
     }
   };
 
   const handleDeleteLog = (logId: string) => {
-    deleteWorkoutMutation.mutate(logId, {
-        onSuccess: () => {
-            toast({
-              title: "Log Deleted",
-              description: "The workout log has been removed.",
-              variant: "destructive"
-            });
-        },
-        onError: (error) => {
-            toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
-        }
-    });
+    deleteWorkoutMutation.mutate(logId);
   }
 
   const handleEditLog = (logId: string) => {
