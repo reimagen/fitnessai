@@ -34,6 +34,8 @@ const IMBALANCE_TYPES = [
     'Back Extension vs. Abdominal Crunch',
     'Glute Development',
 ] as const;
+type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
+
 
 const ImbalanceFindingSchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of strength imbalance. Must be one of the predefined types."),
@@ -57,52 +59,17 @@ const StrengthImbalanceOutputSchema = z.object({
 });
 export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSchema>;
 
-
-// This is the new schema for the AI's intermediate output.
-const MatchedPairsOutputSchema = z.object({
-  pairs: z.array(z.object({
-    comparisonType: z.enum(IMBALANCE_TYPES),
-    lift1: z.object({
-        exerciseName: z.string(),
-        weight: z.number(),
-        weightUnit: z.enum(['kg', 'lbs']),
-    }),
-    lift2: z.object({
-        exerciseName: z.string(),
-        weight: z.number(),
-        weightUnit: z.enum(['kg', 'lbs']),
-    }),
-  }))
-});
-
-// This is the new, simpler prompt for the AI.
-const pairingPrompt = ai.definePrompt({
-  name: 'strengthImbalancePairingPrompt',
-  input: {schema: StrengthImbalanceInputSchema},
-  output: {schema: MatchedPairsOutputSchema},
-  prompt: `You are an expert kinesiologist. Your task is to analyze a user's personal records and identify pairs of exercises that work opposing muscle groups.
-
-You will be given a list of the user's personal records. Your ONLY job is to find the best matching pairs for comparison. Do NOT calculate ratios or severity.
-
-**CRITICAL INSTRUCTIONS:**
-1.  **Find the Best Pairs**: For each comparison type, find the single best pair of lifts from the user's records. For example, for 'Horizontal Push vs. Pull', find the user's strongest horizontal press and their strongest horizontal row.
-2.  **Comparison Types and Lifts**: You must match exercises to these exact comparison types.
-    *   'Horizontal Push vs. Pull': Lift 1 is a Push (e.g., 'Bench Press', 'Chest Press'). Lift 2 is a Pull (e.g., 'Barbell Row', 'Seated Row').
-    *   'Vertical Push vs. Pull': Lift 1 is a Push (e.g., 'Overhead Press', 'Shoulder Press'). Lift 2 is a Pull (e.g., 'Lat Pulldown', 'Pull-ups').
-    *   'Quad vs. Hamstring': Lift 1 is a Quad exercise (e.g., 'Leg Extension', 'Squat'). Lift 2 is a Hamstring exercise (e.g., 'Leg Curl').
-    *   'Adductor vs. Abductor': Lift 1 is 'Adductor'. Lift 2 is 'Abductor'.
-    *   'Reverse Fly vs. Butterfly': Lift 1 is 'Reverse Fly'. Lift 2 is 'Butterfly'.
-    *   'Biceps vs. Triceps': Lift 1 is a bicep exercise (e.g., 'Bicep Curl'). Lift 2 is a tricep isolation exercise (e.g., 'Tricep Extension'). Do not use 'Seated Dip'.
-    *   'Back Extension vs. Abdominal Crunch': Lift 1 is 'Back Extension'. Lift 2 is 'Abdominal Crunch'.
-    *   'Glute Development': Lift 1 is 'Hip Thrust'. Lift 2 is 'Glutes' (machine).
-3.  **Output Format**: Return a list of all the valid pairs you find. For each pair, provide the 'comparisonType', and the full details for 'lift1' and 'lift2'.
-
-Here are the user's personal records:
-{{#each personalRecords}}
-- {{exerciseName}}: {{weight}} {{weightUnit}}
-{{/each}}
-`,
-});
+// Configuration for each imbalance type
+const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[] }> = {
+    'Horizontal Push vs. Pull': { lift1Options: ['Bench Press', 'Chest Press'], lift2Options: ['Barbell Row', 'Seated Row'] },
+    'Vertical Push vs. Pull': { lift1Options: ['Overhead Press', 'Shoulder Press'], lift2Options: ['Lat Pulldown', 'Pull-ups'] },
+    'Quad vs. Hamstring': { lift1Options: ['Leg Extension', 'Squat'], lift2Options: ['Leg Curl'] },
+    'Adductor vs. Abductor': { lift1Options: ['Adductor'], lift2Options: ['Abductor'] },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['Reverse Fly'], lift2Options: ['Butterfly'] },
+    'Biceps vs. Triceps': { lift1Options: ['Bicep Curl'], lift2Options: ['Tricep Extension'] },
+    'Back Extension vs. Abdominal Crunch': { lift1Options: ['Back Extension'], lift2Options: ['Abdominal Crunch'] },
+    'Glute Development': { lift1Options: ['Hip Thrust'], lift2Options: ['Glutes'] },
+};
 
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
@@ -120,7 +87,17 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
   return strengthImbalanceFlow(filteredInput);
 }
 
-const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
+// Helper function to find the best PR from a list of exercise names
+function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], exerciseNames: string[]): z.infer<typeof PersonalRecordForAnalysisSchema> | null {
+    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.toLowerCase() === name.toLowerCase()));
+    if (relevantRecords.length === 0) return null;
+
+    return relevantRecords.reduce((best, current) => {
+        const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
+        const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
+        return currentWeightKg > bestWeightKg ? current : best;
+    });
+}
 
 const strengthImbalanceFlow = ai.defineFlow(
   {
@@ -129,32 +106,17 @@ const strengthImbalanceFlow = ai.defineFlow(
     outputSchema: StrengthImbalanceOutputSchema,
   },
   async (input) => {
-    let result;
-    try {
-      // Try with the default flash model first
-      result = await pairingPrompt(input);
-    } catch (e: any) {
-      // If it fails with a 503-style error, try the pro model as a fallback
-      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
-        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
-        result = await pairingPrompt(input, { model: FALLBACK_MODEL });
-      } else {
-        // Re-throw other errors
-        throw e;
-      }
-    }
-
-    const { output: matchedPairsOutput } = result;
-    if (!matchedPairsOutput || !matchedPairsOutput.pairs) {
-        throw new Error("Could not analyze strength. The AI failed to find opposing lift pairs.");
-    }
-
     const findings: ImbalanceFinding[] = [];
-    
-    // 2. Process these pairs with deterministic TypeScript logic.
-    for (const pair of matchedPairsOutput.pairs) {
-        const lift1WeightKg = pair.lift1.weightUnit === 'lbs' ? pair.lift1.weight * 0.453592 : pair.lift1.weight;
-        const lift2WeightKg = pair.lift2.weightUnit === 'lbs' ? pair.lift2.weight * 0.453592 : pair.lift2.weight;
+
+    for (const type of IMBALANCE_TYPES) {
+        const config = IMBALANCE_CONFIG[type];
+        const lift1 = findBestPr(input.personalRecords, config.lift1Options);
+        const lift2 = findBestPr(input.personalRecords, config.lift2Options);
+
+        if (!lift1 || !lift2) continue;
+
+        const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
+        const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
 
         if (lift2WeightKg === 0) continue; // Avoid division by zero
 
@@ -165,7 +127,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         let recommendation: string = '';
         let finalRatioString: string = '';
 
-        switch (pair.comparisonType) {
+        switch (type) {
             case 'Horizontal Push vs. Pull':
                 ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.00 : 1';
@@ -184,8 +146,7 @@ const strengthImbalanceFlow = ai.defineFlow(
                 break;
             
             case 'Vertical Push vs. Pull':
-                // We compare Push (lift1) to Pull (lift2), so Push/Pull
-                if (lift2WeightKg === 0) continue; // Divisor cannot be zero
+                if (lift2WeightKg === 0) continue;
                 ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '0.67 - 0.77 : 1'; 
                 if (ratio < 0.60 || ratio > 0.85) severity = 'Severe';
@@ -197,7 +158,6 @@ const strengthImbalanceFlow = ai.defineFlow(
                 break;
 
             case 'Quad vs. Hamstring':
-                // We compare Quad (lift1) to Hamstring (lift2), so Quad/Hamstring
                 ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.50 : 1';
                 if (ratio < 1.2 || ratio > 2.0) severity = 'Severe';
@@ -209,14 +169,13 @@ const strengthImbalanceFlow = ai.defineFlow(
                 break;
 
             case 'Biceps vs. Triceps':
-                // We compare Bicep (lift1) to Tricep (lift2), so Bicep/Tricep
-                if (lift2WeightKg === 0) continue; // Divisor cannot be zero
+                if (lift2WeightKg === 0) continue;
                 ratio = lift1WeightKg / lift2WeightKg;
-                targetRatio = '0.40 : 1';
-                if (ratio < 0.28 || ratio > 0.52) severity = 'Severe';
-                else if (ratio < 0.34 || ratio > 0.46) severity = 'Moderate';
+                targetRatio = '1.00 : 1';
+                if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
+                else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
+                insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance. Note: this compares two isolation exercises for a direct comparison.";
                 recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
@@ -288,13 +247,13 @@ const strengthImbalanceFlow = ai.defineFlow(
 
         if (severity && severity !== 'Balanced') {
             findings.push({
-                imbalanceType: pair.comparisonType,
-                lift1Name: pair.lift1.exerciseName,
-                lift1Weight: pair.lift1.weight,
-                lift1Unit: pair.lift1.weightUnit,
-                lift2Name: pair.lift2.exerciseName,
-                lift2Weight: pair.lift2.weight,
-                lift2Unit: pair.lift2.weightUnit,
+                imbalanceType: type,
+                lift1Name: lift1.exerciseName,
+                lift1Weight: lift1.weight,
+                lift1Unit: lift1.weightUnit,
+                lift2Name: lift2.exerciseName,
+                lift2Weight: lift2.weight,
+                lift2Unit: lift2.weightUnit,
                 userRatio: finalRatioString,
                 targetRatio: targetRatio,
                 severity: severity,
