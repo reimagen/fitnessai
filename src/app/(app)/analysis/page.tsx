@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
@@ -30,8 +30,8 @@ type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43) ? 'Severe' : (r > 1.33) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75 || r < 0.5) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43 || r < 1.25) ? 'Severe' : (r > 1.33 || r < 1.33) ? 'Moderate' : 'Balanced' },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced' },
@@ -138,14 +138,35 @@ type StrengthFinding = StrengthImbalanceOutput['findings'][0] & {
     weakerLiftName?: string | null;
 };
 
+interface StoredAnalysis {
+  result: StrengthImbalanceOutput;
+  generatedDate: string;
+}
+
+const AI_ANALYSIS_KEY = "fitnessAppStrengthAnalysis";
+
 export default function AnalysisPage() {
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('weekly');
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<StrengthImbalanceOutput | null>(null);
+  const [analysisResult, setAnalysisResult] = useState<StoredAnalysis | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
+  
+  useEffect(() => {
+    setIsClient(true);
+    const storedAnalysisString = localStorage.getItem(AI_ANALYSIS_KEY);
+    if (storedAnalysisString) {
+      try {
+        setAnalysisResult(JSON.parse(storedAnalysisString));
+      } catch (e) {
+        console.error("Failed to parse stored analysis", e);
+        localStorage.removeItem(AI_ANALYSIS_KEY);
+      }
+    }
+  }, []);
 
   const handleAnalyzeStrength = async () => {
     if (!personalRecords || personalRecords.length === 0) {
@@ -158,7 +179,6 @@ export default function AnalysisPage() {
     }
 
     setIsAnalysisLoading(true);
-    setAnalysisResult(null); // Clear previous AI results
 
     const prsForAnalysis = personalRecords.map(pr => ({
       ...pr,
@@ -168,13 +188,20 @@ export default function AnalysisPage() {
     const result = await analyzeStrengthAction({ personalRecords: prsForAnalysis });
 
     if (result.success && result.data) {
-      setAnalysisResult(result.data);
+      const newAnalysis: StoredAnalysis = {
+        result: result.data,
+        generatedDate: new Date().toISOString(),
+      };
+      setAnalysisResult(newAnalysis);
+      localStorage.setItem(AI_ANALYSIS_KEY, JSON.stringify(newAnalysis));
+
       toast({
         title: "Analysis Complete",
         description: result.data.summary,
       });
     } else {
       setAnalysisResult(null); // Clear previous results on failure
+      localStorage.removeItem(AI_ANALYSIS_KEY);
       toast({
         title: "Analysis Failed",
         description: result.error || "An unknown error occurred.",
@@ -407,7 +434,14 @@ export default function AnalysisPage() {
                             {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
                     </CardTitle>
-                    <CardDescription>Review your strength ratios. Click for AI-powered insights on imbalances.</CardDescription>
+                    <CardDescription>
+                      Review your strength ratios. Click for AI-powered insights on imbalances.
+                      {isClient && analysisResult?.generatedDate && (
+                          <span className="block text-xs mt-1 text-muted-foreground/80">
+                              Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}
+                          </span>
+                      )}
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     {isLoadingPrs ? (
@@ -416,13 +450,13 @@ export default function AnalysisPage() {
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                            {analysisResult?.summary && (
-                                <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
+                            {analysisResult?.result?.summary && (
+                                <p className="text-center text-muted-foreground italic text-sm">{analysisResult.result.summary}</p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {IMBALANCE_TYPES.map((type, index) => {
                                     const finding = clientSideFindings.find(f => f.imbalanceType === type);
-                                    const aiFinding = finding ? analysisResult?.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
+                                    const aiFinding = finding ? analysisResult?.result?.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
                                     
                                     if (finding && finding.userRatio) {
                                       return (
@@ -489,3 +523,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
