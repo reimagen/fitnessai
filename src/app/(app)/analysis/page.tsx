@@ -41,7 +41,7 @@ const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Opt
 
 // Helper to find the best PR for a given list of exercises
 function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
-    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.toLowerCase() === name.toLowerCase()));
+    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
 
     return relevantRecords.reduce((best, current) => {
@@ -446,3 +446,4 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
