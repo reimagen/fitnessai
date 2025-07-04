@@ -178,14 +178,15 @@ const strengthImbalanceFlow = ai.defineFlow(
                 break;
             
             case 'Vertical Push vs. Pull':
-                // We compare Pull (lift2) to Push (lift1), so Pull/Push
-                ratio = lift2WeightKg / lift1WeightKg;
-                targetRatio = '1.30 - 1.50 : 1'; // Target is Pull : Push
-                if (ratio < 1.1 || ratio > 1.8) severity = 'Severe';
-                else if (ratio < 1.2 || ratio > 1.6) severity = 'Moderate';
+                // We compare Push (lift1) to Pull (lift2), so Push/Pull
+                if (lift2WeightKg === 0) continue; // Divisor cannot be zero
+                ratio = lift1WeightKg / lift2WeightKg;
+                targetRatio = '0.67 - 0.77 : 1'; // Ideal Push:Pull is ~2:3
+                if (ratio < 0.60 || ratio > 0.85) severity = 'Severe';
+                else if (ratio < 0.67 || ratio > 0.77) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "An imbalance between your overhead pulling and pressing can affect shoulder health and stability.";
-                recommendation = "Ensure you are training both vertical pulling (like lat pulldowns) and vertical pressing (like overhead press) with appropriate intensity.";
+                insight = "An imbalance between your overhead pressing and pulling can affect shoulder health and stability. Your vertical press should ideally be 2/3 of your vertical pull.";
+                recommendation = "Ensure you are training both vertical pulling (like lat pulldowns) and vertical pressing (like overhead press) with appropriate intensity to achieve a better balance.";
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
@@ -203,6 +204,7 @@ const strengthImbalanceFlow = ai.defineFlow(
 
             case 'Biceps vs. Triceps':
                 // We compare Bicep (lift1) to Tricep (lift2), so Bicep/Tricep
+                if (lift2WeightKg === 0) continue; // Divisor cannot be zero
                 ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '0.67 : 1'; // Biceps should be ~2/3 of Triceps
                 if (ratio > 0.9 || ratio < 0.5) severity = 'Severe';
