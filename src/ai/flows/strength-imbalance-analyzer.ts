@@ -165,6 +165,9 @@ const strengthImbalanceFlow = ai.defineFlow(
   },
   async (input) => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('The AI failed to generate a valid analysis. The model may be overloaded or the request was malformed. Please try again.');
+    }
+    return output;
   }
 );
