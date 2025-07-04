@@ -117,17 +117,14 @@ export default function AnalysisPage() {
         const { result, date } = JSON.parse(storedAnalysis);
         const parsedDate = new Date(date);
 
-        // Add robust validation for stored data
         if (result && Array.isArray(result.findings) && !isNaN(parsedDate.getTime())) {
           setAnalysisResult(result);
           setAnalysisDate(parsedDate);
         } else {
-          // If data is invalid, throw an error to trigger the catch block
           throw new Error("Invalid analysis data found in storage.");
         }
       } catch (error) {
         console.error("Failed to parse stored analysis from localStorage, clearing it:", error);
-        // Clear the bad data to prevent future crashes
         localStorage.removeItem(ANALYSIS_STORAGE_KEY);
       }
     }
@@ -231,22 +228,18 @@ export default function AnalysisPage() {
       toast({ title: "Not Enough Data", description: "Log at least two opposing personal records (e.g., a push and a pull) to analyze imbalances.", variant: "default" });
       return;
     }
+
     setIsAnalyzing(true);
     setAnalysisError(null);
-    setAnalysisResult(null);
-    setAnalysisDate(null);
-    localStorage.removeItem(ANALYSIS_STORAGE_KEY);
 
-
-    // Filter and format records on the client to ensure only valid data is sent.
     const recordsForAnalysis = personalRecords
-        .filter(pr => pr && pr.weight > 0 && pr.weightUnit) // Ensure record exists and has weight/unit
+        .filter(pr => pr && pr.weight > 0 && pr.weightUnit)
         .map(pr => ({
             id: pr.id,
             exerciseName: pr.exerciseName,
             weight: pr.weight,
             weightUnit: pr.weightUnit,
-            date: pr.date.toISOString(), // Convert Date object to ISO string for serialization
+            date: pr.date.toISOString(),
             category: pr.category,
         }));
     
@@ -268,10 +261,11 @@ export default function AnalysisPage() {
           date: currentDate.toISOString(),
       };
       localStorage.setItem(ANALYSIS_STORAGE_KEY, JSON.stringify(dataToStore));
+      toast({ title: "Analysis Complete", description: "Your strength balance has been re-analyzed." });
     } else {
-      setAnalysisError(result.error || "An unknown error occurred during analysis.");
-      toast({ title: "Analysis Failed", description: result.error, variant: "destructive" });
-      localStorage.removeItem(ANALYSIS_STORAGE_KEY);
+      const errorMessage = result.error || "An unknown error occurred during analysis.";
+      setAnalysisError(errorMessage);
+      toast({ title: "Analysis Failed", description: errorMessage, variant: "destructive" });
     }
     setIsAnalyzing(false);
   };
@@ -326,46 +320,65 @@ export default function AnalysisPage() {
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-6"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Scale className="h-6 w-6 text-primary" />Strength Balance Analysis</CardTitle><CardDescription>AI-powered insights into your strength ratios based on your Personal Records.</CardDescription></CardHeader>
-                <CardContent className="min-h-[250px] flex flex-col items-center justify-center">
-                    {isAnalyzing ? <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    : analysisError ? <div className="text-center text-destructive"><AlertTriangle className="mx-auto h-8 w-8 mb-2" /><p className="font-semibold">Analysis Failed</p><p className="text-sm">{analysisError}</p></div>
-                    : analysisResult ? (
-                        <div className="w-full space-y-4">
-                            {analysisDate && (
-                                <p className="text-xs text-center text-muted-foreground">
-                                    Analysis generated on: {format(analysisDate, "MMMM d, yyyy 'at' h:mm a")}
-                                </p>
-                            )}
-                            <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
-                            {analysisResult.findings.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {analysisResult.findings.map((finding, index) => (
-                                        <Card key={index} className="p-4 bg-secondary/50">
-                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
-                                                <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
-                                                <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
-                                                <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
-                                            </div>
-                                            <div className="mt-3 pt-3 border-t">
-                                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{finding.insight}</p>
-                                            </div>
-                                            <div className="mt-2">
-                                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{finding.recommendation}</p>
-                                            </div>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : null}
-                            <Button variant="outline" className="w-full mt-4" onClick={handleAnalyzeImbalances}>Re-analyze</Button>
+                <CardContent className="p-6 space-y-4">
+                    {isAnalyzing ? (
+                        <div className="flex flex-col items-center justify-center p-8">
+                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                            <p className="mt-4 text-muted-foreground">Analyzing your records...</p>
                         </div>
                     ) : (
-                        <Button onClick={handleAnalyzeImbalances} disabled={isLoadingPrs || (personalRecords || []).length < 2}>
-                            <Zap className="mr-2 h-4 w-4" /> Analyze Strength Balance
+                    <>
+                        {analysisError && (
+                            <div className="text-center text-destructive border border-destructive bg-destructive/10 p-3 rounded-md">
+                                <AlertTriangle className="mx-auto h-6 w-6 mb-2" />
+                                <p className="font-semibold">Analysis Failed</p>
+                                <p className="text-sm">{analysisError}</p>
+                            </div>
+                        )}
+                        {analysisResult ? (
+                            <div className="w-full space-y-4">
+                                {analysisDate && (
+                                    <p className="text-xs text-center text-muted-foreground">
+                                        Last successful analysis: {format(analysisDate, "MMMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                )}
+                                <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
+                                {analysisResult.findings.length > 0 ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {analysisResult.findings.map((finding, index) => (
+                                            <Card key={index} className="p-4 bg-secondary/50">
+                                                <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
+                                                <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
+                                                    <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
+                                                    <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
+                                                    <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
+                                                    <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
+                                                </div>
+                                                <div className="mt-3 pt-3 border-t">
+                                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{finding.insight}</p>
+                                                </div>
+                                                <div className="mt-2">
+                                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{finding.recommendation}</p>
+                                                </div>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : (
+                            !analysisError && (
+                                <div className="flex flex-col items-center justify-center text-center p-8">
+                                    <p className="text-muted-foreground">Click the button below to analyze your strength balance.</p>
+                                </div>
+                            )
+                        )}
+                        <Button onClick={handleAnalyzeImbalances} disabled={isAnalyzing || isLoadingPrs || (personalRecords || []).length < 2} className="w-full">
+                            <Zap className="mr-2 h-4 w-4" />
+                            {analysisResult ? "Re-analyze Strength Balance" : "Analyze Strength Balance"}
                         </Button>
+                    </>
                     )}
                 </CardContent>
             </Card>
@@ -375,3 +388,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
