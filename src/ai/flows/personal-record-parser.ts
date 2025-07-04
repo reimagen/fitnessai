@@ -90,22 +90,15 @@ const parsePersonalRecordsFlow = ai.defineFlow(
     outputSchema: ParsePersonalRecordsOutputSchema,
   },
   async input => {
-    // Directly use the more capable model due to the prompt's complexity and strictness.
     const {output} = await prompt(input, { model: PRO_MODEL });
-
-    if (output && output.records) {
-        // Post-processing to clean up names if needed
-        const cleanedRecords = output.records.map(record => ({
-            ...record,
-            exerciseName: record.exerciseName.toLowerCase().startsWith('egym ') 
-                ? record.exerciseName.substring(5) 
-                : record.exerciseName,
-        }));
-        return { records: cleanedRecords };
-    }
+    
+    // The prompt is now solely responsible for generating clean, valid output.
+    // If the output is null or doesn't conform to the schema, Genkit will throw an error.
     if (!output) {
-      throw new Error("AI failed to generate a response.");
+      throw new Error("AI failed to generate a response. The model returned no output.");
     }
+
+    // The Zod schema validation on the flow's output will catch any formatting errors.
     return output;
   }
 );
