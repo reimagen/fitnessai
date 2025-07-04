@@ -58,14 +58,14 @@ export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSche
 
 // Configuration for each imbalance type
 const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe', getWeakerLiftDescription: (weakerIsLift1: boolean, l1Name: string, l2Name: string) => string }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's horizontal pushing strength (${l1Name}) is weaker than their horizontal pulling strength (${l2Name}).` : `The user's horizontal pulling strength (${l2Name}) is weaker than their horizontal pushing strength (${l1Name}).` },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.85) ? 'Severe' : (r < 0.67 || r > 0.77) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's vertical pushing strength (${l1Name}) is weaker than their vertical pulling strength (${l2Name}).` : `The user's vertical pulling strength (${l2Name}) is weaker than their vertical pushing strength (${l1Name}).` },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's quadriceps strength (${l1Name}) is weaker than their hamstring strength (${l2Name}).` : `The user's hamstring strength (${l2Name}) is weaker than their quadriceps strength (${l1Name}).` },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's inner thigh strength (Adductor) is weaker than their outer thigh strength (Abductor).` : `The user's outer thigh strength (Abductor) is weaker than their inner thigh strength (Adductor).` },
-    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's rear delt strength (${l1Name}) is weaker than their chest strength (${l2Name}).` : `The user's chest strength (${l2Name}) is weaker than their rear delt strength (${l1Name}).` },
-    'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's bicep strength (${l1Name}) is weaker than their tricep strength (${l2Name}).` : `The user's tricep strength (${l2Name}) is weaker than their bicep strength (${l1Name}).` },
-    'Back Extension vs. Abdominal Crunch': { lift1Options: ['back extension'], lift2Options: ['abdominal crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's lower back strength (${l1Name}) is weaker than their abdominal strength (${l2Name}).` : `The user's abdominal strength (${l2Name}) is weaker than their lower back strength (${l1Name}).` },
-    'Glute Development': { lift1Options: ['hip thrust'], lift2Options: ['glutes'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `The user's compound glute strength (${l1Name}) is weaker than their isolation glute strength (${l2Name}).` : `The user's isolation glute strength (${l2Name}) is weaker than their compound glute strength (${l1Name}).` },
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.90) ? 'Severe' : (r < 0.67 || r > 0.82) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
+    'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your bicep strength (${l1Name}) is weaker than your tricep strength (${l2Name}).` : `Your tricep strength (${l2Name}) is weaker than your bicep strength (${l1Name}).` },
+    'Back Extension vs. Abdominal Crunch': { lift1Options: ['back extension'], lift2Options: ['abdominal crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your lower back strength (${l1Name}) is weaker than your abdominal strength (${l2Name}).` : `Your abdominal strength (${l2Name}) is weaker than your lower back strength (${l1Name}).` },
+    'Glute Development': { lift1Options: ['hip thrust'], lift2Options: ['glutes'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your compound glute strength (${l1Name}) is weaker than your isolation glute strength (${l2Name}).` : `Your isolation glute strength (${l2Name}) is weaker than your compound glute strength (${l1Name}).` },
 };
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
@@ -115,6 +115,9 @@ const insightPrompt = ai.definePrompt({
         targetRatio: z.string(),
         severity: z.enum(['Moderate', 'Severe']),
         weakerLiftDescription: z.string(),
+        weakerLiftName: z.string().describe("The name of the weaker lift that needs improvement."),
+        goalWeight: z.number().describe("The calculated target weight for the weaker lift to achieve balance."),
+        goalUnit: z.enum(['kg', 'lbs']).describe("The unit for the goal weight."),
       }),
     },
     output: { schema: AIInsightSchema },
@@ -129,10 +132,12 @@ The user's data is as follows:
 
 Diagnosis: {{{weakerLiftDescription}}}
 
+The user should aim for a target weight of **{{{goalWeight}}}{{{goalUnit}}}** on their **{{{weakerLiftName}}}** to achieve the ideal balance.
+
 Based ONLY on this information, provide a concise expert insight and a simple, actionable recommendation.
 The insight should explain the potential negative consequences (e.g., injury risk, poor posture, performance plateau).
 The recommendation should give a clear, simple action the user can take to improve the weaker lift or muscle group.
-Do not repeat the numbers. Focus on the 'why' and the 'what to do'. Be encouraging but direct.
+Do not repeat the numbers already listed above. Focus on the 'why' and the 'what to do'. Be encouraging but direct.
 `,
 });
 
@@ -169,6 +174,22 @@ const strengthImbalanceFlow = ai.defineFlow(
 
         if (severity !== 'Balanced') {
             const promise = (async () => {
+                let goalWeight: number;
+                let weakerLiftName: string;
+                let goalUnit: 'kg' | 'lbs';
+
+                if (weakerIsLift1) {
+                    weakerLiftName = lift1.exerciseName;
+                    goalUnit = lift1.weightUnit;
+                    const goalWeightKg = lift2WeightKg * targetRatioValue;
+                    goalWeight = Math.round(lift1.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
+                } else {
+                    weakerLiftName = lift2.exerciseName;
+                    goalUnit = lift2.weightUnit;
+                    const goalWeightKg = lift1WeightKg / targetRatioValue;
+                    goalWeight = Math.round(lift2.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
+                }
+                
                 const { output: aiInsight } = await insightPrompt({
                     imbalanceType: type,
                     lift1Name: lift1.exerciseName,
@@ -180,7 +201,10 @@ const strengthImbalanceFlow = ai.defineFlow(
                     userRatio: `${ratio.toFixed(2)}:1`,
                     targetRatio: config.targetRatioDisplay,
                     severity: severity,
-                    weakerLiftDescription: config.getWeakerLiftDescription(weakerIsLift1, lift1.exerciseName, lift2.exerciseName)
+                    weakerLiftDescription: config.getWeakerLiftDescription(weakerIsLift1, lift1.exerciseName, lift2.exerciseName),
+                    weakerLiftName: weakerLiftName,
+                    goalWeight: goalWeight,
+                    goalUnit: goalUnit,
                 });
 
                 if (aiInsight) {
