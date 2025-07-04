@@ -26,7 +26,7 @@ export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema
 
 const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
-    'Vertical Pull vs. Push',
+    'Vertical Push vs. Pull',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
     'Reverse Fly vs. Butterfly',
@@ -88,7 +88,7 @@ You will be given a list of the user's personal records. Your ONLY job is to fin
 1.  **Find the Best Pairs**: For each comparison type, find the single best pair of lifts from the user's records. For example, for 'Horizontal Push vs. Pull', find the user's strongest horizontal press and their strongest horizontal row.
 2.  **Comparison Types and Lifts**: You must match exercises to these exact comparison types.
     *   'Horizontal Push vs. Pull': Lift 1 is a Push (e.g., 'Bench Press', 'Chest Press'). Lift 2 is a Pull (e.g., 'Barbell Row', 'Seated Row').
-    *   'Vertical Pull vs. Push': Lift 1 is a Pull (e.g., 'Lat Pulldown', 'Pull-ups'). Lift 2 is a Push (e.g., 'Overhead Press', 'Shoulder Press').
+    *   'Vertical Push vs. Pull': Lift 1 is a Pull (e.g., 'Lat Pulldown', 'Pull-ups'). Lift 2 is a Push (e.g., 'Overhead Press', 'Shoulder Press').
     *   'Quad vs. Hamstring': Lift 1 is a Quad exercise (e.g., 'Leg Extension', 'Squat'). Lift 2 is a Hamstring exercise (e.g., 'Leg Curl').
     *   'Adductor vs. Abductor': Lift 1 is 'Adductor'. Lift 2 is 'Abductor'.
     *   'Reverse Fly vs. Butterfly': Lift 1 is 'Reverse Fly'. Lift 2 is 'Butterfly'.
@@ -160,7 +160,7 @@ const strengthImbalanceFlow = ai.defineFlow(
                 recommendation = "Focus on strengthening your back and rear deltoids with rowing exercises.";
                 break;
             
-            case 'Vertical Pull vs. Push':
+            case 'Vertical Push vs. Pull':
                 targetRatio = '1.30 - 1.50 : 1';
                 if (ratio < 1.1 || ratio > 1.8) severity = 'Severe';
                 else if (ratio < 1.2 || ratio > 1.6) severity = 'Moderate';
