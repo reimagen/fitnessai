@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   experimental: {
     allowedDevOrigins: ['https://*.cloudworkstations.dev'],
   },
+  serverActions: {
+    bodySizeLimit: '4mb',
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
