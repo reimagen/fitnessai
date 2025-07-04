@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput } from '@/lib/types';
-import { useWorkouts, usePersonalRecords } from '@/lib/firestore.service';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile } from '@/lib/types';
+import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
@@ -30,8 +30,8 @@ type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75 || r < 0.5) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43 || r < 1.25) ? 'Severe' : (r > 1.33 || r < 1.33) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.25) return 'Severe'; if (r > 1.43) return 'Moderate'; return 'Balanced'; } },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced' },
@@ -154,6 +154,7 @@ export default function AnalysisPage() {
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
+  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   
   useEffect(() => {
     setIsClient(true);
@@ -177,6 +178,14 @@ export default function AnalysisPage() {
       });
       return;
     }
+    if (!userProfile) {
+        toast({
+            title: "Profile Not Loaded",
+            description: "Please wait for your profile to load before running analysis.",
+            variant: "default",
+        });
+        return;
+    }
 
     setIsAnalysisLoading(true);
 
@@ -185,7 +194,19 @@ export default function AnalysisPage() {
       date: pr.date.toISOString(), // Convert Date to string for server action
     }));
 
-    const result = await analyzeStrengthAction({ personalRecords: prsForAnalysis });
+    const analysisInput = {
+        personalRecords: prsForAnalysis,
+        userProfile: {
+            age: userProfile.age,
+            gender: userProfile.gender,
+            heightValue: userProfile.heightValue,
+            heightUnit: userProfile.heightUnit,
+            weightValue: userProfile.weightValue,
+            weightUnit: userProfile.weightUnit,
+        }
+    };
+
+    const result = await analyzeStrengthAction(analysisInput);
 
     if (result.success && result.data) {
       const newAnalysis: StoredAnalysis = {
@@ -405,7 +426,7 @@ export default function AnalysisPage() {
     return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">{legendOrder.map(name => { const entry = payloadMap[name]; if (!entry || !chartConfig[name]) return null; return <div key={`item-${entry.dataKey}`} className="flex items-center justify-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} /><span className="text-muted-foreground">{chartConfig[name].label}</span></div>; })}</div>;
   };
   
-  const isLoading = isLoadingWorkouts || isLoadingPrs;
+  const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -429,7 +450,7 @@ export default function AnalysisPage() {
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center justify-between">
                         <span className="flex items-center gap-2"><Scale className="h-6 w-6 text-primary" />Strength Balance Analysis</span>
-                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoadingPrs || clientSideFindings.length === 0}>
+                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0}>
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
                             {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
@@ -523,5 +544,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
