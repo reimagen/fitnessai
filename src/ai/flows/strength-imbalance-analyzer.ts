@@ -60,7 +60,7 @@ export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSche
 const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe', getWeakerLiftDescription: (weakerIsLift1: boolean, l1Name: string, l2Name: string) => string }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75 || r < 0.5) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.25) ? 'Severe' : (r < 1.33) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43) ? 'Severe' : (r > 1.33) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
     'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your bicep strength (${l1Name}) is weaker than your tricep strength (${l2Name}).` : `Your tricep strength (${l2Name}) is weaker than your bicep strength (${l1Name}).` },
@@ -136,16 +136,17 @@ Based ONLY on this information, provide:
 2.  **Recommendation (1-2 sentences MAX):** A simple, actionable recommendation.
 
 **CRITICAL STYLE GUIDE:**
-- **BE CONCISE & VARIED:** Do NOT use the same opening phrase for every analysis. Avoid generic sentences like "This significant strength imbalance..." or "Focus on progressively overloading...". Be direct and engaging.
+- **BE CONCISE & VARIED:** You **MUST NOT** use the same opening phrase or sentence structure for every analysis. Be direct, engaging, and creative.
+- **AVOID GENERIC PHRASES:** Do not start sentences with repetitive phrases like "This imbalance...", "Your weak...", "Neglecting...", "Prioritize...", or "Focus on...".
 - **BE ACTIONABLE:** The recommendation should start with a direct action verb.
 
 **Good Example (Varied & Concise):**
-- **Insight:** "Your horizontal pushing strength is lagging behind your pulling muscles, which can lead to shoulder instability. This may also be limiting your bench press potential."
+- **Insight:** "An over-reliance on chest pressing without balanced back work can lead to shoulder instability. This may also be limiting your bench press potential."
 - **Recommendation:** "Incorporate incline dumbbell presses to target your upper chest. Try adding one extra set of {{{lift2Name}}} to your workouts to help close the gap."
 
 **Bad Example (Repetitive & Generic):**
-- **Insight:** "This significant strength imbalance between your pushing and pulling muscles increases your risk of muscle strain."
-- **Recommendation:** "Focus on progressively overloading your chest press."
+- **Insight:** "Your weak rear delts relative to your chest can lead to poor posture."
+- **Recommendation:** "Prioritize building rear delt strength."
 `,
 });
 
