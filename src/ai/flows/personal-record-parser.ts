@@ -80,7 +80,7 @@ Here is the screenshot to parse:
 `,
 });
 
-const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
+const PRO_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const parsePersonalRecordsFlow = ai.defineFlow(
   {
@@ -89,24 +89,11 @@ const parsePersonalRecordsFlow = ai.defineFlow(
     outputSchema: ParsePersonalRecordsOutputSchema,
   },
   async input => {
-    let result;
-    try {
-      // Try with the default flash model first
-      result = await prompt(input);
-    } catch (e: any) {
-      // If it fails with a 503-style error, try the pro model as a fallback
-      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
-        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
-        result = await prompt(input, { model: FALLBACK_MODEL });
-      } else {
-        // Re-throw other errors
-        throw e;
-      }
-    }
-    const {output} = result;
+    // Directly use the more capable model due to the prompt's complexity and strictness.
+    const {output} = await prompt(input, { model: PRO_MODEL });
 
     if (output && output.records) {
-        // Post-processing to clean up names if needed, similar to workout parser
+        // Post-processing to clean up names if needed
         const cleanedRecords = output.records.map(record => ({
             ...record,
             exerciseName: record.exerciseName.toLowerCase().startsWith('egym ') 
