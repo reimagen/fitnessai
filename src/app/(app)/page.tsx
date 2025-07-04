@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Target, BarChartBig } from "lucide-react";
+import { Dumbbell, Target, BarChartBig, Award } from "lucide-react";
 import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
@@ -28,10 +28,14 @@ export default function HomePage() {
             <CardTitle className="font-headline text-xl">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-4 text-center">
               <Link href="/history" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary">
                 <Dumbbell className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
                 <span className="text-sm font-medium text-foreground">Log Workout</span>
+              </Link>
+              <Link href="/prs" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary">
+                <Award className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
+                <span className="text-sm font-medium text-foreground">Log PRs</span>
               </Link>
               <Link href="/plan" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary">
                 <Target className="h-8 w-8 text-accent transition-transform group-hover:scale-110" />
