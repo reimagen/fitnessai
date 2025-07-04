@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     allowedDevOrigins: ['https://*.cloudworkstations.dev'],
   },
   serverActions: {
-    bodySizeLimit: '4mb',
+    bodySizeLimit: '8mb',
   },
   typescript: {
     ignoreBuildErrors: true,
