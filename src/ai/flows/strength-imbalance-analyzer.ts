@@ -11,6 +11,11 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const FitnessGoalForAnalysisSchema = z.object({
+  description: z.string().describe("A specific fitness goal for the user."),
+  isPrimary: z.boolean().optional().describe("Whether this is the user's primary goal."),
+});
+
 const UserProfileForAnalysisSchema = z.object({
     age: z.number().optional().describe("The user's age."),
     gender: z.string().optional().describe("The user's gender."),
@@ -18,6 +23,7 @@ const UserProfileForAnalysisSchema = z.object({
     heightUnit: z.enum(['cm', 'ft/in']).optional().describe("The user's height unit."),
     weightValue: z.number().optional().describe("The user's weight value."),
     weightUnit: z.enum(['kg', 'lbs']).optional().describe("The user's weight unit."),
+    fitnessGoals: z.array(FitnessGoalForAnalysisSchema).optional().describe("The user's active fitness goals."),
 });
 
 const PersonalRecordForAnalysisSchema = z.object({
@@ -30,7 +36,7 @@ const PersonalRecordForAnalysisSchema = z.object({
 
 const StrengthImbalanceInputSchema = z.object({
   personalRecords: z.array(PersonalRecordForAnalysisSchema),
-  userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics."),
+  userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics and goals."),
 });
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
@@ -69,8 +75,8 @@ export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSche
 // Configuration for each imbalance type
 const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe', getWeakerLiftDescription: (weakerIsLift1: boolean, l1Name: string, l2Name: string) => string }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 0.75) ? 'Severe' : (r > 0.7 || r < 0.6) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.25) return 'Severe'; if (r > 1.43) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 0.75) ? 'Severe' : (r < 0.6 || r > 0.7) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.25) return 'Severe'; if (r < 1.33 || r > 1.43) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
     'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your bicep strength (${l1Name}) is weaker than your tricep strength (${l2Name}).` : `Your tricep strength (${l2Name}) is weaker than your bicep strength (${l1Name}).` },
@@ -141,15 +147,22 @@ const insightPrompt = ai.definePrompt({
 - Diagnosis: {{{weakerLiftDescription}}}
 - Goal: The user should aim for a target weight of **{{{goalWeight}}}{{{goalUnit}}}** on their **{{{weakerLiftName}}}** to achieve the ideal balance.
 
-**User's Stats:**
+**User's Stats & Goals:**
 - Age: {{#if userProfile.age}}{{userProfile.age}}{{else}}Not Provided{{/if}}
 - Gender: {{#if userProfile.gender}}{{userProfile.gender}}{{else}}Not Provided{{/if}}
 - Weight: {{#if userProfile.weightValue}}{{userProfile.weightValue}} {{userProfile.weightUnit}}{{else}}Not Provided{{/if}}
+{{#if userProfile.fitnessGoals}}
+- Fitness Goals:
+  {{#each userProfile.fitnessGoals}}
+    - {{#if this.isPrimary}}**Primary:** {{/if}}{{{this.description}}}
+  {{/each}}
+{{/if}}
+
 
 **Your Task:**
-Based ONLY on all of this information (both the imbalance data and the user's stats), provide:
-1.  **Insight (1-2 sentences MAX):** A concise, expert insight into the potential risks (e.g., injury, posture, plateaus). If user stats are available, incorporate them to make the insight more personal (e.g., mention how an imbalance might affect someone of their age or gender).
-2.  **Recommendation (1-2 sentences MAX):** A simple, actionable recommendation to help the user address the imbalance (e.g., exercises, form, frequency).
+Based ONLY on all of this information (the imbalance data, the user's stats, AND their fitness goals), provide:
+1.  **Insight (1-2 sentences MAX):** A concise, expert insight into the potential risks (e.g., injury, posture, plateaus). If user stats or goals are available, you MUST incorporate them to make the insight more personal (e.g., mention how an imbalance might affect someone of their age or their goal to run a marathon).
+2.  **Recommendation (1-2 sentences MAX):** A simple, actionable recommendation to help the user address the imbalance. This recommendation should ideally also connect to their stated goals.
 
 **CRITICAL STYLE GUIDE:**
 - **VARY YOUR ANALYSIS:** Your main goal is to provide unique and varied feedback for each type of imbalance. Do not use the same sentence structure or phrasing across different imbalance analyses. Be direct and creative.
@@ -158,7 +171,7 @@ Based ONLY on all of this information (both the imbalance data and the user's st
 **Good Example (Varied & Concise):**
 - **Insight:** "An over-reliance on chest pressing without balanced back work can lead to shoulder instability. For a lifter of your age, maintaining shoulder health is crucial for longevity."
 - **Recommendation:** "Incorporate incline dumbbell presses to target your upper chest. Try adding one extra set of {{{lift2Name}}} to your workouts to help close the gap."
-- **Insight:** "Quadriceps dominance to this degree often increases stress on the patellar tendon. Addressing this is key for long-term knee health."
+- **Insight:** "Quadriceps dominance to this degree often increases stress on the patellar tendon. For your goal of running a 5k, addressing this is key for long-term knee health."
 - **Recommendation:** "Add Romanian Deadlifts to your routine to directly strengthen the hamstrings. Aim for 3 sets of 8-10 reps after your main leg exercises."
 
 **Bad Example (Repetitive & Generic Across Imbalance Types):**
