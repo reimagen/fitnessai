@@ -172,8 +172,14 @@ const strengthImbalanceFlow = ai.defineFlow(
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "Your pressing strength is imbalanced with your pulling strength. This can increase risk of shoulder injury and poor posture.";
-                recommendation = "Focus on strengthening your back and rear deltoids with rowing exercises.";
+                
+                if (ratio < 1.0) { // Push is weaker
+                    insight = "Your pressing strength is imbalanced with your pulling strength. This can increase risk of shoulder injury and poor posture if not addressed.";
+                    recommendation = "Focus on strengthening your chest, shoulders, and triceps with more pressing exercises to close the gap.";
+                } else { // Pull is weaker
+                    insight = "Your pulling strength is imbalanced with your pressing strength. This 'push-dominant' imbalance can lead to rounded shoulders and potential shoulder impingement.";
+                    recommendation = "Focus on strengthening your back and rear deltoids. Ensure your routine has enough volume of rowing exercises to balance your pressing.";
+                }
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
             
@@ -221,8 +227,13 @@ const strengthImbalanceFlow = ai.defineFlow(
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "Imbalances between your inner thigh (adductor) and outer thigh (abductor) muscles can affect hip stability and knee tracking, potentially leading to knee pain.";
-                recommendation = "Ensure you are training both movements. Strengthen the weaker muscle group to improve hip joint stability and overall lower body alignment.";
+                if(ratio < 1.0) { // Adductor is weaker
+                    insight = "Your inner thigh (adductor) muscles are weaker than your outer thigh (abductor) muscles. This can affect hip stability and knee tracking.";
+                    recommendation = "Focus on strengthening your adductors to improve hip joint stability and prevent potential knee pain.";
+                } else { // Abductor is weaker
+                    insight = "Your outer thigh (abductor) muscles are weaker than your inner thigh (adductor) muscles. Weak abductors can lead to poor knee control during squats and running.";
+                    recommendation = "Focus on strengthening your abductors (like the gluteus medius) to improve lower body alignment and reduce injury risk.";
+                }
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
@@ -232,8 +243,13 @@ const strengthImbalanceFlow = ai.defineFlow(
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "An imbalance between your chest (pecs) and upper back (rear delts) can lead to rounded shoulders, poor posture, and increase the risk of shoulder impingement.";
-                recommendation = "Focus on strengthening your rear deltoids and upper back muscles. Incorporate more reverse flys, face pulls, or band pull-aparts into your routine.";
+                if (ratio < 1.0) { // Reverse Fly (upper back) is weaker
+                    insight = "Your upper back (rear delts) is weaker than your chest. This common imbalance can lead to rounded shoulders and poor posture.";
+                    recommendation = "Focus on strengthening your rear deltoids and upper back. Incorporate more reverse flys, face pulls, or band pull-aparts into your routine.";
+                } else { // Butterfly (chest) is weaker
+                    insight = "Your chest strength is weaker than your upper back strength in these isolation movements. This is less common but should be addressed for balanced development.";
+                    recommendation = "Ensure you are including enough volume for chest flys or presses to maintain a balanced and strong upper body.";
+                }
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
@@ -243,8 +259,13 @@ const strengthImbalanceFlow = ai.defineFlow(
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "An imbalance between your lower back (erector spinae) and your abdominal muscles can compromise core stability and may contribute to lower back pain.";
-                recommendation = "Aim for a balanced core routine. If your back is weaker, focus on controlled back extensions. If your abs are weaker, incorporate more crunches or planks.";
+                if (ratio < 1.0) { // Back Extension is weaker
+                    insight = "Your lower back (erector spinae) is weaker than your abdominal muscles. A strong lower back is critical for core stability and preventing lower back pain.";
+                    recommendation = "Incorporate controlled back extensions or supermans to strengthen your posterior chain and balance your core.";
+                } else { // Ab Crunch is weaker
+                    insight = "Your abdominal muscles are weaker than your lower back muscles. A strong anterior core is vital for protecting your spine during heavy lifts.";
+                    recommendation = "Focus on strengthening your abs. Incorporate exercises like crunches, planks, or leg raises into your routine.";
+                }
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
@@ -254,8 +275,13 @@ const strengthImbalanceFlow = ai.defineFlow(
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "This compares your compound glute strength (Hip Thrust) to your isolation glute strength. A large discrepancy might indicate a need to work on glute activation or strength in different ranges of motion.";
-                recommendation = "If your Hip Thrust is much stronger, consider adding glute isolation work to improve mind-muscle connection. If the isolation machine is stronger, focus on improving your form and progressive overload on compound lifts like the Hip Thrust.";
+                if (ratio < 1.0) { // Hip Thrust (compound) is weaker
+                    insight = "Your compound glute strength (Hip Thrust) is weaker than your isolation strength. This might indicate an opportunity to build more overall glute power.";
+                    recommendation = "Focus on progressive overload with your Hip Thrusts. Ensure your form is solid to maximize glute activation and strength gains.";
+                } else { // Glute machine (isolation) is weaker
+                    insight = "Your glute isolation strength is weaker than your compound strength. This could suggest a need to improve glute activation or mind-muscle connection.";
+                    recommendation = "Consider adding more glute isolation work (like the machine or cable kickbacks) to target the glutes more directly and ensure full development.";
+                }
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
         }
