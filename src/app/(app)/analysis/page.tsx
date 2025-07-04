@@ -115,10 +115,19 @@ export default function AnalysisPage() {
     if (storedAnalysis) {
       try {
         const { result, date } = JSON.parse(storedAnalysis);
-        setAnalysisResult(result);
-        setAnalysisDate(new Date(date));
+        const parsedDate = new Date(date);
+
+        // Add robust validation for stored data
+        if (result && Array.isArray(result.findings) && !isNaN(parsedDate.getTime())) {
+          setAnalysisResult(result);
+          setAnalysisDate(parsedDate);
+        } else {
+          // If data is invalid, throw an error to trigger the catch block
+          throw new Error("Invalid analysis data found in storage.");
+        }
       } catch (error) {
-        console.error("Failed to parse stored analysis from localStorage:", error);
+        console.error("Failed to parse stored analysis from localStorage, clearing it:", error);
+        // Clear the bad data to prevent future crashes
         localStorage.removeItem(ANALYSIS_STORAGE_KEY);
       }
     }
