@@ -40,7 +40,7 @@ export async function generateWeeklyWorkoutPlanAction(
         } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
             userFriendlyError = "Plan generation failed: The AI model is temporarily unavailable. Please try again in a few moments.";
         } else {
-            userFriendlyError = error.message;
+            userFriendlyError = `Failed to generate plan: ${error.message}`;
         }
     }
     return { success: false, error: userFriendlyError };
