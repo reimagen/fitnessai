@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2 } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
-import { usePersonalRecords, useUserProfile, useAddPersonalRecords } from "@/lib/firestore.service";
+import { Input } from "@/components/ui/input";
+import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord } from "@/lib/firestore.service";
 import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
@@ -45,9 +46,14 @@ export default function MilestonesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
+  const [editedWeight, setEditedWeight] = useState('');
+  const [editedDate, setEditedDate] = useState('');
+
   const { data: allRecords, isLoading: isLoadingPrs } = usePersonalRecords();
   const { data: userProfile } = useUserProfile();
   const addPersonalRecordsMutation = useAddPersonalRecords();
+  const updateRecordMutation = useUpdatePersonalRecord();
 
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
   const completedGoals = useMemo(() => userProfile?.fitnessGoals.filter(g => g.achieved) || [], [userProfile]);
@@ -122,6 +128,43 @@ export default function MilestonesPage() {
         });
     }
   };
+  
+  const handleEditClick = (record: PersonalRecord) => {
+    setEditingRecordId(record.id);
+    setEditedWeight(record.weight.toString());
+    setEditedDate(format(record.date, 'yyyy-MM-dd'));
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRecordId(null);
+  };
+
+  const handleSaveEdit = (recordId: string) => {
+    const weight = parseFloat(editedWeight);
+    if (isNaN(weight) || weight <= 0) {
+        toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
+        return;
+    }
+
+    const date = new Date(editedDate.replace(/-/g, '/'));
+    if (isNaN(date.getTime())) {
+        toast({ title: 'Invalid Date', description: 'Please enter a valid date.', variant: 'destructive' });
+        return;
+    }
+
+    updateRecordMutation.mutate(
+        { id: recordId, data: { weight, date } },
+        {
+            onSuccess: () => {
+                toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });
+                setEditingRecordId(null);
+            },
+            onError: (error) => {
+                toast({ title: 'Update Failed', description: error.message, variant: 'destructive' });
+            },
+        }
+    );
+  };
 
   const groupedRecords = bestRecords.reduce((acc, record) => {
     const category = record.category || 'Other';
@@ -189,15 +232,55 @@ export default function MilestonesPage() {
                     <div key={category}>
                         <h3 className="text-xl font-headline font-semibold mb-4 text-primary border-b pb-2">{category}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-                            {groupedRecords[category].map(record => (
-                                <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
-                                    <div>
-                                        <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                        <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground mt-2">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
-                                </Card>
-                            ))}
+                            {groupedRecords[category].map(record => {
+                                const isEditing = editingRecordId === record.id;
+                                return (
+                                    <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
+                                      {isEditing ? (
+                                        <div className="flex flex-col gap-2 h-full">
+                                          <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                          <div className="flex items-center gap-2">
+                                            <Input 
+                                                type="number" 
+                                                value={editedWeight} 
+                                                onChange={(e) => setEditedWeight(e.target.value)} 
+                                                className="w-2/3" 
+                                                aria-label="Edit weight"
+                                            />
+                                            <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span>
+                                          </div>
+                                          <Input 
+                                              type="date" 
+                                              value={editedDate} 
+                                              onChange={(e) => setEditedDate(e.target.value)}
+                                              aria-label="Edit date"
+                                          />
+                                          <div className="flex justify-end items-center gap-2 mt-auto pt-2">
+                                            <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Cancel edit">
+                                                <X className="h-4 w-4" />
+                                            </Button>
+                                            <Button size="icon" onClick={() => handleSaveEdit(record.id)} aria-label="Save changes" disabled={updateRecordMutation.isPending}>
+                                                {updateRecordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4" />}
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-col h-full">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                                    <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
+                                                </div>
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(record)} aria-label={`Edit ${record.exerciseName} PR`}>
+                                                    <Edit2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-auto pt-2">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
+                                        </div>
+                                      )}
+                                    </Card>
+                                )
+                            })}
                         </div>
                     </div>
                   )

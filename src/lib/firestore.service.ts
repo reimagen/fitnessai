@@ -120,6 +120,17 @@ const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) => {
   await batch.commit();
 };
 
+export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>) => {
+  const recordDoc = doc(db, 'personalRecords', id);
+  
+  const dataToUpdate: { [key: string]: any } = { ...recordData };
+  if (recordData.date) {
+    dataToUpdate.date = Timestamp.fromDate(recordData.date);
+  }
+  
+  return await updateDoc(recordDoc, dataToUpdate);
+};
+
 
 // User Profile (assuming a single user, single profile document)
 const USER_PROFILE_DOC_ID = "main-user-profile";
@@ -207,6 +218,16 @@ export function useAddPersonalRecords() {
             queryClient.invalidateQueries({ queryKey: ['prs'] });
         }
     })
+}
+
+export function useUpdatePersonalRecord() {
+    const queryClient = useQueryClient();
+    return useMutation<void, Error, { id: string, data: Partial<Omit<PersonalRecord, 'id'>> }>({
+        mutationFn: ({ id, data }) => updatePersonalRecord(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['prs'] });
+        },
+    });
 }
 
 export function useUserProfile() {
