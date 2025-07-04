@@ -88,7 +88,7 @@ You will be given a list of the user's personal records. Your ONLY job is to fin
 1.  **Find the Best Pairs**: For each comparison type, find the single best pair of lifts from the user's records. For example, for 'Horizontal Push vs. Pull', find the user's strongest horizontal press and their strongest horizontal row.
 2.  **Comparison Types and Lifts**: You must match exercises to these exact comparison types.
     *   'Horizontal Push vs. Pull': Lift 1 is a Push (e.g., 'Bench Press', 'Chest Press'). Lift 2 is a Pull (e.g., 'Barbell Row', 'Seated Row').
-    *   'Vertical Push vs. Pull': Lift 1 is a Pull (e.g., 'Lat Pulldown', 'Pull-ups'). Lift 2 is a Push (e.g., 'Overhead Press', 'Shoulder Press').
+    *   'Vertical Push vs. Pull': Lift 1 is a Push (e.g., 'Overhead Press', 'Shoulder Press'). Lift 2 is a Pull (e.g., 'Lat Pulldown', 'Pull-ups').
     *   'Quad vs. Hamstring': Lift 1 is a Quad exercise (e.g., 'Leg Extension', 'Squat'). Lift 2 is a Hamstring exercise (e.g., 'Leg Curl').
     *   'Adductor vs. Abductor': Lift 1 is 'Adductor'. Lift 2 is 'Abductor'.
     *   'Reverse Fly vs. Butterfly': Lift 1 is 'Reverse Fly'. Lift 2 is 'Butterfly'.
@@ -120,6 +120,7 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
   return strengthImbalanceFlow(filteredInput);
 }
 
+const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const strengthImbalanceFlow = ai.defineFlow(
   {
@@ -128,8 +129,22 @@ const strengthImbalanceFlow = ai.defineFlow(
     outputSchema: StrengthImbalanceOutputSchema,
   },
   async (input) => {
-    // 1. Call the AI to get the matched pairs.
-    const {output: matchedPairsOutput} = await pairingPrompt(input);
+    let result;
+    try {
+      // Try with the default flash model first
+      result = await pairingPrompt(input);
+    } catch (e: any) {
+      // If it fails with a 503-style error, try the pro model as a fallback
+      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
+        result = await pairingPrompt(input, { model: FALLBACK_MODEL });
+      } else {
+        // Re-throw other errors
+        throw e;
+      }
+    }
+
+    const { output: matchedPairsOutput } = result;
     if (!matchedPairsOutput || !matchedPairsOutput.pairs) {
         return { summary: "Could not analyze strength. The AI failed to find opposing lift pairs.", findings: [] };
     }
@@ -143,61 +158,73 @@ const strengthImbalanceFlow = ai.defineFlow(
 
         if (lift2WeightKg === 0) continue; // Avoid division by zero
 
-        const ratio = lift1WeightKg / lift2WeightKg;
-
+        let ratio: number;
         let severity: 'Balanced' | 'Moderate' | 'Severe' | null = null;
         let targetRatio: string = '';
         let insight: string = '';
         let recommendation: string = '';
+        let finalRatioString: string = '';
 
         switch (pair.comparisonType) {
             case 'Horizontal Push vs. Pull':
+                ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.00 : 1';
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "Your pressing strength is imbalanced with your pulling strength. This can increase risk of shoulder injury and poor posture.";
                 recommendation = "Focus on strengthening your back and rear deltoids with rowing exercises.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
             
             case 'Vertical Push vs. Pull':
-                targetRatio = '1.30 - 1.50 : 1';
+                // We compare Pull (lift2) to Push (lift1), so Pull/Push
+                ratio = lift2WeightKg / lift1WeightKg;
+                targetRatio = '1.30 - 1.50 : 1'; // Target is Pull : Push
                 if (ratio < 1.1 || ratio > 1.8) severity = 'Severe';
                 else if (ratio < 1.2 || ratio > 1.6) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "An imbalance between your overhead pulling and pressing can affect shoulder health and stability.";
                 recommendation = "Ensure you are training both vertical pulling (like lat pulldowns) and vertical pressing (like overhead press) with appropriate intensity.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
             case 'Quad vs. Hamstring':
+                // We compare Quad (lift1) to Hamstring (lift2), so Quad/Hamstring
+                ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.50 : 1';
                 if (ratio < 1.2 || ratio > 2.0) severity = 'Severe';
                 else if (ratio < 1.4 || ratio > 1.7) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "A significant difference between quadriceps and hamstring strength is a major risk factor for knee injuries and ACL tears.";
                 recommendation = "Incorporate more hamstring-focused exercises like leg curls, glute-ham raises, or Romanian deadlifts.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
+                break;
+
+            case 'Biceps vs. Triceps':
+                // We compare Bicep (lift1) to Tricep (lift2), so Bicep/Tricep
+                ratio = lift1WeightKg / lift2WeightKg;
+                targetRatio = '0.67 : 1'; // Biceps should be ~2/3 of Triceps
+                if (ratio > 0.9 || ratio < 0.5) severity = 'Severe';
+                else if (ratio > 0.77 || ratio < 0.59) severity = 'Moderate';
+                else severity = 'Balanced';
+                insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
+                recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
 
             case 'Adductor vs. Abductor':
             case 'Reverse Fly vs. Butterfly':
             case 'Back Extension vs. Abdominal Crunch':
             case 'Glute Development':
+                ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.00 : 1';
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "This imbalance can affect joint stability and lead to compensatory movement patterns.";
                 recommendation = "Isolate and strengthen the lagging muscle group to create better muscular balance around the joint.";
-                break;
-
-            case 'Biceps vs. Triceps':
-                targetRatio = '0.67 : 1'; // Biceps:Triceps target is ~1:1.5, so 0.67:1
-                // The ratio is bicep/tricep. It should be ~0.67
-                if (ratio > 0.9 || ratio < 0.5) severity = 'Severe';
-                else if (ratio > 0.77 || ratio < 0.59) severity = 'Moderate';
-                else severity = 'Balanced';
-                insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
-                recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
         }
 
@@ -210,7 +237,7 @@ const strengthImbalanceFlow = ai.defineFlow(
                 lift2Name: pair.lift2.exerciseName,
                 lift2Weight: pair.lift2.weight,
                 lift2Unit: pair.lift2.weightUnit,
-                userRatio: `${ratio.toFixed(2)} : 1`,
+                userRatio: finalRatioString,
                 targetRatio: targetRatio,
                 severity: severity,
                 insight: insight,
