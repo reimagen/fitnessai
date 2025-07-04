@@ -473,7 +473,7 @@ export default function AnalysisPage() {
                         </Button>
                     </CardTitle>
                     <CardDescription>
-                      Review your strength ratios. Click for AI-powered insights on imbalances.
+                      Review your strength ratios. Click for AI-powered insights on imbalances that factor in your goals and personal stats.
                       {isClient && analysisResult?.generatedDate && (
                           <span className="block text-xs mt-1 text-muted-foreground/80">
                               Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}

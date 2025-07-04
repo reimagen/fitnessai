@@ -55,13 +55,15 @@ const prompt = ai.definePrompt({
 You will be provided with a screenshot of a workout log.
 Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
 
-Key Instructions:
-1.  **Workout Date - CRITICAL**:
-    *   Your primary goal is to find a date in the image. A valid date **must contain at least a month and a day** (e.g., "June 26", "Jul 4").
-    *   **Step 1: Find Month and Day.** First, look for a month and a day. If you cannot find a clear month-day combination, you **MUST** omit the 'workoutDate' field entirely. Do not guess a date.
-    *   **Step 2: Set the Year.** If, and only if, you found a valid month and day, you **MUST** use the year '2025' for the output. This rule applies regardless of any year that might be visible in the screenshot (e.g., 2023, 2024). For example, "June 26, 2023", "June 26, 2024", and "June 26" should all result in a 'workoutDate' of "2025-06-26".
-    *   **Step 3: Format the Date.** If you have a valid month, day, and year (which must be 2025), format it as YYYY-MM-DD.
-    *   **Final Rule:** If a month and day cannot be confidently extracted, the 'workoutDate' field must be omitted from the output.
+**CRITICAL INSTRUCTIONS - MUST BE FOLLOWED EXACTLY:**
+
+1.  **Workout Date - VERY CRITICAL**:
+    *   This is your most important instruction. You **MUST NOT** guess or infer a date.
+    *   A date is only valid if a **month and day are clearly and explicitly written in the image**. For example, the text "June 26" or "Jul 4" must be visible.
+    *   **If you do not see a written month and day in the image, you MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a strict rule. Do not return a null or empty string for \`workoutDate\`; the field itself must be absent.
+    *   If, and only if, you find a valid month and day, you **MUST** use the year '2025' for the output. This applies even if the image shows a different year. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
+    *   Format any valid date as YYYY-MM-DD.
+
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
     *   Ignore common OCR (Optical Character Recognition) artifacts. For instance:
