@@ -94,58 +94,58 @@ You will be given a list of the user's personal records. Use this data to perfor
 2.  **Handle Weight Units**: If the units for a pair of lifts are different (kg vs. lbs), you MUST convert them to a common unit before calculating the ratio. Use the conversion: 1 kg = 2.20462 lbs.
 
 3.  **Calculate and Format Ratios (CRITICAL):**
-    *   **Universal Rule:** For ALL comparisons, the ratio MUST be calculated as \`(Lift 1 Weight / Lift 2 Weight)\`. "Lift 1" is always the first exercise in the comparison name as defined in step 1 (e.g., for "Horizontal Push vs. Pull", the Push exercise is Lift 1).
-    *   **Universal Formatting:** The \`userRatio\` string MUST ALWAYS be formatted as \`CALCULATED_VALUE : 1\`. The value should be rounded to two decimal places. For example, if Lift 1 is 80kg and Lift 2 is 100kg, the calculated value is 0.8, and the formatted \`userRatio\` is \`0.80 : 1\`.
+    *   **Universal Rule:** For ALL comparisons, the ratio MUST be calculated as (Lift 1 Weight / Lift 2 Weight). "Lift 1" is always the first exercise in the comparison name as defined in step 1 (e.g., for "Horizontal Push vs. Pull", the Push exercise is Lift 1).
+    *   **Universal Formatting:** The 'userRatio' string MUST ALWAYS be formatted as 'CALCULATED_VALUE : 1'. The value should be rounded to two decimal places. For example, if Lift 1 is 80kg and Lift 2 is 100kg, the calculated value is 0.8, and the formatted 'userRatio' is '0.80 : 1'.
 
 4.  **Compare to Ideal Ratios & Assess Severity**:
 
     *   **Horizontal Push vs. Pull** (Push:Pull): Ideal ratio is **1:1**.
-        *   `targetRatio` MUST be `1.00 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
-        *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
-        *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
+        *   'targetRatio' MUST be '1.00 : 1'.
+        *   Severity 'Balanced' if ratio is between 0.90 and 1.10.
+        *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**.
 
     *   **Vertical Pull vs. Push** (Pull:Push): Ideal is for pull to be 1.3x-1.5x stronger than push.
-        *   `targetRatio` MUST be `1.30 - 1.50 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 1.20 and 1.60.
-        *   `Severity 'Moderate'` if ratio is between 1.10 and 1.19, or 1.61 and 1.80.
-        *   `Severity 'Severe'` if ratio is **less than 1.10** or **greater than 1.80**. For example, a Pull:Push ratio of 1.88 MUST be 'Severe'.
+        *   'targetRatio' MUST be '1.30 - 1.50 : 1'.
+        *   Severity 'Balanced' if ratio is between 1.20 and 1.60.
+        *   Severity 'Moderate' if ratio is between 1.10 and 1.19, or 1.61 and 1.80.
+        *   Severity 'Severe' if ratio is **less than 1.10** or **greater than 1.80**. For example, a Pull:Push ratio of 1.88 MUST be 'Severe'.
 
     *   **Quad vs. Hamstring** (Quad:Hamstring): Ideal ratio is **1.5:1**.
-        *   `targetRatio` MUST be `1.50 : 1`.
-        *   `Severity 'Balanced'` if the ratio is between 1.40 and 1.70.
-        *   `Severity 'Moderate'` if the ratio is between 1.20 and 1.39, OR between 1.71 and 2.00.
-        *   `Severity 'Severe'` if the ratio is **less than 1.20** or **greater than 2.00**. For example, a ratio of 2.02 MUST be 'Severe'.
+        *   'targetRatio' MUST be '1.50 : 1'.
+        *   Severity 'Balanced' if the ratio is between 1.40 and 1.70.
+        *   Severity 'Moderate' if the ratio is between 1.20 and 1.39, OR between 1.71 and 2.00.
+        *   Severity 'Severe' if the ratio is **less than 1.20** or **greater than 2.00**. For example, a ratio of 2.02 MUST be 'Severe'.
 
     *   **Adductor vs. Abductor** (Adductor:Abductor): Ideal ratio is **1:1**.
-        *   `targetRatio` MUST be `1.00 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
-        *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
-        *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
+        *   'targetRatio' MUST be '1.00 : 1'.
+        *   Severity 'Balanced' if ratio is between 0.90 and 1.10.
+        *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**.
 
     *   **Reverse Fly vs. Butterfly** (Reverse Fly:Butterfly): Ideal ratio is **1:1**.
-        *   `targetRatio` MUST be `1.00 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
-        *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
-        *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
+        *   'targetRatio' MUST be '1.00 : 1'.
+        *   Severity 'Balanced' if ratio is between 0.90 and 1.10.
+        *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**.
 
     *   **Triceps vs. Biceps** (Tricep:Bicep): Ideal is for triceps to be ~1.5x stronger.
-        *   `targetRatio` MUST be `1.50 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 1.30 and 1.70.
-        *   `Severity 'Moderate'` if ratio is between 1.10 and 1.29 or 1.71 and 2.00.
-        *   `Severity 'Severe'` if ratio is **less than 1.10** or **greater than 2.00**. For example, a Tricep:Bicep ratio of 4.33 MUST be 'Severe'.
+        *   'targetRatio' MUST be '1.50 : 1'.
+        *   Severity 'Balanced' if ratio is between 1.30 and 1.70.
+        *   Severity 'Moderate' if ratio is between 1.10 and 1.29 or 1.71 and 2.00.
+        *   Severity 'Severe' if ratio is **less than 1.10** or **greater than 2.00**. For example, a Tricep:Bicep ratio of 4.33 MUST be 'Severe'.
 
     *   **Back Extension vs. Abdominal Crunch** (Extension:Crunch): Ideal ratio is **1:1**.
-        *   `targetRatio` MUST be `1.00 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
-        *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
-        *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
+        *   'targetRatio' MUST be '1.00 : 1'.
+        *   Severity 'Balanced' if ratio is between 0.90 and 1.10.
+        *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**.
 
     *   **Glute Development** (Hip Thrust:Glutes): Ideal ratio is **1:1**.
-        *   `targetRatio` MUST be `1.00 : 1`.
-        *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
-        *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
-        *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
+        *   'targetRatio' MUST be '1.00 : 1'.
+        *   Severity 'Balanced' if ratio is between 0.90 and 1.10.
+        *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**.
 
 5.  **Generate Output**:
     *   Create a concise, encouraging 'summary' of the overall findings.
