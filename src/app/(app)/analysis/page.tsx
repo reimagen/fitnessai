@@ -19,7 +19,7 @@ const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
     'Reverse Fly vs. Butterfly',
-    'Biceps vs. Triceps',
+    'Biceps vs. Body Weight',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
 ] as const;
@@ -32,7 +32,7 @@ const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Opt
     'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '0.9:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced' },
+    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe' },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -235,7 +235,7 @@ export default function AnalysisPage() {
   };
   
   const clientSideFindings = useMemo<StrengthFinding[]>(() => {
-    if (!personalRecords) {
+    if (!personalRecords || !userProfile) {
       return [];
     }
     const findings: StrengthFinding[] = [];
@@ -243,7 +243,22 @@ export default function AnalysisPage() {
     IMBALANCE_TYPES.forEach(type => {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(personalRecords, config.lift1Options);
-        const lift2 = findBestPr(personalRecords, config.lift2Options);
+
+        let lift2: PersonalRecord | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; } | null;
+        
+        if (type === 'Biceps vs. Body Weight') {
+            if (!userProfile.weightValue || !userProfile.weightUnit) {
+                lift2 = null;
+            } else {
+                lift2 = {
+                    exerciseName: 'Body Weight',
+                    weight: userProfile.weightValue,
+                    weightUnit: userProfile.weightUnit,
+                };
+            }
+        } else {
+            lift2 = findBestPr(personalRecords, config.lift2Options);
+        }
 
         if (!lift1 || !lift2) {
             // Push a "No Data" finding
@@ -277,7 +292,7 @@ export default function AnalysisPage() {
                 weakerLiftName = lift1.exerciseName;
                 const goalWeightKg = lift2WeightKg * targetRatioValue;
                 goalWeight = Math.round(lift1.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
-            } else {
+            } else if (type !== 'Biceps vs. Body Weight') {
                 weakerLiftName = lift2.exerciseName;
                 const goalWeightKg = lift1WeightKg / targetRatioValue;
                 goalWeight = Math.round(lift2.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
@@ -303,7 +318,7 @@ export default function AnalysisPage() {
     });
 
     return findings;
-  }, [personalRecords]);
+  }, [personalRecords, userProfile]);
 
 
   const filteredData = useMemo(() => {
@@ -523,13 +538,18 @@ export default function AnalysisPage() {
                                       )
                                     } else {
                                         const config = IMBALANCE_CONFIG[type];
+                                        let requirements = `Requires: ${config.lift1Options.join(' or ')} & ${config.lift2Options.join(' or ')}`;
+                                        if (type === 'Biceps vs. Body Weight') {
+                                            requirements = `Requires: ${config.lift1Options.join(' or ')} & Body Weight set in profile`;
+                                        }
+
                                         return (
                                             <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                                 <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
                                                 <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
                                                     <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
                                                     <p className="text-sm font-semibold">Log PRs to analyze</p>
-                                                    <p className="text-xs mt-1">Requires: {config.lift1Options.join(' or ')} & {config.lift2Options.join(' or ')}</p>
+                                                    <p className="text-xs mt-1">{requirements}</p>
                                                 </div>
                                             </Card>
                                         )
