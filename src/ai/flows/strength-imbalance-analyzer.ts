@@ -206,9 +206,9 @@ const strengthImbalanceFlow = ai.defineFlow(
                 // We compare Bicep (lift1) to Tricep (lift2), so Bicep/Tricep
                 if (lift2WeightKg === 0) continue; // Divisor cannot be zero
                 ratio = lift1WeightKg / lift2WeightKg;
-                targetRatio = '0.67 : 1'; // Biceps should be ~2/3 of Triceps
-                if (ratio > 0.9 || ratio < 0.5) severity = 'Severe';
-                else if (ratio > 0.77 || ratio < 0.59) severity = 'Moderate';
+                targetRatio = '0.45 : 1'; // Biceps should be ~45% of Triceps
+                if (ratio > 0.60 || ratio < 0.30) severity = 'Severe';
+                else if (ratio > 0.52 || ratio < 0.38) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
                 recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
