@@ -33,7 +33,16 @@ export async function generateWeeklyWorkoutPlanAction(
     return { success: true, data: planOutput };
   } catch (error) {
     console.error("Error generating weekly workout plan:", error);
-    const userFriendlyError = error instanceof Error ? error.message : "An unknown error occurred while generating the plan.";
+    let userFriendlyError = "An unknown error occurred while generating the plan.";
+    if (error instanceof Error) {
+        if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
+            userFriendlyError = "Plan generation failed: The request quota for the AI has been exceeded. Please try again later.";
+        } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
+            userFriendlyError = "Plan generation failed: The AI model is temporarily unavailable. Please try again in a few moments.";
+        } else {
+            userFriendlyError = error.message;
+        }
+    }
     return { success: false, error: userFriendlyError };
   }
 }

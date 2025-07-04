@@ -21,7 +21,16 @@ export async function parsePersonalRecordsAction(
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing personal records screenshot:", error);
-    const userFriendlyError = error instanceof Error ? `Failed to parse screenshot: ${error.message}` : "An unknown error occurred while parsing the screenshot.";
+    let userFriendlyError = "An unknown error occurred while parsing the screenshot.";
+    if (error instanceof Error) {
+        if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
+            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later.";
+        } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
+            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments.";
+        } else {
+            userFriendlyError = `Failed to parse screenshot: ${error.message}`;
+        }
+    }
     return { success: false, error: userFriendlyError };
   }
 }
