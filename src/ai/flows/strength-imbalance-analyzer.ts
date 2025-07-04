@@ -36,7 +36,7 @@ const IMBALANCE_TYPES = [
 ] as const;
 
 const ImbalanceFindingSchema = z.object({
-    imbalanceType: z.enum(IMBALANCET_YPES).describe("The type of strength imbalance. Must be one of the predefined types."),
+    imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of strength imbalance. Must be one of the predefined types."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
     lift1Weight: z.number().describe("The weight of the first exercise PR."),
     lift1Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the first exercise."),
@@ -225,5 +225,3 @@ const strengthImbalanceFlow = ai.defineFlow(
     return { summary, findings };
   }
 );
-
-    
