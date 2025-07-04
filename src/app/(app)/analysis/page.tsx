@@ -29,14 +29,14 @@ const IMBALANCE_TYPES = [
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['Bench Press', 'Chest Press'], lift2Options: ['Barbell Row', 'Seated Row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['Overhead Press', 'Shoulder Press'], lift2Options: ['Lat Pulldown', 'Pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.85) ? 'Severe' : (r < 0.67 || r > 0.77) ? 'Moderate' : 'Balanced' },
-    'Reverse Fly vs. Butterfly': { lift1Options: ['Reverse Fly', 'Reverse Flys'], lift2Options: ['Butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Biceps vs. Triceps': { lift1Options: ['Bicep Curl'], lift2Options: ['Tricep Extension', 'Triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced' },
-    'Quad vs. Hamstring': { lift1Options: ['Leg Extension', 'Squat'], lift2Options: ['Leg Curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced' },
-    'Adductor vs. Abductor': { lift1Options: ['Adductor'], lift2Options: ['Abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Back Extension vs. Abdominal Crunch': { lift1Options: ['Back Extension'], lift2Options: ['Abdominal Crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Glute Development': { lift1Options: ['Hip Thrust'], lift2Options: ['Glutes'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.85) ? 'Severe' : (r < 0.67 || r > 0.77) ? 'Moderate' : 'Balanced' },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced' },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced' },
+    'Back Extension vs. Abdominal Crunch': { lift1Options: ['back extension'], lift2Options: ['abdominal crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Glute Development': { lift1Options: ['hip thrust'], lift2Options: ['glutes'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -155,6 +155,7 @@ export default function AnalysisPage() {
     }
 
     setIsAnalysisLoading(true);
+    setAnalysisResult(null); // Clear previous AI results
 
     const prsForAnalysis = personalRecords.map(pr => ({
       ...pr,
@@ -186,17 +187,17 @@ export default function AnalysisPage() {
     }
     const findings: StrengthFinding[] = [];
 
-    for (const type of IMBALANCE_TYPES) {
+    IMBALANCE_TYPES.forEach(type => {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(personalRecords, config.lift1Options);
         const lift2 = findBestPr(personalRecords, config.lift2Options);
 
-        if (!lift1 || !lift2) continue;
+        if (!lift1 || !lift2) return;
 
         const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
         const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
 
-        if (lift2WeightKg === 0) continue;
+        if (lift2WeightKg === 0) return;
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         const severity = config.severityCheck(ratio);
@@ -215,9 +216,9 @@ export default function AnalysisPage() {
             insight: "", // Will be populated by AI later
             recommendation: "", // Will be populated by AI later
         });
-    }
-    return findings;
+    });
 
+    return findings;
   }, [personalRecords]);
 
 
@@ -352,9 +353,9 @@ export default function AnalysisPage() {
         <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
       </header>
       <div className="mb-6"><Select value={timeRange} onValueChange={setTimeRange}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select time range" /></SelectTrigger><SelectContent><SelectItem value="weekly">This Week</SelectItem><SelectItem value="monthly">This Month</SelectItem><SelectItem value="yearly">This Year</SelectItem><SelectItem value="all-time">All Time</SelectItem></SelectContent></Select></div>
-      {isLoading ? <Card className="shadow-lg mb-6 bg-white h-40 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>
+      {isLoading ? <Card className="shadow-lg mb-6 h-40 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>
       : chartData.periodSummary && (
-        <Card className="shadow-lg mb-6 bg-white"><CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><TrendingUp className="h-6 w-6 text-primary" />{chartData.periodSummary.periodLabel}</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">{Object.entries({"Workout Days": chartData.periodSummary.workoutDays, "Weight Lifted (lbs)": chartData.periodSummary.totalWeightLiftedLbs.toLocaleString(), "Distance (mi)": chartData.periodSummary.totalDistanceMi, "Cardio Duration": formatCardioDuration(chartData.periodSummary.totalCardioDurationMin), "Calories Burned": chartData.periodSummary.totalCaloriesBurned.toLocaleString()}).map(([label, value]) => <div key={label}><p className="text-3xl font-bold text-accent">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}</CardContent></Card>
+        <Card className="shadow-lg mb-6"><CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><TrendingUp className="h-6 w-6 text-primary" />{chartData.periodSummary.periodLabel}</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">{Object.entries({"Workout Days": chartData.periodSummary.workoutDays, "Weight Lifted (lbs)": chartData.periodSummary.totalWeightLiftedLbs.toLocaleString(), "Distance (mi)": chartData.periodSummary.totalDistanceMi, "Cardio Duration": formatCardioDuration(chartData.periodSummary.totalCardioDurationMin), "Calories Burned": chartData.periodSummary.totalCaloriesBurned.toLocaleString()}).map(([label, value]) => <div key={label}><p className="text-3xl font-bold text-accent">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}</CardContent></Card>
       )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
@@ -446,4 +447,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
