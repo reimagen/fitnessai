@@ -89,6 +89,8 @@ Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
   },
 });
 
+const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
+
 const weeklyWorkoutPlannerFlow = ai.defineFlow(
   {
     name: 'weeklyWorkoutPlannerFlow',
@@ -96,7 +98,22 @@ const weeklyWorkoutPlannerFlow = ai.defineFlow(
     outputSchema: WeeklyWorkoutPlanOutputSchema,
   },
   async (input) => {
-    const {output} = await weeklyWorkoutPlannerPrompt(input);
+    let result;
+    try {
+      // Try with the default flash model first
+      result = await weeklyWorkoutPlannerPrompt(input);
+    } catch (e: any) {
+      // If it fails with a 503-style error, try the pro model as a fallback
+      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
+        result = await weeklyWorkoutPlannerPrompt(input, { model: FALLBACK_MODEL });
+      } else {
+        // Re-throw other errors
+        throw e;
+      }
+    }
+    
+    const {output} = result;
     if (!output?.weeklyPlan) {
       throw new Error('AI failed to generate a weekly workout plan string.');
     }

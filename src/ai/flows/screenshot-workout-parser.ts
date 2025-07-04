@@ -129,6 +129,8 @@ Here is the screenshot:
   },
 });
 
+const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
+
 const parseWorkoutScreenshotFlow = ai.defineFlow(
   {
     name: 'parseWorkoutScreenshotFlow',
@@ -136,7 +138,22 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     outputSchema: ParseWorkoutScreenshotOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    let result;
+    try {
+      // Try with the default flash model first
+      result = await prompt(input);
+    } catch (e: any) {
+      // If it fails with a 503-style error, try the pro model as a fallback
+      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
+        result = await prompt(input, { model: FALLBACK_MODEL });
+      } else {
+        // Re-throw other errors
+        throw e;
+      }
+    }
+    const {output} = result;
+
     if (output && output.exercises) {
       const strengthCategories = ['Lower Body', 'Upper Body', 'Full Body', 'Core'];
       const modifiedExercises = output.exercises.map(ex => {
@@ -214,6 +231,9 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         exercises: modifiedExercises,
       };
     }
-    return output!;
+    if (!output) {
+      throw new Error("AI failed to generate a response.");
+    }
+    return output;
   }
 );

@@ -80,6 +80,8 @@ Here is the screenshot to parse:
 `,
 });
 
+const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
+
 const parsePersonalRecordsFlow = ai.defineFlow(
   {
     name: 'parsePersonalRecordsFlow',
@@ -87,7 +89,22 @@ const parsePersonalRecordsFlow = ai.defineFlow(
     outputSchema: ParsePersonalRecordsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    let result;
+    try {
+      // Try with the default flash model first
+      result = await prompt(input);
+    } catch (e: any) {
+      // If it fails with a 503-style error, try the pro model as a fallback
+      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
+        result = await prompt(input, { model: FALLBACK_MODEL });
+      } else {
+        // Re-throw other errors
+        throw e;
+      }
+    }
+    const {output} = result;
+
     if (output && output.records) {
         // Post-processing to clean up names if needed, similar to workout parser
         const cleanedRecords = output.records.map(record => ({
@@ -98,6 +115,9 @@ const parsePersonalRecordsFlow = ai.defineFlow(
         }));
         return { records: cleanedRecords };
     }
-    return output!;
+    if (!output) {
+      throw new Error("AI failed to generate a response.");
+    }
+    return output;
   }
 );

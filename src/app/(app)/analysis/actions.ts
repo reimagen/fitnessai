@@ -42,15 +42,7 @@ export async function analyzeStrengthImbalancesAction(
     return { success: true, data: analysisOutput };
   } catch (error) {
     console.error("Error analyzing strength imbalances:", error);
-    let userFriendlyError = "An unknown error occurred during analysis.";
-    if (error instanceof Error) {
-        if (error.message.includes("503") || error.message.toLowerCase().includes("overloaded")) {
-            userFriendlyError = "The AI model is temporarily unavailable. Please try again in a few moments.";
-        } else {
-            // Keep the original error message for other types of errors
-            userFriendlyError = error.message;
-        }
-    }
+    const userFriendlyError = error instanceof Error ? error.message : "An unknown error occurred during analysis.";
     return { success: false, error: userFriendlyError };
   }
 }

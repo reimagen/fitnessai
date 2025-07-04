@@ -21,14 +21,7 @@ export async function parsePersonalRecordsAction(
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing personal records screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing the screenshot.";
-    if (error instanceof Error) {
-        if (error.message.includes("503") || error.message.toLowerCase().includes("overloaded")) {
-            userFriendlyError = "The AI model is temporarily unavailable. Please try again in a few moments.";
-        } else {
-            userFriendlyError = `Failed to parse screenshot: ${error.message}`;
-        }
-    }
+    const userFriendlyError = error instanceof Error ? `Failed to parse screenshot: ${error.message}` : "An unknown error occurred while parsing the screenshot.";
     return { success: false, error: userFriendlyError };
   }
 }
