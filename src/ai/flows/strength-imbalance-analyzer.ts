@@ -146,7 +146,7 @@ const strengthImbalanceFlow = ai.defineFlow(
 
     const { output: matchedPairsOutput } = result;
     if (!matchedPairsOutput || !matchedPairsOutput.pairs) {
-        return { summary: "Could not analyze strength. The AI failed to find opposing lift pairs.", findings: [] };
+        throw new Error("Could not analyze strength. The AI failed to find opposing lift pairs.");
     }
 
     const findings: ImbalanceFinding[] = [];
@@ -181,11 +181,11 @@ const strengthImbalanceFlow = ai.defineFlow(
                 // We compare Push (lift1) to Pull (lift2), so Push/Pull
                 if (lift2WeightKg === 0) continue; // Divisor cannot be zero
                 ratio = lift1WeightKg / lift2WeightKg;
-                targetRatio = '0.67 - 0.77 : 1'; // Ideal Push:Pull is ~2:3
+                targetRatio = '0.67 - 0.77 : 1'; 
                 if (ratio < 0.60 || ratio > 0.85) severity = 'Severe';
                 else if (ratio < 0.67 || ratio > 0.77) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "An imbalance between your overhead pressing and pulling can affect shoulder health and stability. Your vertical press should ideally be 2/3 of your vertical pull.";
+                insight = "An imbalance between your overhead pressing and pulling can affect shoulder health and stability. Your vertical press should ideally be around 2/3 of your vertical pull.";
                 recommendation = "Ensure you are training both vertical pulling (like lat pulldowns) and vertical pressing (like overhead press) with appropriate intensity to achieve a better balance.";
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
@@ -206,9 +206,9 @@ const strengthImbalanceFlow = ai.defineFlow(
                 // We compare Bicep (lift1) to Tricep (lift2), so Bicep/Tricep
                 if (lift2WeightKg === 0) continue; // Divisor cannot be zero
                 ratio = lift1WeightKg / lift2WeightKg;
-                targetRatio = '0.45 : 1'; // Biceps should be ~45% of Triceps
-                if (ratio > 0.60 || ratio < 0.30) severity = 'Severe';
-                else if (ratio > 0.52 || ratio < 0.38) severity = 'Moderate';
+                targetRatio = '0.40 : 1';
+                if (ratio < 0.28 || ratio > 0.52) severity = 'Severe';
+                else if (ratio < 0.34 || ratio > 0.46) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
                 recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
