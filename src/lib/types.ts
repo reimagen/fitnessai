@@ -63,6 +63,24 @@ export interface PersonalRecord {
   category?: ExerciseCategory;
 }
 
+export interface StrengthImbalanceOutput {
+  summary: string;
+  findings: {
+      imbalanceType: string;
+      lift1Name: string;
+      lift1Weight: number;
+      lift1Unit: "kg" | "lbs";
+      lift2Name: string;
+      lift2Weight: number;
+      lift2Unit: "kg" | "lbs";
+      userRatio: string;
+      targetRatio: string;
+      severity: "Balanced" | "Moderate" | "Severe";
+      insight: string;
+      recommendation: string;
+  }[];
+}
+
 export interface AggregatedWorkoutDaySummary {
   date: Date;
   totalExercises: number;
