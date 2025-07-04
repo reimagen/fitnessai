@@ -25,7 +25,7 @@ const StrengthImbalanceInputSchema = z.object({
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
 const ImbalanceFindingSchema = z.object({
-    imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push/Pull', 'Vertical Pull vs. Push', 'Quad to Hamstring Ratio', 'Adductor vs. Abductor', 'Reverse Fly vs. Butterfly', 'Triceps vs. Biceps', 'Back Extension vs. Abdominal Crunch'."),
+    imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push vs. Pull', 'Vertical Pull vs. Push', 'Quad vs. Hamstring', 'Adductor vs. Abductor', 'Reverse Fly vs. Butterfly', 'Triceps vs. Biceps', 'Back Extension vs. Abdominal Crunch', 'Glute Development'."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
     lift1Weight: z.number().describe("The weight of the first exercise PR."),
     lift1Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the first exercise."),
@@ -73,7 +73,7 @@ You will be given a list of the user's personal records. Use this data to perfor
 1.  **Identify Opposing Lift Pairs**: Scan the records to find pairs of exercises that work opposing muscle groups. The primary pairs to look for are:
     *   **Horizontal Push vs. Pull**: Compare a primary horizontal press (e.g., 'Bench Press', 'Chest Press') with a primary horizontal row (e.g., 'Barbell Row', 'Seated Row', 'Cable Row'). The Push exercise is Lift 1.
     *   **Vertical Pull vs. Push**: Compare a primary vertical pull (e.g., 'Lat Pulldown', 'Pull-ups', 'Chin-ups') with a primary vertical press (e.g., 'Overhead Press', 'Shoulder Press'). **The Pull exercise is Lift 1.**
-    *   **Quad vs. Hamstring Dominance**: Compare a primary quad exercise (e.g., 'Leg Extension', 'Squat') with a primary hamstring exercise (e.g., 'Leg Curl', 'Romanian Deadlift'). The Quad exercise is Lift 1.
+    *   **Quad vs. Hamstring**: Compare a primary quad exercise (e.g., 'Leg Extension', 'Squat') with a primary hamstring exercise (e.g., 'Leg Curl', 'Romanian Deadlift'). The Quad exercise is Lift 1.
     *   **Adductor vs. Abductor**: Compare an inner thigh exercise (e.g., 'Adductor') with an outer thigh exercise (e.g., 'Abductor'). The Adductor exercise is Lift 1.
     *   **Reverse Fly vs. Butterfly**: Compare 'Reverse Fly' with 'Butterfly'. **Reverse Fly is Lift 1.**
     *   **Triceps vs. Biceps**: Compare a primary tricep extension/press exercise with a primary bicep curl exercise. **The Tricep exercise is Lift 1.**
@@ -130,7 +130,7 @@ You will be given a list of the user's personal records. Use this data to perfor
         *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
         *   `Severity 'Severe'` if ratio is **less than 0.75** or **greater than 1.25**.
 
-    *   **Glute Development (Hip Thrust/Glutes machine)** (Hip Thrust:Glutes): Ideal ratio is **1:1**.
+    *   **Glute Development** (Hip Thrust:Glutes): Ideal ratio is **1:1**.
         *   `targetRatio` MUST be `1.00 : 1`.
         *   `Severity 'Balanced'` if ratio is between 0.90 and 1.10.
         *   `Severity 'Moderate'` if ratio is between 0.75 and 0.89, or 1.11 and 1.25.
