@@ -33,7 +33,14 @@ export async function generateWeeklyWorkoutPlanAction(
     return { success: true, data: planOutput };
   } catch (error) {
     console.error("Error generating weekly workout plan:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred while generating the plan.";
-    return { success: false, error: errorMessage };
+    let userFriendlyError = "An unknown error occurred while generating the plan.";
+    if (error instanceof Error) {
+        if (error.message.includes("503") || error.message.toLowerCase().includes("overloaded")) {
+            userFriendlyError = "The AI model is temporarily unavailable. Please try again in a few moments.";
+        } else {
+            userFriendlyError = error.message;
+        }
+    }
+    return { success: false, error: userFriendlyError };
   }
 }

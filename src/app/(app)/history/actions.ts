@@ -23,8 +23,14 @@ export async function parseWorkoutScreenshotAction(
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing workout screenshot:", error);
-    // Check if error is an instance of Error to access message property
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-    return { success: false, error: `Failed to parse screenshot: ${errorMessage}` };
+    let userFriendlyError = "An unknown error occurred while parsing the screenshot.";
+    if (error instanceof Error) {
+        if (error.message.includes("503") || error.message.toLowerCase().includes("overloaded")) {
+            userFriendlyError = "The AI model is temporarily unavailable. Please try again in a few moments.";
+        } else {
+            userFriendlyError = `Failed to parse screenshot: ${error.message}`;
+        }
+    }
+    return { success: false, error: userFriendlyError };
   }
 }
