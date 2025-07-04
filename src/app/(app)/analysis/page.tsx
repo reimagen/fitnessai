@@ -10,10 +10,46 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
+
+const IMBALANCE_TYPES = [
+    'Horizontal Push vs. Pull',
+    'Vertical Push vs. Pull',
+    'Quad vs. Hamstring',
+    'Adductor vs. Abductor',
+    'Reverse Fly vs. Butterfly',
+    'Biceps vs. Triceps',
+    'Back Extension vs. Abdominal Crunch',
+    'Glute Development',
+] as const;
+
+type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
+
+const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
+    'Horizontal Push vs. Pull': { lift1Options: ['Bench Press', 'Chest Press'], lift2Options: ['Barbell Row', 'Seated Row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['Overhead Press', 'Shoulder Press'], lift2Options: ['Lat Pulldown', 'Pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.85) ? 'Severe' : (r < 0.67 || r > 0.77) ? 'Moderate' : 'Balanced' },
+    'Quad vs. Hamstring': { lift1Options: ['Leg Extension', 'Squat'], lift2Options: ['Leg Curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced' },
+    'Adductor vs. Abductor': { lift1Options: ['Adductor'], lift2Options: ['Abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['Reverse Fly'], lift2Options: ['Butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Biceps vs. Triceps': { lift1Options: ['Bicep Curl'], lift2Options: ['Tricep Extension'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Back Extension vs. Abdominal Crunch': { lift1Options: ['Back Extension'], lift2Options: ['Abdominal Crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Glute Development': { lift1Options: ['Hip Thrust'], lift2Options: ['Glutes'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+};
+
+// Helper to find the best PR for a given list of exercises
+function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
+    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.toLowerCase() === name.toLowerCase()));
+    if (relevantRecords.length === 0) return null;
+
+    return relevantRecords.reduce((best, current) => {
+        const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
+        const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
+        return currentWeightKg > bestWeightKg ? current : best;
+    });
+}
 
 
 const chartConfig = {
@@ -97,6 +133,8 @@ const RoundedBar = (props: any) => {
   return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
 };
 
+type StrengthFinding = StrengthImbalanceOutput['findings'][0];
+
 export default function AnalysisPage() {
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('weekly');
@@ -132,7 +170,7 @@ export default function AnalysisPage() {
         description: result.data.summary,
       });
     } else {
-      setAnalysisResult({ summary: result.error || "Failed to get analysis.", findings: [] });
+      setAnalysisResult(null); // Clear previous results on failure
       toast({
         title: "Analysis Failed",
         description: result.error || "An unknown error occurred.",
@@ -141,6 +179,47 @@ export default function AnalysisPage() {
     }
     setIsAnalysisLoading(false);
   };
+  
+  const clientSideFindings = useMemo<StrengthFinding[]>(() => {
+    if (!personalRecords || personalRecords.length < 2) {
+      return [];
+    }
+    const findings: StrengthFinding[] = [];
+
+    for (const type of IMBALANCE_TYPES) {
+        const config = IMBALANCE_CONFIG[type];
+        const lift1 = findBestPr(personalRecords, config.lift1Options);
+        const lift2 = findBestPr(personalRecords, config.lift2Options);
+
+        if (!lift1 || !lift2) continue;
+
+        const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
+        const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
+
+        if (lift2WeightKg === 0) continue;
+
+        const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
+        const severity = config.severityCheck(ratio);
+
+        findings.push({
+            imbalanceType: type,
+            lift1Name: lift1.exerciseName,
+            lift1Weight: lift1.weight,
+            lift1Unit: lift1.weightUnit,
+            lift2Name: lift2.exerciseName,
+            lift2Weight: lift2.weight,
+            lift2Unit: lift2.weightUnit,
+            userRatio: `${ratio.toFixed(2)}:1`,
+            targetRatio: config.targetRatioDisplay,
+            severity: severity,
+            insight: "", // Will be populated by AI later
+            recommendation: "", // Will be populated by AI later
+        });
+    }
+    return findings;
+
+  }, [personalRecords]);
+
 
   const filteredData = useMemo(() => {
     const today = new Date();
@@ -150,7 +229,7 @@ export default function AnalysisPage() {
     if (timeRange !== 'all-time') {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
-      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
+      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: new Date() };
       else interval = { start: startOfYear(today), end: endOfYear(today) };
       logsForPeriod = (workoutLogs || []).filter(log => isWithinInterval(log.date, interval));
       prsForPeriod = (personalRecords || []).filter(pr => isWithinInterval(pr.date, interval));
@@ -288,53 +367,58 @@ export default function AnalysisPage() {
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center justify-between">
                         <span className="flex items-center gap-2"><Scale className="h-6 w-6 text-primary" />Strength Balance Analysis</span>
-                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoadingPrs}>
+                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoadingPrs || clientSideFindings.length === 0}>
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                            {analysisResult ? "Re-analyze" : "Analyze Strength"}
+                            {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
                     </CardTitle>
-                    <CardDescription>Get AI-powered insights into your strength ratios based on your Personal Records.</CardDescription>
+                    <CardDescription>Review your strength ratios. Click for AI-powered insights on imbalances.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                    {isAnalysisLoading ? (
-                        <div className="flex flex-col items-center justify-center p-8">
-                            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                            <p className="mt-4 text-muted-foreground">AI is analyzing your records...</p>
-                        </div>
-                    ) : !analysisResult ? (
-                        <div className="text-center text-muted-foreground p-4">
-                            <p>Click the "Analyze Strength" button to get your AI-powered analysis.</p>
+                    {clientSideFindings.length === 0 ? (
+                         <div className="text-center text-muted-foreground p-4">
+                           <p>Log at least two opposing Personal Records (e.g., Bench Press and a Row) to see your strength ratios here.</p>
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                            <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
-                            {analysisResult.findings.length > 0 ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {analysisResult.findings.map((finding, index) => (
-                                        <Card key={index} className="p-4 bg-secondary/50">
-                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
-                                                <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
-                                                <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
-                                                <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
-                                            </div>
+                            {analysisResult?.summary && (
+                                <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {clientSideFindings.map((finding, index) => {
+                                    const aiFinding = analysisResult?.findings.find(f => f.imbalanceType === finding.imbalanceType);
+                                    return (
+                                    <Card key={index} className="p-4 bg-secondary/50">
+                                        <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
+                                        <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
+                                            <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
+                                            <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
+                                            <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
+                                            <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
+                                        </div>
+                                        {isAnalysisLoading && finding.severity !== 'Balanced' ? (
+                                             <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
+                                             </div>
+                                        ) : aiFinding && finding.severity !== 'Balanced' ? (
+                                           <>
                                             <div className="mt-3 pt-3 border-t">
                                                 <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{finding.insight}</p>
+                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
                                             </div>
                                             <div className="mt-2">
                                                 <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{finding.recommendation}</p>
+                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
                                             </div>
-                                        </Card>
-                                    ))}
-                                </div>
-                            ) : (
-                               <div className="text-center text-muted-foreground p-4">
-                                  <p>No significant imbalances found, or not enough opposing PRs logged to compare.</p>
-                               </div>
-                            )}
+                                           </>
+                                        ) : finding.severity !== 'Balanced' ? (
+                                             <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
+                                                <p>This ratio appears imbalanced. Click "Get AI Insights" for analysis.</p>
+                                            </div>
+                                        ) : null}
+                                    </Card>
+                                )})}
+                            </div>
                         </div>
                     )}
                 </CardContent>
@@ -345,3 +429,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
