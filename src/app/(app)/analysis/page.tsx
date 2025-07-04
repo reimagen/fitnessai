@@ -30,7 +30,7 @@ type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75 || r < 0.5) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r > 0.75) return 'Severe'; if (r > 0.7 || r < 0.6) return 'Moderate'; return 'Balanced'; } },
     'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43) ? 'Severe' : (r > 1.33) ? 'Moderate' : 'Balanced' },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
@@ -217,7 +217,7 @@ export default function AnalysisPage() {
         const severity = config.severityCheck(ratio);
 
         const [targetRatioNum1, targetRatioNum2] = config.targetRatioDisplay.split(':').map(Number);
-        const targetRatioValue = targetRatio2 === 0 ? targetRatioNum1 : targetRatioNum1 / targetRatioNum2;
+        const targetRatioValue = targetRatioNum2 === 0 ? targetRatioNum1 : targetRatioNum1 / targetRatioNum2;
 
         let goalWeight: number | null = null;
         let weakerLiftName: string | null = null;
