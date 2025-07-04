@@ -30,7 +30,7 @@ const IMBALANCE_TYPES = [
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
     'Reverse Fly vs. Butterfly',
-    'Triceps vs. Biceps',
+    'Biceps vs. Triceps',
     'Back Extension vs. Abdominal Crunch',
     'Glute Development',
 ] as const;
@@ -92,7 +92,7 @@ You will be given a list of the user's personal records. Your ONLY job is to fin
     *   'Quad vs. Hamstring': Lift 1 is a Quad exercise (e.g., 'Leg Extension', 'Squat'). Lift 2 is a Hamstring exercise (e.g., 'Leg Curl').
     *   'Adductor vs. Abductor': Lift 1 is 'Adductor'. Lift 2 is 'Abductor'.
     *   'Reverse Fly vs. Butterfly': Lift 1 is 'Reverse Fly'. Lift 2 is 'Butterfly'.
-    *   'Triceps vs. Biceps': Lift 1 is a tricep exercise (e.g., 'Seated Dip', Tricep extension). Lift 2 is a bicep exercise (e.g., bicep curl).
+    *   'Biceps vs. Triceps': Lift 1 is a bicep exercise (e.g., bicep curl). Lift 2 is a tricep exercise (e.g., 'Seated Dip', Tricep extension).
     *   'Back Extension vs. Abdominal Crunch': Lift 1 is 'Back Extension'. Lift 2 is 'Abdominal Crunch'.
     *   'Glute Development': Lift 1 is 'Hip Thrust'. Lift 2 is 'Glutes' (machine).
 3.  **Output Format**: Return a list of all the valid pairs you find. For each pair, provide the 'comparisonType', and the full details for 'lift1' and 'lift2'.
@@ -190,10 +190,11 @@ const strengthImbalanceFlow = ai.defineFlow(
                 recommendation = "Isolate and strengthen the lagging muscle group to create better muscular balance around the joint.";
                 break;
 
-            case 'Triceps vs. Biceps':
-                targetRatio = '1.50 : 1';
-                if (ratio < 1.1 || ratio > 2.0) severity = 'Severe';
-                else if (ratio < 1.3 || ratio > 1.7) severity = 'Moderate';
+            case 'Biceps vs. Triceps':
+                targetRatio = '0.67 : 1'; // Biceps:Triceps target is ~1:1.5, so 0.67:1
+                // The ratio is bicep/tricep. It should be ~0.67
+                if (ratio > 0.9 || ratio < 0.5) severity = 'Severe';
+                else if (ratio > 0.77 || ratio < 0.59) severity = 'Moderate';
                 else severity = 'Balanced';
                 insight = "Imbalance between biceps and triceps can affect elbow stability and overall pressing and pulling performance.";
                 recommendation = "Ensure you are dedicating sufficient volume to both bicep curls and tricep extension movements.";
