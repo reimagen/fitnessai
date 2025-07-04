@@ -44,7 +44,7 @@ const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
     'Reverse Fly vs. Butterfly',
-    'Biceps vs. Triceps',
+    'Biceps vs. Body Weight',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
 ] as const;
@@ -75,7 +75,7 @@ const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options:
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r >= 0.75) return 'Severe'; if (r < 0.6 || r > 0.7) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '0.9:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
-    'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your bicep strength (${l1Name}) is weaker than your tricep strength (${l2Name}).` : `Your tricep strength (${l2Name}) is weaker than your bicep strength (${l1Name}).` },
+    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => `Your bicep strength (${l1Name}) is below the target relative to your ${l2Name}.` },
     'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
 };
@@ -85,9 +85,9 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
       ...input,
       personalRecords: input.personalRecords.filter(pr => pr.weight > 0),
   };
-  if (filteredInput.personalRecords.length < 2) {
+  if (filteredInput.personalRecords.length < 1) { // Changed to 1 for bodyweight comparison
       return {
-          summary: "Not enough data for AI analysis. Please log at least two opposing personal records with weights.",
+          summary: "Not enough data for AI analysis. Please log at least one personal record with weight.",
           findings: [],
       };
   }
@@ -191,7 +191,23 @@ const strengthImbalanceFlow = ai.defineFlow(
     for (const type of IMBALANCE_TYPES) {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(input.personalRecords, config.lift1Options);
-        const lift2 = findBestPr(input.personalRecords, config.lift2Options);
+        
+        let lift2: z.infer<typeof PersonalRecordForAnalysisSchema> | null;
+
+        if (type === 'Biceps vs. Body Weight') {
+            if (!input.userProfile.weightValue || !input.userProfile.weightUnit) {
+                continue; // Cannot perform analysis without body weight
+            }
+            lift2 = {
+                exerciseName: 'Body Weight',
+                weight: input.userProfile.weightValue,
+                weightUnit: input.userProfile.weightUnit,
+                date: new Date().toISOString(), // Dummy date
+                category: 'User Stat'
+            };
+        } else {
+            lift2 = findBestPr(input.personalRecords, config.lift2Options);
+        }
 
         if (!lift1 || !lift2) continue;
 
