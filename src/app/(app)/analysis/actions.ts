@@ -42,7 +42,16 @@ export async function analyzeStrengthImbalancesAction(
     return { success: true, data: analysisOutput };
   } catch (error) {
     console.error("Error analyzing strength imbalances:", error);
-    const userFriendlyError = error instanceof Error ? error.message : "An unknown error occurred during analysis.";
+    let userFriendlyError = "An unknown error occurred during analysis.";
+    if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
+        userFriendlyError = "Analysis failed: The request quota for the AI has been exceeded. Please try again later.";
+      } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
+        userFriendlyError = "Analysis failed: The AI model is temporarily unavailable. Please try again in a few moments.";
+      } else {
+        userFriendlyError = error.message;
+      }
+    }
     return { success: false, error: userFriendlyError };
   }
 }
