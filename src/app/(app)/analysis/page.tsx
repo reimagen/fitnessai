@@ -375,9 +375,9 @@ export default function AnalysisPage() {
                     <CardDescription>Review your strength ratios. Click for AI-powered insights on imbalances.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                    {clientSideFindings.length === 0 ? (
-                         <div className="text-center text-muted-foreground p-4">
-                           <p>Log at least two opposing Personal Records (e.g., Bench Press and a Row) to see your strength ratios here.</p>
+                    {isLoadingPrs ? (
+                        <div className="text-center text-muted-foreground p-4">
+                           <Loader2 className="h-6 w-6 animate-spin mx-auto"/>
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
@@ -385,39 +385,56 @@ export default function AnalysisPage() {
                                 <p className="text-center text-muted-foreground italic text-sm">{analysisResult.summary}</p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {clientSideFindings.map((finding, index) => {
-                                    const aiFinding = analysisResult?.findings.find(f => f.imbalanceType === finding.imbalanceType);
-                                    return (
-                                    <Card key={index} className="p-4 bg-secondary/50">
-                                        <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
-                                        <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
-                                            <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
-                                            <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
-                                            <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
-                                            <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
-                                        </div>
-                                        {isAnalysisLoading && finding.severity !== 'Balanced' ? (
-                                             <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
-                                             </div>
-                                        ) : aiFinding && finding.severity !== 'Balanced' ? (
-                                           <>
-                                            <div className="mt-3 pt-3 border-t">
-                                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
+                                {IMBALANCE_TYPES.map((type, index) => {
+                                    const finding = clientSideFindings.find(f => f.imbalanceType === type);
+                                    const aiFinding = finding ? analysisResult?.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
+                                    
+                                    if (finding) {
+                                      return (
+                                        <Card key={index} className="p-4 bg-secondary/50">
+                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
+                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
+                                                <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
+                                                <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
+                                                <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
+                                                <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
                                             </div>
-                                            <div className="mt-2">
-                                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
-                                            </div>
-                                           </>
-                                        ) : finding.severity !== 'Balanced' ? (
-                                             <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
-                                                <p>This ratio appears imbalanced. Click "Get AI Insights" for analysis.</p>
-                                            </div>
-                                        ) : null}
-                                    </Card>
-                                )})}
+                                            {isAnalysisLoading && finding.severity !== 'Balanced' ? (
+                                                 <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
+                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
+                                                 </div>
+                                            ) : aiFinding && finding.severity !== 'Balanced' ? (
+                                               <>
+                                                <div className="mt-3 pt-3 border-t">
+                                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
+                                                </div>
+                                                <div className="mt-2">
+                                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
+                                                </div>
+                                               </>
+                                            ) : finding.severity !== 'Balanced' ? (
+                                                 <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
+                                                    <p>This ratio appears imbalanced. Click "Get AI Insights" for analysis.</p>
+                                                </div>
+                                            ) : null}
+                                        </Card>
+                                      )
+                                    } else {
+                                        const config = IMBALANCE_CONFIG[type];
+                                        return (
+                                            <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
+                                                <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
+                                                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
+                                                    <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
+                                                    <p className="text-sm font-semibold">Log PRs to analyze</p>
+                                                    <p className="text-xs mt-1">Requires: {config.lift1Options.join(' or ')} & {config.lift2Options.join(' or ')}</p>
+                                                </div>
+                                            </Card>
+                                        )
+                                    }
+                                })}
                             </div>
                         </div>
                     )}
@@ -430,5 +447,4 @@ export default function AnalysisPage() {
   );
 }
 
-    
     
