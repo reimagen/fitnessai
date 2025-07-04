@@ -81,7 +81,7 @@ Here is the screenshot to parse:
 `,
 });
 
-const PRO_MODEL = 'googleai/gemini-1.5-pro-latest';
+const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const parsePersonalRecordsFlow = ai.defineFlow(
   {
@@ -90,12 +90,20 @@ const parsePersonalRecordsFlow = ai.defineFlow(
     outputSchema: ParsePersonalRecordsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input, { model: PRO_MODEL });
+    let output;
+    try {
+      // Try with the default flash model first. It's cheaper and has higher rate limits.
+      const result = await prompt(input);
+      output = result.output;
+    } catch (e: any) {
+      // If Flash fails (due to complexity, overload, or anything else), log it and try Pro.
+      console.warn(`Default model failed for parsePersonalRecords. Retrying with ${FALLBACK_MODEL}. Error: ${e.message}`);
+      const result = await prompt(input, { model: FALLBACK_MODEL });
+      output = result.output;
+    }
     
-    // The prompt is now solely responsible for generating clean, valid output.
-    // If the output is null or doesn't conform to the schema, Genkit will throw an error.
     if (!output) {
-      throw new Error("AI failed to generate a response. The model returned no output.");
+      throw new Error("AI failed to generate a response from either model. The model returned no output.");
     }
 
     // The Zod schema validation on the flow's output will catch any formatting errors.
