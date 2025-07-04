@@ -31,8 +31,8 @@ type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['Bench Press', 'Chest Press'], lift2Options: ['Barbell Row', 'Seated Row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Vertical Push vs. Pull': { lift1Options: ['Overhead Press', 'Shoulder Press'], lift2Options: ['Lat Pulldown', 'Pull-ups'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.60 || r > 0.85) ? 'Severe' : (r < 0.67 || r > 0.77) ? 'Moderate' : 'Balanced' },
-    'Reverse Fly vs. Butterfly': { lift1Options: ['Reverse Fly'], lift2Options: ['Butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Biceps vs. Triceps': { lift1Options: ['Bicep Curl'], lift2Options: ['Tricep Extension'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['Reverse Fly', 'Reverse Flys'], lift2Options: ['Butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Biceps vs. Triceps': { lift1Options: ['Bicep Curl'], lift2Options: ['Tricep Extension', 'Triceps'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Quad vs. Hamstring': { lift1Options: ['Leg Extension', 'Squat'], lift2Options: ['Leg Curl'], targetRatioDisplay: '1.5:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.2 || r > 2.0) ? 'Severe' : (r < 1.4 || r > 1.7) ? 'Moderate' : 'Balanced' },
     'Adductor vs. Abductor': { lift1Options: ['Adductor'], lift2Options: ['Abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Back Extension vs. Abdominal Crunch': { lift1Options: ['Back Extension'], lift2Options: ['Abdominal Crunch'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
@@ -446,5 +446,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
