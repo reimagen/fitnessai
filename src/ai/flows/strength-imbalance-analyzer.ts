@@ -92,7 +92,7 @@ You will be given a list of the user's personal records. Your ONLY job is to fin
     *   'Quad vs. Hamstring': Lift 1 is a Quad exercise (e.g., 'Leg Extension', 'Squat'). Lift 2 is a Hamstring exercise (e.g., 'Leg Curl').
     *   'Adductor vs. Abductor': Lift 1 is 'Adductor'. Lift 2 is 'Abductor'.
     *   'Reverse Fly vs. Butterfly': Lift 1 is 'Reverse Fly'. Lift 2 is 'Butterfly'.
-    *   'Biceps vs. Triceps': Lift 1 is a bicep exercise (e.g., bicep curl). Lift 2 is a tricep exercise (e.g., 'Seated Dip', Tricep extension).
+    *   'Biceps vs. Triceps': Lift 1 is a bicep exercise (e.g., 'Bicep Curl'). Lift 2 is a tricep isolation exercise (e.g., 'Tricep Extension'). Do not use 'Seated Dip'.
     *   'Back Extension vs. Abdominal Crunch': Lift 1 is 'Back Extension'. Lift 2 is 'Abdominal Crunch'.
     *   'Glute Development': Lift 1 is 'Hip Thrust'. Lift 2 is 'Glutes' (machine).
 3.  **Output Format**: Return a list of all the valid pairs you find. For each pair, provide the 'comparisonType', and the full details for 'lift1' and 'lift2'.
@@ -216,16 +216,46 @@ const strengthImbalanceFlow = ai.defineFlow(
                 break;
 
             case 'Adductor vs. Abductor':
+                ratio = lift1WeightKg / lift2WeightKg;
+                targetRatio = '1.00 : 1';
+                if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
+                else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
+                else severity = 'Balanced';
+                insight = "Imbalances between your inner thigh (adductor) and outer thigh (abductor) muscles can affect hip stability and knee tracking, potentially leading to knee pain.";
+                recommendation = "Ensure you are training both movements. Strengthen the weaker muscle group to improve hip joint stability and overall lower body alignment.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
+                break;
+
             case 'Reverse Fly vs. Butterfly':
+                ratio = lift1WeightKg / lift2WeightKg;
+                targetRatio = '1.00 : 1';
+                if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
+                else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
+                else severity = 'Balanced';
+                insight = "An imbalance between your chest (pecs) and upper back (rear delts) can lead to rounded shoulders, poor posture, and increase the risk of shoulder impingement.";
+                recommendation = "Focus on strengthening your rear deltoids and upper back muscles. Incorporate more reverse flys, face pulls, or band pull-aparts into your routine.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
+                break;
+
             case 'Back Extension vs. Abdominal Crunch':
+                ratio = lift1WeightKg / lift2WeightKg;
+                targetRatio = '1.00 : 1';
+                if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
+                else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
+                else severity = 'Balanced';
+                insight = "An imbalance between your lower back (erector spinae) and your abdominal muscles can compromise core stability and may contribute to lower back pain.";
+                recommendation = "Aim for a balanced core routine. If your back is weaker, focus on controlled back extensions. If your abs are weaker, incorporate more crunches or planks.";
+                finalRatioString = `${ratio.toFixed(2)} : 1`;
+                break;
+
             case 'Glute Development':
                 ratio = lift1WeightKg / lift2WeightKg;
                 targetRatio = '1.00 : 1';
                 if (ratio < 0.75 || ratio > 1.25) severity = 'Severe';
                 else if (ratio < 0.9 || ratio > 1.1) severity = 'Moderate';
                 else severity = 'Balanced';
-                insight = "This imbalance can affect joint stability and lead to compensatory movement patterns.";
-                recommendation = "Isolate and strengthen the lagging muscle group to create better muscular balance around the joint.";
+                insight = "This compares your compound glute strength (Hip Thrust) to your isolation glute strength. A large discrepancy might indicate a need to work on glute activation or strength in different ranges of motion.";
+                recommendation = "If your Hip Thrust is much stronger, consider adding glute isolation work to improve mind-muscle connection. If the isolation machine is stronger, focus on improving your form and progressive overload on compound lifts like the Hip Thrust.";
                 finalRatioString = `${ratio.toFixed(2)} : 1`;
                 break;
         }
