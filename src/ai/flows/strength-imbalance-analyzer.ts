@@ -59,8 +59,8 @@ export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSche
 // Configuration for each imbalance type
 const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe', getWeakerLiftDescription: (weakerIsLift1: boolean, l1Name: string, l2Name: string) => string }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 0.75) ? 'Severe' : (r > 0.70 || r < 0.60) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 1.25) ? 'Severe' : (r < 1.33) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 0.75 || r < 0.5) ? 'Severe' : (r > 0.7 || r < 0.6) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r > 1.43 || r < 1.25) ? 'Severe' : (r > 1.33 || r < 1.33) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
     'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
     'Biceps vs. Triceps': { lift1Options: ['bicep curl'], lift2Options: ['tricep extension', 'triceps'], targetRatioDisplay: '0.4:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.25 || r > 0.55) ? 'Severe' : (r < 0.35 || r > 0.45) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your bicep strength (${l1Name}) is weaker than your tricep strength (${l2Name}).` : `Your tricep strength (${l2Name}) is weaker than your bicep strength (${l1Name}).` },
@@ -133,12 +133,11 @@ const insightPrompt = ai.definePrompt({
 **Your Task:**
 Based ONLY on this information, provide:
 1.  **Insight (1-2 sentences MAX):** A concise, expert insight into the potential risks (e.g., injury, posture, plateaus).
-2.  **Recommendation (1-2 sentences MAX):** A simple, actionable recommendation.
+2.  **Recommendation (1-2 sentences MAX):** A simple, actionable recommendation of actions to help the user address the imbalance (e.g., exercises, form, frequency).
 
 **CRITICAL STYLE GUIDE:**
-- **BE CONCISE & VARIED:** You **MUST NOT** use the same opening phrase or sentence structure for every analysis. Be direct, engaging, and creative.
-- **AVOID GENERIC & REPETITIVE PHRASES:** Do not start sentences with words like "This imbalance...", "Your weak...", "Neglecting...", "Prioritize...", "Focus on...", or "Significant...". The user has seen these phrases and finds them boring.
-- **BE ACTIONABLE:** The recommendation should start with a direct action verb.
+- **VARY YOUR ANALYSIS:** Your main goal is to provide unique and varied feedback for each type of imbalance. Do not use the same sentence structure or phrasing across different imbalance analyses. Be direct and creative.
+- **FOCUS ON ACTION:** The recommendation must start with a direct action verb. Be specific and provide clear instructions.
 
 **Good Example (Varied & Concise):**
 - **Insight:** "An over-reliance on chest pressing without balanced back work can lead to shoulder instability. This may also be limiting your bench press potential."
@@ -146,10 +145,11 @@ Based ONLY on this information, provide:
 - **Insight:** "Quadriceps dominance to this degree often increases stress on the patellar tendon. Addressing this is key for long-term knee health."
 - **Recommendation:** "Add Romanian Deadlifts to your routine to directly strengthen the hamstrings. Aim for 3 sets of 8-10 reps after your main leg exercises."
 
-**Bad Example (Repetitive & Generic):**
-- **Insight:** "Significant quadriceps dominance increases knee extension stress..."
-- **Insight:** "A significant horizontal push/pull disparity..."
-- **Recommendation:** "Prioritize building rear delt strength."
+**Bad Example (Repetitive & Generic Across Imbalance Types):**
+- **Insight:** "A significant horizontal push/pull disparity can lead to injury."
+- **Recommendation:** "You should prioritize building chest strength."
+- **Insight:** "A significant quad/hamstring disparity can lead to injury."
+- **Recommendation:** "You should prioritize building hamstring strength."
 `,
 });
 
