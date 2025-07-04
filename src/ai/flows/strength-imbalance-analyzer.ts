@@ -84,7 +84,7 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
 
 // Helper to find the best PR for a given list of exercises
 function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], exerciseNames: string[]): z.infer<typeof PersonalRecordForAnalysisSchema> | null {
-    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.toLowerCase()));
+    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
 
     return relevantRecords.reduce((best, current) => {
