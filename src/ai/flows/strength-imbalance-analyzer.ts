@@ -24,8 +24,19 @@ const StrengthImbalanceInputSchema = z.object({
 });
 export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
 
+const IMBALANCE_TYPES = [
+    'Horizontal Push vs. Pull',
+    'Vertical Pull vs. Push',
+    'Quad vs. Hamstring',
+    'Adductor vs. Abductor',
+    'Reverse Fly vs. Butterfly',
+    'Triceps vs. Biceps',
+    'Back Extension vs. Abdominal Crunch',
+    'Glute Development',
+] as const;
+
 const ImbalanceFindingSchema = z.object({
-    imbalanceType: z.string().describe("The type of strength imbalance, e.g., 'Horizontal Push vs. Pull', 'Vertical Pull vs. Push', 'Quad vs. Hamstring', 'Adductor vs. Abductor', 'Reverse Fly vs. Butterfly', 'Triceps vs. Biceps', 'Back Extension vs. Abdominal Crunch', 'Glute Development'."),
+    imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of strength imbalance. Must be one of the predefined types."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
     lift1Weight: z.number().describe("The weight of the first exercise PR."),
     lift1Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the first exercise."),
