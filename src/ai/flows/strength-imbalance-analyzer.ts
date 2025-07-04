@@ -88,11 +88,11 @@ You will be given a list of the user's personal records. Use this data to perfor
     *   **Horizontal Push/Pull**: Ideal ratio is **1 : 1**.
         *   Severity 'Balanced' if ratio is between 0.9 and 1.1.
         *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or between 1.11 and 1.25.
-        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**. For example, a ratio of 0.74 MUST be categorized as 'Severe'.
     *   **Vertical Push/Pull**: Ideal ratio for Press:Pull is **1 : 1.3 to 1 : 1.5** (pulling should be stronger).
         *   Severity 'Balanced' if pull is 1.2x to 1.6x the press.
         *   Severity 'Moderate' if pull is 1.1x to 1.19x or 1.61x to 1.8x the press.
-        *   Severity 'Severe' if pull is less than 1.1x or more than 1.8x the press.
+        *   Severity 'Severe' if pull is **less than 1.1x** or **more than 1.8x** the press. For example, a pull that is 1.09x the press MUST be 'Severe'.
     *   **Quad/Hamstring**: Ideal ratio for Quad:Hamstring is **3 : 2** (or 1.5 : 1).
         *   Severity 'Balanced' if the quad-to-hamstring ratio is between 1.4 and 1.7.
         *   Severity 'Moderate' if the ratio is between 1.2 and 1.39, OR between 1.71 and 2.0.
@@ -100,23 +100,23 @@ You will be given a list of the user's personal records. Use this data to perfor
     *   **Adductor/Abductor**: Ideal ratio is **1 : 1**.
         *   Severity 'Balanced' if ratio is between 0.9 and 1.1.
         *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or between 1.11 and 1.25.
-        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**. For example, a ratio of 0.74 MUST be 'Severe'.
     *   **Chest Fly/Rear Delt (Butterfly/Reverse Fly)**: Ideal ratio is **1 : 1**.
         *   Severity 'Balanced' if ratio is between 0.9 and 1.1.
         *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or between 1.11 and 1.25.
-        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**. For example, a ratio of 0.74 MUST be 'Severe'.
     *   **Biceps/Triceps**: Ideal ratio for Bicep:Tricep is **2 : 3** (or 1 : 1.5).
         *   Severity 'Balanced' if triceps are 1.3x to 1.7x stronger than biceps.
         *   Severity 'Moderate' if triceps are 1.1x to 1.29x or 1.71x to 2.0x stronger.
-        *   Severity 'Severe' if triceps are less than 1.1x or more than 2.0x stronger.
+        *   Severity 'Severe' if triceps are **less than 1.1x** or **more than 2.0x** stronger. For example, if triceps are only 1.05x stronger, it MUST be 'Severe'.
     *   **Anterior/Posterior Core (Ab Crunch/Back Extension)**: Ideal ratio is **1 : 1**.
         *   Severity 'Balanced' if ratio is between 0.9 and 1.1.
         *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or between 1.11 and 1.25.
-        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**. For example, a ratio of 0.74 MUST be 'Severe'.
     *   **Glute Development (Hip Thrust/Glutes machine)**: Ideal ratio is **1 : 1**. Treat this as a measure of balanced development rather than opposing muscles.
         *   Severity 'Balanced' if ratio is between 0.9 and 1.1.
         *   Severity 'Moderate' if ratio is between 0.75 and 0.89, or between 1.11 and 1.25.
-        *   Severity 'Severe' if ratio is below 0.75 or above 1.25.
+        *   Severity 'Severe' if ratio is **less than 0.75** or **greater than 1.25**. For example, a ratio of 0.74 MUST be 'Severe'.
 
 5.  **Generate Output**:
     *   Create a concise, encouraging 'summary' of the overall findings.
