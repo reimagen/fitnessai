@@ -186,8 +186,8 @@ export default function MilestonesPage() {
     switch (level) {
       case 'Beginner': return 'destructive';
       case 'Intermediate': return 'secondary';
-      case 'Advanced': return 'default';
-      case 'Elite': return 'default'; // Will be styled with a class
+      case 'Advanced': return 'accent';
+      case 'Elite': return 'default';
       default: return 'outline';
     }
   };
@@ -289,7 +289,7 @@ export default function MilestonesPage() {
                                                     <div className="flex items-center gap-2 flex-wrap mb-1">
                                                         <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
                                                         {level !== 'N/A' ? (
-                                                            <Badge variant={levelToBadgeVariant(level)} className={cn(level === 'Elite' && 'bg-accent text-accent-foreground hover:bg-accent/90')}>{level}</Badge>
+                                                            <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
                                                         ) : (
                                                             <TooltipProvider>
                                                                 <Tooltip>
