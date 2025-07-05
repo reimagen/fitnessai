@@ -17,8 +17,8 @@ type GenderStandards = {
 // Ratios are defined as: (Weight Lifted in KG) / (Skeletal Muscle Mass in KG)
 const strengthStandards: Record<string, GenderStandards> = {
   'abdominal crunch': {
-    'Male':   { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
-    'Female': { intermediate: 0.9, advanced: 1.2, elite: 1.5 },
+    'Male':   { intermediate: 2.2, advanced: 3.1, elite: 4.0 },
+    'Female': { intermediate: 2.0, advanced: 2.8, elite: 3.8 },
   },
   'abductor': {
     'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
@@ -101,16 +101,16 @@ const strengthStandards: Record<string, GenderStandards> = {
     'Female': { intermediate: 2.5, advanced: 3.5, elite: 4.5 },
   },
   'tricep extension': {
-    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
-    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
+    'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+    'Female': { intermediate: 0.4, advanced: 0.65, elite: 0.95 },
   },
   'tricep pushdown': {
-    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
-    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
+    'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+    'Female': { intermediate: 0.4, advanced: 0.65, elite: 0.95 },
   },
   'triceps': {
-    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
-    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
+    'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+    'Female': { intermediate: 0.4, advanced: 0.65, elite: 0.95 },
   },
 };
 
