@@ -17,8 +17,8 @@ type GenderStandards = {
 // Ratios are defined as: (Weight Lifted in KG) / (Skeletal Muscle Mass in KG)
 const strengthStandards: Record<string, GenderStandards> = {
   'abdominal crunch': {
-    'Male':   { intermediate: 2.2, advanced: 3.1, elite: 4.0 },
-    'Female': { intermediate: 2.0, advanced: 2.8, elite: 3.8 },
+    'Male':   { intermediate: 2.7, advanced: 3.8, elite: 5.1 },
+    'Female': { intermediate: 1.7, advanced: 2.4, elite: 3.3 },
   },
   'abductor': {
     'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
@@ -29,8 +29,8 @@ const strengthStandards: Record<string, GenderStandards> = {
     'Female': { intermediate: 1.4, advanced: 1.8, elite: 2.2 },
   },
   'back extension': {
-    'Male':   { intermediate: 1.1, advanced: 1.4, elite: 1.7 },
-    'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+    'Male':   { intermediate: 2.1, advanced: 3.0, elite: 4.0 },
+    'Female': { intermediate: 1.9, advanced: 2.7, elite: 3.9 },
   },
   'bench press': {
     'Male':   { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
