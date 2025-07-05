@@ -114,10 +114,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'leg press': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 5.0, advanced: 6.5, elite: 8.0 },
-      'Female': { intermediate: 4.0, advanced: 5.5, elite: 7.0 },
+      'Male':   { intermediate: 2.2, advanced: 3.2, elite: 4.3 },
+      'Female': { intermediate: 2.00, advanced: 3.25, elite: 4.50 },
     },
   },
   'overhead press': {
@@ -225,6 +225,7 @@ export function getStrengthLevel(
   }
   
   if (!profile.gender) return 'N/A';
+  if (profile.gender !== 'Male' && profile.gender !== 'Female') return 'N/A';
 
   const standards = exerciseData.standards;
   
@@ -288,6 +289,7 @@ export function getStrengthThresholds(
   }
 
   if (!profile.gender) return null;
+  if (profile.gender !== 'Male' && profile.gender !== 'Female') return null;
 
   const standards = exerciseData.standards;
   
