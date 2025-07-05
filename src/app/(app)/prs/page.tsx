@@ -234,7 +234,7 @@ export default function MilestonesPage() {
             Personal Records
           </CardTitle>
           <CardDescription>
-            Your top recorded lift for each exercise. Levels are classified based on your skeletal muscle mass, gender, and age.
+            Your top recorded lift for each exercise. Levels are classified based on your personal stats (skeletal muscle mass, gender, and age).
           </CardDescription>
         </CardHeader>
         <CardContent>

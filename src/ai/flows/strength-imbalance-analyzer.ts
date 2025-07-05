@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getStrengthLevel } from '@/lib/strength-standards';
+import type { PersonalRecord, StrengthLevel } from '@/lib/types';
 
 const FitnessGoalForAnalysisSchema = z.object({
   description: z.string().describe("A specific fitness goal for the user."),
@@ -46,9 +48,9 @@ const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
     'Reverse Fly vs. Butterfly',
-    'Biceps vs. Body Weight',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
+    'Biceps vs. Body Weight',
 ] as const;
 
 const ImbalanceFindingSchema = z.object({
@@ -73,13 +75,13 @@ const StrengthImbalanceOutputSchema = z.object({
 export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSchema>;
 
 // Configuration for each imbalance type
-const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe', getWeakerLiftDescription: (weakerIsLift1: boolean, l1Name: string, l2Name: string) => string }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your horizontal pushing strength (${l1Name}) is weaker than your horizontal pulling strength (${l2Name}).` : `Your horizontal pulling strength (${l2Name}) is weaker than your horizontal pushing strength (${l1Name}).` },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r >= 0.75) return 'Severe'; if (r < 0.6 || r > 0.7) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your vertical pushing strength (${l1Name}) is weaker than your vertical pulling strength (${l2Name}).` : `Your vertical pulling strength (${l2Name}) is weaker than your vertical pushing strength (${l1Name}).` },
-    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '0.9:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your rear delt strength (${l1Name}) is weaker than your chest strength (${l2Name}).` : `Your chest strength (${l2Name}) is weaker than your rear delt strength (${l1Name}).` },
-    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => `Your bicep strength (${l1Name}) is below the target relative to your ${l2Name}.` },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; }, getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your quadriceps strength (${l1Name}) is weaker than your hamstring strength (${l2Name}).` : `Your hamstring strength (${l2Name}) is weaker than your quadriceps strength (${l1Name}).` },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced', getWeakerLiftDescription: (weakerIsLift1, l1Name, l2Name) => weakerIsLift1 ? `Your inner thigh strength (Adductor) is weaker than your outer thigh strength (Abductor).` : `Your outer thigh strength (Abductor) is weaker than your inner thigh strength (Adductor).` },
+const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
+    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe' },
 };
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
@@ -87,7 +89,7 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
       ...input,
       personalRecords: input.personalRecords.filter(pr => pr.weight > 0),
   };
-  if (filteredInput.personalRecords.length < 1) { // Changed to 1 for bodyweight comparison
+  if (filteredInput.personalRecords.length < 1) {
       return {
           summary: "Not enough data for AI analysis. Please log at least one personal record with weight.",
           findings: [],
@@ -97,38 +99,39 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
 }
 
 // Helper to find the best PR for a given list of exercises
-function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], exerciseNames: string[]): z.infer<typeof PersonalRecordForAnalysisSchema> | null {
+function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], exerciseNames: string[]): (PersonalRecord & {id: string}) | null {
     const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
 
-    return relevantRecords.reduce((best, current) => {
+    const bestRecord = relevantRecords.reduce((best, current) => {
         const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
         const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
         return currentWeightKg > bestWeightKg ? current : best;
     });
+
+    return {
+      ...bestRecord,
+      date: new Date(bestRecord.date),
+      id: Math.random().toString(), // add dummy id
+    };
 }
 
-// ** NEW: Define schemas for a more efficient, single AI call **
-
-// Schema for the data we send to the AI for each imbalance
 const ImbalanceDataForAISchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
     lift1Name: z.string(),
+    lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
-    weakerLiftDescription: z.string(),
-    weakerLiftName: z.string(),
-    goalWeight: z.number(),
-    goalUnit: z.enum(['kg', 'lbs']),
+    lift2Level: z.custom<StrengthLevel>(),
+    diagnosis: z.string().describe("A pre-computed, code-based diagnosis of the user's specific imbalance situation."),
+    recommendationFocus: z.string().describe("A clear instruction for the AI, guiding its recommendation (e.g., 'focus on bringing the lagging lift to an Intermediate level for health, not matching the elite lift')."),
 });
 
-// Schema for a single analysis returned by the AI
 const AIAnalysisResultSchema = z.object({
   imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of the imbalance this analysis is for. Must match one of the types from the input."),
-  insight: z.string().describe("A concise, expert insight (max 2 sentences) into the potential risks or consequences of the specific strength imbalance."),
-  recommendation: z.string().describe("A simple, clear, and actionable recommendation (max 2 sentences) to help the user address the imbalance. It should start with a direct action verb."),
+  insight: z.string().describe("A concise, expert insight (max 2 sentences) into the potential risks or consequences of the specific strength imbalance, personalized to the user's context."),
+  recommendation: z.string().describe("A simple, clear, and actionable recommendation (max 2 sentences) to help the user address the imbalance. It should start with a direct action verb and align with the provided recommendation focus."),
 });
 
-// Define the prompt for the AI to generate all insights in a single call
 const bulkInsightPrompt = ai.definePrompt({
     name: 'generateBulkStrengthInsights',
     input: {
@@ -138,7 +141,7 @@ const bulkInsightPrompt = ai.definePrompt({
       }),
     },
     output: { schema: z.object({ analyses: z.array(AIAnalysisResultSchema) }) },
-    prompt: `You are an expert fitness coach providing a highly concise and varied analysis of a user's strength imbalances.
+    prompt: `You are an expert fitness coach providing a highly concise and varied analysis of a user's strength imbalances. Your primary goal is to provide health-focused, practical advice, not just to make numbers match.
 
 **User's Stats & Goals:**
 - Age: {{#if userProfile.age}}{{userProfile.age}}{{else}}Not Provided{{/if}}
@@ -153,28 +156,27 @@ const bulkInsightPrompt = ai.definePrompt({
 {{/if}}
 
 **Imbalances to Analyze:**
+Based on our code-based analysis, here are the user's current imbalances. Your task is to provide expert commentary for each one.
+
 {{#each imbalances}}
 - **Imbalance Type:** {{{this.imbalanceType}}}
-  - Lifts: {{{this.lift1Name}}} vs {{{this.lift2Name}}}
-  - Diagnosis: {{{this.weakerLiftDescription}}}
-  - Goal: The user should aim for a target weight of **{{{this.goalWeight}}}{{{this.goalUnit}}}** on their **{{{this.weakerLiftName}}}** to achieve the ideal balance.
+  - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
+  - **Diagnosis:** {{{this.diagnosis}}}
+  - **Recommendation Focus:** {{{this.recommendationFocus}}}
 {{/each}}
-
 
 **Your Task:**
 For **each** of the imbalances listed above, provide a unique analysis. Return your response as a single JSON object containing a key "analyses", which is an array of objects. Each object in the array must contain:
 1.  **imbalanceType**: The exact string from the 'Imbalance Type' field (e.g., "Horizontal Push vs. Pull").
-2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks. You MUST incorporate the user's stats and goals to make the insight personal.
-3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation to help the user address the imbalance, also connected to their goals.
+2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST incorporate the user's goals and the provided diagnosis to make the insight personal and relevant. For example, if a lagging lift could hinder a primary goal, mention it.
+3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that follows the 'Recommendation Focus'. It must start with a direct action verb.
 
 **CRITICAL STYLE GUIDE:**
 - **VARY YOUR ANALYSIS:** Your main goal is to provide unique and varied feedback for each type of imbalance. Do not use the same sentence structure or phrasing across different imbalance analyses. Be direct and creative.
-- **FOCUS ON ACTION:** The recommendation must start with a direct action verb. Be specific and provide clear instructions.
+- **HEALTH-FOCUSED:** Prioritize long-term joint health and balanced development over simply chasing ratio numbers.
 - **COMPLETE JSON:** You MUST provide a complete JSON object with an analysis for every single imbalance provided in the input.
-
 `,
 });
-
 
 const strengthImbalanceFlow = ai.defineFlow(
   {
@@ -184,26 +186,33 @@ const strengthImbalanceFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Store calculated imbalances before sending to AI
     const calculatedFindings: Omit<z.infer<typeof ImbalanceFindingSchema>, 'insight' | 'recommendation'>[] = [];
-    // Store only the data needed for the AI prompt
     const imbalancesForAI: z.infer<typeof ImbalanceDataForAISchema>[] = [];
+
+    // The user profile needs to be compatible with the getStrengthLevel function
+    const userProfileForLevels = {
+        ...input.userProfile,
+        id: "temp-id",
+        email: "",
+        joinedDate: new Date(),
+        fitnessGoals: (input.userProfile.fitnessGoals || []).map(g => ({...g, id: 'temp-goal-id', achieved: false })),
+    };
+
 
     for (const type of IMBALANCE_TYPES) {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(input.personalRecords, config.lift1Options);
         
-        let lift2: z.infer<typeof PersonalRecordForAnalysisSchema> | null;
+        let lift2: (PersonalRecord & {id: string}) | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; date: Date, id: string; category?: string } | null;
 
         if (type === 'Biceps vs. Body Weight') {
-            if (!input.userProfile.weightValue || !input.userProfile.weightUnit) {
-                continue; // Cannot perform analysis without body weight
-            }
+            if (!input.userProfile.weightValue || !input.userProfile.weightUnit) continue;
             lift2 = {
                 exerciseName: 'Body Weight',
                 weight: input.userProfile.weightValue,
                 weightUnit: input.userProfile.weightUnit,
-                date: new Date().toISOString(), // Dummy date
+                date: new Date(),
+                id: 'bodyweight-pr',
                 category: 'User Stat'
             };
         } else {
@@ -220,40 +229,38 @@ const strengthImbalanceFlow = ai.defineFlow(
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         const severity = config.severityCheck(ratio);
         
-        const [targetRatioNum1, targetRatioNum2] = config.targetRatioDisplay.split(':').map(Number);
-        const targetRatioValue = targetRatioNum2 === 0 ? 1 : targetRatioNum1 / targetRatioNum2;
-        
-        const weakerIsLift1 = ratio < targetRatioValue;
-
         if (severity !== 'Balanced') {
-            let goalWeight: number;
-            let weakerLiftName: string;
-            let goalUnit: 'kg' | 'lbs';
+            const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
+            const lift2Level = (lift2.exerciseName === 'Body Weight') ? 'N/A' : getStrengthLevel(lift2 as PersonalRecord, userProfileForLevels);
 
-            if (weakerIsLift1) {
-                weakerLiftName = lift1.exerciseName;
-                goalUnit = lift1.weightUnit;
-                const goalWeightKg = lift2WeightKg * targetRatioValue;
-                goalWeight = Math.round(lift1.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
+            let diagnosis = "";
+            let recommendationFocus = "";
+
+            if ( (lift1Level === 'Advanced' || lift1Level === 'Elite') && (lift2Level === 'Beginner' || lift2Level === 'Intermediate') ) {
+                 diagnosis = `Your ${lift1.exerciseName} is highly developed (${lift1Level}), but its opposing muscle group, trained by ${lift2.exerciseName}, is lagging behind (${lift2Level}). This significant gap can increase injury risk.`;
+                 recommendationFocus = `Focus on bringing the ${lift2.exerciseName} to at least an 'Advanced' level to support the primary lift. Do not worry about matching the ${lift1.exerciseName} weight. Prioritize health.`;
+            } else if ( (lift2Level === 'Advanced' || lift2Level === 'Elite') && (lift1Level === 'Beginner' || lift1Level === 'Intermediate') ) {
+                 diagnosis = `Your ${lift2.exerciseName} is highly developed (${lift2Level}), but its opposing muscle group, trained by ${lift1.exerciseName}, is lagging behind (${lift1Level}). This significant gap can increase injury risk.`;
+                 recommendationFocus = `Focus on bringing the ${lift1.exerciseName} to at least an 'Advanced' level for stability and balance. Do not worry about matching the ${lift2.exerciseName} weight. Prioritize health.`;
+            } else if (lift1Level === 'Beginner' && lift2Level === 'Beginner') {
+                 diagnosis = `Both your ${lift1.exerciseName} and ${lift2.exerciseName} are in the 'Beginner' range. While the ratio is imbalanced, the primary opportunity is to build foundational strength in both movements.`;
+                 recommendationFocus = `Provide a recommendation that encourages balanced, overall strength development for both exercises, with a slight emphasis on the weaker of the two to fix the ratio over time.`;
             } else {
-                weakerLiftName = lift2.exerciseName;
-                goalUnit = lift2.weightUnit;
-                const goalWeightKg = lift1WeightKg / targetRatioValue;
-                goalWeight = Math.round(lift2.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
+                 diagnosis = `Your strength ratio between ${lift1.exerciseName} (${lift1Level}) and ${lift2.exerciseName} (${lift2Level}) is outside the ideal range. Addressing this can improve performance and reduce injury risk.`;
+                 const weakerLiftName = ratio < IMBALANCE_CONFIG[type].ratioCalculation(1, 1) ? lift1.exerciseName : lift2.exerciseName;
+                 recommendationFocus = `Provide a clear, actionable tip to increase strength in the weaker lift (${weakerLiftName}) to bring it in line with its counterpart.`;
             }
-            
-            // Add data to the array for the AI call
+
             imbalancesForAI.push({
                 imbalanceType: type,
                 lift1Name: lift1.exerciseName,
+                lift1Level: lift1Level,
                 lift2Name: lift2.exerciseName,
-                weakerLiftDescription: config.getWeakerLiftDescription(weakerIsLift1, lift1.exerciseName, lift2.exerciseName),
-                weakerLiftName: weakerLiftName,
-                goalWeight: goalWeight,
-                goalUnit: goalUnit,
+                lift2Level: lift2Level,
+                diagnosis: diagnosis,
+                recommendationFocus: recommendationFocus,
             });
 
-            // Add the non-AI data to our findings list
             calculatedFindings.push({
                 imbalanceType: type,
                 lift1Name: lift1.exerciseName,
@@ -276,13 +283,11 @@ const strengthImbalanceFlow = ai.defineFlow(
         };
     }
 
-    // *** SINGLE EFFICIENT AI CALL ***
     const { output: aiAnalyses } = await bulkInsightPrompt({
         imbalances: imbalancesForAI,
         userProfile: input.userProfile,
     });
     
-    // Merge AI insights with the calculated data
     const finalFindings = calculatedFindings.map(finding => {
         const aiResult = aiAnalyses?.analyses.find(a => a.imbalanceType === finding.imbalanceType);
         return {
@@ -293,9 +298,11 @@ const strengthImbalanceFlow = ai.defineFlow(
     });
     
     const summary = finalFindings.length > 0
-        ? `Based on your Personal Records, we've found ${finalFindings.length} potential strength imbalance(s). Our AI has provided some insights below.`
+        ? `Based on your Personal Records, we've found ${finalFindings.length} potential strength imbalance(s) that could be improved. Our AI has provided some insights below.`
         : "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
 
     return { summary, findings: finalFindings };
   }
 );
+
+    
