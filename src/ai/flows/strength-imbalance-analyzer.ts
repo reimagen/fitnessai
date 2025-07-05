@@ -227,11 +227,26 @@ const strengthImbalanceFlow = ai.defineFlow(
         if (lift2WeightKg === 0) continue;
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        const severity = config.severityCheck(ratio);
+        let severity = config.severityCheck(ratio);
         
         if (severity !== 'Balanced') {
             const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
             const lift2Level = (lift2.exerciseName === 'Body Weight') ? 'N/A' : getStrengthLevel(lift2 as PersonalRecord, userProfileForLevels);
+
+            // New Severity Logic based on Strength Levels
+            // Rule 1: A high-level discrepancy is always Severe.
+            const isHighDiscrepancy = 
+                ((lift1Level === 'Elite' || lift1Level === 'Advanced') && lift2Level === 'Beginner') ||
+                ((lift2Level === 'Elite' || lift2Level === 'Advanced') && lift1Level === 'Beginner');
+
+            if (isHighDiscrepancy) {
+                severity = 'Severe';
+            }
+
+            // Rule 2: Downgrade severe imbalances for beginners.
+            if (lift1Level === 'Beginner' && lift2Level === 'Beginner' && severity === 'Severe') {
+                severity = 'Moderate';
+            }
 
             let diagnosis = "";
             let recommendationFocus = "";
