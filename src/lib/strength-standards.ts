@@ -100,10 +100,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'leg curl': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.0, advanced: 1.4, elite: 1.8 },
-      'Female': { intermediate: 0.8, advanced: 1.2, elite: 1.6 },
+      'Male':   { intermediate: 0.95, advanced: 1.25, elite: 1.75 },
+      'Female': { intermediate: 0.75, advanced: 1.05, elite: 1.45 },
     },
   },
   'leg extension': {
@@ -172,22 +172,22 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   'tricep extension': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
-      'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
+      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
+      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
     },
   },
   'tricep pushdown': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
-      'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
+      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
+      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
     },
   },
   'triceps': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
-      'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
+      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
+      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
     },
   },
 };
