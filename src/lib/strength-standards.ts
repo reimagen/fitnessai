@@ -1,3 +1,4 @@
+
 import type { PersonalRecord, UserProfile, StrengthLevel } from './types';
 
 const LBS_TO_KG = 0.453592;
@@ -100,16 +101,16 @@ const strengthStandards: Record<string, GenderStandards> = {
     'Female': { intermediate: 2.5, advanced: 3.5, elite: 4.5 },
   },
   'tricep extension': {
-    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
-    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
+    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
   },
   'tricep pushdown': {
-    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
-    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
+    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
   },
   'triceps': {
-    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
-    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+    'Male': { intermediate: 1.3, advanced: 1.75, elite: 2.25 },
+    'Female': { intermediate: 0.95, advanced: 1.5, elite: 2.15 },
   },
 };
 
