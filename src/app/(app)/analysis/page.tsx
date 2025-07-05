@@ -8,30 +8,30 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
+import { getStrengthLevel } from '@/lib/strength-standards';
+
 
 const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
-    'Reverse Fly vs. Butterfly',
-    'Biceps vs. Body Weight',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
+    'Biceps vs. Body Weight',
 ] as const;
 
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['barbell row', 'seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown', 'pull-ups'], targetRatioDisplay: '0.7:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r >= 0.75) return 'Severe'; if (r < 0.6 || r > 0.7) return 'Moderate'; return 'Balanced'; } },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension', 'squat'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Reverse Fly vs. Butterfly': { lift1Options: ['reverse fly', 'reverse flys'], lift2Options: ['butterfly'], targetRatioDisplay: '0.9:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe' },
 };
 
@@ -129,9 +129,9 @@ const RoundedBar = (props: any) => {
   return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
 };
 
-type StrengthFinding = StrengthImbalanceOutput['findings'][0] & {
-    goalWeight?: number | null;
-    weakerLiftName?: string | null;
+type StrengthFinding = Omit<StrengthImbalanceOutput['findings'][0], 'insight' | 'recommendation'> & {
+    lift1Level: StrengthLevel;
+    lift2Level: StrengthLevel;
 };
 
 interface StoredAnalysis {
@@ -262,15 +262,19 @@ export default function AnalysisPage() {
             lift2 = findBestPr(personalRecords, config.lift2Options);
         }
 
+        const lift1Level = lift1 ? getStrengthLevel(lift1, userProfile) : 'N/A';
+        const lift2Level = lift2 && lift2.exerciseName !== 'Body Weight' ? getStrengthLevel(lift2 as PersonalRecord, userProfile) : 'N/A';
+
         if (!lift1 || !lift2) {
-            // Push a "No Data" finding
              findings.push({
                 imbalanceType: type,
                 severity: 'Balanced', // Not really, but prevents rendering imbalance-specific UI
                 lift1Name: config.lift1Options.join('/'),
                 lift2Name: config.lift2Options.join('/'),
                 lift1Weight: 0, lift1Unit: 'lbs', lift2Weight: 0, lift2Unit: 'lbs',
-                userRatio: '', targetRatio: '', insight: '', recommendation: '',
+                userRatio: '', targetRatio: '',
+                lift1Level,
+                lift2Level,
             });
             return;
         };
@@ -283,24 +287,6 @@ export default function AnalysisPage() {
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         const severity = config.severityCheck(ratio);
 
-        const [targetRatioNum1, targetRatioNum2] = config.targetRatioDisplay.split(':').map(Number);
-        const targetRatioValue = targetRatioNum2 === 0 ? targetRatioNum1 : targetRatioNum1 / targetRatioNum2;
-
-        let goalWeight: number | null = null;
-        let weakerLiftName: string | null = null;
-        if (severity !== 'Balanced') {
-            const weakerIsLift1 = ratio < targetRatioValue;
-            if (weakerIsLift1) {
-                weakerLiftName = lift1.exerciseName;
-                const goalWeightKg = lift2WeightKg * targetRatioValue;
-                goalWeight = Math.round(lift1.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
-            } else if (type !== 'Biceps vs. Body Weight') {
-                weakerLiftName = lift2.exerciseName;
-                const goalWeightKg = lift1WeightKg / targetRatioValue;
-                goalWeight = Math.round(lift2.weightUnit === 'lbs' ? goalWeightKg / 0.453592 : goalWeightKg);
-            }
-        }
-
         findings.push({
             imbalanceType: type,
             lift1Name: lift1.exerciseName,
@@ -312,10 +298,8 @@ export default function AnalysisPage() {
             userRatio: `${ratio.toFixed(2)}:1`,
             targetRatio: config.targetRatioDisplay,
             severity: severity,
-            insight: "", // Will be populated by AI later
-            recommendation: "", // Will be populated by AI later
-            goalWeight,
-            weakerLiftName,
+            lift1Level,
+            lift2Level,
         });
     });
 
@@ -502,17 +486,15 @@ export default function AnalysisPage() {
                                       return (
                                         <Card key={index} className="p-4 bg-secondary/50">
                                             <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4">
-                                                <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span>
-                                                    {finding.weakerLiftName === finding.lift1Name && finding.goalWeight && (
-                                                        <span className="text-accent ml-2">(Goal: {finding.goalWeight} {finding.lift1Unit})</span>
-                                                    )}
-                                                </p>
-                                                <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span>
-                                                    {finding.weakerLiftName === finding.lift2Name && finding.goalWeight && (
-                                                        <span className="text-accent ml-2">(Goal: {finding.goalWeight} {finding.lift2Unit})</span>
-                                                    )}
-                                                </p>
+                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                                                <div>
+                                                    <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
+                                                    {finding.lift1Level && finding.lift1Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{finding.lift1Level}</span></p>}
+                                                </div>
+                                                <div>
+                                                    <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
+                                                    {finding.lift2Level && finding.lift2Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{finding.lift2Level}</span></p>}
+                                                </div>
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
                                                 <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
                                             </div>
