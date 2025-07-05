@@ -51,6 +51,12 @@ const constructUserProfileContext = (userProfile: UserProfile | null, workoutLog
       context += `Weight: Not specified\n`;
     }
 
+    if (userProfile.skeletalMuscleMassValue && userProfile.skeletalMuscleMassUnit) {
+      context += `Skeletal Muscle Mass: ${userProfile.skeletalMuscleMassValue} ${userProfile.skeletalMuscleMassUnit}\n`;
+    } else {
+      context += `Skeletal Muscle Mass: Not specified\n`;
+    }
+
     context += "\nFitness Goals:\n";
     const primaryGoal = userProfile.fitnessGoals.find(g => g.isPrimary);
     if (primaryGoal) {
