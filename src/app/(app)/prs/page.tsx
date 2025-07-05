@@ -320,11 +320,6 @@ export default function MilestonesPage() {
                                             
                                             {thresholds && level !== 'N/A' && (
                                               <div className="mt-3 pt-3 border-t border-muted/20 text-xs space-y-1">
-                                                {standardType && (
-                                                    <p className="text-center text-muted-foreground/80 text-[10px] uppercase tracking-wider mb-2">
-                                                        Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
-                                                    </p>
-                                                )}
                                                 {level !== 'Elite' && level !== 'Advanced' && (
                                                     <div className="flex justify-between items-center">
                                                         <span className="font-medium text-muted-foreground">Intermediate</span>
@@ -341,6 +336,11 @@ export default function MilestonesPage() {
                                                     <span className="font-medium text-muted-foreground">Elite</span>
                                                     <span className="font-semibold text-foreground">{thresholds.elite} {record.weightUnit}</span>
                                                 </div>
+                                                {standardType && (
+                                                    <p className="text-center text-muted-foreground/80 text-[10px] uppercase tracking-wider pt-2">
+                                                        Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
+                                                    </p>
+                                                )}
                                               </div>
                                             )}
                                         </div>
