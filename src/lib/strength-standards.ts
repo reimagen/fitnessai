@@ -43,7 +43,39 @@ const strengthStandards: Record<string, GenderStandards> = {
   'lat pulldown': {
       'Male': { intermediate: 2.5, advanced: 3.0, elite: 3.5 },
       'Female': { intermediate: 1.8, advanced: 2.3, elite: 2.8 },
-  }
+  },
+  'seated row': {
+    'Male': { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
+    'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+  },
+  'bicep curl': {
+    'Male': { intermediate: 0.6, advanced: 0.8, elite: 1.0 },
+    'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
+  },
+  'triceps': {
+    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+  },
+  'tricep extension': {
+    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+  },
+  'tricep pushdown': {
+    'Male': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+    'Female': { intermediate: 0.6, advanced: 0.9, elite: 1.2 },
+  },
+  'reverse flys': {
+    'Male': { intermediate: 0.4, advanced: 0.6, elite: 0.8 },
+    'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+  },
+  'reverse fly': {
+    'Male': { intermediate: 0.4, advanced: 0.6, elite: 0.8 },
+    'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+  },
+  'butterfly': {
+    'Male': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+    'Female': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+  },
 };
 
 /**
