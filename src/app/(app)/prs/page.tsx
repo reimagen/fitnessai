@@ -16,7 +16,7 @@ import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePer
 import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
-import { getStrengthLevel } from "@/lib/strength-standards";
+import { getStrengthLevel, getStrengthThresholds } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -252,6 +252,7 @@ export default function MilestonesPage() {
                             {groupedRecords[category].map(record => {
                                 const isEditing = editingRecordId === record.id;
                                 const level = userProfile ? getStrengthLevel(record, userProfile) : 'N/A';
+                                const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 return (
                                     <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
                                       {isEditing ? (
@@ -284,32 +285,57 @@ export default function MilestonesPage() {
                                         </div>
                                       ) : (
                                         <div className="flex flex-col h-full">
-                                            <div className="flex justify-between items-start">
-                                                <div>
-                                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                        <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                                        {level !== 'N/A' ? (
-                                                            <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
-                                                        ) : (
-                                                            <TooltipProvider>
-                                                                <Tooltip>
-                                                                    <TooltipTrigger>
-                                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                                    </TooltipTrigger>
-                                                                    <TooltipContent>
-                                                                        <p>Set SMM & gender in profile to classify.</p>
-                                                                    </TooltipContent>
-                                                                </Tooltip>
-                                                            </TooltipProvider>
-                                                        )}
+                                            <div>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                            <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                                            {level !== 'N/A' ? (
+                                                                <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
+                                                            ) : (
+                                                                <TooltipProvider>
+                                                                    <Tooltip>
+                                                                        <TooltipTrigger>
+                                                                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>Set SMM & gender in profile to classify.</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                </TooltipProvider>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
                                                     </div>
-                                                    <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
+                                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(record)} aria-label={`Edit ${record.exerciseName} PR`}>
+                                                        <Edit2 className="h-4 w-4" />
+                                                    </Button>
                                                 </div>
-                                                <Button variant="ghost" size="icon" onClick={() => handleEditClick(record)} aria-label={`Edit ${record.exerciseName} PR`}>
-                                                    <Edit2 className="h-4 w-4" />
-                                                </Button>
+                                                <p className="text-xs text-muted-foreground mt-1">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
                                             </div>
-                                            <p className="text-xs text-muted-foreground mt-auto pt-2">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
+
+                                            <div className="flex-grow"></div>
+                                            
+                                            {thresholds && level !== 'N/A' && (
+                                              <div className="mt-3 pt-3 border-t border-muted/20 text-xs space-y-1">
+                                                {level !== 'Elite' && level !== 'Advanced' && (
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-medium text-muted-foreground">Intermediate</span>
+                                                        <span className="font-semibold text-foreground">{thresholds.intermediate} {record.weightUnit}</span>
+                                                    </div>
+                                                )}
+                                                {level !== 'Elite' && (
+                                                     <div className="flex justify-between items-center">
+                                                        <span className="font-medium text-muted-foreground">Advanced</span>
+                                                        <span className="font-semibold text-foreground">{thresholds.advanced} {record.weightUnit}</span>
+                                                    </div>
+                                                )}
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-medium text-muted-foreground">Elite</span>
+                                                    <span className="font-semibold text-foreground">{thresholds.elite} {record.weightUnit}</span>
+                                                </div>
+                                              </div>
+                                            )}
                                         </div>
                                       )}
                                     </Card>
