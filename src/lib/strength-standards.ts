@@ -1,4 +1,3 @@
-
 import type { PersonalRecord, UserProfile, StrengthLevel } from './types';
 
 const LBS_TO_KG = 0.453592;
@@ -31,6 +30,22 @@ const strengthStandards: Record<string, GenderStandards> = {
   'leg press': {
     'Male':   { intermediate: 5.0, advanced: 6.5, elite: 8.0 },
     'Female': { intermediate: 4.0, advanced: 5.5, elite: 7.0 },
+  },
+  'leg extension': {
+    'Male':   { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+    'Female': { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+  },
+  'leg curl': {
+    'Male':   { intermediate: 1.0, advanced: 1.4, elite: 1.8 },
+    'Female': { intermediate: 0.8, advanced: 1.2, elite: 1.6 },
+  },
+  'abductor': {
+    'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
+    'Female': { intermediate: 1.4, advanced: 1.8, elite: 2.2 },
+  },
+  'adductor': {
+    'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
+    'Female': { intermediate: 1.4, advanced: 1.8, elite: 2.2 },
   },
   'overhead press': {
     'Male':   { intermediate: 1.5, advanced: 1.8, elite: 2.2 },
@@ -75,6 +90,18 @@ const strengthStandards: Record<string, GenderStandards> = {
   'butterfly': {
     'Male': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
     'Female': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+  },
+  'abdominal crunch': {
+    'Male':   { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+    'Female': { intermediate: 0.9, advanced: 1.2, elite: 1.5 },
+  },
+  'rotary torso': {
+    'Male':   { intermediate: 0.8, advanced: 1.0, elite: 1.2 },
+    'Female': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+  },
+  'back extension': {
+    'Male':   { intermediate: 1.1, advanced: 1.4, elite: 1.7 },
+    'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
   },
 };
 
