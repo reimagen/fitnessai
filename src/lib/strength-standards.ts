@@ -1,0 +1,106 @@
+
+import type { PersonalRecord, UserProfile, StrengthLevel } from './types';
+
+const LBS_TO_KG = 0.453592;
+
+type StrengthStandardRatios = {
+  intermediate: number;
+  advanced: number;
+  elite: number;
+};
+
+type GenderStandards = {
+  Male: StrengthStandardRatios;
+  Female: StrengthStandardRatios;
+};
+
+// Ratios are defined as: (Weight Lifted in KG) / (Skeletal Muscle Mass in KG)
+const strengthStandards: Record<string, GenderStandards> = {
+  'bench press': {
+    'Male':   { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
+    'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+  },
+  'chest press': { // Using same as bench press
+    'Male':   { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
+    'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+  },
+  'squat': {
+    'Male':   { intermediate: 3.0, advanced: 4.0, elite: 5.0 },
+    'Female': { intermediate: 2.5, advanced: 3.5, elite: 4.5 },
+  },
+  'leg press': {
+    'Male':   { intermediate: 5.0, advanced: 6.5, elite: 8.0 },
+    'Female': { intermediate: 4.0, advanced: 5.5, elite: 7.0 },
+  },
+  'overhead press': {
+    'Male':   { intermediate: 1.5, advanced: 1.8, elite: 2.2 },
+    'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+  },
+  'shoulder press': { // Using same as overhead press
+    'Male':   { intermediate: 1.5, advanced: 1.8, elite: 2.2 },
+    'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+  },
+  'lat pulldown': {
+      'Male': { intermediate: 2.5, advanced: 3.0, elite: 3.5 },
+      'Female': { intermediate: 1.8, advanced: 2.3, elite: 2.8 },
+  }
+};
+
+/**
+ * Calculates a strength level classification for a given personal record.
+ * @param record The personal record to classify.
+ * @param profile The user's profile containing necessary stats.
+ * @returns A StrengthLevel ('Beginner', 'Intermediate', 'Advanced', 'Elite', or 'N/A').
+ */
+export function getStrengthLevel(
+  record: PersonalRecord,
+  profile: UserProfile
+): StrengthLevel {
+  // 1. Check for necessary data
+  if (!profile.skeletalMuscleMassValue || !profile.skeletalMuscleMassUnit || !profile.gender) {
+    return 'N/A';
+  }
+
+  const exerciseName = record.exerciseName.trim().toLowerCase();
+  const standards = strengthStandards[exerciseName];
+  if (!standards) {
+    return 'N/A'; // No standards available for this exercise
+  }
+
+  // 2. Convert all weights to KG for a consistent comparison
+  const smmInKg = profile.skeletalMuscleMassUnit === 'lbs'
+    ? profile.skeletalMuscleMassValue * LBS_TO_KG
+    : profile.skeletalMuscleMassValue;
+
+  const liftedWeightInKg = record.weightUnit === 'lbs'
+    ? record.weight * LBS_TO_KG
+    : record.weight;
+  
+  if (smmInKg <= 0) return 'N/A';
+
+  // 3. Calculate the raw strength-to-muscle ratio
+  const rawRatio = liftedWeightInKg / smmInKg;
+
+  // 4. Apply age adjustment factor (simplified WMA-style grading)
+  let ageAdjustedRatio = rawRatio;
+  if (profile.age && profile.age > 40) {
+    // This factor slightly increases the effective ratio for older lifters.
+    // e.g., at 50, factor is 1.05 (+5%). at 60, 1.10 (+10%).
+    const ageFactor = 1 + (profile.age - 40) * 0.01;
+    ageAdjustedRatio *= ageFactor;
+  }
+  
+  // 5. Determine the classification
+  const genderKey = profile.gender as 'Male' | 'Female';
+  const genderStandards = standards[genderKey];
+
+  if (!genderStandards) {
+      return 'N/A'; // No standards for this gender for this exercise
+  }
+
+  if (ageAdjustedRatio >= genderStandards.elite) return 'Elite';
+  if (ageAdjustedRatio >= genderStandards.advanced) return 'Advanced';
+  if (ageAdjustedRatio >= genderStandards.intermediate) return 'Intermediate';
+  
+  return 'Beginner';
+}

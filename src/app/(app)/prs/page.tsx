@@ -3,8 +3,8 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X } from "lucide-react";
-import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal } from "@/lib/types";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info } from "lucide-react";
+import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,11 @@ import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePer
 import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
+import { getStrengthLevel } from "@/lib/strength-standards";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+
 
 // Function to group records and find the best for each exercise
 const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
@@ -51,7 +56,7 @@ export default function MilestonesPage() {
   const [editedDate, setEditedDate] = useState('');
 
   const { data: allRecords, isLoading: isLoadingPrs } = usePersonalRecords();
-  const { data: userProfile } = useUserProfile();
+  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
 
@@ -177,13 +182,25 @@ export default function MilestonesPage() {
 
   const categoryOrder: ExerciseCategory[] = ['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Cardio', 'Other'];
 
+  const levelToBadgeVariant = (level: StrengthLevel) => {
+    switch (level) {
+      case 'Beginner': return 'destructive';
+      case 'Intermediate': return 'secondary';
+      case 'Advanced': return 'default';
+      case 'Elite': return 'default'; // Will be styled with a class
+      default: return 'outline';
+    }
+  };
+
+  const isLoading = isLoadingPrs || isLoadingProfile;
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-4">
         <h1 className="font-headline text-3xl font-bold text-primary flex items-center">
           <Award className="mr-3 h-8 w-8" /> Milestones & Achievements
         </h1>
-        <p className="text-muted-foreground">A showcase of your best lifts and completed goals.</p>
+        <p className="text-muted-foreground">A showcase of your best lifts and completed goals, with strength level classifications.</p>
       </header>
 
        <Card className="shadow-lg">
@@ -217,11 +234,11 @@ export default function MilestonesPage() {
             Personal Records
           </CardTitle>
           <CardDescription>
-            Your top recorded lift for each exercise, grouped by category.
+            Your top recorded lift for each exercise. Levels are classified based on your skeletal muscle mass, gender, and age.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoadingPrs ? (
+          {isLoading ? (
             <div className="flex justify-center items-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
@@ -234,6 +251,7 @@ export default function MilestonesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                             {groupedRecords[category].map(record => {
                                 const isEditing = editingRecordId === record.id;
+                                const level = userProfile ? getStrengthLevel(record, userProfile) : 'N/A';
                                 return (
                                     <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
                                       {isEditing ? (
@@ -268,7 +286,23 @@ export default function MilestonesPage() {
                                         <div className="flex flex-col h-full">
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                        <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
+                                                        {level !== 'N/A' ? (
+                                                            <Badge variant={levelToBadgeVariant(level)} className={cn(level === 'Elite' && 'bg-accent text-accent-foreground hover:bg-accent/90')}>{level}</Badge>
+                                                        ) : (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger>
+                                                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Set SMM & gender in profile to classify.</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        )}
+                                                    </div>
                                                     <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
                                                 </div>
                                                 <Button variant="ghost" size="icon" onClick={() => handleEditClick(record)} aria-label={`Edit ${record.exerciseName} PR`}>
