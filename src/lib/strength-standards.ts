@@ -171,3 +171,66 @@ export function getStrengthLevel(
   
   return 'Beginner';
 }
+
+
+/**
+ * Calculates the weight thresholds for each strength level for a given exercise.
+ * @param exerciseName The name of the exercise.
+ * @param profile The user's profile containing necessary stats.
+ * @param outputUnit The desired weight unit for the output ('lbs' or 'kg').
+ * @returns An object with weight thresholds for each level, or null if data is insufficient.
+ */
+export function getStrengthThresholds(
+  exerciseName: string,
+  profile: UserProfile,
+  outputUnit: 'lbs' | 'kg'
+): { intermediate: number; advanced: number; elite: number } | null {
+  // 1. Check for necessary data
+  if (!profile.skeletalMuscleMassValue || !profile.skeletalMuscleMassUnit || !profile.gender) {
+    return null;
+  }
+
+  const standards = strengthStandards[exerciseName.trim().toLowerCase()];
+  if (!standards) {
+    return null; // No standards available for this exercise
+  }
+
+  // 2. Convert SMM to KG
+  const smmInKg = profile.skeletalMuscleMassUnit === 'lbs'
+    ? profile.skeletalMuscleMassValue * LBS_TO_KG
+    : profile.skeletalMuscleMassValue;
+
+  if (smmInKg <= 0) return null;
+
+  // 3. Get gender-specific ratios
+  const genderKey = profile.gender as 'Male' | 'Female';
+  const genderStandards = standards[genderKey];
+  if (!genderStandards) {
+      return null;
+  }
+
+  // 4. Calculate threshold weights in KG
+  // Apply reverse age adjustment to find the raw weight needed
+  let ageFactor = 1;
+  if (profile.age && profile.age > 40) {
+    ageFactor = 1 + (profile.age - 40) * 0.01;
+  }
+  
+  const calculateRequiredWeight = (ratio: number) => (ratio * smmInKg) / ageFactor;
+
+  const intermediateKg = calculateRequiredWeight(genderStandards.intermediate);
+  const advancedKg = calculateRequiredWeight(genderStandards.advanced);
+  const eliteKg = calculateRequiredWeight(genderStandards.elite);
+
+  // 5. Convert to output unit and round
+  const convert = (kgValue: number) => {
+      const value = outputUnit === 'lbs' ? kgValue / LBS_TO_KG : kgValue;
+      return Math.round(value);
+  }
+  
+  return {
+    intermediate: convert(intermediateKg),
+    advanced: convert(advancedKg),
+    elite: convert(eliteKg),
+  };
+}
