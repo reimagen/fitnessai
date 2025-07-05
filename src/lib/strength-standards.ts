@@ -93,10 +93,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'lat pulldown': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 2.5, advanced: 3.0, elite: 3.5 },
-      'Female': { intermediate: 1.8, advanced: 2.3, elite: 2.8 },
+      'Male':   { intermediate: 0.9, advanced: 1.2, elite: 1.5 },
+      'Female': { intermediate: 0.70, advanced: 0.95, elite: 1.30 },
     },
   },
   'leg curl': {
@@ -124,7 +124,7 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
-      'Female': { intermediate: 0.5, advanced: 0.85, elite: 1.2 },
+      'Female': { intermediate: 0.50, advanced: 0.85, elite: 1.20 },
     },
   },
   'reverse fly': {
@@ -159,7 +159,7 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
-      'Female': { intermediate: 0.5, advanced: 0.85, elite: 1.2 },
+      'Female': { intermediate: 0.50, advanced: 0.85, elite: 1.20 },
     },
   },
   'squat': {
