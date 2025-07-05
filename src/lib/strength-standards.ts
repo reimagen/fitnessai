@@ -30,10 +30,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'abductor': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
-      'Female': { intermediate: 1.4, advanced: 1.8, elite: 2.2 },
+      'Male':   { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+      'Female': { intermediate: 1.25, advanced: 1.75, elite: 2.25 },
     },
   },
   'adductor': {
@@ -220,11 +220,6 @@ export function getStrengthLevel(
 ): StrengthLevel {
   const exerciseName = record.exerciseName.trim().toLowerCase();
   
-  // This is a special rule for EGYM machines. They are not standard and will not be classified.
-  if (exerciseName.toLowerCase().startsWith('egym ')) {
-    return 'N/A';
-  }
-  
   const exerciseData = strengthStandards[exerciseName];
   if (!exerciseData) {
     return 'N/A'; // No standards available for this exercise
@@ -290,11 +285,6 @@ export function getStrengthThresholds(
   outputUnit: 'lbs' | 'kg'
 ): { intermediate: number; advanced: number; elite: number } | null {
   const exerciseNameToUse = exerciseName.trim().toLowerCase();
-
-  // Exclude EGYM machines from threshold calculations
-  if (exerciseNameToUse.startsWith('egym ')) {
-      return null;
-  }
 
   const exerciseData = strengthStandards[exerciseNameToUse];
   if (!exerciseData) {
