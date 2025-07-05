@@ -48,6 +48,8 @@ export interface UserProfile {
   heightUnit?: 'cm' | 'ft/in'; 
   weightValue?: number;
   weightUnit?: 'kg' | 'lbs';
+  skeletalMuscleMassValue?: number;
+  skeletalMuscleMassUnit?: 'kg' | 'lbs';
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;

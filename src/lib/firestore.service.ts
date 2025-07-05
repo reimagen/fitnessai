@@ -146,6 +146,8 @@ const createDefaultProfile = async (): Promise<UserProfile> => {
         workoutsPerWeek: 3,
         sessionTimeMinutes: 45,
         experienceLevel: 'intermediate',
+        skeletalMuscleMassValue: undefined,
+        skeletalMuscleMassUnit: undefined,
     };
     await setDoc(profileDocRef, defaultProfile);
     const newSnapshot = await getDoc(profileDocRef);
