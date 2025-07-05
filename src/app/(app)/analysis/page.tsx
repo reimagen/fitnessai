@@ -199,6 +199,8 @@ export default function AnalysisPage() {
             heightUnit: userProfile.heightUnit,
             weightValue: userProfile.weightValue,
             weightUnit: userProfile.weightUnit,
+            skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+            skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
             fitnessGoals: userProfile.fitnessGoals
               .filter(g => !g.achieved)
               .map(g => ({

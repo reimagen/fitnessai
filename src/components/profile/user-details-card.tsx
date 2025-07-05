@@ -14,7 +14,7 @@ import { format } from "date-fns";
 
 type UserDetailsCardProps = {
   user: UserProfile;
-  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit'>>) => void;
+  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit'>>) => void;
 };
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -50,7 +50,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedHeightIn, setEditedHeightIn] = useState("");
   const [editedWeightUnit, setEditedWeightUnit] = useState<'kg' | 'lbs'>(user.weightUnit || "lbs");
   const [editedWeight, setEditedWeight] = useState("");
-
+  const [editedSkeletalMuscleMassValue, setEditedSkeletalMuscleMassValue] = useState("");
+  const [editedSkeletalMuscleMassUnit, setEditedSkeletalMuscleMassUnit] = useState<'kg' | 'lbs'>(user.skeletalMuscleMassUnit || "lbs");
 
   useEffect(() => {
     if (isEditing) {
@@ -80,6 +81,9 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
       setEditedWeightUnit(user.weightUnit || "lbs");
       setEditedWeight(user.weightValue?.toString() || "");
+      
+      setEditedSkeletalMuscleMassUnit(user.skeletalMuscleMassUnit || 'lbs');
+      setEditedSkeletalMuscleMassValue(user.skeletalMuscleMassValue?.toString() || "");
 
     }
   }, [isEditing, user]);
@@ -163,6 +167,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     if (editedWeight !== "" && (isNaN(weightVal) || weightVal <= 0)) {
         toast({ title: "Invalid Weight", description: "Please enter a valid weight.", variant: "destructive" }); return;
     }
+
+    const smmVal = parseFloat(editedSkeletalMuscleMassValue);
+    if (editedSkeletalMuscleMassValue !== "" && (isNaN(smmVal) || smmVal <= 0)) {
+        toast({ title: "Invalid Skeletal Muscle Mass", description: "Please enter a valid value for skeletal muscle mass.", variant: "destructive" }); return;
+    }
     
     const dateParts = editedJoinedDate.split('-').map(Number);
     // Create date object from parts to ensure local timezone interpretation
@@ -178,6 +187,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       heightUnit: finalHeightCmValue !== undefined ? editedHeightUnit : undefined,
       weightValue: editedWeight !== "" ? weightVal : undefined,
       weightUnit: editedWeight !== "" ? editedWeightUnit : undefined,
+      skeletalMuscleMassValue: editedSkeletalMuscleMassValue !== "" ? smmVal : undefined,
+      skeletalMuscleMassUnit: editedSkeletalMuscleMassValue !== "" ? editedSkeletalMuscleMassUnit : undefined,
     });
     setIsEditing(false);
   };
@@ -194,6 +205,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const displayWeight = () => {
     if (user.weightValue === undefined || user.weightUnit === undefined) return "Not set";
     return `${user.weightValue} ${user.weightUnit}`;
+  };
+  
+  const displaySkeletalMuscleMass = () => {
+    if (user.skeletalMuscleMassValue === undefined || user.skeletalMuscleMassUnit === undefined) return "Not set";
+    return `${user.skeletalMuscleMassValue} ${user.skeletalMuscleMassUnit}`;
   };
 
   return (
@@ -294,9 +310,19 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                     </Select>
                   </div>
                 </div>
+                <div>
+                  <Label className="text-sm font-medium">Skeletal Muscle Mass</Label>
+                  <div className="flex gap-2 mt-1">
+                    <Input id="smm-input" type="number" value={editedSkeletalMuscleMassValue} onChange={(e) => setEditedSkeletalMuscleMassValue(e.target.value)} placeholder="e.g., 40" className="w-2/3" aria-label="Skeletal Muscle Mass" />
+                     <Select value={editedSkeletalMuscleMassUnit} onValueChange={(v) => setEditedSkeletalMuscleMassUnit(v as 'kg' | 'lbs')}>
+                        <SelectTrigger id="smm-unit-select" className="w-1/3"><SelectValue placeholder="Unit" /></SelectTrigger>
+                        <SelectContent>{WEIGHT_UNIT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
             </>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
               <div>
                 <span className="font-medium text-muted-foreground">Age: </span>
                 <span>{user.age || "Not set"}</span>
@@ -312,6 +338,10 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                <div>
                 <span className="font-medium text-muted-foreground">Weight: </span>
                 <span>{displayWeight()}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Skeletal Muscle: </span>
+                <span>{displaySkeletalMuscleMass()}</span>
               </div>
             </div>
           )}

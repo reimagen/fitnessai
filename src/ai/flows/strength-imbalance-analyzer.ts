@@ -23,6 +23,8 @@ const UserProfileForAnalysisSchema = z.object({
     heightUnit: z.enum(['cm', 'ft/in']).optional().describe("The user's height unit."),
     weightValue: z.number().optional().describe("The user's weight value."),
     weightUnit: z.enum(['kg', 'lbs']).optional().describe("The user's weight unit."),
+    skeletalMuscleMassValue: z.number().optional().describe("The user's skeletal muscle mass value."),
+    skeletalMuscleMassUnit: z.enum(['kg', 'lbs']).optional().describe("The user's skeletal muscle mass unit."),
     fitnessGoals: z.array(FitnessGoalForAnalysisSchema).optional().describe("The user's active fitness goals."),
 });
 
@@ -142,6 +144,7 @@ const bulkInsightPrompt = ai.definePrompt({
 - Age: {{#if userProfile.age}}{{userProfile.age}}{{else}}Not Provided{{/if}}
 - Gender: {{#if userProfile.gender}}{{userProfile.gender}}{{else}}Not Provided{{/if}}
 - Weight: {{#if userProfile.weightValue}}{{userProfile.weightValue}} {{userProfile.weightUnit}}{{else}}Not Provided{{/if}}
+- Skeletal Muscle Mass: {{#if userProfile.skeletalMuscleMassValue}}{{userProfile.skeletalMuscleMassValue}} {{userProfile.skeletalMuscleMassUnit}}{{else}}Not Provided{{/if}}
 {{#if userProfile.fitnessGoals}}
 - Fitness Goals:
   {{#each userProfile.fitnessGoals}}
@@ -162,7 +165,7 @@ const bulkInsightPrompt = ai.definePrompt({
 For **each** of the imbalances listed above, provide a unique analysis. Return your response as a single JSON object containing a key "analyses", which is an array of objects. Each object in the array must contain:
 1.  **imbalanceType**: The exact string from the 'Imbalance Type' field (e.g., "Horizontal Push vs. Pull").
 2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks. You MUST incorporate the user's stats and goals to make the insight personal.
-3.  **recommendation (1-2 sentences MAX):** A simple, actionable recommendation to address the imbalance, also connected to their goals.
+3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation to help the user address the imbalance, also connected to their goals.
 
 **CRITICAL STYLE GUIDE:**
 - **VARY YOUR ANALYSIS:** Your main goal is to provide unique and varied feedback for each type of imbalance. Do not use the same sentence structure or phrasing across different imbalance analyses. Be direct and creative.
