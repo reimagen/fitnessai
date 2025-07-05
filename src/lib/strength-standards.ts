@@ -37,10 +37,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'adductor': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.2, advanced: 1.6, elite: 2.0 },
-      'Female': { intermediate: 1.4, advanced: 1.8, elite: 2.2 },
+      'Male':   { intermediate: 1.1, advanced: 1.6, elite: 2.1 },
+      'Female': { intermediate: 1.00, advanced: 1.50, elite: 2.25 },
     },
   },
   'back extension': {
@@ -172,21 +172,21 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   'tricep extension': {
     type: 'smm',
     standards: {
-      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
   'tricep pushdown': {
     type: 'smm',
     standards: {
-      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
   'triceps': {
     type: 'smm',
     standards: {
-      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
