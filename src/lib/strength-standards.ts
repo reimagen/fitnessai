@@ -121,10 +121,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'overhead press': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.5, advanced: 1.8, elite: 2.2 },
-      'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+      'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
+      'Female': { intermediate: 0.5, advanced: 0.85, elite: 1.2 },
     },
   },
   'reverse fly': {
@@ -156,10 +156,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'shoulder press': { // Using same as overhead press
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.5, advanced: 1.8, elite: 2.2 },
-      'Female': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
+      'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
+      'Female': { intermediate: 0.5, advanced: 0.85, elite: 1.2 },
     },
   },
   'squat': {
