@@ -71,11 +71,11 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
       'Female': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
     },
   },
-  'chest press': { // Using same as bench press
-    type: 'smm',
+  'chest press': {
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
-      'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+      'Male':   { intermediate: 0.80, advanced: 1.15, elite: 1.50 },
+      'Female': { intermediate: 0.55, advanced: 0.90, elite: 1.25 },
     },
   },
   'glutes': {
@@ -155,7 +155,7 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
       'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
     },
   },
-  'shoulder press': { // Using same as overhead press
+  'shoulder press': {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
@@ -170,24 +170,24 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'tricep extension': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
+      'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
+      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
     },
   },
   'tricep pushdown': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
+      'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
+      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
     },
   },
   'triceps': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
+      'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
+      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
     },
   },
 };
