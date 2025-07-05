@@ -25,7 +25,7 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   'abdominal crunch': {
     type: 'bw',
     standards: {
-      'Male':   { intermediate: 0.60, advanced: 0.85, elite: 1.15 },
+      'Male':   { intermediate: 0.75, advanced: 1.0, elite: 1.3 },
       'Female': { intermediate: 0.60, advanced: 0.85, elite: 1.15 },
     },
   },
@@ -46,7 +46,7 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   'back extension': {
     type: 'bw',
     standards: {
-      'Male':   { intermediate: 0.65, advanced: 0.95, elite: 1.35 },
+      'Male':   { intermediate: 0.80, advanced: 1.10, elite: 1.50 },
       'Female': { intermediate: 0.65, advanced: 0.95, elite: 1.35 },
     },
   },
@@ -107,10 +107,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'leg extension': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
-      'Female': { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+      'Male':   { intermediate: 1.5, advanced: 1.75, elite: 2.5 },
+      'Female': { intermediate: 1.0, advanced: 1.25, elite: 2.0 },
     },
   },
   'leg press': {
@@ -173,21 +173,21 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     type: 'smm',
     standards: {
       'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
     },
   },
   'tricep pushdown': {
     type: 'smm',
     standards: {
       'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
     },
   },
   'triceps': {
     type: 'smm',
     standards: {
       'Male':   { intermediate: 0.45, advanced: 0.70, elite: 1.0 },
-      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+      'Female': { intermediate: 0.40, advanced: 0.63, elite: 0.88 },
     },
   },
 };
