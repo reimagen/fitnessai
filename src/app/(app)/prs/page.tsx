@@ -16,7 +16,7 @@ import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePer
 import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
-import { getStrengthLevel, getStrengthThresholds } from "@/lib/strength-standards";
+import { getStrengthLevel, getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -253,6 +253,8 @@ export default function MilestonesPage() {
                                 const isEditing = editingRecordId === record.id;
                                 const level = userProfile ? getStrengthLevel(record, userProfile) : 'N/A';
                                 const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
+                                const standardType = getStrengthStandardType(record.exerciseName);
+
                                 return (
                                     <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
                                       {isEditing ? (
@@ -318,6 +320,11 @@ export default function MilestonesPage() {
                                             
                                             {thresholds && level !== 'N/A' && (
                                               <div className="mt-3 pt-3 border-t border-muted/20 text-xs space-y-1">
+                                                {standardType && (
+                                                    <p className="text-center text-muted-foreground/80 text-[10px] uppercase tracking-wider mb-2">
+                                                        Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
+                                                    </p>
+                                                )}
                                                 {level !== 'Elite' && level !== 'Advanced' && (
                                                     <div className="flex justify-between items-center">
                                                         <span className="font-medium text-muted-foreground">Intermediate</span>

@@ -193,6 +193,22 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
 };
 
 /**
+ * Gets the calculation type for a strength standard.
+ * @param exerciseName The name of the exercise.
+ * @returns 'smm', 'bw', or null if not found.
+ */
+export function getStrengthStandardType(
+  exerciseName: string
+): 'smm' | 'bw' | null {
+  const exerciseData = strengthStandards[exerciseName.trim().toLowerCase()];
+  if (!exerciseData) {
+    return null;
+  }
+  return exerciseData.type;
+}
+
+
+/**
  * Calculates a strength level classification for a given personal record.
  * @param record The personal record to classify.
  * @param profile The user's profile containing necessary stats.
