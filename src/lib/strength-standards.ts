@@ -86,10 +86,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'hip thrust': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 3.5, advanced: 4.5, elite: 5.5 },
-      'Female': { intermediate: 3.0, advanced: 4.0, elite: 5.0 },
+      'Male': { intermediate: 2.0, advanced: 3.0, elite: 4.0 },
+      'Female': { intermediate: 1.50, advanced: 2.25, elite: 3.00 },
     },
   },
   'lat pulldown': {
@@ -172,21 +172,21 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   'tricep extension': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
   'tricep pushdown': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
   'triceps': {
     type: 'smm',
     standards: {
-      'Male': { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
+      'Male':   { intermediate: 0.7, advanced: 0.9, elite: 1.1 },
       'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
     },
   },
@@ -219,6 +219,12 @@ export function getStrengthLevel(
   profile: UserProfile
 ): StrengthLevel {
   const exerciseName = record.exerciseName.trim().toLowerCase();
+  
+  // This is a special rule for EGYM machines. They are not standard and will not be classified.
+  if (exerciseName.toLowerCase().startsWith('egym ')) {
+    return 'N/A';
+  }
+  
   const exerciseData = strengthStandards[exerciseName];
   if (!exerciseData) {
     return 'N/A'; // No standards available for this exercise
@@ -283,7 +289,14 @@ export function getStrengthThresholds(
   profile: UserProfile,
   outputUnit: 'lbs' | 'kg'
 ): { intermediate: number; advanced: number; elite: number } | null {
-  const exerciseData = strengthStandards[exerciseName.trim().toLowerCase()];
+  const exerciseNameToUse = exerciseName.trim().toLowerCase();
+
+  // Exclude EGYM machines from threshold calculations
+  if (exerciseNameToUse.startsWith('egym ')) {
+      return null;
+  }
+
+  const exerciseData = strengthStandards[exerciseNameToUse];
   if (!exerciseData) {
     return null; // No standards available for this exercise
   }
