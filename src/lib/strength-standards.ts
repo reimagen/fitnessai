@@ -65,10 +65,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'butterfly': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 1.0, advanced: 1.3, elite: 1.6 },
-      'Female': { intermediate: 0.8, advanced: 1.1, elite: 1.4 },
+      'Male':   { intermediate: 0.85, advanced: 1.15, elite: 1.55 },
+      'Female': { intermediate: 0.60, advanced: 0.90, elite: 1.30 },
     },
   },
   'chest press': {
