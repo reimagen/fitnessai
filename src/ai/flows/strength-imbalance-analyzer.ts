@@ -325,7 +325,7 @@ const strengthImbalanceFlow = ai.defineFlow(
     
     let summary: string;
     if (finalFindings.length > 0) {
-        summary = `Based on your Personal Records, we've found potential area(s) for improvement.`;
+        summary = ""; // This summary is intentionally left blank. The findings are the summary.
     } else {
         summary = "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
     }
