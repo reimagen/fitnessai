@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    allowedDevOrigins: ['https://*.cloudworkstations.dev'],
+  },
   serverActions: {
     bodySizeLimit: '10mb',
   },
