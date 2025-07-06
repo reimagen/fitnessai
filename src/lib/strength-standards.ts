@@ -149,10 +149,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'seated row': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
-      'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+      'Male':   { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.75 },
     },
   },
   'shoulder press': {
