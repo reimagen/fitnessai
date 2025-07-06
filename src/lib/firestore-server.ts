@@ -101,10 +101,14 @@ export const addWorkoutLog = async (log: Omit<WorkoutLog, 'id'>) => {
   return await addDoc(workoutLogsCollection, log);
 };
 
-export const updateWorkoutLog = async (id: string, log: Partial<Omit<WorkoutLog, 'id' | 'date'>> & { date?: Date }) => {
+export const updateWorkoutLog = async (id: string, log: Partial<Omit<WorkoutLog, 'id'>>) => {
   const logDoc = doc(db, 'workoutLogs', id);
-  // Convert date back to timestamp if it exists
-  const dataToUpdate = log.date ? { ...log, date: Timestamp.fromDate(log.date) } : log;
+  // Create a mutable copy for the update
+  const dataToUpdate: { [key: string]: any } = { ...log };
+  // Convert date back to timestamp if it exists in the partial update
+  if (log.date) {
+    dataToUpdate.date = Timestamp.fromDate(log.date);
+  }
   return await updateDoc(logDoc, dataToUpdate);
 };
 

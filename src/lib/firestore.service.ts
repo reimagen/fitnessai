@@ -34,7 +34,7 @@ export function useAddWorkoutLog() {
 
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
-    return useMutation<void, Error, { id: string, data: Omit<WorkoutLog, 'id'> }>({
+    return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id'>> }>({
         mutationFn: ({ id, data }) => serverUpdateWorkoutLog(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workouts'] });
