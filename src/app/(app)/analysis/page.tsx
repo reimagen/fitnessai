@@ -437,21 +437,25 @@ export default function AnalysisPage() {
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
-                    <CardTitle className="font-headline flex items-center justify-between">
-                        <span className="flex items-center gap-2"><Scale className="h-6 w-6 text-primary" />Strength Balance Analysis</span>
-                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0}>
+                    <div className="flex items-start justify-between gap-4">
+                        <div>
+                            <CardTitle className="font-headline flex items-center gap-2">
+                                <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
+                            </CardTitle>
+                            <CardDescription className="mt-2">
+                              Review your strength ratios. Click for AI-powered insights on imbalances that factor in your goals and personal stats.
+                              {isClient && analysisResult?.generatedDate && (
+                                  <span className="block text-xs mt-1 text-muted-foreground/80">
+                                      Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}
+                                  </span>
+                              )}
+                            </CardDescription>
+                        </div>
+                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0">
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
                             {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
-                    </CardTitle>
-                    <CardDescription>
-                      Review your strength ratios. Click for AI-powered insights on imbalances that factor in your goals and personal stats.
-                      {isClient && analysisResult?.generatedDate && (
-                          <span className="block text-xs mt-1 text-muted-foreground/80">
-                              Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}
-                          </span>
-                      )}
-                    </CardDescription>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
                     {isLoadingPrs ? (
