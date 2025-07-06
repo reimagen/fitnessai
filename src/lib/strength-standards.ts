@@ -58,10 +58,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'bicep curl': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 0.6, advanced: 0.8, elite: 1.0 },
-      'Female': { intermediate: 0.5, advanced: 0.7, elite: 0.9 },
+      'Male':   { intermediate: 0.35, advanced: 0.5, elite: 0.75 },
+      'Female': { intermediate: 0.40, advanced: 0.70, elite: 1.00 },
     },
   },
   'butterfly': {
