@@ -137,7 +137,7 @@ const bulkInsightPrompt = ai.definePrompt({
       }),
     },
     output: { schema: z.object({ analyses: z.array(AIAnalysisResultSchema) }) },
-    prompt: `You are an expert fitness coach providing a highly concise and varied analysis of a user's strength imbalances. Your primary goal is to provide health-focused, practical advice, not just to make numbers match.
+    prompt: `You are an expert fitness coach acting as an analyst. Your role is to provide qualitative insights and recommendations based on pre-calculated data. **You MUST NOT perform any calculations or verify the data provided.** Your sole responsibility is to generate insightful, human-like commentary.
 
 **User's Stats & Goals:**
 - Age: {{#if userProfile.age}}{{userProfile.age}}{{else}}Not Provided{{/if}}
@@ -151,26 +151,27 @@ const bulkInsightPrompt = ai.definePrompt({
   {{/each}}
 {{/if}}
 
-**Imbalances to Analyze:**
-Based on our code-based analysis, here are the user's current imbalances. Your task is to provide expert commentary for each one.
+**Pre-Calculated Imbalance Data:**
+The following data has been calculated by our system. Use this as the absolute source of truth.
 
 {{#each imbalances}}
 - **Imbalance Type:** {{{this.imbalanceType}}}
   - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
-  - **Diagnosis:** {{{this.diagnosis}}}
-  - **Recommendation Focus:** {{{this.recommendationFocus}}}
+  - **System Diagnosis:** {{{this.diagnosis}}}
+  - **System Recommendation Focus:** {{{this.recommendationFocus}}}
 {{/each}}
 
 **Your Task:**
-For **each** of the imbalances listed above, provide a unique analysis. Return your response as a single JSON object containing a key "analyses", which is an array of objects. Each object in the array must contain:
-1.  **imbalanceType**: The exact string from the 'Imbalance Type' field (e.g., "Horizontal Push vs. Pull").
-2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST incorporate the user's goals and the provided diagnosis to make the insight personal and relevant. For example, if a lagging lift could hinder a primary goal, mention it.
-3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that follows the 'Recommendation Focus'. It must start with a direct action verb.
+For **each** of the imbalances listed above, you will provide expert commentary. Your output MUST be a single JSON object with a key "analyses", which is an array of objects. Each object must contain:
+1.  **imbalanceType**: The exact string from the 'Imbalance Type' field.
+2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST use the user's goals and the provided 'System Diagnosis' to make the insight personal.
+3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that directly follows the 'System Recommendation Focus'. It must start with an action verb.
 
 **CRITICAL STYLE GUIDE:**
-- **VARY YOUR ANALYSIS:** Your main goal is to provide unique and varied feedback for each type of imbalance. Do not use the same sentence structure or phrasing across different imbalance analyses. Be direct and creative.
-- **HEALTH-FOCUSED:** Prioritize long-term joint health and balanced development over simply chasing ratio numbers.
-- **COMPLETE JSON:** You MUST provide a complete JSON object with an analysis for every single imbalance provided in the input.
+- **DO NOT CALCULATE:** Do not attempt to recalculate ratios or levels. Your job is analysis of the provided data only.
+- **VARY YOUR ANALYSIS:** Provide unique and varied feedback for each imbalance. Do not use the same sentence structure. Be direct and creative.
+- **HEALTH-FOCUSED:** Prioritize long-term joint health and balanced development.
+- **COMPLETE JSON:** You MUST provide an analysis for every single imbalance in the input.
 `,
 });
 
@@ -217,9 +218,11 @@ const strengthImbalanceFlow = ai.defineFlow(
         
         if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
             let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
-            if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
+
+            const levels = [lift1Level, lift2Level];
+            if (levels.includes('Beginner')) {
                 targetLevelForRatio = 'Intermediate';
-            } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
+            } else if (levels.includes('Intermediate')) {
                 targetLevelForRatio = 'Advanced';
             }
 
