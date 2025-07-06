@@ -173,21 +173,21 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
-      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
+      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.50 },
     },
   },
   'tricep pushdown': {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
-      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
+      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.50 },
     },
   },
   'triceps': {
     type: 'bw',
     standards: {
       'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
-      'Female': { intermediate: 0.42, advanced: 0.67, elite: 0.94 },
+      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.50 },
     },
   },
 };
