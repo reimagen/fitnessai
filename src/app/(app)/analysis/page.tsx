@@ -137,12 +137,15 @@ export default function AnalysisPage() {
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('weekly');
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
+  const [latestAnalysis, setLatestAnalysis] = useState<StrengthImbalanceOutput | null>(null);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
 
-  const analysisResult = userProfile?.strengthAnalysis;
+  const storedAnalysisResult = userProfile?.strengthAnalysis?.result;
+  const analysisToRender = latestAnalysis || storedAnalysisResult;
+
 
   const handleAnalyzeStrength = async () => {
     if (!personalRecords || personalRecords.length === 0) {
@@ -192,6 +195,7 @@ export default function AnalysisPage() {
     const result = await analyzeStrengthAction(analysisInput);
 
     if (result.success && result.data) {
+      setLatestAnalysis(result.data);
       toast({
         title: "Analysis Complete",
         description: result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced.",
@@ -458,16 +462,16 @@ export default function AnalysisPage() {
                             </CardTitle>
                             <CardDescription className="mt-2">
                               Review your AI-powered analysis that factors in your goals and personal stats.
-                              {analysisResult?.generatedDate && (
+                              {storedAnalysisResult?.generatedDate && (
                                   <span className="block text-xs mt-1 text-muted-foreground/80">
-                                      Last analysis on: {format(analysisResult.generatedDate, "MMMM d, yyyy 'at' h:mm a")}
+                                      Last analysis on: {format(storedAnalysisResult.generatedDate, "MMMM d, yyyy 'at' h:mm a")}
                                   </span>
                               )}
                             </CardDescription>
                         </div>
                         <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                            {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
+                            {storedAnalysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
                     </div>
                 </CardHeader>
@@ -478,13 +482,13 @@ export default function AnalysisPage() {
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                            {analysisResult?.result?.summary && analysisResult.result.findings.length === 0 && (
-                                <p className="text-center text-muted-foreground italic text-sm">{analysisResult.result.summary}</p>
+                            {analysisToRender?.summary && analysisToRender.findings.length === 0 && (
+                                <p className="text-center text-muted-foreground italic text-sm">{analysisToRender.summary}</p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {IMBALANCE_TYPES.map((type, index) => {
                                     const finding = clientSideFindings.find(f => f.imbalanceType === type);
-                                    const aiFinding = finding ? analysisResult?.result?.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
+                                    const aiFinding = finding && analysisToRender ? analysisToRender.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
                                     
                                     if (finding && finding.userRatio) {
                                       const badgeProps = focusBadgeProps(finding.imbalanceFocus);
