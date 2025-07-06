@@ -234,7 +234,9 @@ export default function MilestonesPage() {
             Personal Records
           </CardTitle>
           <CardDescription>
-            Your top recorded lift for each exercise. Levels are classified based on your personal stats (skeletal muscle mass, gender, and age).
+            Your top recorded lift (1RM) for each exercise. Levels are classified based on your personal stats. 
+            Body-weight based levels use ratios from strengthlevel.com. 
+            Otherwise, level calculations are based on your skeletal muscle mass.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -254,6 +256,7 @@ export default function MilestonesPage() {
                                 const level = userProfile ? getStrengthLevel(record, userProfile) : 'N/A';
                                 const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const standardType = getStrengthStandardType(record.exerciseName);
+                                const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
 
                                 return (
                                     <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
@@ -337,9 +340,14 @@ export default function MilestonesPage() {
                                                     <span className="font-semibold text-foreground">{thresholds.elite} {record.weightUnit}</span>
                                                 </div>
                                                 {standardType && (
-                                                    <p className="text-center text-muted-foreground/80 text-[10px] uppercase tracking-wider pt-2">
-                                                        Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
-                                                    </p>
+                                                    <div className="text-center text-muted-foreground/80 text-[10px] pt-2">
+                                                        <p className="uppercase tracking-wider">
+                                                            Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
+                                                        </p>
+                                                        {isTricepsExercise && (
+                                                            <p className="normal-case italic tracking-normal">*Machine is Seated Dip</p>
+                                                        )}
+                                                    </div>
                                                 )}
                                               </div>
                                             )}
