@@ -198,10 +198,7 @@ const strengthImbalanceFlow = ai.defineFlow(
     for (const type of IMBALANCE_TYPES) {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(input.personalRecords, config.lift1Options);
-        
-        let lift2: (PersonalRecord & {id: string}) | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; date: Date, id: string; category?: string } | null;
-
-        lift2 = findBestPr(input.personalRecords, config.lift2Options);
+        const lift2 = findBestPr(input.personalRecords, config.lift2Options);
 
         if (!lift1 || !lift2) continue;
 
@@ -213,39 +210,35 @@ const strengthImbalanceFlow = ai.defineFlow(
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         let severity = config.severityCheck(ratio);
         
-        // DYNAMIC TARGET RATIO LOGIC for Adductor vs. Abductor
+        // DYNAMIC TARGET RATIO LOGIC
         let targetRatioDisplay = config.targetRatioDisplay;
-        if (type === 'Adductor vs. Abductor') {
-            const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
-            const lift2Level = getStrengthLevel(lift2, userProfileForLevels);
-            
-            if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
-                let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
-                if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
-                    targetLevelForRatio = 'Intermediate';
-                } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
-                    targetLevelForRatio = 'Advanced';
-                }
-    
-                const adductorThresholds = getStrengthThresholds('adductor', userProfileForLevels, 'kg');
-                const abductorThresholds = getStrengthThresholds('abductor', userProfileForLevels, 'kg');
-    
-                if (adductorThresholds && abductorThresholds) {
-                    const targetAdductorWeight = adductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof adductorThresholds];
-                    const targetAbductorWeight = abductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof abductorThresholds];
-                    
-                    if (targetAbductorWeight > 0) {
-                        const targetRatioValue = targetAdductorWeight / targetAbductorWeight;
-                        targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
-                    }
+        const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
+        const lift2Level = getStrengthLevel(lift2, userProfileForLevels);
+        
+        if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+            let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
+            if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
+                targetLevelForRatio = 'Intermediate';
+            } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
+                targetLevelForRatio = 'Advanced';
+            }
+
+            const lift1Thresholds = getStrengthThresholds(config.lift1Options[0], userProfileForLevels, 'kg');
+            const lift2Thresholds = getStrengthThresholds(config.lift2Options[0], userProfileForLevels, 'kg');
+
+            if (lift1Thresholds && lift2Thresholds) {
+                const targetLevelKey = targetLevelForRatio.toLowerCase() as keyof typeof lift1Thresholds;
+                const targetLift1Weight = lift1Thresholds[targetLevelKey];
+                const targetLift2Weight = lift2Thresholds[targetLevelKey];
+                
+                if (targetLift2Weight > 0) {
+                    const targetRatioValue = targetLift1Weight / targetLift2Weight;
+                    targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
                 }
             }
         }
         
         if (severity !== 'Balanced') {
-            const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
-            const lift2Level = (lift2.exerciseName === 'Body Weight') ? 'N/A' : getStrengthLevel(lift2 as PersonalRecord, userProfileForLevels);
-
             // New Severity Logic based on Strength Levels
             // Rule 1: A high-level discrepancy is always Severe.
             const isHighDiscrepancy = 
