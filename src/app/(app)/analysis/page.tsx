@@ -11,7 +11,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
-import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb } from 'lucide-react';
+import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
@@ -551,7 +551,38 @@ export default function AnalysisPage() {
                                                  <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
                                                     <p>This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
-                                            ) : null}
+                                            ) : (
+                                                (() => {
+                                                    const currentLevel = finding.lift1Level;
+                                                    if (currentLevel === 'N/A') return null;
+
+                                                    if (currentLevel === 'Elite') {
+                                                        return (
+                                                            <div className="mt-3 pt-3 border-t">
+                                                                <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Elite Status</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">You've reached the Elite level while maintaining balance. Incredible work!</p>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    let nextLevel: string | null = null;
+                                                    if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
+                                                    else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
+                                                    else if (currentLevel === 'Advanced') nextLevel = 'Elite';
+
+                                                    if (nextLevel) {
+                                                        return (
+                                                            <div className="mt-3 pt-3 border-t">
+                                                                <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">
+                                                                    Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+                                                                </p>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()
+                                            )}
                                         </Card>
                                       )
                                     } else {
@@ -581,3 +612,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
