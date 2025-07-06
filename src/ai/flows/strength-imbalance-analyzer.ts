@@ -49,7 +49,6 @@ const IMBALANCE_TYPES = [
     'Vertical Push vs. Pull',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
-    'Biceps vs. Body Weight',
 ] as const;
 
 const ImbalanceFindingSchema = z.object({
@@ -79,7 +78,6 @@ const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options:
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe' },
 };
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
@@ -203,19 +201,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         
         let lift2: (PersonalRecord & {id: string}) | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; date: Date, id: string; category?: string } | null;
 
-        if (type === 'Biceps vs. Body Weight') {
-            if (!input.userProfile.weightValue || !input.userProfile.weightUnit) continue;
-            lift2 = {
-                exerciseName: 'Body Weight',
-                weight: input.userProfile.weightValue,
-                weightUnit: input.userProfile.weightUnit,
-                date: new Date(),
-                id: 'bodyweight-pr',
-                category: 'User Stat'
-            };
-        } else {
-            lift2 = findBestPr(input.personalRecords, config.lift2Options);
-        }
+        lift2 = findBestPr(input.personalRecords, config.lift2Options);
 
         if (!lift1 || !lift2) continue;
 
