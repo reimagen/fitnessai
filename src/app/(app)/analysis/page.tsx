@@ -221,7 +221,7 @@ export default function AnalysisPage() {
 
       toast({
         title: "Analysis Complete",
-        description: result.data.summary,
+        description: result.data.findings.length > 0 ? "Potential areas for improvement found." : result.data.summary,
       });
     } else {
       setAnalysisResult(null); // Clear previous results on failure
@@ -507,7 +507,7 @@ export default function AnalysisPage() {
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                            {analysisResult?.result?.summary && (
+                            {analysisResult?.result?.summary && analysisResult.result.findings.length === 0 && (
                                 <p className="text-center text-muted-foreground italic text-sm">{analysisResult.result.summary}</p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -612,5 +612,7 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
 
     
