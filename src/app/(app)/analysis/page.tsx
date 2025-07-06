@@ -22,7 +22,6 @@ const IMBALANCE_TYPES = [
     'Vertical Push vs. Pull',
     'Quad vs. Hamstring',
     'Adductor vs. Abductor',
-    'Biceps vs. Body Weight',
 ] as const;
 
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
@@ -32,7 +31,6 @@ const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Opt
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Biceps vs. Body Weight': { lift1Options: ['bicep curl'], lift2Options: [], targetRatioDisplay: '0.35:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r >= 0.35) ? 'Balanced' : (r >= 0.30) ? 'Moderate' : 'Severe' },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -248,19 +246,7 @@ export default function AnalysisPage() {
 
         let lift2: PersonalRecord | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; } | null;
         
-        if (type === 'Biceps vs. Body Weight') {
-            if (!userProfile.weightValue || !userProfile.weightUnit) {
-                lift2 = null;
-            } else {
-                lift2 = {
-                    exerciseName: 'Body Weight',
-                    weight: userProfile.weightValue,
-                    weightUnit: userProfile.weightUnit,
-                };
-            }
-        } else {
-            lift2 = findBestPr(personalRecords, config.lift2Options);
-        }
+        lift2 = findBestPr(personalRecords, config.lift2Options);
 
         const lift1Level = lift1 ? getStrengthLevel(lift1, userProfile) : 'N/A';
         const lift2Level = lift2 && lift2.exerciseName !== 'Body Weight' ? getStrengthLevel(lift2 as PersonalRecord, userProfile) : 'N/A';
@@ -523,9 +509,6 @@ export default function AnalysisPage() {
                                     } else {
                                         const config = IMBALANCE_CONFIG[type];
                                         let requirements = `Requires: ${config.lift1Options.join(' or ')} & ${config.lift2Options.join(' or ')}`;
-                                        if (type === 'Biceps vs. Body Weight') {
-                                            requirements = `Requires: ${config.lift1Options.join(' or ')} & Body Weight set in profile`;
-                                        }
 
                                         return (
                                             <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
