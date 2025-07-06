@@ -243,13 +243,10 @@ export default function AnalysisPage() {
     IMBALANCE_TYPES.forEach(type => {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(personalRecords, config.lift1Options);
-
-        let lift2: PersonalRecord | { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; } | null;
-        
-        lift2 = findBestPr(personalRecords, config.lift2Options);
+        const lift2 = findBestPr(personalRecords, config.lift2Options);
 
         const lift1Level = lift1 ? getStrengthLevel(lift1, userProfile) : 'N/A';
-        const lift2Level = lift2 && lift2.exerciseName !== 'Body Weight' ? getStrengthLevel(lift2 as PersonalRecord, userProfile) : 'N/A';
+        const lift2Level = lift2 ? getStrengthLevel(lift2, userProfile) : 'N/A';
 
         if (!lift1 || !lift2) {
              findings.push({
@@ -273,28 +270,27 @@ export default function AnalysisPage() {
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         const severity = config.severityCheck(ratio);
 
-        // DYNAMIC TARGET RATIO LOGIC for Adductor vs. Abductor on client-side
+        // DYNAMIC TARGET RATIO LOGIC on client-side
         let targetRatioDisplay = config.targetRatioDisplay;
-        if (type === 'Adductor vs. Abductor') {
-            if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
-                let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
-                if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
-                    targetLevelForRatio = 'Intermediate';
-                } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
-                    targetLevelForRatio = 'Advanced';
-                }
+        if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+            let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
+            if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
+                targetLevelForRatio = 'Intermediate';
+            } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
+                targetLevelForRatio = 'Advanced';
+            }
 
-                const adductorThresholds = getStrengthThresholds('adductor', userProfile, 'kg');
-                const abductorThresholds = getStrengthThresholds('abductor', userProfile, 'kg');
+            const lift1Thresholds = getStrengthThresholds(config.lift1Options[0], userProfile, 'kg');
+            const lift2Thresholds = getStrengthThresholds(config.lift2Options[0], userProfile, 'kg');
 
-                if (adductorThresholds && abductorThresholds) {
-                    const targetAdductorWeight = adductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof adductorThresholds];
-                    const targetAbductorWeight = abductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof abductorThresholds];
-                    
-                    if (targetAbductorWeight > 0) {
-                        const targetRatioValue = targetAdductorWeight / targetAbductorWeight;
-                        targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
-                    }
+            if (lift1Thresholds && lift2Thresholds) {
+                const targetLevelKey = targetLevelForRatio.toLowerCase() as keyof typeof lift1Thresholds;
+                const targetLift1Weight = lift1Thresholds[targetLevelKey];
+                const targetLift2Weight = lift2Thresholds[targetLevelKey];
+                
+                if (targetLift2Weight > 0) {
+                    const targetRatioValue = targetLift1Weight / targetLift2Weight;
+                    targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
                 }
             }
         }
