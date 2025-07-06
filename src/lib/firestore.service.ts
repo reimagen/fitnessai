@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, FitnessGoal, Exercise, SessionTime, ExperienceLevel } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, FitnessGoal, Exercise, SessionTime, ExperienceLevel, StoredStrengthAnalysis } from './types';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // --- Data Converters ---
@@ -56,6 +56,12 @@ const userProfileConverter = {
                 targetDate: goal.targetDate ? Timestamp.fromDate(goal.targetDate) : undefined,
             }));
         }
+        if (profile.strengthAnalysis) {
+            dataToStore.strengthAnalysis = {
+                ...profile.strengthAnalysis,
+                generatedDate: Timestamp.fromDate(profile.strengthAnalysis.generatedDate),
+            };
+        }
         return dataToStore;
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
@@ -65,12 +71,18 @@ const userProfileConverter = {
                 ...goal,
                 targetDate: goal.targetDate ? goal.targetDate.toDate() : undefined,
             })) : [];
+        
+        const strengthAnalysis = data.strengthAnalysis ? {
+            ...data.strengthAnalysis,
+            generatedDate: data.strengthAnalysis.generatedDate.toDate(),
+        } : undefined;
 
         return {
             ...data,
             id: snapshot.id,
             joinedDate: joinedDate,
-            fitnessGoals: fitnessGoals
+            fitnessGoals: fitnessGoals,
+            strengthAnalysis: strengthAnalysis
         } as UserProfile;
     }
 };
@@ -148,6 +160,7 @@ const createDefaultProfile = async (): Promise<UserProfile> => {
         experienceLevel: 'intermediate',
         skeletalMuscleMassValue: undefined,
         skeletalMuscleMassUnit: undefined,
+        strengthAnalysis: undefined,
     };
     await setDoc(profileDocRef, defaultProfile);
     const newSnapshot = await getDoc(profileDocRef);
@@ -182,10 +195,10 @@ export const getUserProfile = async (): Promise<UserProfile> => {
     }
 };
 
-const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
+export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
     
-    // Manually convert date fields for partial updates
+    // Manually convert date fields for partial updates because we use setDoc with merge
     const dataToUpdate: { [key: string]: any } = { ...profileData };
     
     if (profileData.joinedDate) {
@@ -196,6 +209,12 @@ const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) 
             ...g,
             targetDate: g.targetDate ? Timestamp.fromDate(g.targetDate) : undefined,
         }));
+    }
+    if (profileData.strengthAnalysis) {
+        dataToUpdate.strengthAnalysis = {
+            ...profileData.strengthAnalysis,
+            generatedDate: Timestamp.fromDate(profileData.strengthAnalysis.generatedDate),
+        };
     }
 
     // Use setDoc with merge:true to be safe, it will update or create if not exists.

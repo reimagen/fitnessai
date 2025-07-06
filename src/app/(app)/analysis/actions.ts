@@ -2,6 +2,9 @@
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
+import { updateUserProfile } from "@/lib/firestore.service";
+import type { StoredStrengthAnalysis } from "@/lib/types";
+
 
 export async function analyzeStrengthAction(
   values: StrengthImbalanceInput
@@ -14,6 +17,15 @@ export async function analyzeStrengthAction(
 
   try {
     const analysisData = await analyzeStrengthImbalances(values);
+
+    const storedAnalysis: StoredStrengthAnalysis = {
+      result: analysisData,
+      generatedDate: new Date(),
+    };
+
+    // After getting analysis, save it to the user's profile in Firestore
+    await updateUserProfile({ strengthAnalysis: storedAnalysis });
+
     return { success: true, data: analysisData };
   } catch (error) {
     console.error("Error analyzing strength imbalances:", error);
