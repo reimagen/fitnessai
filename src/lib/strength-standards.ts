@@ -128,17 +128,17 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'reverse fly': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 0.4, advanced: 0.6, elite: 0.8 },
-      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+      'Male': { intermediate: 0.25, advanced: 0.40, elite: 0.60 },
+      'Female': { intermediate: 0.20, advanced: 0.35, elite: 0.55 },
     },
   },
   'reverse flys': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male': { intermediate: 0.4, advanced: 0.6, elite: 0.8 },
-      'Female': { intermediate: 0.3, advanced: 0.5, elite: 0.7 },
+      'Male': { intermediate: 0.25, advanced: 0.40, elite: 0.60 },
+      'Female': { intermediate: 0.20, advanced: 0.35, elite: 0.55 },
     },
   },
   'rotary torso': {
