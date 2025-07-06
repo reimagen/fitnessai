@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getStrengthLevel } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
 import type { PersonalRecord, StrengthLevel } from '@/lib/types';
 
 const FitnessGoalForAnalysisSchema = z.object({
@@ -213,6 +213,35 @@ const strengthImbalanceFlow = ai.defineFlow(
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         let severity = config.severityCheck(ratio);
         
+        // DYNAMIC TARGET RATIO LOGIC for Adductor vs. Abductor
+        let targetRatioDisplay = config.targetRatioDisplay;
+        if (type === 'Adductor vs. Abductor') {
+            const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
+            const lift2Level = getStrengthLevel(lift2, userProfileForLevels);
+            
+            if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+                let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
+                if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
+                    targetLevelForRatio = 'Intermediate';
+                } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
+                    targetLevelForRatio = 'Advanced';
+                }
+    
+                const adductorThresholds = getStrengthThresholds('adductor', userProfileForLevels, 'kg');
+                const abductorThresholds = getStrengthThresholds('abductor', userProfileForLevels, 'kg');
+    
+                if (adductorThresholds && abductorThresholds) {
+                    const targetAdductorWeight = adductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof adductorThresholds];
+                    const targetAbductorWeight = abductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof abductorThresholds];
+                    
+                    if (targetAbductorWeight > 0) {
+                        const targetRatioValue = targetAdductorWeight / targetAbductorWeight;
+                        targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
+                    }
+                }
+            }
+        }
+        
         if (severity !== 'Balanced') {
             const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
             const lift2Level = (lift2.exerciseName === 'Body Weight') ? 'N/A' : getStrengthLevel(lift2 as PersonalRecord, userProfileForLevels);
@@ -269,7 +298,7 @@ const strengthImbalanceFlow = ai.defineFlow(
                 lift2Weight: lift2.weight,
                 lift2Unit: lift2.weightUnit,
                 userRatio: `${ratio.toFixed(2)}:1`,
-                targetRatio: config.targetRatioDisplay,
+                targetRatio: targetRatioDisplay,
                 severity: severity,
             });
         }
@@ -303,5 +332,3 @@ const strengthImbalanceFlow = ai.defineFlow(
     return { summary, findings: finalFindings };
   }
 );
-
-    

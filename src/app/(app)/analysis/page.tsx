@@ -14,7 +14,7 @@ import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYe
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { getStrengthLevel } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
 
 
 const IMBALANCE_TYPES = [
@@ -273,6 +273,32 @@ export default function AnalysisPage() {
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         const severity = config.severityCheck(ratio);
 
+        // DYNAMIC TARGET RATIO LOGIC for Adductor vs. Abductor on client-side
+        let targetRatioDisplay = config.targetRatioDisplay;
+        if (type === 'Adductor vs. Abductor') {
+            if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+                let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
+                if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
+                    targetLevelForRatio = 'Intermediate';
+                } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
+                    targetLevelForRatio = 'Advanced';
+                }
+
+                const adductorThresholds = getStrengthThresholds('adductor', userProfile, 'kg');
+                const abductorThresholds = getStrengthThresholds('abductor', userProfile, 'kg');
+
+                if (adductorThresholds && abductorThresholds) {
+                    const targetAdductorWeight = adductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof adductorThresholds];
+                    const targetAbductorWeight = abductorThresholds[targetLevelForRatio.toLowerCase() as keyof typeof abductorThresholds];
+                    
+                    if (targetAbductorWeight > 0) {
+                        const targetRatioValue = targetAdductorWeight / targetAbductorWeight;
+                        targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
+                    }
+                }
+            }
+        }
+
         findings.push({
             imbalanceType: type,
             lift1Name: lift1.exerciseName,
@@ -282,7 +308,7 @@ export default function AnalysisPage() {
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
-            targetRatio: config.targetRatioDisplay,
+            targetRatio: targetRatioDisplay,
             severity: severity,
             lift1Level,
             lift2Level,
@@ -437,9 +463,9 @@ export default function AnalysisPage() {
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <CardTitle className="font-headline flex items-center gap-2">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                        <div className="flex-grow">
+                             <CardTitle className="font-headline flex items-center gap-2">
                                 <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
                             </CardTitle>
                             <CardDescription className="mt-2">
@@ -451,7 +477,7 @@ export default function AnalysisPage() {
                               )}
                             </CardDescription>
                         </div>
-                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0">
+                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
                             {analysisResult ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
