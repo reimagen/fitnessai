@@ -2,7 +2,7 @@
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
-import { updateUserProfile } from "@/lib/firestore.service";
+import { updateUserProfile } from "@/lib/firestore-server";
 import type { StoredStrengthAnalysis } from "@/lib/types";
 
 
