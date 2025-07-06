@@ -25,12 +25,13 @@ const IMBALANCE_TYPES = [
 ] as const;
 
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
+type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.65 || r > 1.25) ? 'Severe' : (r < 0.75 || r > 1.1) ? 'Moderate' : 'Balanced' },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -251,7 +252,7 @@ export default function AnalysisPage() {
         if (!lift1 || !lift2) {
              findings.push({
                 imbalanceType: type,
-                severity: 'Balanced', // Not really, but prevents rendering imbalance-specific UI
+                imbalanceFocus: 'Balanced', // Not really, but prevents rendering imbalance-specific UI
                 lift1Name: config.lift1Options.join('/'),
                 lift2Name: config.lift2Options.join('/'),
                 lift1Weight: 0, lift1Unit: 'lbs', lift2Weight: 0, lift2Unit: 'lbs',
@@ -268,7 +269,14 @@ export default function AnalysisPage() {
         if (lift2WeightKg === 0) return;
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        const severity = config.severityCheck(ratio);
+        const ratioIsUnbalanced = config.severityCheck(ratio) !== 'Balanced';
+
+        let imbalanceFocus: ImbalanceFocus = 'Balanced';
+        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
+            imbalanceFocus = 'Level Imbalance';
+        } else if (ratioIsUnbalanced) {
+            imbalanceFocus = 'Ratio Imbalance';
+        }
 
         // DYNAMIC TARGET RATIO LOGIC on client-side
         let targetRatioDisplay = config.targetRatioDisplay;
@@ -305,7 +313,7 @@ export default function AnalysisPage() {
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
             targetRatio: targetRatioDisplay,
-            severity: severity,
+            imbalanceFocus: imbalanceFocus,
             lift1Level,
             lift2Level,
         });
@@ -408,12 +416,13 @@ export default function AnalysisPage() {
     return { workoutFrequencyData, newPrsData: prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, runningProgressData, periodSummary };
   }, [filteredData]);
   
-  const severityBadgeVariant = (severity: 'Balanced' | 'Moderate' | 'Severe'): 'default' | 'secondary' | 'destructive' => {
-      switch (severity) {
-          case 'Balanced': return 'secondary';
-          case 'Moderate': return 'default';
-          case 'Severe': return 'destructive';
-      }
+  const focusBadgeProps = (focus: ImbalanceFocus): { variant: 'secondary' | 'default' | 'destructive', text: string } => {
+    switch (focus) {
+        case 'Level Imbalance': return { variant: 'default', text: 'Level Imbalance' };
+        case 'Ratio Imbalance': return { variant: 'destructive', text: 'Ratio Imbalance' };
+        case 'Balanced': return { variant: 'secondary', text: 'Balanced' };
+        default: return { variant: 'secondary', text: 'Balanced' };
+    }
   };
 
   const RADIAN = Math.PI / 180;
@@ -495,9 +504,10 @@ export default function AnalysisPage() {
                                     const aiFinding = finding ? analysisResult?.result?.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
                                     
                                     if (finding && finding.userRatio) {
+                                      const badgeProps = focusBadgeProps(finding.imbalanceFocus);
                                       return (
                                         <Card key={index} className="p-4 bg-secondary/50">
-                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={severityBadgeVariant(finding.severity)}>{finding.severity}</Badge></CardTitle>
+                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge></CardTitle>
                                             <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div>
                                                     <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
@@ -510,11 +520,11 @@ export default function AnalysisPage() {
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
                                                 <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
                                             </div>
-                                            {isAnalysisLoading && finding.severity !== 'Balanced' ? (
+                                            {isAnalysisLoading && finding.imbalanceFocus !== 'Balanced' ? (
                                                  <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                  </div>
-                                            ) : aiFinding && finding.severity !== 'Balanced' ? (
+                                            ) : aiFinding && finding.imbalanceFocus !== 'Balanced' ? (
                                                <>
                                                 <div className="mt-3 pt-3 border-t">
                                                     <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
@@ -525,9 +535,9 @@ export default function AnalysisPage() {
                                                     <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
                                                 </div>
                                                </>
-                                            ) : finding.severity !== 'Balanced' ? (
+                                            ) : finding.imbalanceFocus !== 'Balanced' ? (
                                                  <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
-                                                    <p>This ratio appears imbalanced. Click "Get AI Insights" for analysis.</p>
+                                                    <p>This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
                                             ) : null}
                                         </Card>

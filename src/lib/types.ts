@@ -78,7 +78,7 @@ export interface StrengthImbalanceOutput {
       lift2Unit: "kg" | "lbs";
       userRatio: string;
       targetRatio: string;
-      severity: "Balanced" | "Moderate" | "Severe";
+      imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
       insight: string;
       recommendation: string;
   }[];
