@@ -465,7 +465,7 @@ export default function AnalysisPage() {
                                 <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
                             </CardTitle>
                             <CardDescription className="mt-2">
-                              Review your strength ratios. Click for AI-powered insights on imbalances that factor in your goals and personal stats.
+                              Review your AI-powered analysis that factors in your goals and personal stats.
                               {isClient && analysisResult?.generatedDate && (
                                   <span className="block text-xs mt-1 text-muted-foreground/80">
                                       Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}

@@ -137,7 +137,7 @@ const bulkInsightPrompt = ai.definePrompt({
       }),
     },
     output: { schema: z.object({ analyses: z.array(AIAnalysisResultSchema) }) },
-    prompt: `You are an expert fitness coach acting as an analyst. Your role is to provide qualitative insights and recommendations based on pre-calculated data. **You MUST NOT perform any calculations or verify the data provided.** Your sole responsibility is to generate insightful, human-like commentary.
+    prompt: `You are an expert fitness coach acting as an analyst. Your role is to provide qualitative insights and recommendations based on pre-calculated data. **You MUST NOT perform any calculations or verify the data provided.** Your sole responsibility is to generate insightful, human-like commentary based on the data given to you.
 
 **User's Stats & Goals:**
 - Age: {{#if userProfile.age}}{{userProfile.age}}{{else}}Not Provided{{/if}}
@@ -322,7 +322,7 @@ const strengthImbalanceFlow = ai.defineFlow(
     });
     
     const summary = finalFindings.length > 0
-        ? `Based on your Personal Records, we've found ${finalFindings.length} potential strength imbalance(s) that could be improved. Our AI has provided some insights below.`
+        ? `Based on your Personal Records, we've found ${finalFindings.length} potential strength imbalance(s) that could be improved.`
         : "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
 
     return { summary, findings: finalFindings };
