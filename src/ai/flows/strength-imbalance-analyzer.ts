@@ -51,6 +51,8 @@ const IMBALANCE_TYPES = [
     'Adductor vs. Abductor',
 ] as const;
 
+const IMBALANCE_FOCUS_TYPES = ['Balanced', 'Level Imbalance', 'Ratio Imbalance'] as const;
+
 const ImbalanceFindingSchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of strength imbalance. Must be one of the predefined types."),
     lift1Name: z.string().describe("The name of the first exercise in the comparison."),
@@ -61,7 +63,7 @@ const ImbalanceFindingSchema = z.object({
     lift2Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the second exercise."),
     userRatio: z.string().describe("The user's calculated strength ratio, formatted as 'X : Y'."),
     targetRatio: z.string().describe("The ideal or target strength ratio, formatted as 'X : Y'."),
-    severity: z.enum(['Balanced', 'Moderate', 'Severe']).describe("The severity of the imbalance. Must be 'Balanced' for ideal ratios, 'Moderate' for noticeable issues, or 'Severe' for significant imbalances."),
+    imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The primary issue to focus on: a disparity in strength levels or an incorrect ratio between same-level lifts."),
     insight: z.string().describe("A concise, AI-generated explanation of what the imbalance means."),
     recommendation: z.string().describe("A simple, AI-generated, actionable recommendation to address the imbalance."),
 });
@@ -77,7 +79,7 @@ const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options:
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.65 || r > 1.25) ? 'Severe' : (r < 0.75 || r > 1.1) ? 'Moderate' : 'Balanced' },
 };
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
@@ -114,16 +116,17 @@ function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], 
 
 const ImbalanceDataForAISchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
+    imbalanceFocus: z.enum(['Level Imbalance', 'Ratio Imbalance']),
     lift1Name: z.string(),
     lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
     lift2Level: z.custom<StrengthLevel>(),
-    diagnosis: z.string().describe("A pre-computed, code-based diagnosis of the user's specific imbalance situation."),
     recommendationFocus: z.string().describe("A clear instruction for the AI, guiding its recommendation (e.g., 'focus on bringing the lagging lift to an Intermediate level for health, not matching the elite lift')."),
 });
 
 const AIAnalysisResultSchema = z.object({
   imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of the imbalance this analysis is for. Must match one of the types from the input."),
+  imbalanceFocus: z.enum(['Level Imbalance', 'Ratio Imbalance']).describe("The type of focus for this analysis."),
   insight: z.string().describe("A concise, expert insight (max 2 sentences) into the potential risks or consequences of the specific strength imbalance, personalized to the user's context."),
   recommendation: z.string().describe("A simple, clear, and actionable recommendation (max 2 sentences) to help the user address the imbalance. It should start with a direct action verb and align with the provided recommendation focus."),
 });
@@ -156,16 +159,17 @@ The following data has been calculated by our system. Use this as the absolute s
 
 {{#each imbalances}}
 - **Imbalance Type:** {{{this.imbalanceType}}}
+  - **Focus Area:** {{{this.imbalanceFocus}}}
   - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
-  - **System Diagnosis:** {{{this.diagnosis}}}
   - **System Recommendation Focus:** {{{this.recommendationFocus}}}
 {{/each}}
 
 **Your Task:**
 For **each** of the imbalances listed above, you will provide expert commentary. Your output MUST be a single JSON object with a key "analyses", which is an array of objects. Each object must contain:
 1.  **imbalanceType**: The exact string from the 'Imbalance Type' field.
-2.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST use the user's goals and the provided 'System Diagnosis' to make the insight personal.
-3.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that directly follows the 'System Recommendation Focus'. It must start with an action verb.
+2.  **imbalanceFocus**: The exact string from the 'Focus Area' field.
+3.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST use the user's goals and the provided 'Focus Area' and 'Recommendation Focus' to make the insight personal.
+4.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that directly follows the 'System Recommendation Focus'. It must start with an action verb.
 
 **CRITICAL STYLE GUIDE:**
 - **DO NOT CALCULATE:** Do not attempt to recalculate ratios or levels. Your job is analysis of the provided data only.
@@ -209,12 +213,10 @@ const strengthImbalanceFlow = ai.defineFlow(
         if (lift2WeightKg === 0) continue;
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        let severity = config.severityCheck(ratio);
-        
-        // DYNAMIC TARGET RATIO LOGIC
-        let targetRatioDisplay = config.targetRatioDisplay;
         const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
         const lift2Level = getStrengthLevel(lift2, userProfileForLevels);
+        
+        let targetRatioDisplay = config.targetRatioDisplay;
         
         if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
             let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
@@ -240,48 +242,36 @@ const strengthImbalanceFlow = ai.defineFlow(
                 }
             }
         }
+
+        let imbalanceFocus: 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance' = 'Balanced';
+        const ratioIsUnbalanced = config.severityCheck(ratio) !== 'Balanced';
+
+        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
+            imbalanceFocus = 'Level Imbalance';
+        } else if (ratioIsUnbalanced) {
+            imbalanceFocus = 'Ratio Imbalance';
+        }
         
-        if (severity !== 'Balanced') {
-            // New Severity Logic based on Strength Levels
-            // Rule 1: A high-level discrepancy is always Severe.
-            const isHighDiscrepancy = 
-                ((lift1Level === 'Elite' || lift1Level === 'Advanced') && lift2Level === 'Beginner') ||
-                ((lift2Level === 'Elite' || lift2Level === 'Advanced') && lift1Level === 'Beginner');
-
-            if (isHighDiscrepancy) {
-                severity = 'Severe';
-            }
-
-            // Rule 2: Downgrade severe imbalances for beginners.
-            if (lift1Level === 'Beginner' && lift2Level === 'Beginner' && severity === 'Severe') {
-                severity = 'Moderate';
-            }
-
-            let diagnosis = "";
+        if (imbalanceFocus !== 'Balanced') {
             let recommendationFocus = "";
 
-            if ( (lift1Level === 'Advanced' || lift1Level === 'Elite') && (lift2Level === 'Beginner' || lift2Level === 'Intermediate') ) {
-                 diagnosis = `Your ${lift1.exerciseName} is highly developed (${lift1Level}), but its opposing muscle group, trained by ${lift2.exerciseName}, is lagging behind (${lift2Level}). This significant gap can increase injury risk.`;
-                 recommendationFocus = `Focus on bringing the ${lift2.exerciseName} to at least an 'Advanced' level to support the primary lift. Do not worry about matching the ${lift1.exerciseName} weight. Prioritize health.`;
-            } else if ( (lift2Level === 'Advanced' || lift2Level === 'Elite') && (lift1Level === 'Beginner' || lift1Level === 'Intermediate') ) {
-                 diagnosis = `Your ${lift2.exerciseName} is highly developed (${lift2Level}), but its opposing muscle group, trained by ${lift1.exerciseName}, is lagging behind (${lift1Level}). This significant gap can increase injury risk.`;
-                 recommendationFocus = `Focus on bringing the ${lift1.exerciseName} to at least an 'Advanced' level for stability and balance. Do not worry about matching the ${lift2.exerciseName} weight. Prioritize health.`;
-            } else if (lift1Level === 'Beginner' && lift2Level === 'Beginner') {
-                 diagnosis = `Both your ${lift1.exerciseName} and ${lift2.exerciseName} are in the 'Beginner' range. While the ratio is imbalanced, the primary opportunity is to build foundational strength in both movements.`;
-                 recommendationFocus = `Provide a recommendation that encourages balanced, overall strength development for both exercises, with a slight emphasis on the weaker of the two to fix the ratio over time.`;
-            } else {
-                 diagnosis = `Your strength ratio between ${lift1.exerciseName} (${lift1Level}) and ${lift2.exerciseName} (${lift2Level}) is outside the ideal range. Addressing this can improve performance and reduce injury risk.`;
-                 const weakerLiftName = ratio < IMBALANCE_CONFIG[type].ratioCalculation(1, 1) ? lift1.exerciseName : lift2.exerciseName;
-                 recommendationFocus = `Provide a clear, actionable tip to increase strength in the weaker lift (${weakerLiftName}) to bring it in line with its counterpart.`;
+            if (imbalanceFocus === 'Level Imbalance') {
+                 const weakerLift = lift1WeightKg < lift2WeightKg ? lift1 : lift2; // Simplistic but ok for focus
+                 const weakerLevel = lift1WeightKg < lift2WeightKg ? lift1Level : lift2Level;
+                 const strongerLevel = lift1WeightKg < lift2WeightKg ? lift2Level : lift1Level;
+                 recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLift.exerciseName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
+            } else { // Ratio Imbalance
+                 const weakerLiftByRatio = ratio < IMBALANCE_CONFIG[type].ratioCalculation(1, 1) ? lift1.exerciseName : lift2.exerciseName;
+                 recommendationFocus = `Both lifts are in the same tier (${lift1Level}), but their strength relationship is off. Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
             }
 
             imbalancesForAI.push({
                 imbalanceType: type,
+                imbalanceFocus: imbalanceFocus,
                 lift1Name: lift1.exerciseName,
                 lift1Level: lift1Level,
                 lift2Name: lift2.exerciseName,
                 lift2Level: lift2Level,
-                diagnosis: diagnosis,
                 recommendationFocus: recommendationFocus,
             });
 
@@ -295,7 +285,7 @@ const strengthImbalanceFlow = ai.defineFlow(
                 lift2Unit: lift2.weightUnit,
                 userRatio: `${ratio.toFixed(2)}:1`,
                 targetRatio: targetRatioDisplay,
-                severity: severity,
+                imbalanceFocus: imbalanceFocus,
             });
         }
     }
@@ -321,9 +311,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         };
     });
     
-    const summary = finalFindings.length > 0
-        ? `Based on your Personal Records, we've found ${finalFindings.length} potential strength imbalance(s) that could be improved.`
-        : "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
+    const summary = `Based on your Personal Records, we've found ${finalFindings.length} potential area(s) for improvement.`;
 
     return { summary, findings: finalFindings };
   }
