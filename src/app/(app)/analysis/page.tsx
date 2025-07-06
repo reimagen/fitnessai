@@ -133,36 +133,16 @@ type StrengthFinding = Omit<StrengthImbalanceOutput['findings'][0], 'insight' | 
     lift2Level: StrengthLevel;
 };
 
-interface StoredAnalysis {
-  result: StrengthImbalanceOutput;
-  generatedDate: string;
-}
-
-const AI_ANALYSIS_KEY = "fitnessAppStrengthAnalysis";
-
 export default function AnalysisPage() {
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('weekly');
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<StoredAnalysis | null>(null);
-  const [isClient, setIsClient] = useState(false);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
-  
-  useEffect(() => {
-    setIsClient(true);
-    const storedAnalysisString = localStorage.getItem(AI_ANALYSIS_KEY);
-    if (storedAnalysisString) {
-      try {
-        setAnalysisResult(JSON.parse(storedAnalysisString));
-      } catch (e) {
-        console.error("Failed to parse stored analysis", e);
-        localStorage.removeItem(AI_ANALYSIS_KEY);
-      }
-    }
-  }, []);
+
+  const analysisResult = userProfile?.strengthAnalysis;
 
   const handleAnalyzeStrength = async () => {
     if (!personalRecords || personalRecords.length === 0) {
@@ -212,20 +192,11 @@ export default function AnalysisPage() {
     const result = await analyzeStrengthAction(analysisInput);
 
     if (result.success && result.data) {
-      const newAnalysis: StoredAnalysis = {
-        result: result.data,
-        generatedDate: new Date().toISOString(),
-      };
-      setAnalysisResult(newAnalysis);
-      localStorage.setItem(AI_ANALYSIS_KEY, JSON.stringify(newAnalysis));
-
       toast({
         title: "Analysis Complete",
-        description: result.data.findings.length > 0 ? "Potential areas for improvement found." : result.data.summary,
+        description: result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced.",
       });
     } else {
-      setAnalysisResult(null); // Clear previous results on failure
-      localStorage.removeItem(AI_ANALYSIS_KEY);
       toast({
         title: "Analysis Failed",
         description: result.error || "An unknown error occurred.",
@@ -487,9 +458,9 @@ export default function AnalysisPage() {
                             </CardTitle>
                             <CardDescription className="mt-2">
                               Review your AI-powered analysis that factors in your goals and personal stats.
-                              {isClient && analysisResult?.generatedDate && (
+                              {analysisResult?.generatedDate && (
                                   <span className="block text-xs mt-1 text-muted-foreground/80">
-                                      Last analysis on: {format(new Date(analysisResult.generatedDate), "MMMM d, yyyy 'at' h:mm a")}
+                                      Last analysis on: {format(analysisResult.generatedDate, "MMMM d, yyyy 'at' h:mm a")}
                                   </span>
                               )}
                             </CardDescription>
@@ -612,7 +583,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
-
-    

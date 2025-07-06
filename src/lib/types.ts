@@ -35,6 +35,10 @@ export interface FitnessGoal {
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 export type SessionTime = 15 | 30 | 45 | 60;
 
+export interface StoredStrengthAnalysis {
+  result: StrengthImbalanceOutput;
+  generatedDate: Date;
+}
 
 export interface UserProfile {
   id: string;
@@ -55,6 +59,7 @@ export interface UserProfile {
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
   aiPreferencesNotes?: string; 
+  strengthAnalysis?: StoredStrengthAnalysis;
 }
 
 export interface PersonalRecord {
