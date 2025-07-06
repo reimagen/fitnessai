@@ -254,7 +254,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         let ratioIsUnbalanced = false;
         if (targetRatioValue !== null) {
             const deviation = Math.abs(ratio - targetRatioValue);
-            const tolerance = targetRatioValue * 0.20; // 20% tolerance
+            const tolerance = targetRatioValue * 0.10; // 10% tolerance
             ratioIsUnbalanced = deviation > tolerance;
         }
 
@@ -325,7 +325,7 @@ const strengthImbalanceFlow = ai.defineFlow(
     
     let summary: string;
     if (finalFindings.length > 0) {
-        summary = `Based on your Personal Records, we've found ${finalFindings.length} potential area(s) for improvement.`;
+        summary = `Based on your Personal Records, we've found potential area(s) for improvement.`;
     } else {
         summary = "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
     }
