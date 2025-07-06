@@ -143,8 +143,8 @@ export default function AnalysisPage() {
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
 
-  const storedAnalysisResult = userProfile?.strengthAnalysis?.result;
-  const analysisToRender = latestAnalysis || storedAnalysisResult;
+  const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
+  const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
 
 
   const handleAnalyzeStrength = async () => {
@@ -462,16 +462,16 @@ export default function AnalysisPage() {
                             </CardTitle>
                             <CardDescription className="mt-2">
                               Review your AI-powered analysis that factors in your goals and personal stats.
-                              {storedAnalysisResult?.generatedDate && (
+                              {generatedDate && (
                                   <span className="block text-xs mt-1 text-muted-foreground/80">
-                                      Last analysis on: {format(storedAnalysisResult.generatedDate, "MMMM d, yyyy 'at' h:mm a")}
+                                      Last analysis on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}
                                   </span>
                               )}
                             </CardDescription>
                         </div>
                         <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
                             {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                            {storedAnalysisResult ? "Re-analyze Insights" : "Get AI Insights"}
+                            {userProfile?.strengthAnalysis ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
                     </div>
                 </CardHeader>
