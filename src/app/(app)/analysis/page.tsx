@@ -27,11 +27,11 @@ const IMBALANCE_TYPES = [
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
-const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number, severityCheck: (r: number) => 'Balanced' | 'Moderate' | 'Severe' }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.75 || r > 1.25) ? 'Severe' : (r < 0.9 || r > 1.1) ? 'Moderate' : 'Balanced' },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 0.6) return 'Severe'; if (r < 0.7 || r > 0.8) return 'Moderate'; return 'Balanced'; } },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => { if (r < 1.1) return 'Severe'; if (r < 1.2 || r > 1.45) return 'Moderate'; return 'Balanced'; } },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2, severityCheck: (r) => (r < 0.65 || r > 1.25) ? 'Severe' : (r < 0.75 || r > 1.1) ? 'Moderate' : 'Balanced' },
+const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2 },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2 },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2 },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -269,17 +269,15 @@ export default function AnalysisPage() {
         if (lift2WeightKg === 0) return;
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        const ratioIsUnbalanced = config.severityCheck(ratio) !== 'Balanced';
 
-        let imbalanceFocus: ImbalanceFocus = 'Balanced';
-        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
-            imbalanceFocus = 'Level Imbalance';
-        } else if (ratioIsUnbalanced) {
-            imbalanceFocus = 'Ratio Imbalance';
+        let targetRatioDisplay = config.targetRatioDisplay;
+        let targetRatioValue: number | null = null;
+        
+        const staticRatioParts = config.targetRatioDisplay.split(':');
+        if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
+            targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
         }
 
-        // DYNAMIC TARGET RATIO LOGIC on client-side
-        let targetRatioDisplay = config.targetRatioDisplay;
         if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
             let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
             if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
@@ -297,10 +295,24 @@ export default function AnalysisPage() {
                 const targetLift2Weight = lift2Thresholds[targetLevelKey];
                 
                 if (targetLift2Weight > 0) {
-                    const targetRatioValue = targetLift1Weight / targetLift2Weight;
+                    targetRatioValue = targetLift1Weight / targetLift2Weight;
                     targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
                 }
             }
+        }
+        
+        let imbalanceFocus: ImbalanceFocus = 'Balanced';
+        let ratioIsUnbalanced = false;
+        if (targetRatioValue !== null) {
+            const deviation = Math.abs(ratio - targetRatioValue);
+            const tolerance = targetRatioValue * 0.20; // 20% tolerance
+            ratioIsUnbalanced = deviation > tolerance;
+        }
+
+        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
+            imbalanceFocus = 'Level Imbalance';
+        } else if (ratioIsUnbalanced) {
+            imbalanceFocus = 'Ratio Imbalance';
         }
 
         findings.push({
