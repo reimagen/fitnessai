@@ -305,7 +305,7 @@ export default function AnalysisPage() {
         let ratioIsUnbalanced = false;
         if (targetRatioValue !== null) {
             const deviation = Math.abs(ratio - targetRatioValue);
-            const tolerance = targetRatioValue * 0.20; // 20% tolerance
+            const tolerance = targetRatioValue * 0.10; // 10% tolerance
             ratioIsUnbalanced = deviation > tolerance;
         }
 
