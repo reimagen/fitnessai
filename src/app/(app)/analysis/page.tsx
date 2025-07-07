@@ -210,38 +210,32 @@ export default function AnalysisPage() {
     setIsAnalysisLoading(false);
   };
   
-  const clientSideFindings = useMemo<StrengthFinding[]>(() => {
+  const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
     if (!personalRecords || !userProfile) {
       return [];
     }
-    const findings: StrengthFinding[] = [];
+    const findings: (StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[] = [];
 
     IMBALANCE_TYPES.forEach(type => {
         const config = IMBALANCE_CONFIG[type];
         const lift1 = findBestPr(personalRecords, config.lift1Options);
         const lift2 = findBestPr(personalRecords, config.lift2Options);
 
-        const lift1Level = lift1 ? getStrengthLevel(lift1, userProfile) : 'N/A';
-        const lift2Level = lift2 ? getStrengthLevel(lift2, userProfile) : 'N/A';
-
         if (!lift1 || !lift2) {
-             findings.push({
-                imbalanceType: type,
-                imbalanceFocus: 'Balanced', // Not really, but prevents rendering imbalance-specific UI
-                lift1Name: config.lift1Options.join('/'),
-                lift2Name: config.lift2Options.join('/'),
-                lift1Weight: 0, lift1Unit: 'lbs', lift2Weight: 0, lift2Unit: 'lbs',
-                userRatio: '', targetRatio: '',
-                lift1Level,
-                lift2Level,
-            });
-            return;
+             findings.push({ imbalanceType: type, hasData: false });
+             return;
         };
+
+        const lift1Level = getStrengthLevel(lift1, userProfile);
+        const lift2Level = getStrengthLevel(lift2, userProfile);
 
         const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
         const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
 
-        if (lift2WeightKg === 0) return;
+        if (lift2WeightKg === 0) {
+            findings.push({ imbalanceType: type, hasData: false });
+            return;
+        }
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
 
@@ -488,26 +482,43 @@ export default function AnalysisPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {IMBALANCE_TYPES.map((type, index) => {
                                     const finding = clientSideFindings.find(f => f.imbalanceType === type);
-                                    const aiFinding = finding && analysisToRender ? analysisToRender.findings.find(f => f.imbalanceType === finding.imbalanceType) : undefined;
+                                    if (!finding) return null; // Should not happen with current logic
+
+                                    if ('hasData' in finding && !finding.hasData) {
+                                        const config = IMBALANCE_CONFIG[type];
+                                        const requirements = `Requires: ${config.lift1Options.join('/')} & ${config.lift2Options.join('/')}`;
+                                        return (
+                                            <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
+                                                <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
+                                                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
+                                                    <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
+                                                    <p className="text-sm font-semibold">Log PRs to analyze</p>
+                                                    <p className="text-xs mt-1">{requirements}</p>
+                                                </div>
+                                            </Card>
+                                        );
+                                    }
                                     
-                                    if (finding && finding.userRatio) {
-                                      const badgeProps = focusBadgeProps(finding.imbalanceFocus);
-                                      return (
+                                    const dataFinding = finding as StrengthFinding;
+                                    const aiFinding = analysisToRender ? analysisToRender.findings.find(f => f.imbalanceType === dataFinding.imbalanceType) : undefined;
+                                    const badgeProps = focusBadgeProps(dataFinding.imbalanceFocus);
+                                    
+                                    return (
                                         <Card key={index} className="p-4 bg-secondary/50">
-                                            <CardTitle className="text-base flex items-center justify-between">{finding.imbalanceType} <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge></CardTitle>
+                                            <CardTitle className="text-base flex items-center justify-between">{dataFinding.imbalanceType} <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge></CardTitle>
                                             <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div>
-                                                    <p>{finding.lift1Name}: <span className="font-bold text-foreground">{finding.lift1Weight} {finding.lift1Unit}</span></p>
-                                                    {finding.lift1Level && finding.lift1Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{finding.lift1Level}</span></p>}
+                                                    <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
+                                                    {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
                                                 </div>
                                                 <div>
-                                                    <p>{finding.lift2Name}: <span className="font-bold text-foreground">{finding.lift2Weight} {finding.lift2Unit}</span></p>
-                                                    {finding.lift2Level && finding.lift2Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{finding.lift2Level}</span></p>}
+                                                    <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
+                                                    {dataFinding.lift2Level && dataFinding.lift2Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level}</span></p>}
                                                 </div>
-                                                <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
+                                                <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
+                                                <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
                                             </div>
-                                            {isAnalysisLoading && finding.userRatio ? (
+                                            {isAnalysisLoading && dataFinding.userRatio ? (
                                                  <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                  </div>
@@ -522,13 +533,13 @@ export default function AnalysisPage() {
                                                     <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
                                                 </div>
                                                </>
-                                            ) : finding.imbalanceFocus !== 'Balanced' ? (
+                                            ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
                                                  <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
                                                     <p>This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
                                             ) : (
                                                 (() => {
-                                                    const currentLevel = finding.lift1Level;
+                                                    const currentLevel = dataFinding.lift1Level;
                                                     if (currentLevel === 'N/A') return null;
 
                                                     if (currentLevel === 'Elite') {
@@ -559,22 +570,7 @@ export default function AnalysisPage() {
                                                 })()
                                             )}
                                         </Card>
-                                      )
-                                    } else {
-                                        const config = IMBALANCE_CONFIG[type];
-                                        let requirements = `Requires: ${config.lift1Options.join(' or ')} & ${config.lift2Options.join(' or ')}`;
-
-                                        return (
-                                            <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
-                                                <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
-                                                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
-                                                    <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
-                                                    <p className="text-sm font-semibold">Log PRs to analyze</p>
-                                                    <p className="text-xs mt-1">{requirements}</p>
-                                                </div>
-                                            </Card>
-                                        )
-                                    }
+                                    );
                                 })}
                             </div>
                         </div>
