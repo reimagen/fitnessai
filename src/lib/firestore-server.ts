@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory } from './types';
 
 // --- Data Converters ---
 // These converters handle the transformation between Firestore's data format (e.g., Timestamps)
@@ -17,12 +17,34 @@ const workoutLogConverter = {
     };
   },
   fromFirestore: (snapshot: any, options: any): WorkoutLog => {
-    const data = snapshot.data(options);
+    const data = snapshot.data(options) || {};
+    
+    const exercises: Exercise[] = Array.isArray(data.exercises)
+      ? data.exercises.map((ex: any, index: number) => {
+          const category = ex.category && typeof ex.category === 'string' ? ex.category as ExerciseCategory : 'Other';
+          return {
+            id: ex.id || `${snapshot.id}-${index}`,
+            name: typeof ex.name === 'string' ? ex.name : 'Unnamed Exercise',
+            sets: Number(ex.sets || 0),
+            reps: Number(ex.reps || 0),
+            weight: Number(ex.weight || 0),
+            weightUnit: ex.weightUnit === 'kg' || ex.weightUnit === 'lbs' ? ex.weightUnit : 'lbs',
+            category: category,
+            distance: Number(ex.distance || 0),
+            distanceUnit: ex.distanceUnit === 'mi' || ex.distanceUnit === 'km' || ex.distanceUnit === 'ft' ? ex.distanceUnit : 'mi',
+            duration: Number(ex.duration || 0),
+            durationUnit: ex.durationUnit === 'min' || ex.durationUnit === 'hr' || ex.durationUnit === 'sec' ? ex.durationUnit : 'min',
+            calories: Number(ex.calories || 0),
+          };
+        })
+      : [];
+
     return {
-      ...data,
       id: snapshot.id,
-      date: data.date.toDate(),
-    } as WorkoutLog;
+      date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
+      notes: typeof data.notes === 'string' ? data.notes : '',
+      exercises: exercises,
+    };
   }
 };
 
@@ -34,12 +56,17 @@ const personalRecordConverter = {
     };
   },
   fromFirestore: (snapshot: any, options: any): PersonalRecord => {
-    const data = snapshot.data(options);
+    const data = snapshot.data(options) || {};
+    const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
+
     return {
-      ...data,
       id: snapshot.id,
-      date: data.date.toDate(),
-    } as PersonalRecord;
+      exerciseName: typeof data.exerciseName === 'string' ? data.exerciseName : 'Unnamed Exercise',
+      weight: Number(data.weight || 0),
+      weightUnit: data.weightUnit === 'kg' || data.weightUnit === 'lbs' ? data.weightUnit : 'lbs',
+      date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
+      category: category,
+    };
   }
 };
 
@@ -64,25 +91,41 @@ const userProfileConverter = {
         return dataToStore;
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
-        const data = snapshot.data(options);
-        const joinedDate = data.joinedDate ? data.joinedDate.toDate() : new Date();
-        const fitnessGoals = data.fitnessGoals ? data.fitnessGoals.map((goal: any) => ({
-                ...goal,
-                targetDate: goal.targetDate ? goal.targetDate.toDate() : undefined,
+        const data = snapshot.data(options) || {};
+        const joinedDate = data.joinedDate instanceof Timestamp ? data.joinedDate.toDate() : new Date();
+        const fitnessGoals = Array.isArray(data.fitnessGoals) ? data.fitnessGoals.map((goal: any) => ({
+                id: goal.id || `goal-${Math.random()}`,
+                description: goal.description || '',
+                achieved: !!goal.achieved,
+                isPrimary: !!goal.isPrimary,
+                targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : undefined,
             })) : [];
         
-        const strengthAnalysis = data.strengthAnalysis ? {
+        const strengthAnalysis = data.strengthAnalysis && data.strengthAnalysis.generatedDate instanceof Timestamp ? {
             ...data.strengthAnalysis,
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
 
         return {
-            ...data,
             id: snapshot.id,
+            name: data.name || "User",
+            email: data.email || "",
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,
-            strengthAnalysis: strengthAnalysis
-        } as UserProfile;
+            strengthAnalysis: strengthAnalysis,
+            age: data.age,
+            gender: data.gender,
+            heightValue: data.heightValue,
+            heightUnit: data.heightUnit,
+            weightValue: data.weightValue,
+            weightUnit: data.weightUnit,
+            skeletalMuscleMassValue: data.skeletalMuscleMassValue,
+            skeletalMuscleMassUnit: data.skeletalMuscleMassUnit,
+            workoutsPerWeek: data.workoutsPerWeek,
+            sessionTimeMinutes: data.sessionTimeMinutes,
+            experienceLevel: data.experienceLevel,
+            aiPreferencesNotes: data.aiPreferencesNotes,
+        };
     }
 };
 
@@ -138,7 +181,7 @@ export const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) 
 export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>) => {
   const recordDoc = doc(db, 'personalRecords', id);
   
-  const dataToUpdate: { [key: string]: any } = { ...recordData };
+  const dataToUpdate: { [key:string]: any } = { ...recordData };
   if (recordData.date) {
     dataToUpdate.date = Timestamp.fromDate(recordData.date);
   }
