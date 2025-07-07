@@ -6,12 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Zap, AlertTriangle, Info } from "lucide-react";
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
-import type { UserProfile, WorkoutLog } from "@/lib/types";
-import { useUserProfile, useWorkouts } from "@/lib/firestore.service";
+import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput } from "@/lib/types";
+import { useUserProfile, useWorkouts, usePersonalRecords } from "@/lib/firestore.service";
 import { format, differenceInWeeks, nextSunday as getNextSunday } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { getStrengthLevel } from "@/lib/strength-standards";
 
 interface StoredWeeklyPlan {
   plan: string;
@@ -21,7 +22,12 @@ interface StoredWeeklyPlan {
   weekStartDate: string;
 }
 
-const constructUserProfileContext = (userProfile: UserProfile | null, workoutLogs: WorkoutLog[]): string | null => {
+const constructUserProfileContext = (
+    userProfile: UserProfile | null, 
+    workoutLogs: WorkoutLog[],
+    personalRecords: PersonalRecord[],
+    strengthAnalysis: StrengthImbalanceOutput | undefined
+): string | null => {
     if (!userProfile) return null;
 
     let context = "User Profile Context for AI Workout Plan Generation:\n";
@@ -95,6 +101,52 @@ const constructUserProfileContext = (userProfile: UserProfile | null, workoutLog
     } else {
       context += "- No workout history logged.\n";
     }
+
+    context += "\nStrength Balance Analysis Summary:\n";
+    if (strengthAnalysis && strengthAnalysis.summary) {
+        context += `- Overall Summary: ${strengthAnalysis.summary}\n`;
+        if (strengthAnalysis.findings.length > 0) {
+            strengthAnalysis.findings.forEach(finding => {
+                context += `- Finding: ${finding.imbalanceType} (${finding.imbalanceFocus}). Recommendation: ${finding.recommendation}\n`;
+            });
+        } else {
+            context += "- No specific imbalances found. Your strength appears well-balanced.\n";
+        }
+    } else {
+        context += "- No strength analysis has been performed yet.\n";
+    }
+
+    context += "\nPersonal Records & Strength Levels:\n";
+    if (personalRecords.length > 0) {
+        const bestRecordsMap = new Map<string, PersonalRecord>();
+        personalRecords.forEach(pr => {
+            const key = pr.exerciseName.trim().toLowerCase();
+            const existing = bestRecordsMap.get(key);
+            const prWeightKg = pr.weightUnit === 'lbs' ? pr.weight * 0.453592 : pr.weight;
+            if (!existing) {
+                bestRecordsMap.set(key, pr);
+            } else {
+                const existingWeightKg = existing.weightUnit === 'lbs' ? existing.weight * 0.453592 : existing.weight;
+                if (prWeightKg > existingWeightKg) {
+                    bestRecordsMap.set(key, pr);
+                }
+            }
+        });
+        
+        const bestRecords = Array.from(bestRecordsMap.values());
+
+        if (bestRecords.length > 0) {
+          bestRecords.forEach(pr => {
+              const level = getStrengthLevel(pr, userProfile);
+              context += `- ${pr.exerciseName}: ${pr.weight} ${pr.weightUnit} (Level: ${level})\n`;
+          });
+        } else {
+          context += "- No personal records with weight logged yet.\n";
+        }
+    } else {
+        context += "- No personal records logged yet.\n";
+    }
+
     return context;
 };
 
@@ -102,6 +154,7 @@ export default function PlanPage() {
   const { toast } = useToast();
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
+  const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
   
   const [currentWeekStartDate, setCurrentWeekStartDate] = useState<string>("");
   const [apiIsLoading, setApiIsLoading] = useState(false);
@@ -128,9 +181,9 @@ export default function PlanPage() {
   }, []);
 
   const userProfileContextString = useMemo(() => {
-    if (!userProfile || !workoutLogs) return null;
-    return constructUserProfileContext(userProfile, workoutLogs);
-  }, [userProfile, workoutLogs]);
+    if (!userProfile || !workoutLogs || !personalRecords) return null;
+    return constructUserProfileContext(userProfile, workoutLogs, personalRecords, userProfile.strengthAnalysis?.result);
+  }, [userProfile, workoutLogs, personalRecords]);
 
   const handleGeneratePlan = async () => {
     if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
@@ -172,7 +225,7 @@ export default function PlanPage() {
   };
 
   const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
-  const isLoading = isLoadingProfile || isLoadingWorkouts;
+  const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
