@@ -40,9 +40,9 @@ User Profile Context: {{{userProfileContext}}}
 The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{weekStartDate}}){{/if}} and continue through Saturday.
 
 **NEW REQUIREMENT: Introductory Analysis**
-Before generating the daily breakdown, you MUST start the plan with a brief introductory paragraph (2-4 sentences). This paragraph MUST:
-1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their 'Workout History Summary' in the provided context.
-2.  **State This Week's Purpose**: Explicitly connect this week's plan to **all of the user's listed Fitness Goals** AND the key findings from their **Strength Balance Analysis**. Explain how the upcoming workouts are designed to help them progress towards each of these objectives.
+Before generating the daily breakdown, you MUST start the plan with a brief, motivating introductory paragraph (2-4 sentences). This paragraph MUST:
+1.  **Analyze Past Performance & Goal Proximity**: Briefly comment on the user's recent activity ('Workout History Summary') and analyze how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
+2.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals and correct any issues from the 'Strength Balance Analysis'. For instance, explain *why* certain exercises are included.
 3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
 
 **CRITICAL INSTRUCTIONS FOR PLAN DESIGN:**
