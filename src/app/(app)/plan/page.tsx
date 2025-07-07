@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -103,7 +104,7 @@ const constructUserProfileContext = (
     }
 
     context += "\nStrength Balance Analysis Summary:\n";
-    if (strengthAnalysis && strengthAnalysis.summary) {
+    if (strengthAnalysis) {
         context += `- Overall Summary: ${strengthAnalysis.summary}\n`;
         if (strengthAnalysis.findings.length > 0) {
             strengthAnalysis.findings.forEach(finding => {
