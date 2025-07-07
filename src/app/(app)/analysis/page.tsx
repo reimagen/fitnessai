@@ -198,7 +198,7 @@ export default function AnalysisPage() {
       setLatestAnalysis(result.data);
       toast({
         title: "Analysis Complete",
-        description: result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced.",
+        description: result.data.summary || (result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced."),
       });
     } else {
       toast({
@@ -482,7 +482,7 @@ export default function AnalysisPage() {
                         </div>
                     ) : (
                         <div className="w-full space-y-4">
-                            {analysisToRender?.summary && analysisToRender.findings.length === 0 && (
+                            {analysisToRender?.summary && analysisToRender.findings.length > 0 && (
                                 <p className="text-center text-muted-foreground italic text-sm">{analysisToRender.summary}</p>
                             )}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -507,11 +507,11 @@ export default function AnalysisPage() {
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{finding.userRatio}</span></p>
                                                 <p>Target Ratio: <span className="font-bold text-foreground">{finding.targetRatio}</span></p>
                                             </div>
-                                            {isAnalysisLoading && finding.imbalanceFocus !== 'Balanced' ? (
+                                            {isAnalysisLoading && finding.userRatio ? (
                                                  <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                  </div>
-                                            ) : aiFinding && finding.imbalanceFocus !== 'Balanced' ? (
+                                            ) : aiFinding ? (
                                                <>
                                                 <div className="mt-3 pt-3 border-t">
                                                     <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>

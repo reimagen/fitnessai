@@ -116,7 +116,7 @@ function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], 
 
 const ImbalanceDataForAISchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
-    imbalanceFocus: z.enum(['Level Imbalance', 'Ratio Imbalance']),
+    imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES),
     lift1Name: z.string(),
     lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
@@ -126,7 +126,7 @@ const ImbalanceDataForAISchema = z.object({
 
 const AIAnalysisResultSchema = z.object({
   imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of the imbalance this analysis is for. Must match one of the types from the input."),
-  imbalanceFocus: z.enum(['Level Imbalance', 'Ratio Imbalance']).describe("The type of focus for this analysis."),
+  imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The type of focus for this analysis."),
   insight: z.string().describe("A concise, expert insight (max 2 sentences) into the potential risks or consequences of the specific strength imbalance, personalized to the user's context."),
   recommendation: z.string().describe("A simple, clear, and actionable recommendation (max 2 sentences) to help the user address the imbalance. It should start with a direct action verb and align with the provided recommendation focus."),
 });
@@ -264,47 +264,59 @@ const strengthImbalanceFlow = ai.defineFlow(
             imbalanceFocus = 'Ratio Imbalance';
         }
         
-        if (imbalanceFocus !== 'Balanced') {
-            let recommendationFocus = "";
+        let recommendationFocus = "";
 
-            if (imbalanceFocus === 'Level Imbalance') {
-                 const weakerLift = lift1WeightKg < lift2WeightKg ? lift1 : lift2; // Simplistic but ok for focus
-                 const weakerLevel = lift1WeightKg < lift2WeightKg ? lift1Level : lift2Level;
-                 const strongerLevel = lift1WeightKg < lift2WeightKg ? lift2Level : lift1Level;
-                 recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLift.exerciseName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
-            } else { // Ratio Imbalance
-                 const weakerLiftByRatio = ratio < targetRatioValue! ? lift1.exerciseName : lift2.exerciseName;
-                 recommendationFocus = `Both lifts are in the same tier (${lift1Level}), but their strength relationship is off. Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
+        if (imbalanceFocus === 'Level Imbalance') {
+             const weakerLift = lift1WeightKg < lift2WeightKg ? lift1 : lift2; // Simplistic but ok for focus
+             const weakerLevel = lift1WeightKg < lift2WeightKg ? lift1Level : lift2Level;
+             const strongerLevel = lift1WeightKg < lift2WeightKg ? lift2Level : lift1Level;
+             recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLift.exerciseName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
+        } else if (imbalanceFocus === 'Ratio Imbalance') { // Ratio Imbalance
+             const weakerLiftByRatio = ratio < targetRatioValue! ? lift1.exerciseName : lift2.exerciseName;
+             recommendationFocus = `Both lifts are in the same tier (${lift1Level}), but their strength relationship is off. Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
+        } else { // Balanced
+            const currentLevel = lift1Level; // They are the same level
+            let nextLevel: string | null = null;
+            if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
+            else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
+            else if (currentLevel === 'Advanced') nextLevel = 'Elite';
+            
+            if (nextLevel) {
+                recommendationFocus = `These lifts are well-balanced at the ${currentLevel} level. The primary goal is now progressive overload to advance both lifts towards the ${nextLevel} level.`;
+            } else if (currentLevel === 'Elite') {
+                recommendationFocus = `These lifts are balanced at an Elite level. The goal is to maintain this high level of strength and balance through consistent training.`;
+            } else { // N/A
+                recommendationFocus = `These lifts appear balanced, but their strength level could not be determined. Focus on consistency and proper form.`;
             }
-
-            imbalancesForAI.push({
-                imbalanceType: type,
-                imbalanceFocus: imbalanceFocus,
-                lift1Name: lift1.exerciseName,
-                lift1Level: lift1Level,
-                lift2Name: lift2.exerciseName,
-                lift2Level: lift2Level,
-                recommendationFocus: recommendationFocus,
-            });
-
-            calculatedFindings.push({
-                imbalanceType: type,
-                lift1Name: lift1.exerciseName,
-                lift1Weight: lift1.weight,
-                lift1Unit: lift1.weightUnit,
-                lift2Name: lift2.exerciseName,
-                lift2Weight: lift2.weight,
-                lift2Unit: lift2.weightUnit,
-                userRatio: `${ratio.toFixed(2)}:1`,
-                targetRatio: targetRatioDisplay,
-                imbalanceFocus: imbalanceFocus,
-            });
         }
+
+        imbalancesForAI.push({
+            imbalanceType: type,
+            imbalanceFocus: imbalanceFocus,
+            lift1Name: lift1.exerciseName,
+            lift1Level: lift1Level,
+            lift2Name: lift2.exerciseName,
+            lift2Level: lift2Level,
+            recommendationFocus: recommendationFocus,
+        });
+
+        calculatedFindings.push({
+            imbalanceType: type,
+            lift1Name: lift1.exerciseName,
+            lift1Weight: lift1.weight,
+            lift1Unit: lift1.weightUnit,
+            lift2Name: lift2.exerciseName,
+            lift2Weight: lift2.weight,
+            lift2Unit: lift2.weightUnit,
+            userRatio: `${ratio.toFixed(2)}:1`,
+            targetRatio: targetRatioDisplay,
+            imbalanceFocus: imbalanceFocus,
+        });
     }
 
     if (imbalancesForAI.length === 0) {
         return {
-            summary: "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.",
+            summary: "Not enough data for AI analysis. Log personal records for opposing muscle groups (e.g., a push and a pull exercise) to get started.",
             findings: [],
         };
     }
@@ -315,17 +327,17 @@ const strengthImbalanceFlow = ai.defineFlow(
     });
     
     const finalFindings = calculatedFindings.map(finding => {
-        const aiResult = aiAnalyses?.analyses.find(a => a.imbalanceType === finding.imbalanceType);
+        const aiResult = aiAnalyses?.analyses.find(a => a.imbalanceType === finding.imbalanceType && a.imbalanceFocus === finding.imbalanceFocus);
         return {
             ...finding,
-            insight: aiResult?.insight || "AI analysis could not be generated for this imbalance.",
+            insight: aiResult?.insight || "AI analysis could not be generated for this pair.",
             recommendation: aiResult?.recommendation || "Please consult a fitness professional for guidance.",
         };
     });
     
     let summary: string;
-    if (finalFindings.length > 0) {
-        summary = ""; // This summary is intentionally left blank. The findings are the summary.
+    if (finalFindings.some(f => f.imbalanceFocus !== 'Balanced')) {
+        summary = "Analysis complete. Some potential strength imbalances were identified. See recommendations below.";
     } else {
         summary = "Great job! Your strength ratios appear to be well-balanced based on your logged personal records.";
     }
