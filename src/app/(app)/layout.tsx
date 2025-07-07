@@ -1,5 +1,6 @@
 
 import { BottomNavigationBar } from '@/components/layout/bottom-navigation-bar';
+import '../globals.css';
 
 export default function AppLayout({
   children,
