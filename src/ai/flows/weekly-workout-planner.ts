@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const WeeklyWorkoutPlanInputSchema = z.object({
   userId: z.string().describe('The unique identifier for the user.'),
-  userProfileContext: z.string().describe('A comprehensive string containing the user\'s fitness goals, workout history, personal statistics (age, gender, height, weight), and any specific preferences or constraints for the workout plan.'),
+  userProfileContext: z.string().describe('A comprehensive string containing the user\'s fitness goals, workout history, personal statistics (age, gender, height, weight), personal records with strength levels, and strength balance analysis results to be used for the workout plan.'),
   weekStartDate: z.string().optional().describe('The start date of the week for which the plan is being generated, preferably a Sunday, formatted as YYYY-MM-DD. This helps contextualize the plan for a specific week if needed.'),
 });
 export type WeeklyWorkoutPlanInput = z.infer<typeof WeeklyWorkoutPlanInputSchema>;
@@ -41,41 +41,43 @@ The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{w
 
 **NEW REQUIREMENT: Introductory Analysis**
 Before generating the daily breakdown, you MUST start the plan with a brief introductory paragraph (2-4 sentences). This paragraph MUST:
-1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their 'Workout History Summary' in the provided context. For example, mention their consistency or focus areas.
-2.  **State This Week's Purpose**: Explicitly connect this week's plan to **all of the user's listed Fitness Goals** (both primary and other goals). Explain how the upcoming workouts are designed to help them progress towards each of these objectives.
+1.  **Analyze Past Performance**: Briefly comment on the user's recent activity based on their 'Workout History Summary' in the provided context.
+2.  **State This Week's Purpose**: Explicitly connect this week's plan to **all of the user's listed Fitness Goals** AND the key findings from their **Strength Balance Analysis**. Explain how the upcoming workouts are designed to help them progress towards each of these objectives.
 3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
 
-After writing the introduction, proceed with generating the full weekly workout plan as described in the "Key Requirements" below.
+**CRITICAL INSTRUCTIONS FOR PLAN DESIGN:**
+Your primary directive is to create a plan that intelligently addresses the user's specific needs based on their **Strength Balance Analysis** and **Personal Record Strength Levels**.
 
-**Key Requirements for the Weekly Plan:**
+1.  **Address Imbalances First**:
+    *   If the "Strength Balance Analysis Summary" shows any findings (e.g., "Ratio Imbalance" or "Level Imbalance"), your plan **MUST** prioritize correcting these issues.
+    *   For a **Ratio Imbalance**, increase the volume (sets/reps) or frequency for the weaker lift in the pair. For example, if a "Horizontal Push vs. Pull" imbalance exists where push is stronger, the plan should include more pulling exercises like rows.
+    *   For a **Level Imbalance**, focus on bringing the weaker lift (e.g., 'Beginner') up to the level of the stronger lift (e.g., 'Intermediate'). The workout descriptions should reflect this focus.
+
+2.  **Drive Progression for Balanced Lifts**:
+    *   If the user's lifts are balanced, or for pairs of lifts that are already balanced, design the plan to help them progress to the next strength level.
+    *   Reference the "Personal Records & Strength Levels" section.
+    *   For lifts at the **'Beginner'** level, prescribe moderate weights and emphasize mastering proper form.
+    *   For lifts at the **'Intermediate'** level, incorporate principles of progressive overload. Suggest specific, small increases in weight or reps (e.g., "This week, aim to add 5 lbs to your squat").
+    *   For lifts at the **'Advanced'** or **'Elite'** level, you can maintain current strength or introduce more complex training variations if it aligns with the user's goals.
+
+3.  **Integrate Goals**: The overall structure of the week (e.g., split routine vs. full body) should align with the user's stated "Fitness Goals".
+
+After analyzing and designing the plan based on the above, generate the full weekly plan as described in the "Key Requirements for Formatting" below.
+
+**Key Requirements for Formatting:**
 
 1.  **Structure**: The output MUST be a single string containing the entire week's plan.
 2.  **Daily Breakdown**: For each day (Sunday to Saturday), provide a detailed workout session. If a rest day is appropriate, clearly state "Rest Day" for that day's entry, and no further details like warm-up/cool-down are needed for that specific rest day.
-3.  **Visual Separation Between Days**: CRITICAL: After all content for one day (including its cool-down description, or "Rest Day" note) is complete, you MUST output one single empty blank line BEFORE starting the next day's heading (e.g., before **Monday: Focus**). This means there will be two newline characters between the end of one day's content and the start of the next day's heading.
+3.  **Visual Separation Between Days**: CRITICAL: After all content for one day is complete, you MUST output one single empty blank line BEFORE starting the next day's heading.
 4.  **Detailed Workout Session Structure and Formatting**:
-    For *each* individual workout day or session detailed in the plan (not rest days), you MUST structure it clearly with the following components in order.
-    CRITICAL: NO lines in the output should begin with markdown list markers such as '*' or '-'. Each piece of information (exercise name, sets/reps, rest periods, etc.) should be on its own line.
-    *   **Day Heading**: Each day's section MUST start with the day of the week and a brief focus, both bolded. For example: **Sunday: Full Body Strength**. This line MUST NOT begin with any list marker.
-    *   **Warm-up Section**:
-        *   This section MUST begin with the exact bolded heading: **Warm-up:**
-        *   This heading line itself (i.e., "**Warm-up:**") MUST NOT begin with any list marker.
-        *   List 2-3 dynamic warm-up exercises under this heading. Each exercise description should be on its own line and MUST NOT begin with any list marker.
-    *   **Main Workout Section**:
-        *   This section MUST begin with the exact bolded heading: **Main Workout:**
-        *   This heading line itself (i.e., "**Main Workout:**") MUST NOT begin with any list marker.
-        *   List the exercises for the main workout. Each exercise, its sets/reps, and any rest periods should be on separate lines. For example:
-            Squats
-            3 sets of 8-12 reps
-            Rest: 60-90 seconds between sets
-        *   NO lines in this section (exercise names, sets/reps, rest details) should begin with any list marker.
-    *   **Cool-down Section**:
-        *   This section MUST begin with the exact bolded heading: **Cool-down:**
-        *   This heading line itself (i.e., "**Cool-down:**") MUST NOT begin with any list marker.
-        *   List 2-3 static stretches under this heading. Each stretch description should be on its own line and MUST NOT begin with any list marker.
-5.  **Exercise Variety**: Include a mix of exercises targeting different muscle groups throughout the week, aligned with the user's goals and preferences from their profile context.
-6.  **Progressive Overload**: Where appropriate, include notes or suggestions for progressive overload (e.g., "Aim to increase weight or reps next week if this felt manageable"). This can be a general note at the end of the plan or integrated into specific days/exercises. It should NOT start with a list marker.
-7.  **Clarity and Actionability**: The plan should be easy to understand and follow. Use clear, concise language.
-8.  **Safety**: Optionally, include a brief, general safety reminder at the very end of the entire weekly plan, such as "Remember to listen to your body, maintain proper form, and consult a healthcare professional if you have any concerns." This line should NOT start with a list marker.
+    For *each* individual workout day, you MUST structure it clearly with the following components in order.
+    CRITICAL: NO lines in the output should begin with markdown list markers such as '*' or '-'.
+    *   **Day Heading**: Each day's section MUST start with the day of the week and a brief focus, both bolded. For example: **Sunday: Full Body Strength & Imbalance Correction**.
+    *   **Warm-up Section**: Must begin with **Warm-up:**
+    *   **Main Workout Section**: Must begin with **Main Workout:**. List exercises, sets/reps, and rest periods on separate lines.
+    *   **Cool-down Section**: Must begin with **Cool-down:**
+5.  **Clarity and Actionability**: The plan should be easy to understand. Use clear, concise language.
+6.  **Safety**: Optionally, include a brief, general safety reminder at the very end of the entire weekly plan.
 
 Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
 `,
