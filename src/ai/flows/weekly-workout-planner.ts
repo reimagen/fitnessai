@@ -19,7 +19,7 @@ const WeeklyWorkoutPlanInputSchema = z.object({
 export type WeeklyWorkoutPlanInput = z.infer<typeof WeeklyWorkoutPlanInputSchema>;
 
 const WeeklyWorkoutPlanOutputSchema = z.object({
-  weeklyPlan: z.string().describe("The detailed weekly workout plan, formatted as a single string. The plan should cover Sunday through Saturday, with daily breakdowns including exercises, sets, reps, rest periods, warm-up, and cool-down routines. NO lines in the output should begin with markdown list markers like '*' or '-'."),
+  weeklyPlan: z.string().describe("The detailed weekly workout plan, formatted as a single string. The plan should cover Sunday through Saturday, with daily breakdowns including exercises, sets, reps, weight, rest periods, warm-up, and cool-down routines. NO lines in the output should begin with markdown list markers like '*' or '-'."),
 });
 export type WeeklyWorkoutPlanOutput = z.infer<typeof WeeklyWorkoutPlanOutputSchema>;
 
@@ -31,7 +31,7 @@ const weeklyWorkoutPlannerPrompt = ai.definePrompt({
   name: 'weeklyWorkoutPlannerPrompt',
   input: {schema: WeeklyWorkoutPlanInputSchema},
   output: {schema: WeeklyWorkoutPlanOutputSchema},
-  prompt: `You are an expert fitness coach and AI assistant. Your task is to generate a comprehensive, personalized, and actionable **full weekly workout plan** for a user, covering Sunday through Saturday.
+  prompt: `You are an expert fitness coach. Your task is to generate a comprehensive, personalized, and actionable **full weekly workout plan** for a user, covering Sunday through Saturday.
 
 Use the following user information to tailor the plan:
 User ID: {{{userId}}}
@@ -39,7 +39,7 @@ User Profile Context: {{{userProfileContext}}}
 
 The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{weekStartDate}}){{/if}} and continue through Saturday.
 
-**NEW REQUIREMENT: Introductory Analysis**
+**REQUIREMENT: Introductory Analysis**
 Before generating the daily breakdown, you MUST start the plan with a brief, motivating introductory paragraph (2-4 sentences). This paragraph MUST:
 1.  **Analyze Past Performance & Goal Proximity**: Briefly comment on the user's recent activity ('Workout History Summary') and analyze how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
 2.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals and correct any issues from the 'Strength Balance Analysis'. For instance, explain *why* certain exercises are included.
