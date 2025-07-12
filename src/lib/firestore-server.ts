@@ -2,8 +2,9 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory } from './types';
+import { startOfMonth, endOfMonth } from 'date-fns';
 
 // --- Data Converters ---
 // These converters handle the transformation between Firestore's data format (e.g., Timestamps)
@@ -134,11 +135,25 @@ const userProfileConverter = {
 // Workout Logs
 const workoutLogsCollection = collection(db, 'workoutLogs').withConverter(workoutLogConverter);
 
-export const getWorkoutLogs = async (): Promise<WorkoutLog[]> => {
-  const q = query(workoutLogsCollection, orderBy('date', 'desc'));
+export const getWorkoutLogs = async (forMonth?: Date): Promise<WorkoutLog[]> => {
+  let q;
+  if (forMonth) {
+    const startDate = startOfMonth(forMonth);
+    const endDate = endOfMonth(forMonth);
+    q = query(
+      workoutLogsCollection,
+      where('date', '>=', startDate),
+      where('date', '<=', endDate),
+      orderBy('date', 'desc')
+    );
+  } else {
+    // Default to fetching all logs if no month is specified
+    q = query(workoutLogsCollection, orderBy('date', 'desc'));
+  }
   const snapshot = await getDocs(q);
   return snapshot.docs.map(doc => doc.data());
 };
+
 
 export const addWorkoutLog = async (log: Omit<WorkoutLog, 'id'>) => {
   return await addDoc(workoutLogsCollection, log);
