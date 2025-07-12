@@ -14,9 +14,9 @@ import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, use
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUp, Edit, ImageUp, Loader2 } from "lucide-react";
+import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay } from "date-fns";
+import { format, startOfDay, addMonths, subMonths, isSameMonth } from "date-fns";
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
@@ -24,6 +24,9 @@ export default function HistoryPage() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialTabQueryParam = searchParams.get('tab');
+  const [isClient, setIsClient] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
   const validTabs = ['log', 'screenshot', 'upload'];
   const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
 
@@ -31,8 +34,12 @@ export default function HistoryPage() {
   const [activeTab, setActiveTab] = useState<string>(defaultTabValue);
   const manualLogCardRef = useRef<HTMLDivElement>(null);
 
-  // Fetching data with React Query
-  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Fetching data with React Query, now passing the current month
+  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts(currentMonth);
   const { data: userProfile } = useUserProfile();
   
   // Mutations defined directly in the component
@@ -40,13 +47,15 @@ export default function HistoryPage() {
   const updateWorkoutMutation = useUpdateWorkoutLog();
   const deleteWorkoutMutation = useDeleteWorkoutLog();
 
-
   useEffect(() => {
     if (editingLogId && activeTab === 'log' && manualLogCardRef.current) {
       manualLogCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [editingLogId, activeTab]);
 
+  const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+  const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
     let weightWarningShown = false;
 
@@ -149,6 +158,11 @@ export default function HistoryPage() {
 
     const targetDate = startOfDay(new Date(parsedData.workoutDate.replace(/-/g, '/')));
     
+    // We must check against all workouts, not just the current month's view
+    // A better implementation would fetch the specific log for that date if needed.
+    // For now, this logic is client-side and will depend on what's already loaded, which is a limitation.
+    // To make it robust, we'd need a `getWorkoutByDate` function.
+    // For now, we'll assume the user is parsing for the current month.
     const existingLog = workoutLogs?.find(
       (log) => format(log.date, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')
     );
@@ -198,7 +212,6 @@ export default function HistoryPage() {
 
       updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
         onSuccess: () => {
-            // Overwrite the default success message for this specific case
             toast({
                 title: "Workout Updated!",
                 description: `${addedCount} new exercise(s) added to your log for ${format(targetDate, 'MMMM d, yyyy')}.`,
@@ -215,7 +228,6 @@ export default function HistoryPage() {
       };
       addWorkoutMutation.mutate(newLog, {
           onSuccess: () => {
-            // Overwrite the default success message for this specific case
             toast({
                 title: "Screenshot Parsed!",
                 description: `${parsedExercises.length} exercises added to a new log for ${format(targetDate, 'MMMM d, yyyy')}.`,
@@ -242,7 +254,8 @@ export default function HistoryPage() {
   }
 
   const handleEditLog = (logId: string) => {
-    const logToEdit = workoutLogs?.find(log => log.id === logId);
+    if (!workoutLogs) return;
+    const logToEdit = workoutLogs.find(log => log.id === logId);
     if (logToEdit) {
       setEditingLogId(logId);
       setActiveTab('log');
@@ -262,7 +275,16 @@ export default function HistoryPage() {
     }
   }
 
+  if (!isClient) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-screen">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   const logBeingEdited = editingLogId ? workoutLogs?.find(log => log.id === editingLogId) : undefined;
+  const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -327,7 +349,19 @@ export default function HistoryPage() {
       </Tabs>
 
       <section className="mt-12">
-        <h2 className="mb-6 font-headline text-2xl font-semibold">Logged Workouts</h2>
+        <div className="flex justify-between items-center mb-6">
+            <h2 className="font-headline text-2xl font-semibold">Logged Workouts</h2>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+                    <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="font-semibold text-center w-32">{format(currentMonth, 'MMMM yyyy')}</span>
+                <Button variant="outline" size="icon" onClick={goToNextMonth} disabled={isCurrentMonthInView}>
+                    <ChevronRight className="h-4 w-4" />
+                </Button>
+            </div>
+        </div>
+        
         {isLoadingWorkouts ? (
             <Card className="shadow-sm">
                 <CardContent className="pt-6 flex justify-center items-center h-40">

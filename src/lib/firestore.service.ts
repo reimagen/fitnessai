@@ -18,8 +18,17 @@ import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
 
 // --- React Query Hooks ---
 
-export function useWorkouts() {
-  return useQuery<WorkoutLog[], Error>({ queryKey: ['workouts'], queryFn: getWorkoutLogs });
+export function useWorkouts(forMonth?: Date) {
+  // The query key now includes the month, so each month's data is cached separately.
+  // If no month is provided, it fetches all logs (for context views).
+  const queryKey = forMonth 
+    ? ['workouts', forMonth.toISOString().slice(0, 7)] // e.g., ['workouts', '2025-07']
+    : ['workouts', 'all'];
+
+  return useQuery<WorkoutLog[], Error>({ 
+    queryKey: queryKey, 
+    queryFn: () => getWorkoutLogs(forMonth) 
+  });
 }
 
 export function useAddWorkoutLog() {
@@ -27,6 +36,7 @@ export function useAddWorkoutLog() {
     return useMutation({
         mutationFn: serverAddWorkoutLog,
         onSuccess: () => {
+            // Invalidate all workout queries to ensure any month's view is updated.
             queryClient.invalidateQueries({ queryKey: ['workouts'] });
         },
     });
