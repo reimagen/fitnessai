@@ -6,6 +6,7 @@ import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Route } from 'lucide-react';
 
 const categoryStyles: Record<ExerciseCategory, React.CSSProperties> = {
   'Upper Body': { backgroundColor: 'hsl(var(--chart-1))', color: 'hsl(var(--chart-1-foreground))' },
@@ -21,28 +22,58 @@ type RecentHistoryProps = {
 };
 
 export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
-  const dailyCategories = useMemo(() => {
+  const dailyData = useMemo(() => {
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 0 });
     const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
 
-    const categoriesMap = new Map<string, Set<ExerciseCategory>>();
+    const dataMap = new Map<string, { categories: Set<ExerciseCategory>; runningMiles: number }>();
 
     workoutLogs.forEach(log => {
       if (log.date >= weekStart && log.date <= weekEnd) {
         const dateKey = format(log.date, 'yyyy-MM-dd');
-        if (!categoriesMap.has(dateKey)) {
-          categoriesMap.set(dateKey, new Set());
+        if (!dataMap.has(dateKey)) {
+          dataMap.set(dateKey, { categories: new Set(), runningMiles: 0 });
         }
-        const categoriesSet = categoriesMap.get(dateKey)!;
+        const dayData = dataMap.get(dateKey)!;
+
         log.exercises.forEach(ex => {
           if (ex.category) {
-            categoriesSet.add(ex.category);
+            dayData.categories.add(ex.category);
+          }
+          
+          if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
+            let distanceInMiles = 0;
+            if (ex.distanceUnit === 'mi') distanceInMiles = ex.distance;
+            else if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
+            else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
+            
+            const exerciseName = ex.name.trim().toLowerCase();
+            let isRun = false;
+
+            if (exerciseName.includes('run') || exerciseName.includes('running')) {
+              isRun = true;
+            } else if (ex.duration && ex.duration > 0 && ex.durationUnit) {
+              let durationInHours = 0;
+              if (ex.durationUnit === 'hr') durationInHours = ex.duration;
+              else if (ex.durationUnit === 'min') durationInHours = ex.duration / 60;
+              else if (ex.durationUnit === 'sec') durationInHours = ex.duration / 3600;
+              
+              if (durationInHours > 0) {
+                const paceMph = distanceInMiles / durationInHours;
+                if (paceMph >= 4.5) { // Threshold for a run
+                  isRun = true;
+                }
+              }
+            }
+            if (isRun) {
+              dayData.runningMiles += distanceInMiles;
+            }
           }
         });
       }
     });
-    return categoriesMap;
+    return dataMap;
   }, [workoutLogs]);
 
   const today = new Date();
@@ -60,14 +91,16 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
         <div className="grid grid-cols-7 gap-2 md:gap-4">
           {daysOfWeek.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
-            const categories = dailyCategories.get(dateKey);
+            const dayData = dailyData.get(dateKey);
+            const categories = dayData?.categories;
+            const runningMiles = dayData?.runningMiles || 0;
             const isCurrentDay = isToday(day);
 
             return (
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[120px]",
+                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[140px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
@@ -92,6 +125,12 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                     </div>
                   )}
                 </div>
+                 {runningMiles > 0 && (
+                  <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center gap-1 text-xs text-accent">
+                    <Route className="h-3 w-3" />
+                    <span className="font-semibold">{runningMiles.toFixed(1)} mi</span>
+                  </div>
+                )}
               </div>
             );
           })}
