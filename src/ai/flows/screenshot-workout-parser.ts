@@ -61,6 +61,7 @@ Your goal is to extract the workout date and exercise data from the screenshot a
     *   This is your most important instruction. You **MUST NOT** guess or infer a date.
     *   A date is only valid if a **month and day are clearly and explicitly written in the image**. For example, the text "June 26" or "Jul 4" must be visible.
     *   **If you do not see a written month and day in the image, you MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a strict rule. Do not return a null or empty string for \`workoutDate\`; the field itself must be absent.
+    *   **Under no circumstances should you invent a date. If no date is visible, omitting the 'workoutDate' field is the only correct action.**
     *   If, and only if, you find a valid month and day, you **MUST** use the year '2025' for the output. This applies even if the image shows a different year. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
     *   Format any valid date as YYYY-MM-DD.
 
