@@ -126,9 +126,8 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                   )}
                 </div>
                  {runningMiles > 0 && (
-                  <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center gap-1 text-xs text-accent">
-                    <Route className="h-3 w-3" />
-                    <span className="font-semibold">{runningMiles.toFixed(1)} mi</span>
+                  <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center text-xs text-accent">
+                    <span className="font-semibold">Ran {runningMiles.toFixed(1)} mi</span>
                   </div>
                 )}
               </div>
