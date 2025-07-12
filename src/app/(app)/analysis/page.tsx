@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear, getWeek, getYear, parse, endOfMonth } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear, getWeek, getYear, parse, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -323,26 +323,38 @@ export default function AnalysisPage() {
   const chartData = useMemo(() => {
     const { logsForPeriod, prsForPeriod } = filteredData;
     const periodLabel = `${timeRangeDisplayNames[timeRange]}'s Summary`;
+    const today = new Date();
 
     let workoutFrequencyData: ChartDataPoint[] = [];
-    const aggregatedData: { [key: string]: ChartDataPoint } = {};
-
+    
     switch (timeRange) {
-        case 'weekly':
+        case 'weekly': {
+            const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+            const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+            const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+
+            const aggregatedData = new Map<string, ChartDataPoint>();
+            daysInWeek.forEach(day => {
+                const dateKey = format(day, 'yyyy-MM-dd');
+                aggregatedData.set(dateKey, { date: dateKey, dateLabel: format(day, 'MMM d'), upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 });
+            });
+            
             logsForPeriod.forEach(log => {
                 const dateKey = format(log.date, 'yyyy-MM-dd');
-                if (!aggregatedData[dateKey]) {
-                    aggregatedData[dateKey] = { date: dateKey, dateLabel: format(log.date, 'MMM d'), upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
+                const dayData = aggregatedData.get(dateKey);
+                if (dayData) {
+                    log.exercises.forEach(ex => {
+                        const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+                        if (dayData[camelCaseCategory] !== undefined) dayData[camelCaseCategory]++;
+                    });
                 }
-                log.exercises.forEach(ex => {
-                    const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
-                    if (aggregatedData[dateKey][camelCaseCategory] !== undefined) aggregatedData[dateKey][camelCaseCategory]++;
-                });
             });
-            workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            workoutFrequencyData = Array.from(aggregatedData.values());
             break;
+        }
             
-        case 'monthly':
+        case 'monthly': {
+            const aggregatedData: { [key: string]: ChartDataPoint } = {};
             logsForPeriod.forEach(log => {
                 const weekStart = startOfWeek(log.date, { weekStartsOn: 0 });
                 const weekEnd = endOfWeek(log.date, { weekStartsOn: 0 });
@@ -359,8 +371,10 @@ export default function AnalysisPage() {
             });
             workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             break;
+        }
         
-        case 'yearly':
+        case 'yearly': {
+            const aggregatedData: { [key: string]: ChartDataPoint } = {};
             logsForPeriod.forEach(log => {
                 const dateKey = format(log.date, 'yyyy-MM');
                 const dateLabel = format(log.date, 'MMM');
@@ -375,8 +389,10 @@ export default function AnalysisPage() {
             });
             workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => parse(a.date, 'yyyy-MM', new Date()).getTime() - parse(b.date, 'yyyy-MM', new Date()).getTime());
             break;
+        }
         
-        case 'all-time':
+        case 'all-time': {
+             const aggregatedData: { [key: string]: ChartDataPoint } = {};
             logsForPeriod.forEach(log => {
                 const dateKey = format(log.date, 'yyyy');
                 const dateLabel = dateKey;
@@ -391,6 +407,7 @@ export default function AnalysisPage() {
             });
             workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => parseInt(a.date) - parseInt(b.date));
             break;
+        }
     }
 
 
@@ -640,5 +657,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
