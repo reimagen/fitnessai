@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear, getWeek, getYear, parse, endOfMonth } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -324,18 +324,75 @@ export default function AnalysisPage() {
     const { logsForPeriod, prsForPeriod } = filteredData;
     const periodLabel = `${timeRangeDisplayNames[timeRange]}'s Summary`;
 
-    const dailyCategoryCounts: { [dateKey: string]: ChartDataPoint } = {};
-    logsForPeriod.forEach(log => {
-      const dateKey = format(log.date, 'yyyy-MM-dd');
-      if (!dailyCategoryCounts[dateKey]) {
-        dailyCategoryCounts[dateKey] = { date: dateKey, dateLabel: format(log.date, 'MMM d'), upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
-      }
-      log.exercises.forEach(ex => {
-        const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
-        if (dailyCategoryCounts[dateKey][camelCaseCategory] !== undefined) dailyCategoryCounts[dateKey][camelCaseCategory]++;
-      });
-    });
-    const workoutFrequencyData = Object.values(dailyCategoryCounts).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    let workoutFrequencyData: ChartDataPoint[] = [];
+    const aggregatedData: { [key: string]: ChartDataPoint } = {};
+
+    switch (timeRange) {
+        case 'weekly':
+            logsForPeriod.forEach(log => {
+                const dateKey = format(log.date, 'yyyy-MM-dd');
+                if (!aggregatedData[dateKey]) {
+                    aggregatedData[dateKey] = { date: dateKey, dateLabel: format(log.date, 'MMM d'), upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
+                }
+                log.exercises.forEach(ex => {
+                    const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+                    if (aggregatedData[dateKey][camelCaseCategory] !== undefined) aggregatedData[dateKey][camelCaseCategory]++;
+                });
+            });
+            workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            break;
+            
+        case 'monthly':
+            logsForPeriod.forEach(log => {
+                const weekStart = startOfWeek(log.date, { weekStartsOn: 0 });
+                const weekEnd = endOfWeek(log.date, { weekStartsOn: 0 });
+                const dateKey = format(weekStart, 'yyyy-MM-dd');
+                const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
+                
+                if (!aggregatedData[dateKey]) {
+                    aggregatedData[dateKey] = { date: dateKey, dateLabel, upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
+                }
+                log.exercises.forEach(ex => {
+                    const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+                    if (aggregatedData[dateKey][camelCaseCategory] !== undefined) aggregatedData[dateKey][camelCaseCategory]++;
+                });
+            });
+            workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            break;
+        
+        case 'yearly':
+            logsForPeriod.forEach(log => {
+                const dateKey = format(log.date, 'yyyy-MM');
+                const dateLabel = format(log.date, 'MMM');
+                
+                if (!aggregatedData[dateKey]) {
+                    aggregatedData[dateKey] = { date: dateKey, dateLabel, upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
+                }
+                log.exercises.forEach(ex => {
+                    const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+                    if (aggregatedData[dateKey][camelCaseCategory] !== undefined) aggregatedData[dateKey][camelCaseCategory]++;
+                });
+            });
+            workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => parse(a.date, 'yyyy-MM', new Date()).getTime() - parse(b.date, 'yyyy-MM', new Date()).getTime());
+            break;
+        
+        case 'all-time':
+            logsForPeriod.forEach(log => {
+                const dateKey = format(log.date, 'yyyy');
+                const dateLabel = dateKey;
+                
+                if (!aggregatedData[dateKey]) {
+                    aggregatedData[dateKey] = { date: dateKey, dateLabel, upperBody: 0, lowerBody: 0, cardio: 0, core: 0, fullBody: 0, other: 0 };
+                }
+                log.exercises.forEach(ex => {
+                    const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+                    if (aggregatedData[dateKey][camelCaseCategory] !== undefined) aggregatedData[dateKey][camelCaseCategory]++;
+                });
+            });
+            workoutFrequencyData = Object.values(aggregatedData).sort((a, b) => parseInt(a.date) - parseInt(b.date));
+            break;
+    }
+
 
     const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
     const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
@@ -395,7 +452,7 @@ export default function AnalysisPage() {
         periodLabel: periodLabel
     };
     return { workoutFrequencyData, newPrsData: prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, runningProgressData, periodSummary };
-  }, [filteredData]);
+  }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
   const focusBadgeProps = (focus: ImbalanceFocus): { variant: 'secondary' | 'default' | 'destructive', text: string } => {
     switch (focus) {
@@ -443,7 +500,7 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : (<>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Breakdown of exercises by category per workout day for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Breakdown of exercises by category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{pr.exerciseName}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
@@ -583,3 +640,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
