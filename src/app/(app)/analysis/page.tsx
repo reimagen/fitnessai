@@ -580,14 +580,14 @@ export default function AnalysisPage() {
                                     return (
                                         <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                             <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1 pb-3">
+                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
                                                 <div>
                                                     <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
-                                                    {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
+                                                    {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p className="mt-1">Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
                                                 </div>
                                                 <div>
                                                     <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
-                                                    {dataFinding.lift2Level && dataFinding.lift2Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level}</span></p>}
+                                                    {dataFinding.lift2Level && dataFinding.lift2Level !== 'N/A' && <p className="mt-1">Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level}</span></p>}
                                                 </div>
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
                                                 <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
@@ -600,8 +600,8 @@ export default function AnalysisPage() {
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                  </div>
                                             ) : aiFinding ? (
-                                               <div className="space-y-3 pt-3 border-t">
-                                                    <div className="mb-2">
+                                               <div className="space-y-3 pt-4 border-t">
+                                                    <div className="mb-4">
                                                         <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                     </div>
                                                     <div>
@@ -614,15 +614,15 @@ export default function AnalysisPage() {
                                                     </div>
                                                </div>
                                             ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
-                                                 <div className="pt-3 border-t">
-                                                    <div className="my-3">
+                                                 <div className="pt-4 border-t">
+                                                    <div className="mb-4">
                                                         <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                     </div>
                                                     <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
                                             ) : (
-                                                <div className="pt-3 border-t">
-                                                    <div className="my-3">
+                                                <div className="pt-4 border-t">
+                                                    <div className="mb-4">
                                                         <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                     </div>
                                                     {(() => {
