@@ -580,7 +580,7 @@ export default function AnalysisPage() {
                                     return (
                                         <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                             <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1 pb-3">
                                                 <div>
                                                     <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
                                                     {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
@@ -615,14 +615,14 @@ export default function AnalysisPage() {
                                                </div>
                                             ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
                                                  <div className="pt-3 border-t">
-                                                    <div className="mb-2 mt-3">
+                                                    <div className="my-3">
                                                         <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                     </div>
                                                     <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
                                             ) : (
                                                 <div className="pt-3 border-t">
-                                                    <div className="mb-3 mt-3">
+                                                    <div className="my-3">
                                                         <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                     </div>
                                                     {(() => {
