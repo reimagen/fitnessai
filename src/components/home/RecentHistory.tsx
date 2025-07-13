@@ -108,7 +108,7 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
-                <div className="mt-2 flex-grow space-y-1 overflow-y-auto mb-2">
+                <div className="mt-2 flex-grow space-y-1 overflow-y-auto pb-2">
                   {categories && categories.size > 0 ? (
                     Array.from(categories).map(category => (
                       <span
@@ -120,7 +120,7 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                       </span>
                     ))
                   ) : (
-                    <div className="flex items-center justify-center h-full">
+                    <div className="flex items-start justify-center h-full">
                       <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     </div>
                   )}
