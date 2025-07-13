@@ -312,7 +312,7 @@ export default function AnalysisPage() {
     if (timeRange !== 'all-time') {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
-      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: new Date() };
+      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
       else interval = { start: startOfYear(today), end: endOfYear(today) };
       logsForPeriod = (workoutLogs || []).filter(log => isWithinInterval(log.date, interval));
       prsForPeriod = (personalRecords || []).filter(pr => isWithinInterval(pr.date, interval));
@@ -556,7 +556,7 @@ export default function AnalysisPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {IMBALANCE_TYPES.map((type, index) => {
                                     const finding = clientSideFindings.find(f => f.imbalanceType === type);
-                                    if (!finding) return null; // Should not happen with current logic
+                                    if (!finding) return null;
 
                                     if ('hasData' in finding && !finding.hasData) {
                                         const config = IMBALANCE_CONFIG[type];
@@ -578,8 +578,8 @@ export default function AnalysisPage() {
                                     const badgeProps = focusBadgeProps(dataFinding.imbalanceFocus);
                                     
                                     return (
-                                        <Card key={index} className="p-4 bg-secondary/50">
-                                            <CardTitle className="text-base flex items-center justify-between">{dataFinding.imbalanceType} <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge></CardTitle>
+                                        <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
+                                            <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
                                             <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div>
                                                     <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
@@ -592,23 +592,30 @@ export default function AnalysisPage() {
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
                                                 <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
                                             </div>
+
+                                            <div className="my-3 text-center">
+                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+                                            </div>
+
+                                            <div className="flex-grow"></div>
+                                            
                                             {isAnalysisLoading && dataFinding.userRatio ? (
-                                                 <div className="mt-3 pt-3 border-t flex items-center justify-center text-muted-foreground">
+                                                 <div className="flex items-center justify-center text-muted-foreground pt-3 border-t">
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                  </div>
                                             ) : aiFinding ? (
-                                               <>
-                                                <div className="mt-3 pt-3 border-t">
-                                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
-                                                </div>
-                                                <div className="mt-2">
-                                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
-                                                </div>
-                                               </>
+                                               <div className="space-y-2 pt-3 border-t">
+                                                    <div>
+                                                        <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
+                                                    </div>
+                                               </div>
                                             ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
-                                                 <div className="mt-3 pt-3 border-t text-center text-muted-foreground text-xs">
+                                                 <div className="pt-3 border-t text-center text-muted-foreground text-xs">
                                                     <p>This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                 </div>
                                             ) : (
@@ -618,7 +625,7 @@ export default function AnalysisPage() {
 
                                                     if (currentLevel === 'Elite') {
                                                         return (
-                                                            <div className="mt-3 pt-3 border-t">
+                                                            <div className="pt-3 border-t">
                                                                 <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Elite Status</p>
                                                                 <p className="text-xs text-muted-foreground mt-1">You've reached the Elite level while maintaining balance. Incredible work!</p>
                                                             </div>
@@ -632,7 +639,7 @@ export default function AnalysisPage() {
 
                                                     if (nextLevel) {
                                                         return (
-                                                            <div className="mt-3 pt-3 border-t">
+                                                            <div className="pt-3 border-t">
                                                                 <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
                                                                 <p className="text-xs text-muted-foreground mt-1">
                                                                     Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
@@ -657,3 +664,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
