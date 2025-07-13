@@ -121,7 +121,7 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                     ))
                   ) : (
                     <div className="flex items-center justify-center h-full">
-                      <span className="text-muted-foreground">.</span>
+                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     </div>
                   )}
                 </div>
