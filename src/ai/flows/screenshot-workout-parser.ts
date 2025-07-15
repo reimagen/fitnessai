@@ -70,10 +70,12 @@ const COMMON_INSTRUCTIONS = `
     *   **Core**: Use for exercises like "Abdominal Crunch", "Rotary Torso", "Back Extension". You must categorize "Back Extension" as "Core".
     *   **Full Body**: Use for exercises like "Deadlift", "Clean and Jerk".
     *   **Cardio**: Use for exercises like "Treadmill", "Cycling", "Running", "Climbmill".
-4.  **Specific Handling for "Cardio" Exercises**:
+4.  **Specific Handling for "Cardio" Exercises - EXTREMELY IMPORTANT**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical, Climbmill):
-        *   Prioritize extracting 'distance', 'distanceUnit', 'duration', 'durationUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
-        *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Climbmill 5m 1s 36 cal" should result in 'sets: 0, reps: 0, weight: 0, distance: 0, duration: 301, durationUnit: 'sec', calories: 36'.
+        *   Prioritize extracting 'duration', 'durationUnit', and 'calories'.
+        *   **MANDATORY DURATION RULE**: If you see text like "5m 1s", "5 min 1 sec", or an OCR artifact like "5 mi- 301 sec", you MUST interpret this as a duration. For example, "5m 1s" MUST be parsed into 'duration: 301, durationUnit: 'sec''.
+        *   **MANDATORY DISTANCE RULE**: You MUST NOT assign a 'distance' value unless an explicit distance unit ("mi", "km", "ft") is clearly visible and associated with a number. In cases like "Climbmill - 5m 1s", the distance MUST be 0. Do NOT misinterpret "m" for "mi". If you see "5 mi", the distance is 5 and the unit is 'mi'. If you see "5m", that is a duration of 5 minutes.
+        *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio).
         *   Do not mistake distance values (like "5383 ft") for 'reps'.
 5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
     *   For these categories, prioritize extracting 'sets', 'reps', 'weight', 'weightUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
