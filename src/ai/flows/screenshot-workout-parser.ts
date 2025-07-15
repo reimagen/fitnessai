@@ -58,12 +58,11 @@ Your goal is to extract the workout date and exercise data from the screenshot a
 **CRITICAL INSTRUCTIONS - MUST BE FOLLOWED EXACTLY:**
 
 1.  **Workout Date - VERY CRITICAL**:
-    *   This is your most important instruction. You **MUST NOT** guess or infer a date.
-    *   A date is only valid if a **month and day are clearly and explicitly written in the image**. For example, the text "June 26" or "Jul 4" must be visible.
-    *   **If you do not see a written month and day in the image, you MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a strict rule. Do not return a null or empty string for \`workoutDate\`; the field itself must be absent.
+    *   This is your most important instruction. You **MUST NOT** guess, infer, hallucinate, or invent a date.
+    *   A date is only valid if a **month and day are clearly and explicitly written in the image**. For example, the text "June 26" or "Jul 4" must be visible. Titles like "Workout Details" are NOT dates.
+    *   **If you do not see a written month and day in the image, you MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a strict rule. It is a major failure to return a date if one is not present.
     *   **Under no circumstances should you invent a date. If no date is visible, omitting the 'workoutDate' field is the only correct action.**
     *   If, and only if, you find a valid month and day, you **MUST** use the year '2025' for the output. This applies even if the image shows a different year. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
-    *   Format any valid date as YYYY-MM-DD.
 
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
@@ -84,11 +83,11 @@ Your goal is to extract the workout date and exercise data from the screenshot a
     *   **Lower Body**: Use for exercises like "Abductor", "Adductor", "Glutes", "Leg Press", "Leg Extension", "Leg Curl", "Squats", "Hip Thrust".
     *   **Core**: Use for exercises like "Abdominal Crunch", "Rotary Torso", "Back Extension". You must categorize "Back Extension" as "Core".
     *   **Full Body**: Use for exercises like "Deadlift", "Clean and Jerk".
-    *   **Cardio**: Use for exercises like "Treadmill", "Cycling", "Running".
+    *   **Cardio**: Use for exercises like "Treadmill", "Cycling", "Running", "Climbmill".
 5.  **Specific Handling for "Cardio" Exercises**:
-    *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical):
+    *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical, Climbmill):
         *   Prioritize extracting 'distance', 'distanceUnit', 'duration', 'durationUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
-        *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Treadmill 0:09:26 • 5383 ft • 96 cal" should result in: 'sets: 0, reps: 0, weight: 0, distance: 5383, distanceUnit: 'ft', duration: 566, durationUnit: 'sec', calories: 96'.
+        *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Climbmill 5m 1s 36 cal" should result in 'sets: 0, reps: 0, weight: 0, distance: 0, duration: 301, durationUnit: 'sec', calories: 36'.
         *   Do not mistake distance values (like "5383 ft") for 'reps'.
 6.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
     *   For these categories, prioritize extracting 'sets', 'reps', 'weight', 'weightUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
@@ -98,7 +97,7 @@ Your goal is to extract the workout date and exercise data from the screenshot a
     *   If you see "lbs00" or "kg00" (or "lbs000", "kg000", etc.) in the screenshot, interpret this as "lbs" or "kg" respectively. The trailing zeros are an artifact and not part of the unit.
     *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, 'weightUnit' can be omitted or kept as default.
 8.  **Duration Parsing**:
-    *   If duration is in a format like MM:SS (e.g., "0:09:26" for Treadmill), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so 'duration: 566, durationUnit: 'sec''). If it's simpler (e.g., "30 min"), parse as is ('duration: 30, durationUnit: 'min'').
+    *   If duration is in a format like MM:SS (e.g., "5m 1s" or "0:09:26"), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so 'duration: 566, durationUnit: 'sec''). If it's simpler (e.g., "30 min"), parse as is ('duration: 30, durationUnit: 'min'').
 9.  **Distance Unit**:
     *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
 10. **Critical: Avoid Duplicating Single Exercise Entries**:
