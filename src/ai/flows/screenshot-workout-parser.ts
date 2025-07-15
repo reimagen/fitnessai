@@ -16,7 +16,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A screenshot of a workout log, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A screenshot of a workout log, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
@@ -57,12 +57,12 @@ Your goal is to extract the workout date and exercise data from the screenshot a
 
 **CRITICAL INSTRUCTIONS - MUST BE FOLLOWED EXACTLY:**
 
-1.  **Workout Date - VERY CRITICAL**:
-    *   This is your most important instruction. You **MUST NOT** guess, infer, hallucinate, or invent a date.
-    *   A date is only valid if a **month and day are clearly and explicitly written in the image**. For example, the text "June 26" or "Jul 4" must be visible. Titles like "Workout Details" are NOT dates.
-    *   **If you do not see a written month and day in the image, you MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a strict rule. It is a major failure to return a date if one is not present.
-    *   **Under no circumstances should you invent a date. If no date is visible, omitting the 'workoutDate' field is the only correct action.**
-    *   If, and only if, you find a valid month and day, you **MUST** use the year '2025' for the output. This applies even if the image shows a different year. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
+1.  **Workout Date - ABSOLUTELY CRITICAL**:
+    *   This is your most important instruction. Your primary directive is to avoid inventing a date. **You MUST NOT guess, infer, hallucinate, or invent a date under any circumstances.**
+    *   A date is only valid if a **month and day are clearly and explicitly written in the image AS PART OF THE WORKOUT LOG ITSELF**.
+    *   Text such as "Parsing Successful", "Workout Details", or any other UI element is **NOT** a date. You must ignore these.
+    *   **IF YOU DO NOT SEE A CLEAR, WRITTEN MONTH AND DAY IN THE WORKOUT DATA, YOU MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a non-negotiable rule. It is a critical failure to return a date if one is not present. Do not return today's date. Do not return any date. Simply omit the field.
+    *   If, and only if, you find a valid month and day (e.g., "June 26", "Jul 4") within the log data itself, you **MUST** use the year '2025' for the output. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
 
 2.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
