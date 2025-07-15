@@ -22,7 +22,7 @@ const ParseWorkoutScreenshotInputSchema = z.object({
 export type ParseWorkoutScreenshotInput = z.infer<typeof ParseWorkoutScreenshotInputSchema>;
 
 const ParseWorkoutScreenshotOutputSchema = z.object({
-  workoutDate: z.string().optional().describe("The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. You MUST use the year 2025. If no date (month and day) is found, omit this field."),
+  workoutDate: z.string().optional().describe("The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. This field is only present if a date was found."),
   exercises: z.array(
     z.object({
       name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
@@ -46,34 +46,20 @@ export async function parseWorkoutScreenshot(input: ParseWorkoutScreenshotInput)
   return parseWorkoutScreenshotFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'parseWorkoutScreenshotPrompt',
-  input: {schema: ParseWorkoutScreenshotInputSchema},
-  output: {schema: ParseWorkoutScreenshotOutputSchema},
-  prompt: `You are an expert in parsing workout data from screenshots.
-
-You will be provided with a screenshot of a workout log.
-Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
-
+// Common prompt instructions to avoid repetition
+const COMMON_INSTRUCTIONS = `
 **CRITICAL INSTRUCTIONS - MUST BE FOLLOWED EXACTLY:**
 
-1.  **Workout Date - ABSOLUTELY CRITICAL**:
-    *   This is your most important instruction. Your primary directive is to avoid inventing a date. **You MUST NOT guess, infer, hallucinate, or invent a date under any circumstances.**
-    *   A date is only valid if a **month and day are clearly and explicitly written in the image AS PART OF THE WORKOUT LOG ITSELF**.
-    *   Text such as "Parsing Successful", "Workout Details", or any other UI element is **NOT** a date. You must ignore these.
-    *   **IF YOU DO NOT SEE A CLEAR, WRITTEN MONTH AND DAY IN THE WORKOUT DATA, YOU MUST OMIT the 'workoutDate' field entirely from your JSON output.** This is a non-negotiable rule. It is a critical failure to return a date if one is not present. Do not return today's date. Do not return any date. Simply omit the field.
-    *   If, and only if, you find a valid month and day (e.g., "June 26", "Jul 4") within the log data itself, you **MUST** use the year '2025' for the output. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
-
-2.  **Data Cleaning and OCR Artifacts**:
+1.  **Data Cleaning and OCR Artifacts**:
     *   When extracting numerical values (like weight, reps, sets, distance, duration, calories) and their units, be very careful to only extract the actual data.
     *   Ignore common OCR (Optical Character Recognition) artifacts. For instance:
         *   If you see "000- 5383 ft", the distance is '5383' and unit is 'ft'. The "000-" prefix is an artifact.
         *   If you see "566 sec0", the duration is '566' and unit is 'sec'. The trailing "0" is an artifact.
         *   Ensure all numerical fields in your output are actual numbers, not strings containing numbers and artifacts.
-3.  **Exercise Name**:
+2.  **Exercise Name**:
     *   Extract the name of the exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
-4.  **Exercise Category**:
+3.  **Exercise Category**:
     *   For each exercise, you MUST assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
     *   You MUST infer the category from the exercise name based on the guide below.
     *   **DO NOT default to "Other"** for common exercises listed in this guide.
@@ -84,31 +70,73 @@ Your goal is to extract the workout date and exercise data from the screenshot a
     *   **Core**: Use for exercises like "Abdominal Crunch", "Rotary Torso", "Back Extension". You must categorize "Back Extension" as "Core".
     *   **Full Body**: Use for exercises like "Deadlift", "Clean and Jerk".
     *   **Cardio**: Use for exercises like "Treadmill", "Cycling", "Running", "Climbmill".
-5.  **Specific Handling for "Cardio" Exercises**:
+4.  **Specific Handling for "Cardio" Exercises**:
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical, Climbmill):
         *   Prioritize extracting 'distance', 'distanceUnit', 'duration', 'durationUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
         *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio). For example, "Climbmill 5m 1s 36 cal" should result in 'sets: 0, reps: 0, weight: 0, distance: 0, duration: 301, durationUnit: 'sec', calories: 36'.
         *   Do not mistake distance values (like "5383 ft") for 'reps'.
-6.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
+5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
     *   For these categories, prioritize extracting 'sets', 'reps', 'weight', 'weightUnit', and 'calories'. Ensure calories is a numerical value; if 'kcal' is present with the number, extract only the number. If calories are marked with "-", "N/A", or not visible, output 0.
     *   'distance' and 'duration' (and their units) should generally be 0 or omitted for these exercises, unless very clearly and explicitly stated as part of a strength training metric (which is rare).
-7.  **Weight Unit**:
+6.  **Weight Unit**:
     *   Identify the unit of weight (e.g., kg or lbs).
     *   If you see "lbs00" or "kg00" (or "lbs000", "kg000", etc.) in the screenshot, interpret this as "lbs" or "kg" respectively. The trailing zeros are an artifact and not part of the unit.
     *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, 'weightUnit' can be omitted or kept as default.
-8.  **Duration Parsing**:
+7.  **Duration Parsing**:
     *   If duration is in a format like MM:SS (e.g., "5m 1s" or "0:09:26"), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so 'duration: 566, durationUnit: 'sec''). If it's simpler (e.g., "30 min"), parse as is ('duration: 30, durationUnit: 'min'').
-9.  **Distance Unit**:
+8.  **Distance Unit**:
     *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
-10. **Critical: Avoid Duplicating Single Exercise Entries**:
+9.  **Critical: Avoid Duplicating Single Exercise Entries**:
     *   Pay very close attention to how many times an exercise is *actually logged* in the screenshot.
     *   If an exercise like "Treadmill" and its associated stats (e.g., "5383 ft, 566 sec") appear as a *single distinct entry* in the image, you MUST list it *only once* in your output.
     *   Do NOT create multiple identical entries for an exercise if it's just one logged item in the image.
     *   Only if the screenshot clearly shows the *same exercise name* logged *multiple separate times* with potentially different stats (e.g., "Bench Press: 3 sets..." and then later "Bench Press: 4 sets..."), should you list each of those distinct logs.
     *   The items "EGYM Abductor" and "EGYM Adductor" are different exercises and should be listed separately if both appear.
-11. **Calories Field (General)**:
+10. **Calories Field (General)**:
     *   Extract 'calories' if available for any exercise. Ensure it is output as a numerical value.
     *   If a value for calories is explicitly shown as '-' or 'N/A' or is not clearly visible in the screenshot for an exercise, output 0 for the 'calories' field for that exercise.
+`;
+
+const dateCheckPrompt = ai.definePrompt({
+  name: 'workoutDateCheckPrompt',
+  input: { schema: ParseWorkoutScreenshotInputSchema },
+  output: { schema: z.object({ dateExists: z.enum(['Yes', 'No']) }) },
+  prompt: `You are a specialized text analysis model. Your only task is to determine if a workout date (an explicit month and day, like "June 26" or "Jul 4") is clearly written in the provided image.
+
+  **RULES:**
+  - A date is only valid if it appears to be part of the workout data itself.
+  - Ignore dates in UI elements, like titles saying "Parsing Successful for June 26".
+  - If a month and day are present, answer "Yes".
+  - If no month and day are clearly visible in the workout log, answer "No".
+
+  Respond with ONLY "Yes" or "No".
+
+  Here is the screenshot:
+  {{media url=photoDataUri}}
+  `,
+});
+
+const mainParserPrompt = ai.definePrompt({
+  name: 'parseWorkoutScreenshotPrompt',
+  input: {schema: ParseWorkoutScreenshotInputSchema},
+  output: {schema: ParseWorkoutScreenshotOutputSchema},
+  prompt: `You are an expert in parsing workout data from screenshots.
+You will be provided with a screenshot of a workout log. Your goal is to extract the workout date and exercise data from the screenshot and return it in a structured JSON format.
+
+**Workout Date - CRITICAL INSTRUCTION**:
+- This is your most important instruction. You will be told whether to extract a date or not.
+- **IF THE USER SAYS 'parseDate: true'**: You MUST find the date in the image. A date is only valid if a month and day are clearly and explicitly written in the image AS PART OF THE WORKOUT LOG ITSELF. Text such as "Parsing Successful", "Workout Details", or any other UI element is NOT a date. You must ignore these. If, and only if, you find a valid month and day (e.g., "June 26", "Jul 4") within the log data itself, you MUST use the year '2025' for the output. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
+- **IF THE USER SAYS 'parseDate: false'**: You MUST NOT include the 'workoutDate' field in your JSON output. Do not guess, infer, or hallucinate a date. Omit the field entirely.
+
+Now, follow all the common instructions provided below.
+
+{{#if parseDate}}
+**USER INSTRUCTION: parseDate: true**
+{{else}}
+**USER INSTRUCTION: parseDate: false**
+{{/if}}
+
+${COMMON_INSTRUCTIONS}
 
 Here is the screenshot:
 {{media url=photoDataUri}}
@@ -139,24 +167,34 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     inputSchema: ParseWorkoutScreenshotInputSchema,
     outputSchema: ParseWorkoutScreenshotOutputSchema,
   },
-  async input => {
-    let result;
+  async (input) => {
+    let output;
+    
+    // Step 1: Check if a date exists using the simple prompt.
+    const { output: dateCheckResult } = await dateCheckPrompt(input);
+    const shouldParseDate = dateCheckResult?.dateExists === 'Yes';
+
+    const promptInputWithFlag = { ...input, parseDate: shouldParseDate };
+
     try {
-      // Try with the default flash model first
-      result = await prompt(input);
+      // Step 2: Call the main parser, telling it whether to look for a date.
+      const result = await mainParserPrompt(promptInputWithFlag);
+      output = result.output;
     } catch (e: any) {
-      // If it fails with a 503-style error, try the pro model as a fallback
       if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
         console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
-        result = await prompt(input, { model: FALLBACK_MODEL });
+        const result = await mainParserPrompt(promptInputWithFlag, { model: FALLBACK_MODEL });
+        output = result.output;
       } else {
-        // Re-throw other errors
         throw e;
       }
     }
-    const {output} = result;
 
-    if (output && output.exercises) {
+    if (!output) {
+      throw new Error("AI failed to generate a response.");
+    }
+
+    if (output.exercises) {
       const strengthCategories = ['Lower Body', 'Upper Body', 'Full Body', 'Core'];
       const modifiedExercises = output.exercises.map(ex => {
         let name = ex.name;
@@ -175,8 +213,6 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             } else if (rawUnit === 'lbs' || rawUnit === 'kg') {
                 correctedWeightUnit = rawUnit as 'kg' | 'lbs';
             } else {
-                // If it's an unrecognized string for weightUnit, treat as undefined initially
-                // so the default 'kg' can be applied if weight > 0
                 correctedWeightUnit = undefined; 
             }
         } else {
@@ -185,17 +221,16 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
 
         if (correctedWeightUnit === undefined) {
             if (ex.weight !== undefined && ex.weight > 0) {
-                correctedWeightUnit = 'kg'; // Default to kg if weight is present and unit is unknown/missing
+                correctedWeightUnit = 'kg';
             }
         }
 
-        // Initialize final values with AI's parsed values (or default to 0 if undefined by AI, Zod now requires calories)
         let finalSets = ex.sets ?? 0;
         let finalReps = ex.reps ?? 0;
         let finalWeight = ex.weight ?? 0;
         let finalDistance = ex.distance ?? 0;
         let finalDuration = ex.duration ?? 0;
-        let finalCalories = ex.calories; // Zod schema now requires calories, so ex.calories should be a number.
+        let finalCalories = ex.calories;
         let finalDistanceUnit = ex.distanceUnit;
         let finalDurationUnit = ex.durationUnit;
 
@@ -225,7 +260,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
           distanceUnit: finalDistanceUnit,
           duration: finalDuration,
           durationUnit: finalDurationUnit,
-          calories: finalCalories, // Ensure calories is passed through
+          calories: finalCalories,
         };
       });
       return {
@@ -233,9 +268,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         exercises: modifiedExercises,
       };
     }
-    if (!output) {
-      throw new Error("AI failed to generate a response.");
-    }
+    
     return output;
   }
 );
