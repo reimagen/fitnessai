@@ -194,6 +194,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
       throw new Error("AI failed to generate a response.");
     }
 
+    // Step 3: Post-processing to clean up the AI's output.
     if (output.exercises) {
       const strengthCategories = ['Lower Body', 'Upper Body', 'Full Body', 'Core'];
       const modifiedExercises = output.exercises.map(ex => {
@@ -235,6 +236,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         let finalDurationUnit = ex.durationUnit;
 
 
+        // Apply strict rules based on category. This overrides AI errors.
         if (ex.category === 'Cardio') {
             finalSets = 0; 
             finalReps = 0;
@@ -242,7 +244,17 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
             if (finalWeight === 0) {
                 correctedWeightUnit = undefined; 
             }
+            // If the AI hallucinated miles from a duration (e.g., '5m' -> 5mi), fix it.
+            // This is a heuristic: if distance unit is 'mi' and duration is 0, it was likely a mistake.
+            if (ex.distanceUnit === 'mi' && (ex.duration === 0 || ex.duration === undefined) && ex.distance) {
+                 finalDuration = ex.distance;
+                 finalDurationUnit = 'min';
+                 finalDistance = 0;
+                 finalDistanceUnit = undefined;
+            }
         } else if (ex.category && strengthCategories.includes(ex.category)) { 
+            // For strength exercises, distance and duration should be zero unless explicitly provided,
+            // which is rare. This helps clear out noise.
             finalDistance = 0; 
             finalDuration = 0;
             finalDistanceUnit = undefined; 
