@@ -130,7 +130,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                         </div>
                       </>
                     ) : (
-                      <span className="text-sm font-medium text-muted-foreground/60">Rest</span>
+                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     )}
                   </div>
                 </div>
