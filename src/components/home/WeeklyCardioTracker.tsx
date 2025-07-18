@@ -146,12 +146,12 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                     {totalCalories > 0 && (
                       <div className="text-xs text-muted-foreground space-y-1 mt-1 flex-grow overflow-y-auto">
                         {activities && Array.from(activities.entries()).map(([activity, stats]) => (
-                          <div key={activity} className="w-full truncate">
-                              <p className="font-semibold text-foreground">{activity}</p>
+                           <p key={activity} className="w-full truncate">
+                              <span className="font-semibold text-foreground">{activity}</span>
                               {stats.distanceMi > 0 && (
-                                  <p>{stats.distanceMi.toFixed(1)} mi</p>
+                                  <span> {stats.distanceMi.toFixed(1)} mi</span>
                               )}
-                          </div>
+                          </p>
                         ))}
                       </div>
                     )}
