@@ -1,16 +1,16 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear, getWeek, getYear, parse, endOfMonth, eachDayOfInterval } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfYear, startOfYear, getWeek, getYear, parse, endOfMonth, eachDayOfInterval, getWeekOfMonth } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +55,7 @@ const chartConfig = {
   cardio: { label: "Cardio", color: "hsl(var(--chart-4))" },
   core: { label: "Core", color: "hsl(var(--chart-5))" },
   other: { label: "Other", color: "hsl(var(--chart-6))" },
+  value: { label: "Value", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -131,6 +132,30 @@ const RoundedBar = (props: any) => {
 type StrengthFinding = Omit<StrengthImbalanceOutput['findings'][0], 'insight' | 'recommendation'> & {
     lift1Level: StrengthLevel;
     lift2Level: StrengthLevel;
+};
+
+// Helper function to extract running exercises and convert distances to miles
+const getRunningExercises = (logs: WorkoutLog[]): (Exercise & { date: Date })[] => {
+  const runningExercises: (Exercise & { date: Date })[] = [];
+  logs.forEach(log => {
+    log.exercises.forEach(ex => {
+      const exerciseName = ex.name.trim().toLowerCase();
+      const isRunningActivity = exerciseName.includes('run') || exerciseName.includes('treadmill');
+      if (ex.category === 'Cardio' && isRunningActivity && ex.distance && ex.distance > 0) {
+        let distanceInMiles = ex.distance;
+        if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
+        else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
+        
+        runningExercises.push({
+          ...ex,
+          distance: distanceInMiles, // Standardize to miles
+          distanceUnit: 'mi',
+          date: log.date,
+        });
+      }
+    });
+  });
+  return runningExercises.sort((a, b) => a.date.getTime() - b.date.getTime());
 };
 
 export default function AnalysisPage() {
@@ -413,34 +438,17 @@ export default function AnalysisPage() {
 
     const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
     const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
-    const runningDataPoints: { date: Date, distance: number, type: 'outdoor' | 'treadmill' }[] = [];
+    
     logsForPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
             const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
             repsByCat[camelCaseCategory] += ex.reps || 0;
             caloriesByCat[camelCaseCategory] += ex.calories || 0;
-            if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
-                let distanceInMiles = ex.distance;
-                if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
-                else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
-                const exerciseName = ex.name.trim().toLowerCase();
-                let isConsideredRun = false;
-                if (exerciseName === 'running' || exerciseName === 'run') isConsideredRun = true;
-                else if (ex.duration && ex.duration > 0) {
-                    let durationInHours = 0;
-                    if (ex.durationUnit === 'sec') durationInHours = ex.duration / 3600;
-                    else if (ex.durationUnit === 'hr') durationInHours = ex.duration;
-                    else durationInHours = ex.duration / 60;
-                    if (durationInHours > 0 && (distanceInMiles / durationInHours) >= 4.5) isConsideredRun = true;
-                }
-                if (isConsideredRun) runningDataPoints.push({ date: log.date, distance: parseFloat(distanceInMiles.toFixed(2)), type: exerciseName.includes('treadmill') ? 'treadmill' : 'outdoor' });
-            }
         });
     });
     const categoryRepData = Object.entries(repsByCat).filter(([, value]) => value > 0).map(([name, value]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
     const categoryCalorieData = Object.entries(caloriesByCat).filter(([, value]) => value > 0).map(([name, value]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
-    const runningProgressData = runningDataPoints.sort((a, b) => a.date.getTime() - b.date.getTime()).map(data => ({ dateLabel: format(data.date, 'MMM d'), distance: data.distance, type: data.type }));
-
+    
     const uniqueWorkoutDates = new Set<string>();
     let totalWeight = 0, totalDistance = 0, totalDuration = 0, totalCalories = 0;
     logsForPeriod.forEach(log => {
@@ -468,9 +476,76 @@ export default function AnalysisPage() {
         totalCaloriesBurned: Math.round(totalCalories),
         periodLabel: periodLabel
     };
-    return { workoutFrequencyData, newPrsData: prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, runningProgressData, periodSummary };
+    return { workoutFrequencyData, newPrsData: prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, periodSummary };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
+  const runningProgressionData = useMemo(() => {
+    const allRunningExercises = getRunningExercises(workoutLogs || []);
+    if (allRunningExercises.length === 0) return null;
+
+    let runsForPeriod: (Exercise & { date: Date })[];
+    const today = new Date();
+    if (timeRange !== 'all-time') {
+      let interval: Interval;
+      if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
+      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
+      else interval = { start: startOfYear(today), end: endOfYear(today) };
+      runsForPeriod = allRunningExercises.filter(run => isWithinInterval(run.date, interval));
+    } else {
+      runsForPeriod = allRunningExercises;
+    }
+
+    if (runsForPeriod.length === 0) return { chartData: [], totalDistance: 0, avgDistance: 0 };
+    
+    let chartData: { name: string, value: number }[] = [];
+    const totalDistance = runsForPeriod.reduce((sum, run) => sum + (run.distance || 0), 0);
+    const avgDistance = totalDistance / runsForPeriod.length;
+
+    switch(timeRange) {
+        case 'weekly':
+            chartData = runsForPeriod.map(run => ({ name: format(run.date, 'E d'), value: parseFloat(run.distance?.toFixed(2) || '0') }));
+            break;
+        case 'monthly': {
+            const weeklyTotals: { [week: string]: number } = {};
+            runsForPeriod.forEach(run => {
+                const weekNum = getWeekOfMonth(run.date, { weekStartsOn: 0 });
+                const weekKey = `Week ${weekNum}`;
+                weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + (run.distance || 0);
+            });
+            chartData = Object.entries(weeklyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
+            break;
+        }
+        case 'yearly': {
+            const monthlyAverages: { [month: string]: { total: number; count: number } } = {};
+            runsForPeriod.forEach(run => {
+                const monthName = format(run.date, 'MMM');
+                if (!monthlyAverages[monthName]) {
+                    monthlyAverages[monthName] = { total: 0, count: 0 };
+                }
+                monthlyAverages[monthName].total += run.distance || 0;
+                monthlyAverages[monthName].count++;
+            });
+            chartData = Object.entries(monthlyAverages).map(([name, { total, count }]) => ({ name, value: parseFloat((total/count).toFixed(2)) }));
+            break;
+        }
+        case 'all-time': {
+            const yearlyAverages: { [year: string]: { total: number; count: number } } = {};
+            runsForPeriod.forEach(run => {
+                const yearName = format(run.date, 'yyyy');
+                if (!yearlyAverages[yearName]) {
+                    yearlyAverages[yearName] = { total: 0, count: 0 };
+                }
+                yearlyAverages[yearName].total += run.distance || 0;
+                yearlyAverages[yearName].count++;
+            });
+            chartData = Object.entries(yearlyAverages).map(([name, { total, count }]) => ({ name, value: parseFloat((total/count).toFixed(2)) }));
+            break;
+        }
+    }
+    return { chartData, totalDistance, avgDistance };
+
+  }, [workoutLogs, timeRange]);
+
   const focusBadgeProps = (focus: ImbalanceFocus): { variant: 'secondary' | 'default' | 'destructive', text: string } => {
     switch (focus) {
         case 'Level Imbalance': return { variant: 'default', text: 'Level Imbalance' };
@@ -493,7 +568,7 @@ export default function AnalysisPage() {
   };
 
   const formatCardioDuration = (totalMinutes: number): string => `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
-  const CustomizedDot = (props: any) => props.payload?.type === 'treadmill' ? <circle cx={props.cx} cy={props.cy} r={4} stroke="hsl(var(--accent))" strokeWidth={2} fill="hsl(var(--background))" /> : <circle cx={props.cx} cy={props.cy} r={4} fill="hsl(var(--accent))" />;
+  
   const CustomBarChartLegend = ({ payload }: any) => {
     if (!payload) return null;
     const legendOrder: ChartDataKey[] = ['upperBody', 'lowerBody', 'core', 'fullBody', 'cardio', 'other'];
@@ -665,7 +740,51 @@ export default function AnalysisPage() {
                     )}
                 </CardContent>
             </Card>
-            <Card className="shadow-lg lg:col-span-6"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Route className="h-6 w-6 text-accent" /> Running Distance Progression</CardTitle><CardDescription>Your running distance over time. Solid dots are outdoor runs, open circles are treadmill sessions (faster than 4.5 mph).</CardDescription></CardHeader><CardContent>{chartData.runningProgressData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData.runningProgressData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="dateLabel" /><YAxis dataKey="distance" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} /><Tooltip content={<ChartTooltipContent indicator="dot" />} /><Legend iconSize={0} formatter={(value) => <span className="text-muted-foreground">{value}</span>} /><Line type="monotone" dataKey="distance" name="distance" stroke="hsl(var(--accent))" strokeWidth={2} dot={<CustomizedDot />} activeDot={{ r: 6 }} /></LineChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No running data available for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-6">
+                <CardHeader>
+                    <CardTitle className="font-headline flex items-center gap-2"><Route className="h-6 w-6 text-accent" /> Running Progression</CardTitle>
+                    <CardDescription>
+                        {timeRange === 'weekly' && "Your individual runs this week."}
+                        {timeRange === 'monthly' && "Your total running distance per week this month."}
+                        {timeRange === 'yearly' && "Your average running distance per run, grouped by month."}
+                        {timeRange === 'all-time' && "Your average running distance per run, grouped by year."}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {runningProgressionData && runningProgressionData.chartData.length > 0 ? (
+                        <>
+                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={runningProgressionData.chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                                        <YAxis dataKey="value" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
+                                        <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                        <Bar dataKey="value" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
+                                <h4 className="text-sm font-semibold text-center mb-2 text-muted-foreground">Summary for {timeRangeDisplayNames[timeRange]}</h4>
+                                <div className="flex justify-around text-center">
+                                    <div>
+                                        <p className="text-2xl font-bold text-accent">{runningProgressionData.totalDistance.toFixed(1)} mi</p>
+                                        <p className="text-xs text-muted-foreground">Total Distance</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-2xl font-bold text-accent">{runningProgressionData.avgDistance.toFixed(1)} mi</p>
+                                        <p className="text-xs text-muted-foreground">Avg. Distance / Run</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                            <p>No running data available for this period.</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </>)}
       </div>
     </div>
