@@ -15,8 +15,8 @@ type WeeklyCardioTrackerProps = {
 
 type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climb';
 type DailyCardioData = {
-  calories: number;
-  activities: Set<CardioActivity>;
+  totalCalories: number;
+  activities: Map<CardioActivity, number>; // Maps activity to its calorie subtotal
 };
 
 const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
@@ -41,16 +41,17 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { calories: 0, activities: new Set() });
+          dataMap.set(dateKey, { totalCalories: 0, activities: new Map() });
         }
         const dayData = dataMap.get(dateKey)!;
 
         log.exercises.forEach(ex => {
           if (ex.category === 'Cardio' && ex.calories && ex.calories > 0) {
-            dayData.calories += ex.calories;
+            dayData.totalCalories += ex.calories;
             const activity = normalizeCardioActivity(ex.name);
             if (activity) {
-              dayData.activities.add(activity);
+              const currentCalories = dayData.activities.get(activity) || 0;
+              dayData.activities.set(activity, currentCalories + ex.calories);
             }
           }
         });
@@ -65,7 +66,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
   const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.calories, 0);
+  const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
   const minGoal = 1200;
   const maxGoal = 1400;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
@@ -97,7 +98,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
             {daysOfWeek.map(day => {
               const dateKey = format(day, 'yyyy-MM-dd');
               const dayData = weeklyData.get(dateKey);
-              const calories = dayData?.calories || 0;
+              const totalCalories = dayData?.totalCalories || 0;
               const activities = dayData?.activities;
               const isCurrentDay = isToday(day);
 
@@ -114,15 +115,17 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                     <p className="font-bold text-lg">{format(day, 'd')}</p>
                   </div>
                   <div className="mt-2 flex-grow space-y-1 overflow-y-auto text-center flex flex-col justify-center items-center">
-                    {calories > 0 ? (
+                    {totalCalories > 0 && activities ? (
                       <>
                         <div className="flex items-center justify-center gap-1 font-bold text-accent">
                           <Flame className="h-4 w-4" />
-                          <span>{Math.round(calories)}</span>
+                          <span>{Math.round(totalCalories)}</span>
                         </div>
                         <div className="text-xs text-muted-foreground space-y-1 mt-1">
-                          {activities && Array.from(activities).map(act => (
-                            <p key={act}>{act}</p>
+                          {Array.from(activities.entries()).map(([activity, cals]) => (
+                            <p key={activity}>
+                              {activity}: <span className="font-medium">{Math.round(cals)}</span>
+                            </p>
                           ))}
                         </div>
                       </>
