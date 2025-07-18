@@ -6,6 +6,7 @@ import { Dumbbell, Target, BarChartBig, Award } from "lucide-react";
 import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
+import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
 import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -55,11 +56,13 @@ export default function HomePage() {
           <>
             <Skeleton className="h-48 w-full" />
             <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
           </>
         ) : (
           <>
             <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
             <RecentHistory workoutLogs={workoutLogs || []} />
+            <WeeklyCardioTracker workoutLogs={workoutLogs || []} />
           </>
         )}
       </section>
