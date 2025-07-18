@@ -15,7 +15,6 @@ type WeeklyCardioTrackerProps = {
 
 type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climb';
 type ActivityStats = {
-  calories: number;
   distanceMi: number;
 };
 type DailyCardioData = {
@@ -69,8 +68,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
             
             dayData.totalCalories += calories;
 
-            const currentStats = dayData.activities.get(activityType) || { calories: 0, distanceMi: 0 };
-            currentStats.calories += calories;
+            const currentStats = dayData.activities.get(activityType) || { distanceMi: 0 };
             currentStats.distanceMi += distanceMi;
             dayData.activities.set(activityType, currentStats);
           }
@@ -135,26 +133,26 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                     <p className="font-bold text-lg">{format(day, 'd')}</p>
                   </div>
                   <div className="mt-2 flex-grow flex flex-col text-center">
-                    {totalCalories > 0 ? (
-                      <>
-                        <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
+                    <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
+                      {totalCalories > 0 ? (
+                        <>
                           <Flame className="h-4 w-4" />
                           <span>{Math.round(totalCalories)}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground space-y-1 mt-1 flex-grow overflow-y-auto">
-                          {activities && Array.from(activities.entries()).map(([activity, stats]) => (
-                            <div key={activity} className="w-full truncate">
-                                <p className="font-semibold text-foreground">{activity}</p>
-                                {stats.distanceMi > 0 && (
-                                    <p>{stats.distanceMi.toFixed(1)} mi</p>
-                                )}
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex-grow flex items-center justify-center">
-                          <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                        </>
+                      ) : (
+                        <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                      )}
+                    </div>
+                    {totalCalories > 0 && (
+                      <div className="text-xs text-muted-foreground space-y-1 mt-1 flex-grow overflow-y-auto">
+                        {activities && Array.from(activities.entries()).map(([activity, stats]) => (
+                          <div key={activity} className="w-full truncate">
+                              <p className="font-semibold text-foreground">{activity}</p>
+                              {stats.distanceMi > 0 && (
+                                  <p>{stats.distanceMi.toFixed(1)} mi</p>
+                              )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
