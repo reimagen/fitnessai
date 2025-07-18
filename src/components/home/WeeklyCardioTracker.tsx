@@ -94,7 +94,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          Your goal is to burn 1200-1400 calories from cardio each week.
+          To achieve your body fat goal, your target is to burn 1200-1400 calories from cardio each week.
         </CardDescription>
       </CardHeader>
       <CardContent>
