@@ -126,7 +126,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                 <div
                   key={dateKey}
                   className={cn(
-                    "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]", // Increased min-height
+                    "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]",
                     isCurrentDay && "border-2 border-primary"
                   )}
                 >
@@ -137,7 +137,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                   <div className="mt-2 flex-grow flex flex-col text-center">
                     {totalCalories > 0 ? (
                       <>
-                        <div className="flex items-center justify-center gap-1 font-bold text-accent h-6"> {/* Fixed height wrapper */}
+                        <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
                           <Flame className="h-4 w-4" />
                           <span>{Math.round(totalCalories)}</span>
                         </div>
@@ -145,10 +145,9 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                           {activities && Array.from(activities.entries()).map(([activity, stats]) => (
                             <div key={activity} className="w-full truncate">
                                 <p className="font-semibold text-foreground">{activity}</p>
-                                <p>
-                                    {Math.round(stats.calories)} kcal
-                                    {stats.distanceMi > 0 && ` / ${stats.distanceMi.toFixed(1)} mi`}
-                                </p>
+                                {stats.distanceMi > 0 && (
+                                    <p>{stats.distanceMi.toFixed(1)} mi</p>
+                                )}
                             </div>
                           ))}
                         </div>
