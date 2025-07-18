@@ -17,6 +17,7 @@ type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climb';
 type DailyCardioData = {
   totalCalories: number;
   activities: Map<CardioActivity, number>; // Maps activity to its calorie subtotal
+  runningMiles: number;
 };
 
 const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
@@ -41,7 +42,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { totalCalories: 0, activities: new Map() });
+          dataMap.set(dateKey, { totalCalories: 0, activities: new Map(), runningMiles: 0 });
         }
         const dayData = dataMap.get(dateKey)!;
 
@@ -52,6 +53,34 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
             if (activity) {
               const currentCalories = dayData.activities.get(activity) || 0;
               dayData.activities.set(activity, currentCalories + ex.calories);
+            }
+          }
+           if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
+            let distanceInMiles = 0;
+            if (ex.distanceUnit === 'mi') distanceInMiles = ex.distance;
+            else if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
+            else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
+            
+            const exerciseName = ex.name.trim().toLowerCase();
+            let isRun = false;
+
+            if (exerciseName.includes('run') || exerciseName.includes('running')) {
+              isRun = true;
+            } else if (ex.duration && ex.duration > 0 && ex.durationUnit) {
+              let durationInHours = 0;
+              if (ex.durationUnit === 'hr') durationInHours = ex.duration;
+              else if (ex.durationUnit === 'min') durationInHours = ex.duration / 60;
+              else if (ex.durationUnit === 'sec') durationInHours = ex.duration / 3600;
+              
+              if (durationInHours > 0) {
+                const paceMph = distanceInMiles / durationInHours;
+                if (paceMph >= 4.5) { // Threshold for a run
+                  isRun = true;
+                }
+              }
+            }
+            if (isRun) {
+              dayData.runningMiles += distanceInMiles;
             }
           }
         });
@@ -100,6 +129,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
               const dayData = weeklyData.get(dateKey);
               const totalCalories = dayData?.totalCalories || 0;
               const activities = dayData?.activities;
+              const runningMiles = dayData?.runningMiles || 0;
               const isCurrentDay = isToday(day);
 
               return (
@@ -133,6 +163,11 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                       <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     )}
                   </div>
+                  {runningMiles > 0 && (
+                    <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center text-xs text-accent">
+                        <span className="font-semibold">Ran {runningMiles.toFixed(1)} mi</span>
+                    </div>
+                  )}
                 </div>
               );
             })}

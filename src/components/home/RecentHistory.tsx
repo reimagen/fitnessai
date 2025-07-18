@@ -27,48 +27,19 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
     const weekStart = startOfWeek(today, { weekStartsOn: 0 });
     const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
 
-    const dataMap = new Map<string, { categories: Set<ExerciseCategory>; runningMiles: number }>();
+    const dataMap = new Map<string, { categories: Set<ExerciseCategory> }>();
 
     workoutLogs.forEach(log => {
       if (log.date >= weekStart && log.date <= weekEnd) {
         const dateKey = format(log.date, 'yyyy-MM-dd');
         if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { categories: new Set(), runningMiles: 0 });
+          dataMap.set(dateKey, { categories: new Set() });
         }
         const dayData = dataMap.get(dateKey)!;
 
         log.exercises.forEach(ex => {
           if (ex.category) {
             dayData.categories.add(ex.category);
-          }
-          
-          if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
-            let distanceInMiles = 0;
-            if (ex.distanceUnit === 'mi') distanceInMiles = ex.distance;
-            else if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
-            else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
-            
-            const exerciseName = ex.name.trim().toLowerCase();
-            let isRun = false;
-
-            if (exerciseName.includes('run') || exerciseName.includes('running')) {
-              isRun = true;
-            } else if (ex.duration && ex.duration > 0 && ex.durationUnit) {
-              let durationInHours = 0;
-              if (ex.durationUnit === 'hr') durationInHours = ex.duration;
-              else if (ex.durationUnit === 'min') durationInHours = ex.duration / 60;
-              else if (ex.durationUnit === 'sec') durationInHours = ex.duration / 3600;
-              
-              if (durationInHours > 0) {
-                const paceMph = distanceInMiles / durationInHours;
-                if (paceMph >= 4.5) { // Threshold for a run
-                  isRun = true;
-                }
-              }
-            }
-            if (isRun) {
-              dayData.runningMiles += distanceInMiles;
-            }
           }
         });
       }
@@ -93,7 +64,6 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayData = dailyData.get(dateKey);
             const categories = dayData?.categories;
-            const runningMiles = dayData?.runningMiles || 0;
             const isCurrentDay = isToday(day);
 
             return (
@@ -125,11 +95,6 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                     </div>
                   )}
                 </div>
-                 {runningMiles > 0 && (
-                  <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center text-xs text-accent">
-                    <span className="font-semibold">Ran {runningMiles.toFixed(1)} mi</span>
-                  </div>
-                )}
               </div>
             );
           })}
