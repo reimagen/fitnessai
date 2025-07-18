@@ -7,27 +7,40 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Progress } from '@/components/ui/progress';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flame } from 'lucide-react';
+import { Flame, Route } from 'lucide-react';
 
 type WeeklyCardioTrackerProps = {
   workoutLogs: WorkoutLog[];
 };
 
 type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climb';
+type ActivityStats = {
+  calories: number;
+  distanceMi: number;
+};
 type DailyCardioData = {
   totalCalories: number;
-  activities: Map<CardioActivity, number>; // Maps activity to its calorie subtotal
-  runningMiles: number;
+  activities: Map<CardioActivity, ActivityStats>; 
 };
 
 const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
   const name = exerciseName.toLowerCase();
+  // Prioritize "run" to avoid "walking" matching first
   if (name.includes('run') || name.includes('treadmill')) return 'Run';
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
   if (name.includes('climb')) return 'Climb';
   return null;
 };
+
+const getDistanceInMiles = (distance?: number, unit?: string): number => {
+    if (!distance) return 0;
+    if (unit === 'mi') return distance;
+    if (unit === 'km') return distance * 0.621371;
+    if (unit === 'ft') return distance * 0.000189394;
+    return 0; // Default if unit is unknown or missing
+};
+
 
 export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
   const weeklyData = useMemo(() => {
@@ -42,46 +55,24 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { totalCalories: 0, activities: new Map(), runningMiles: 0 });
+          dataMap.set(dateKey, { totalCalories: 0, activities: new Map() });
         }
         const dayData = dataMap.get(dateKey)!;
 
         log.exercises.forEach(ex => {
-          if (ex.category === 'Cardio' && ex.calories && ex.calories > 0) {
-            dayData.totalCalories += ex.calories;
-            const activity = normalizeCardioActivity(ex.name);
-            if (activity) {
-              const currentCalories = dayData.activities.get(activity) || 0;
-              dayData.activities.set(activity, currentCalories + ex.calories);
-            }
-          }
-           if (ex.category === 'Cardio' && ex.distance && ex.distance > 0) {
-            let distanceInMiles = 0;
-            if (ex.distanceUnit === 'mi') distanceInMiles = ex.distance;
-            else if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
-            else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
-            
-            const exerciseName = ex.name.trim().toLowerCase();
-            let isRun = false;
+          if (ex.category === 'Cardio') {
+            const activityType = normalizeCardioActivity(ex.name);
+            if (!activityType) return; // Skip if it's not a recognized cardio type
 
-            if (exerciseName.includes('run') || exerciseName.includes('running')) {
-              isRun = true;
-            } else if (ex.duration && ex.duration > 0 && ex.durationUnit) {
-              let durationInHours = 0;
-              if (ex.durationUnit === 'hr') durationInHours = ex.duration;
-              else if (ex.durationUnit === 'min') durationInHours = ex.duration / 60;
-              else if (ex.durationUnit === 'sec') durationInHours = ex.duration / 3600;
-              
-              if (durationInHours > 0) {
-                const paceMph = distanceInMiles / durationInHours;
-                if (paceMph >= 4.5) { // Threshold for a run
-                  isRun = true;
-                }
-              }
-            }
-            if (isRun) {
-              dayData.runningMiles += distanceInMiles;
-            }
+            const calories = ex.calories || 0;
+            const distanceMi = getDistanceInMiles(ex.distance, ex.distanceUnit);
+            
+            dayData.totalCalories += calories;
+
+            const currentStats = dayData.activities.get(activityType) || { calories: 0, distanceMi: 0 };
+            currentStats.calories += calories;
+            currentStats.distanceMi += distanceMi;
+            dayData.activities.set(activityType, currentStats);
           }
         });
       }
@@ -129,7 +120,6 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
               const dayData = weeklyData.get(dateKey);
               const totalCalories = dayData?.totalCalories || 0;
               const activities = dayData?.activities;
-              const runningMiles = dayData?.runningMiles || 0;
               const isCurrentDay = isToday(day);
 
               return (
@@ -145,17 +135,21 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                     <p className="font-bold text-lg">{format(day, 'd')}</p>
                   </div>
                   <div className="mt-2 flex-grow space-y-1 overflow-y-auto text-center flex flex-col justify-center items-center">
-                    {totalCalories > 0 && activities ? (
+                    {totalCalories > 0 && activities && activities.size > 0 ? (
                       <>
                         <div className="flex items-center justify-center gap-1 font-bold text-accent">
                           <Flame className="h-4 w-4" />
                           <span>{Math.round(totalCalories)}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground space-y-1 mt-1">
-                          {Array.from(activities.entries()).map(([activity, cals]) => (
-                            <p key={activity}>
-                              {activity}: <span className="font-medium">{Math.round(cals)}</span>
-                            </p>
+                        <div className="text-xs text-muted-foreground space-y-1 mt-1 w-full">
+                          {Array.from(activities.entries()).map(([activity, stats]) => (
+                            <div key={activity} className="w-full truncate">
+                                <p className="font-semibold text-foreground">{activity}</p>
+                                <p>
+                                    {Math.round(stats.calories)} kcal
+                                    {stats.distanceMi > 0 && ` / ${stats.distanceMi.toFixed(1)} mi`}
+                                </p>
+                            </div>
                           ))}
                         </div>
                       </>
@@ -163,11 +157,6 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                       <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     )}
                   </div>
-                  {runningMiles > 0 && (
-                    <div className="mt-auto pt-2 border-t border-dashed flex items-center justify-center text-xs text-accent">
-                        <span className="font-semibold">Ran {runningMiles.toFixed(1)} mi</span>
-                    </div>
-                  )}
                 </div>
               );
             })}
