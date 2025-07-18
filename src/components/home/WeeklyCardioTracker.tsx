@@ -126,7 +126,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                 <div
                   key={dateKey}
                   className={cn(
-                    "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[140px]",
+                    "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]", // Increased min-height
                     isCurrentDay && "border-2 border-primary"
                   )}
                 >
@@ -134,15 +134,15 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                     <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                     <p className="font-bold text-lg">{format(day, 'd')}</p>
                   </div>
-                  <div className="mt-2 flex-grow space-y-1 overflow-y-auto text-center flex flex-col justify-center items-center">
-                    {totalCalories > 0 && activities && activities.size > 0 ? (
+                  <div className="mt-2 flex-grow flex flex-col text-center">
+                    {totalCalories > 0 ? (
                       <>
-                        <div className="flex items-center justify-center gap-1 font-bold text-accent">
+                        <div className="flex items-center justify-center gap-1 font-bold text-accent h-6"> {/* Fixed height wrapper */}
                           <Flame className="h-4 w-4" />
                           <span>{Math.round(totalCalories)}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground space-y-1 mt-1 w-full">
-                          {Array.from(activities.entries()).map(([activity, stats]) => (
+                        <div className="text-xs text-muted-foreground space-y-1 mt-1 flex-grow overflow-y-auto">
+                          {activities && Array.from(activities.entries()).map(([activity, stats]) => (
                             <div key={activity} className="w-full truncate">
                                 <p className="font-semibold text-foreground">{activity}</p>
                                 <p>
@@ -154,7 +154,9 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
                         </div>
                       </>
                     ) : (
-                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                      <div className="flex-grow flex items-center justify-center">
+                          <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                      </div>
                     )}
                   </div>
                 </div>
