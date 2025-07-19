@@ -114,7 +114,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     }
 
     const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (minGoal / caloriesPerMile).toFixed(1) : null;
-    return `Your minimum goal is to burn ${minGoal} calories. That's equivalent to running ${milesForMinGoal} miles.`;
+    return `Your minimum goal is to burn ${minGoal} calories. Run ${milesForMinGoal} miles to achieve this goal.`;
   };
 
 
@@ -143,55 +143,55 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           <p className="text-sm text-muted-foreground text-center w-full pt-2">
             {getMotivationalMessage()}
           </p>
+        </div>
 
-          <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
-            {daysOfWeek.map(day => {
-              const dateKey = format(day, 'yyyy-MM-dd');
-              const dayData = weeklyData.get(dateKey);
-              const totalCalories = dayData?.totalCalories || 0;
-              const activities = dayData?.activities;
-              const isCurrentDay = isToday(day);
+        <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
+          {daysOfWeek.map(day => {
+            const dateKey = format(day, 'yyyy-MM-dd');
+            const dayData = weeklyData.get(dateKey);
+            const totalCalories = dayData?.totalCalories || 0;
+            const activities = dayData?.activities;
+            const isCurrentDay = isToday(day);
 
-              return (
-                <div
-                  key={dateKey}
-                  className={cn(
-                    "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]",
-                    isCurrentDay && "border-2 border-primary"
-                  )}
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
-                    <p className="font-bold text-lg">{format(day, 'd')}</p>
-                  </div>
-                  <div className="mt-2 flex-grow flex flex-col text-center justify-between">
-                    <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
-                      {totalCalories > 0 ? (
-                        <>
-                          <Flame className="h-4 w-4" />
-                          <span>{Math.round(totalCalories)}</span>
-                        </>
-                      ) : (
-                        <span className="text-sm font-medium text-muted-foreground/60">None</span>
-                      )}
-                    </div>
-                    {totalCalories > 0 && (
-                      <div className="text-xs text-muted-foreground space-y-1 mt-1 overflow-y-auto">
-                        {activities && Array.from(activities.entries()).map(([activity, stats]) => (
-                           <p key={activity} className="w-full truncate font-semibold text-foreground">
-                              {activity}
-                              {stats.distanceMi > 0 && (
-                                  <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
-                              )}
-                          </p>
-                        ))}
-                      </div>
+            return (
+              <div
+                key={dateKey}
+                className={cn(
+                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]",
+                  isCurrentDay && "border-2 border-primary"
+                )}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
+                  <p className="font-bold text-lg">{format(day, 'd')}</p>
+                </div>
+                <div className="mt-2 flex-grow flex flex-col text-center justify-between">
+                  <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
+                    {totalCalories > 0 ? (
+                      <>
+                        <Flame className="h-4 w-4" />
+                        <span>{Math.round(totalCalories)}</span>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     )}
                   </div>
+                  {totalCalories > 0 && (
+                    <div className="text-xs text-muted-foreground space-y-1 mt-1 overflow-y-auto">
+                      {activities && Array.from(activities.entries()).map(([activity, stats]) => (
+                         <p key={activity} className="w-full truncate font-semibold text-foreground">
+                            {activity}
+                            {stats.distanceMi > 0 && (
+                                <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                            )}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>
