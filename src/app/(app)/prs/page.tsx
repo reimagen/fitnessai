@@ -275,8 +275,7 @@ export default function MilestonesPage() {
                                     
                                     progressData = { value: percentage };
 
-                                    // Only show the text if they are 90% of the way to the next tier
-                                    if (percentage >= 90) {
+                                    if (record.weight >= nextThreshold * 0.9) {
                                         const weightToGo = nextThreshold - record.weight;
                                         progressData.text = `Only ${weightToGo} ${record.weightUnit} to ${nextLevel}!`;
                                     }
