@@ -62,7 +62,7 @@ export default function HomePage() {
           <>
             <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
             <RecentHistory workoutLogs={workoutLogs || []} />
-            <WeeklyCardioTracker workoutLogs={workoutLogs || []} />
+            <WeeklyCardioTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
           </>
         )}
       </section>

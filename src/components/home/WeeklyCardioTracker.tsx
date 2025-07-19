@@ -2,15 +2,17 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import type { WorkoutLog } from '@/lib/types';
+import type { WorkoutLog, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flame, Route } from 'lucide-react';
+import { Flame } from 'lucide-react';
+import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 
 type WeeklyCardioTrackerProps = {
   workoutLogs: WorkoutLog[];
+  userProfile?: UserProfile | null;
 };
 
 type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climb';
@@ -24,7 +26,6 @@ type DailyCardioData = {
 
 const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
   const name = exerciseName.toLowerCase();
-  // Prioritize "run" to avoid "walking" matching first
   if (name.includes('run') || name.includes('treadmill')) return 'Run';
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
@@ -37,11 +38,11 @@ const getDistanceInMiles = (distance?: number, unit?: string): number => {
     if (unit === 'mi') return distance;
     if (unit === 'km') return distance * 0.621371;
     if (unit === 'ft') return distance * 0.000189394;
-    return 0; // Default if unit is unknown or missing
+    return 0;
 };
 
 
-export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
+export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps) {
   const weeklyData = useMemo(() => {
     const today = new Date();
     const weekStart = startOfWeek(today, { weekStartsOn: 0 });
@@ -61,7 +62,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
         log.exercises.forEach(ex => {
           if (ex.category === 'Cardio') {
             const activityType = normalizeCardioActivity(ex.name);
-            if (!activityType) return; // Skip if it's not a recognized cardio type
+            if (!activityType) return;
 
             const calories = ex.calories || 0;
             const distanceMi = getDistanceInMiles(ex.distance, ex.distanceUnit);
@@ -88,6 +89,29 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
   const minGoal = 1200;
   const maxGoal = 1400;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
+  
+  const caloriesPerMile = useMemo(() => {
+    if (!userProfile) return null;
+    const oneMileRun = { name: 'run', category: 'Cardio', distance: 1, distanceUnit: 'mi' };
+    return calculateExerciseCalories(oneMileRun, userProfile, workoutLogs);
+  }, [userProfile, workoutLogs]);
+
+  const getFooterMessage = () => {
+    const caloriesToGo = Math.round(minGoal - totalWeeklyCalories);
+    if (caloriesToGo <= 0) {
+      return "You've hit your minimum cardio goal for the week. Great work!";
+    }
+    
+    let message = `Only ${caloriesToGo} calories to go to reach your minimum goal.`;
+    
+    if (caloriesPerMile && caloriesPerMile > 0) {
+      const milesToGo = (caloriesToGo / caloriesPerMile).toFixed(1);
+      message += ` That's about a ${milesToGo} mile run!`;
+    }
+    
+    return message;
+  };
+
 
   return (
     <Card className="shadow-lg">
@@ -164,9 +188,7 @@ export function WeeklyCardioTracker({ workoutLogs }: WeeklyCardioTrackerProps) {
       </CardContent>
       <CardFooter>
         <p className="text-sm text-muted-foreground text-center w-full">
-          {totalWeeklyCalories >= minGoal 
-            ? "You've hit your minimum cardio goal for the week. Great work!" 
-            : `Only ${Math.round(minGoal - totalWeeklyCalories)} calories to go to reach your minimum goal.`}
+          {getFooterMessage()}
         </p>
       </CardFooter>
     </Card>
