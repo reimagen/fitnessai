@@ -259,7 +259,7 @@ export default function MilestonesPage() {
                                 const standardType = getStrengthStandardType(record.exerciseName);
                                 const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
 
-                                let progressData: { value: number; text: string; } | null = null;
+                                let progressData: { value: number; text?: string; } | null = null;
                                 if (level !== 'N/A' && level !== 'Elite' && thresholds) {
                                   const levelOrder: StrengthLevel[] = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
                                   const currentLevelIndex = levelOrder.indexOf(level);
@@ -272,12 +272,14 @@ export default function MilestonesPage() {
                                     const range = nextThreshold - currentThreshold;
                                     const progress = record.weight - currentThreshold;
                                     const percentage = range > 0 ? (progress / range) * 100 : 0;
-                                    const weightToGo = nextThreshold - record.weight;
+                                    
+                                    progressData = { value: percentage };
 
-                                    progressData = {
-                                        value: percentage,
-                                        text: `Only ${weightToGo} ${record.weightUnit} to ${nextLevel}!`
-                                    };
+                                    // Only show the text if they are 90% of the way to the next tier
+                                    if (percentage >= 90) {
+                                        const weightToGo = nextThreshold - record.weight;
+                                        progressData.text = `Only ${weightToGo} ${record.weightUnit} to ${nextLevel}!`;
+                                    }
                                   }
                                 }
 
@@ -346,7 +348,9 @@ export default function MilestonesPage() {
                                               {progressData && (
                                                 <div className="space-y-1.5">
                                                     <Progress value={progressData.value} className="h-2 [&>div]:bg-accent" />
-                                                    <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
+                                                    {progressData.text && (
+                                                        <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
+                                                    )}
                                                 </div>
                                               )}
                                             </div>
