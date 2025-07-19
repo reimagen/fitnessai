@@ -97,19 +97,24 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   }, [userProfile, workoutLogs]);
 
   const getMotivationalMessage = () => {
-    const caloriesToGo = Math.round(minGoal - totalWeeklyCalories);
-    if (caloriesToGo <= 0) {
-      return "You've hit your minimum cardio goal for the week. Great work!";
+    if (totalWeeklyCalories >= maxGoal) {
+      return "You've crushed your stretch goal! Amazing work this week.";
     }
-    
-    let message = `Only ${caloriesToGo} calories to go to reach your minimum goal.`;
-    
-    if (caloriesPerMile && caloriesPerMile > 0) {
-      const milesToGo = (caloriesToGo / caloriesPerMile).toFixed(1);
-      message += ` That's about a ${milesToGo} mile run!`;
+
+    if (totalWeeklyCalories >= minGoal) {
+      const caloriesToStretch = Math.round(maxGoal - totalWeeklyCalories);
+      const milesToStretch = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToStretch / caloriesPerMile).toFixed(1) : null;
+      return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch} calories, only a ${milesToStretch} mi run.`;
     }
-    
-    return message;
+
+    if (totalWeeklyCalories >= minGoal * 0.5) {
+      const caloriesToMin = Math.round(minGoal - totalWeeklyCalories);
+      const milesToMin = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToMin / caloriesPerMile).toFixed(1) : null;
+      return `You're only ${caloriesToMin} calories away from your minimum goal. Run more ${milesToMin} miles!`;
+    }
+
+    const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (minGoal / caloriesPerMile).toFixed(1) : null;
+    return `Your minimum goal is to burn ${minGoal} calories. That's equivalent to running ${milesForMinGoal} miles.`;
   };
 
 
