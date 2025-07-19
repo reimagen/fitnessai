@@ -3,7 +3,7 @@
 
 import React, { useMemo } from 'react';
 import type { WorkoutLog, UserProfile } from '@/lib/types';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -96,7 +96,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     return calculateExerciseCalories(oneMileRun, userProfile, workoutLogs);
   }, [userProfile, workoutLogs]);
 
-  const getFooterMessage = () => {
+  const getMotivationalMessage = () => {
     const caloriesToGo = Math.round(minGoal - totalWeeklyCalories);
     if (caloriesToGo <= 0) {
       return "You've hit your minimum cardio goal for the week. Great work!";
@@ -135,6 +135,9 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               title={`Minimum goal: ${minGoal} kcal`}
             ></div>
           </div>
+          <p className="text-sm text-muted-foreground text-center w-full pt-2">
+            {getMotivationalMessage()}
+          </p>
 
           <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
             {daysOfWeek.map(day => {
@@ -186,11 +189,6 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           </div>
         </div>
       </CardContent>
-      <CardFooter>
-        <p className="text-sm text-muted-foreground text-center w-full">
-          {getFooterMessage()}
-        </p>
-      </CardFooter>
     </Card>
   );
 }
