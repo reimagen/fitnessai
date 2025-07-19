@@ -750,7 +750,7 @@ export default function AnalysisPage() {
                                     <BarChart data={runningProgressionData.chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                        <YAxis dataKey="value" domain={['auto', 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
+                                        <YAxis dataKey="value" domain={[0, 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
                                         <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                         <Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                                     </BarChart>
@@ -782,5 +782,7 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
 
     
