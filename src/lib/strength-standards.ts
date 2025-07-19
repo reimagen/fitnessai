@@ -308,34 +308,31 @@ export function getStrengthThresholds(
           ? profile.skeletalMuscleMassValue * LBS_TO_KG
           : profile.skeletalMuscleMassValue;
   }
-
+  
   if (baseValueInKg <= 0) return null;
 
   const genderKey = profile.gender as 'Male' | 'Female';
   const genderStandards = standards[genderKey];
   if (!genderStandards) {
-      return null;
+    return null;
   }
 
-  let ageFactor = 1;
+  let ageFactor = 1.0;
   if (profile.age && profile.age > 40) {
     ageFactor = 1 + (profile.age - 40) * 0.01;
   }
-  
-  const calculateRequiredWeight = (ratio: number) => (ratio * baseValueInKg) / ageFactor;
 
-  const intermediateKg = calculateRequiredWeight(genderStandards.intermediate);
-  const advancedKg = calculateRequiredWeight(genderStandards.advanced);
-  const eliteKg = calculateRequiredWeight(genderStandards.elite);
-
-  const convert = (kgValue: number) => {
-      const value = outputUnit === 'lbs' ? kgValue / LBS_TO_KG : kgValue;
-      return Math.round(value);
-  }
+  const calculateThreshold = (ratio: number) => {
+    let weightInKg = (ratio * baseValueInKg) / ageFactor;
+    let finalWeight = (outputUnit === 'lbs') ? weightInKg / LBS_TO_KG : weightInKg;
+    // Use Math.ceil to ensure that if the threshold is e.g. 105.1, it becomes 106,
+    // so a lift of 106 is correctly classified as meeting the threshold.
+    return Math.ceil(finalWeight);
+  };
   
   return {
-    intermediate: convert(intermediateKg),
-    advanced: convert(advancedKg),
-    elite: convert(eliteKg),
+    intermediate: calculateThreshold(genderStandards.intermediate),
+    advanced: calculateThreshold(genderStandards.advanced),
+    elite: calculateThreshold(genderStandards.elite),
   };
 }

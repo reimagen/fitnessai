@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
@@ -506,31 +505,43 @@ export default function AnalysisPage() {
             chartData = runsForPeriod.map(run => ({ name: format(run.date, 'E d'), value: parseFloat(run.distance?.toFixed(2) || '0') }));
             break;
         case 'monthly': {
-            const weeklyTotals: { [week: string]: number } = {};
+            const weeklyTotals: { [week: string]: { total: number, count: number } } = {};
             runsForPeriod.forEach(run => {
                 const weekNum = getWeekOfMonth(run.date, { weekStartsOn: 0 });
-                const weekKey = `Week ${weekNum}`;
-                weeklyTotals[weekKey] = (weeklyTotals[weekKey] || 0) + (run.distance || 0);
+                const weekKey = `Wk ${weekNum}`;
+                 if (!weeklyTotals[weekKey]) {
+                    weeklyTotals[weekKey] = { total: 0, count: 0 };
+                }
+                weeklyTotals[weekKey].total += run.distance || 0;
+                weeklyTotals[weekKey].count += 1;
             });
-            chartData = Object.entries(weeklyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
+            chartData = Object.entries(weeklyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
             break;
         }
         case 'yearly': {
-            const monthlyTotals: { [month: string]: number } = {};
+            const monthlyTotals: { [month: string]: { total: number, count: number } } = {};
             runsForPeriod.forEach(run => {
                 const monthName = format(run.date, 'MMM');
-                monthlyTotals[monthName] = (monthlyTotals[monthName] || 0) + (run.distance || 0);
+                if (!monthlyTotals[monthName]) {
+                    monthlyTotals[monthName] = { total: 0, count: 0 };
+                }
+                monthlyTotals[monthName].total += run.distance || 0;
+                monthlyTotals[monthName].count += 1;
             });
-            chartData = Object.entries(monthlyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
+            chartData = Object.entries(monthlyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
             break;
         }
         case 'all-time': {
-            const yearlyTotals: { [year: string]: number } = {};
+            const yearlyTotals: { [year: string]: { total: number, count: number } } = {};
             runsForPeriod.forEach(run => {
                 const yearName = format(run.date, 'yyyy');
-                yearlyTotals[yearName] = (yearlyTotals[yearName] || 0) + (run.distance || 0);
+                if (!yearlyTotals[yearName]) {
+                    yearlyTotals[yearName] = { total: 0, count: 0 };
+                }
+                yearlyTotals[yearName].total += run.distance || 0;
+                yearlyTotals[yearName].count += 1;
             });
-            chartData = Object.entries(yearlyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
+            chartData = Object.entries(yearlyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
             break;
         }
     }
@@ -738,8 +749,8 @@ export default function AnalysisPage() {
                     <CardDescription>
                         {timeRange === 'weekly' && "Your individual runs this week."}
                         {timeRange === 'monthly' && "Your total running distance per week this month."}
-                        {timeRange === 'yearly' && "Your total running distance per month."}
-                        {timeRange === 'all-time' && "Your total running distance per year."}
+                        {timeRange === 'yearly' && "Your total distance per month."}
+                        {timeRange === 'all-time' && "Your total distance per year."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -752,7 +763,7 @@ export default function AnalysisPage() {
                                         <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                                         <YAxis dataKey="value" domain={[0, 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
                                         <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                        <Bar dataKey="value" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                                        <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </ChartContainer>
@@ -782,7 +793,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
-
-    
