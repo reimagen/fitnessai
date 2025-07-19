@@ -499,7 +499,7 @@ export default function AnalysisPage() {
     
     let chartData: { name: string, value: number }[] = [];
     const totalDistance = runsForPeriod.reduce((sum, run) => sum + (run.distance || 0), 0);
-    const avgDistance = totalDistance / runsForPeriod.length;
+    const avgDistance = runsForPeriod.length > 0 ? totalDistance / runsForPeriod.length : 0;
 
     switch(timeRange) {
         case 'weekly':
@@ -516,29 +516,21 @@ export default function AnalysisPage() {
             break;
         }
         case 'yearly': {
-            const monthlyAverages: { [month: string]: { total: number; count: number } } = {};
+            const monthlyTotals: { [month: string]: number } = {};
             runsForPeriod.forEach(run => {
                 const monthName = format(run.date, 'MMM');
-                if (!monthlyAverages[monthName]) {
-                    monthlyAverages[monthName] = { total: 0, count: 0 };
-                }
-                monthlyAverages[monthName].total += run.distance || 0;
-                monthlyAverages[monthName].count++;
+                monthlyTotals[monthName] = (monthlyTotals[monthName] || 0) + (run.distance || 0);
             });
-            chartData = Object.entries(monthlyAverages).map(([name, { total, count }]) => ({ name, value: parseFloat((total/count).toFixed(2)) }));
+            chartData = Object.entries(monthlyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
             break;
         }
         case 'all-time': {
-            const yearlyAverages: { [year: string]: { total: number; count: number } } = {};
+            const yearlyTotals: { [year: string]: number } = {};
             runsForPeriod.forEach(run => {
                 const yearName = format(run.date, 'yyyy');
-                if (!yearlyAverages[yearName]) {
-                    yearlyAverages[yearName] = { total: 0, count: 0 };
-                }
-                yearlyAverages[yearName].total += run.distance || 0;
-                yearlyAverages[yearName].count++;
+                yearlyTotals[yearName] = (yearlyTotals[yearName] || 0) + (run.distance || 0);
             });
-            chartData = Object.entries(yearlyAverages).map(([name, { total, count }]) => ({ name, value: parseFloat((total/count).toFixed(2)) }));
+            chartData = Object.entries(yearlyTotals).map(([name, value]) => ({ name, value: parseFloat(value.toFixed(2)) }));
             break;
         }
     }
@@ -746,8 +738,8 @@ export default function AnalysisPage() {
                     <CardDescription>
                         {timeRange === 'weekly' && "Your individual runs this week."}
                         {timeRange === 'monthly' && "Your total running distance per week this month."}
-                        {timeRange === 'yearly' && "Your average running distance per run, grouped by month."}
-                        {timeRange === 'all-time' && "Your average running distance per run, grouped by year."}
+                        {timeRange === 'yearly' && "Your total running distance per month."}
+                        {timeRange === 'all-time' && "Your total running distance per year."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -790,3 +782,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
