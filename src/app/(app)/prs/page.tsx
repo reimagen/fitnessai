@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getStrengthLevel, getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 
@@ -258,6 +259,28 @@ export default function MilestonesPage() {
                                 const standardType = getStrengthStandardType(record.exerciseName);
                                 const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
 
+                                let progressData: { value: number; text: string; } | null = null;
+                                if (level !== 'N/A' && level !== 'Elite' && thresholds) {
+                                  const levelOrder: StrengthLevel[] = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
+                                  const currentLevelIndex = levelOrder.indexOf(level);
+                                  const nextLevel = levelOrder[currentLevelIndex + 1];
+                                  
+                                  const currentThreshold = level === 'Beginner' ? 0 : thresholds[level.toLowerCase() as keyof typeof thresholds];
+                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof typeof thresholds];
+                                  
+                                  if (record.weight < nextThreshold) {
+                                    const range = nextThreshold - currentThreshold;
+                                    const progress = record.weight - currentThreshold;
+                                    const percentage = range > 0 ? (progress / range) * 100 : 0;
+                                    const weightToGo = nextThreshold - record.weight;
+
+                                    progressData = {
+                                        value: percentage,
+                                        text: `Only ${weightToGo} ${record.weightUnit} to ${nextLevel}!`
+                                    };
+                                  }
+                                }
+
                                 return (
                                     <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
                                       {isEditing ? (
@@ -318,11 +341,18 @@ export default function MilestonesPage() {
                                                 </div>
                                                 <p className="text-xs text-muted-foreground mt-1">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
                                             </div>
-
-                                            <div className="flex-grow"></div>
+                                            
+                                            <div className="flex-grow my-3">
+                                              {progressData && (
+                                                <div className="space-y-1.5">
+                                                    <Progress value={progressData.value} className="h-2 [&>div]:bg-accent" />
+                                                    <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
+                                                </div>
+                                              )}
+                                            </div>
                                             
                                             {thresholds && level !== 'N/A' && (
-                                              <div className="mt-3 pt-3 border-t border-muted/20 text-xs space-y-1">
+                                              <div className="mt-auto pt-3 border-t border-muted/20 text-xs space-y-1">
                                                 {level !== 'Elite' && level !== 'Advanced' && (
                                                     <div className="flex justify-between items-center">
                                                         <span className="font-medium text-muted-foreground">Intermediate</span>
