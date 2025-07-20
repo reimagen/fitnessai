@@ -87,7 +87,11 @@ export function useUpdatePersonalRecord() {
 }
 
 export function useUserProfile() {
-    return useQuery<UserProfile, Error>({ queryKey: ['profile'], queryFn: getUserProfile, retry: false });
+    return useQuery<UserProfile | null, Error>({ 
+      queryKey: ['profile'], 
+      queryFn: getUserProfile, 
+      retry: false 
+    });
 }
 
 export function useUpdateUserProfile() {

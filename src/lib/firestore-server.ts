@@ -231,28 +231,28 @@ const createDefaultProfile = async (): Promise<UserProfile> => {
     return newSnapshot.data();
 };
 
-export const getUserProfile = async (): Promise<UserProfile> => {
+export const getUserProfile = async (): Promise<UserProfile | null> => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
 
     try {
         const snapshot = await getDoc(profileDocRef);
         if (!snapshot.exists()) {
-            console.warn("No profile found, creating a default one.");
-            return createDefaultProfile();
+            console.warn("User profile document not found. For a multi-user app, this is expected until a user signs in and a profile is created for them.");
+            return null;
         }
         
         const profileData = snapshot.data(); 
         
         if(!profileData || !profileData.name) {
-            console.warn("Profile document is empty or invalid. Recreating.");
-            return createDefaultProfile();
+            console.warn("Profile document is empty or invalid.");
+            return null;
         }
 
         return profileData;
 
     } catch (error) {
-        console.error("Error fetching or parsing profile, creating a default one.", error);
-        return createDefaultProfile();
+        console.error("Error fetching user profile:", error);
+        return null;
     }
 };
 

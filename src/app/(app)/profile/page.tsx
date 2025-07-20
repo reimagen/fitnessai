@@ -6,7 +6,7 @@ import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Loader2 } from "lucide-react";
+import { Settings, LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react";
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -59,6 +59,30 @@ export default function ProfilePage() {
     });
   };
 
+  const handleCreateProfile = () => {
+    // This creates the 'main-user-profile' document for the first time
+    const defaultProfileData = {
+      name: "Fitness Pro",
+      joinedDate: new Date(),
+      fitnessGoals: [],
+    };
+    updateUserMutation.mutate(defaultProfileData, {
+      onSuccess: () => {
+        toast({
+          title: "Profile Created!",
+          description: "Welcome! You can now customize your profile.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Creation Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    });
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
@@ -91,7 +115,26 @@ export default function ProfilePage() {
           />
         </>
       ) : (
-          <p>Could not load user profile.</p>
+          <Card className="shadow-lg border-primary">
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <AlertTriangle className="h-6 w-6 text-primary" />
+                No Profile Found
+              </CardTitle>
+              <CardDescription>
+                It looks like this is a new device or you don't have a profile set up yet.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground mb-4">
+                To get started, you can create a profile. In a real-world app, you would sign in to retrieve your existing data.
+              </p>
+              <Button onClick={handleCreateProfile} disabled={updateUserMutation.isPending}>
+                {updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4"/>}
+                Create My Profile
+              </Button>
+            </CardContent>
+          </Card>
       )}
       
       <Card className="shadow-lg">
