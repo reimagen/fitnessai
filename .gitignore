@@ -4,6 +4,7 @@
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # Testing
 /coverage
@@ -51,3 +52,6 @@ database-debug.log
 *.njsproj
 *.sln
 *.sw?
+
+# vercel
+.vercel
