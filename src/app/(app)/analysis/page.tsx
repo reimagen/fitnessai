@@ -706,12 +706,18 @@ export default function AnalysisPage() {
                                                     <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
                                                     {dataFinding.lift2Level && dataFinding.lift2Level !== 'N/A' && <p className="mt-1">Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level}</span></p>}
                                                 </div>
-                                                <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
+                                                <div className="col-span-1">
+                                                    <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
+                                                </div>
+                                                <div className="col-span-1">
+                                                    <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
+                                                </div>
                                             </div>
-
-                                            <div className="flex-grow"></div>
                                             
+                                            {(isAnalysisLoading && dataFinding.userRatio) || aiFinding || dataFinding.imbalanceFocus !== 'Balanced' || (dataFinding.lift1Level !== 'N/A' && dataFinding.lift1Level !== 'Elite') ? (
+                                                <div className="flex-grow"></div>
+                                            ) : null}
+
                                             {isAnalysisLoading && dataFinding.userRatio ? (
                                                  <div className="flex items-center justify-center text-muted-foreground pt-3 border-t">
                                                     <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
