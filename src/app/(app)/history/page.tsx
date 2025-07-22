@@ -99,15 +99,15 @@ export default function HistoryPage() {
             exercise.weightUnit = ex.weightUnit;
         }
 
-        if (exercise.distance > 0 && !ex.distanceUnit) {
+        if ((ex.distance ?? 0) > 0 && !ex.distanceUnit) {
             exercise.distanceUnit = 'mi';
-        } else if (exercise.distance > 0) {
+        } else if ((ex.distance ?? 0) > 0) {
             exercise.distanceUnit = ex.distanceUnit;
         }
 
-        if (exercise.duration > 0 && !ex.durationUnit) {
+        if ((ex.duration ?? 0) > 0 && !ex.durationUnit) {
             exercise.durationUnit = 'min';
-        } else if (exercise.duration > 0) {
+        } else if ((ex.duration ?? 0) > 0) {
             exercise.durationUnit = ex.durationUnit;
         }
 
