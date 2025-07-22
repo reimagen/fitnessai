@@ -92,7 +92,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   
   const caloriesPerMile = useMemo(() => {
     if (!userProfile) return null;
-    const oneMileRun = { name: 'run', category: 'Cardio', distance: 1, distanceUnit: 'mi' };
+    const oneMileRun = { name: 'run', category: 'Cardio' as const, distance: 1, distanceUnit: 'mi' as const, sets: 0, reps: 0, weight: 0 };
     return calculateExerciseCalories(oneMileRun, userProfile, workoutLogs);
   }, [userProfile, workoutLogs]);
 
