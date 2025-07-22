@@ -1,9 +1,5 @@
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
-  experimental: {
-    allowedDevOrigins: ['https://*.cloudworkstations.dev'],
-  },
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   serverActions: {
     bodySizeLimit: '10mb',
   },
@@ -25,4 +21,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
