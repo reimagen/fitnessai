@@ -1,5 +1,5 @@
 
-import type { WorkoutLog, AggregatedWorkoutDaySummary, Exercise } from "./types";
+import type { WorkoutLog, AggregatedWorkoutDaySummary } from "./types";
 import { format, parseISO } from 'date-fns';
 
 /**
@@ -19,10 +19,8 @@ export function generateWorkoutSummaries(logs: WorkoutLog[]): AggregatedWorkoutD
     }
     const dateKey = format(logDateObject, "yyyy-MM-dd");
 
-    let summary = summariesMap.get(dateKey);
-
-    if (!summary) {
-      summary = {
+    if (!summariesMap.has(dateKey)) {
+      summariesMap.set(dateKey, {
         date: logDateObject,
         totalExercises: 0,
         totalSets: 0,
@@ -30,9 +28,10 @@ export function generateWorkoutSummaries(logs: WorkoutLog[]): AggregatedWorkoutD
         totalDurationMinutes: 0,
         totalCaloriesBurned: 0,
         categories: {},
-      };
-      summariesMap.set(dateKey, summary);
+      });
     }
+
+    const summary = summariesMap.get(dateKey)!; // We know it exists now
 
     for (const exercise of log.exercises) {
       summary.totalExercises += 1;

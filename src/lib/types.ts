@@ -92,10 +92,9 @@ export interface StrengthImbalanceOutput {
 export interface AggregatedWorkoutDaySummary {
   date: Date;
   totalExercises: number;
-  totalDurationMinutes: number; // Sum of all exercise durations for the day
-  totalCaloriesBurned: number; // Sum of all calories burned
-  // More detailed summaries can be added later if needed, e.g.,
-  // totalSets: number;
-  // totalWeightLifted: number; // Could be sum of weight * reps * sets
-  // exerciseCategoriesCount: Record<string, number>; // e.g., { "Cardio": 2, "Upper Body": 3 }
+  totalDurationMinutes: number;
+  totalCaloriesBurned: number;
+  totalSets: number;
+  totalReps: number;
+  categories: Record<string, number>;
 }
