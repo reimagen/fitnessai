@@ -23,7 +23,7 @@ import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 import { startOfDay } from 'date-fns';
 
-const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
+const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
 const exerciseSchema = z.object({
   id: z.string().optional(), 
