@@ -208,29 +208,6 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
 // User Profile (assuming a single user, single profile document)
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
-const createDefaultProfile = async (): Promise<UserProfile> => {
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
-    console.log("Creating a new default user profile.");
-    const defaultProfile: Omit<UserProfile, 'id'> = {
-        name: "New User",
-        email: "user@example.com",
-        joinedDate: new Date(),
-        fitnessGoals: [],
-        workoutsPerWeek: 3,
-        sessionTimeMinutes: 45,
-        experienceLevel: 'intermediate',
-        skeletalMuscleMassValue: undefined,
-        skeletalMuscleMassUnit: undefined,
-        strengthAnalysis: undefined,
-    };
-    await setDoc(profileDocRef, defaultProfile);
-    const newSnapshot = await getDoc(profileDocRef);
-    if (!newSnapshot.exists()) {
-         throw new Error("Fatal error: Failed to create and then fetch the user profile.");
-    }
-    return newSnapshot.data();
-};
-
 export const getUserProfile = async (): Promise<UserProfile | null> => {
     const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
 
