@@ -697,7 +697,7 @@ export default function AnalysisPage() {
                                     return (
                                         <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                             <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
+                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div>
                                                     <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
                                                     {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p className="mt-1">Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
@@ -715,71 +715,71 @@ export default function AnalysisPage() {
                                             </div>
                                             
                                             {(isAnalysisLoading && dataFinding.userRatio) || aiFinding || dataFinding.imbalanceFocus !== 'Balanced' || (dataFinding.lift1Level !== 'N/A' && dataFinding.lift1Level !== 'Elite') ? (
-                                                <div className="flex-grow"></div>
+                                                <div className="pt-4 mt-4 border-t">
+                                                    {isAnalysisLoading && dataFinding.userRatio ? (
+                                                        <div className="flex items-center justify-center text-muted-foreground">
+                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
+                                                        </div>
+                                                    ) : aiFinding ? (
+                                                    <div className="space-y-3">
+                                                            <div className="mb-4">
+                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
+                                                            </div>
+                                                    </div>
+                                                    ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
+                                                        <div>
+                                                            <div className="mb-4">
+                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+                                                            </div>
+                                                            <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <div className="mb-4">
+                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+                                                            </div>
+                                                            {(() => {
+                                                                const currentLevel = dataFinding.lift1Level;
+                                                                if (currentLevel === 'N/A') return null;
+
+                                                                if (currentLevel === 'Elite') {
+                                                                    return (
+                                                                        <>
+                                                                            <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Elite Status</p>
+                                                                            <p className="text-xs text-muted-foreground mt-1">You've reached the Elite level while maintaining balance. Incredible work!</p>
+                                                                        </>
+                                                                    );
+                                                                }
+
+                                                                let nextLevel: string | null = null;
+                                                                if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
+                                                                else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
+                                                                else if (currentLevel === 'Advanced') nextLevel = 'Elite';
+
+                                                                if (nextLevel) {
+                                                                    return (
+                                                                        <>
+                                                                            <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
+                                                                            <p className="text-xs text-muted-foreground mt-1">
+                                                                                Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+                                                                            </p>
+                                                                        </>
+                                                                    );
+                                                                }
+                                                                return null;
+                                                            })()}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : null}
-
-                                            {isAnalysisLoading && dataFinding.userRatio ? (
-                                                 <div className="flex items-center justify-center text-muted-foreground pt-3 border-t">
-                                                    <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
-                                                 </div>
-                                            ) : aiFinding ? (
-                                               <div className="space-y-3 pt-4 border-t">
-                                                    <div className="mb-4">
-                                                        <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                        <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                        <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
-                                                    </div>
-                                               </div>
-                                            ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
-                                                 <div className="pt-4 border-t">
-                                                    <div className="mb-4">
-                                                        <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                    </div>
-                                                    <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
-                                                </div>
-                                            ) : (
-                                                <div className="pt-4 border-t">
-                                                    <div className="mb-4">
-                                                        <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                    </div>
-                                                    {(() => {
-                                                        const currentLevel = dataFinding.lift1Level;
-                                                        if (currentLevel === 'N/A') return null;
-
-                                                        if (currentLevel === 'Elite') {
-                                                            return (
-                                                                <>
-                                                                    <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Elite Status</p>
-                                                                    <p className="text-xs text-muted-foreground mt-1">You've reached the Elite level while maintaining balance. Incredible work!</p>
-                                                                </>
-                                                            );
-                                                        }
-
-                                                        let nextLevel: string | null = null;
-                                                        if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
-                                                        else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
-                                                        else if (currentLevel === 'Advanced') nextLevel = 'Elite';
-
-                                                        if (nextLevel) {
-                                                            return (
-                                                                <>
-                                                                    <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
-                                                                    <p className="text-xs text-muted-foreground mt-1">
-                                                                        Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
-                                                                    </p>
-                                                                </>
-                                                            );
-                                                        }
-                                                        return null;
-                                                    })()}
-                                                </div>
-                                            )}
                                         </Card>
                                     );
                                 })}
@@ -840,3 +840,5 @@ export default function AnalysisPage() {
 }
 
     
+
+  
