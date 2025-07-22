@@ -11,7 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
-import type { PersonalRecord, StrengthLevel } from '@/lib/types';
+import type { PersonalRecord, StrengthLevel, UserProfile } from '@/lib/types';
 
 const FitnessGoalForAnalysisSchema = z.object({
   description: z.string().describe("A specific fitness goal for the user."),
@@ -101,11 +101,12 @@ function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], 
     const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
 
-    const bestRecord = relevantRecords.reduce((best, current) => {
+    // Start with the first record as the initial best and reduce from there
+    const bestRecord = relevantRecords.slice(1).reduce((best, current) => {
         const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
         const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
         return currentWeightKg > bestWeightKg ? current : best;
-    });
+    }, relevantRecords[0]);
 
     return {
       ...bestRecord,
@@ -191,12 +192,15 @@ const strengthImbalanceFlow = ai.defineFlow(
     const imbalancesForAI: z.infer<typeof ImbalanceDataForAISchema>[] = [];
 
     // The user profile needs to be compatible with the getStrengthLevel function
-    const userProfileForLevels = {
+    const userProfileForLevels: UserProfile = {
         ...input.userProfile,
         id: "temp-id",
+        name: "temp-user",
         email: "",
         joinedDate: new Date(),
         fitnessGoals: (input.userProfile.fitnessGoals || []).map(g => ({...g, id: 'temp-goal-id', achieved: false })),
+        avatarUrl: undefined,
+        strengthAnalysis: undefined,
     };
 
 
