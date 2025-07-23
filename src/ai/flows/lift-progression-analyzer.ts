@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { subWeeks, isAfter, startOfWeek, eachWeekOfInterval, format } from 'date-fns';
+import type { StrengthLevel } from '@/lib/types';
 
 // --- Helper Functions for Trend Calculation ---
 
@@ -39,6 +40,7 @@ const AnalyzeLiftProgressionInputSchema = z.object({
   exerciseName: z.string().describe("The name of the exercise to be analyzed."),
   exerciseHistory: z.array(ExerciseHistoryEntrySchema).describe("An array of all logged performances for this exercise from the trailing 6 weeks."),
   userProfileContext: z.string().describe("A summary of the user's experience level and primary fitness goal."),
+  currentLevel: z.custom<StrengthLevel>().optional().describe("The user's current strength level for this specific exercise (e.g., 'Beginner', 'Advanced')."),
 });
 export type AnalyzeLiftProgressionInput = z.infer<typeof AnalyzeLiftProgressionInputSchema>;
 
@@ -109,72 +111,84 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         }
     });
     
-    let overallTrend = "Data insufficient to determine trend.";
-    if (activeWeeksData.length >= 2) {
-        const firstWeek = activeWeeksData[0];
-        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
-        
-        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
-        const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
-        
-        // Check for recent stagnation (last 2 weeks)
-        let recentStagnation = false;
-        if (activeWeeksData.length >= 3) {
-            const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
-            const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
-            const week_n2 = activeWeeksData[activeWeeksData.length - 3].avgE1RM;
-            if (week_n <= week_n1 && week_n1 <= week_n2) {
-                recentStagnation = true;
-            }
-        } else if (activeWeeksData.length === 2) {
-            if (lastWeek.avgE1RM <= firstWeek.avgE1RM) {
-                recentStagnation = true;
-            }
-        }
+    // --- Trend Analysis using Linear Regression ---
+    let trendDescription = "Data insufficient to determine trend.";
+    let progressionStatus: AnalyzeLiftProgressionOutput['progressionStatus'] = "Stagnated";
 
-        if (e1rmPercentChange > 5 && !recentStagnation) {
-            overallTrend = `Positive (${e1rmPercentChange.toFixed(0)}% increase).`;
-        } else if (e1rmPercentChange > 0) {
-            overallTrend = `Slightly Positive, but has plateaued in the last 2-3 weeks.`;
-        } else if (e1rmPercentChange <= 0 && recentStagnation) {
-            overallTrend = `Stagnated or Regressing.`;
+    if (activeWeeksData.length >= 2) {
+        const points = activeWeeksData.map((d, i) => ({ x: i, y: d.avgE1RM }));
+        const n = points.length;
+        const xSum = points.reduce((acc, p) => acc + p.x, 0);
+        const ySum = points.reduce((acc, p) => acc + p.y, 0);
+        const xySum = points.reduce((acc, p) => acc + p.x * p.y, 0);
+        const x2Sum = points.reduce((acc, p) => acc + p.x * p.x, 0);
+        
+        const denominator = n * x2Sum - xSum * xSum;
+        const slope = denominator !== 0 ? (n * xySum - xSum * ySum) / denominator : 0;
+        
+        const firstE1RM = points[0].y;
+        const normalizedSlope = firstE1RM > 0 ? (slope / firstE1RM) * 100 : 0; // Slope as a % of starting strength
+
+        if (normalizedSlope > 5) {
+            progressionStatus = "Excellent";
+            trendDescription = "Strong positive trend, indicating rapid strength gains.";
+        } else if (normalizedSlope > 1) {
+            progressionStatus = "Good";
+            trendDescription = "Positive trend, indicating steady strength gains.";
+        } else if (normalizedSlope < -2) {
+            progressionStatus = "Regressing";
+            trendDescription = "Negative trend, indicating a decline in strength.";
         } else {
-            overallTrend = `Stagnated.`;
+            progressionStatus = "Stagnated";
+            trendDescription = "Flat trend, indicating a plateau in strength.";
         }
     }
     
-    precomputedSummary += `\nOverall e1RM Trend Analysis: ${overallTrend}`;
-
+    precomputedSummary += `\nOverall Trend Analysis: ${trendDescription}`;
 
     // --- AI Prompting Step ---
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or invent data.** Base your entire analysis on the weekly summary and trend analysis provided below.
+        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or change the pre-determined progressionStatus.** Base your entire analysis on the data provided below.
 
         **User Context:**
         {{{userProfileContext}}}
         
         **Exercise Being Analyzed:** {{{exerciseName}}}
-
-        **Pre-Calculated Data Summary (Last 6 Weeks):**
-        {{{precomputedSummary}}}
+        **User's Current Strength Level for this Lift:** {{{currentLevel}}}
+        
+        **Pre-Calculated Analysis:**
+        - **Progression Status:** {{{progressionStatus}}}
+        - **Trend Description:** {{{trendDescription}}}
+        - **Weekly Data:**
+          {{{precomputedSummary}}}
 
         **Your Task:**
-        Based *only* on the data summary and the final 'Overall e1RM Trend Analysis' line above, provide a JSON response with the following fields:
-        1.  **progressionStatus**: Classify the user's progress based on the 'Overall e1RM Trend Analysis'.
-            - "Excellent": Trend shows a strong and consistent positive increase.
-            - "Good": Trend is generally positive but may have some flat weeks or a recent plateau.
-            - "Stagnated": Trend analysis indicates stagnation, a plateau, or slight regression.
-            - "Regressing": Trend analysis explicitly shows regression.
-        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean. Reference specific changes in e1RM and volume from the weekly data. **DO NOT invent numbers like "2250 lbs"; refer to the actual data provided.** For example, "Your strength (e1RM) has steadily climbed over the past few weeks, though your volume has varied, indicating you are getting stronger even with different workloads."
-        3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks of training for this specific lift. It must be a direct suggestion to improve upon the insight.
+        Your output MUST be a JSON object. You will generate an 'insight' and a 'recommendation'. **You MUST use the provided 'Progression Status' as the final status in your output.**
+        
+        **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
+        You MUST tailor your advice based on the user's **Current Strength Level**.
+        1.  **For 'Beginner' or 'Intermediate' Lifts:**
+            - A "Good" or "Excellent" status is great; encourage consistency.
+            - A "Stagnated" or "Regressing" status is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
+        2.  **For 'Advanced' or 'Elite' Lifts:**
+            - A "Stagnated" status can be perfectly acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on other goals, rather than aggressively pushing for more weight.
+            - A "Regressing" status should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
+        
+        **Your Response Fields:**
+        1.  **progressionStatus**: You MUST return the exact string provided in the "Progression Status" field above. Do not change it.
+        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, considering their strength level.
+        3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level and the trend.
         `,
     });
 
     const { output } = await prompt({
         userProfileContext: input.userProfileContext,
         exerciseName: input.exerciseName,
+        currentLevel: input.currentLevel || 'N/A',
+        progressionStatus,
+        trendDescription,
         precomputedSummary,
     });
     
