@@ -626,35 +626,40 @@ export default function AnalysisPage() {
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const liftHistory: { [dateKey: string]: { date: Date; e1RM: number; volume: number } } = {};
 
+    // First, group exercises by date and calculate totals for the selected lift
     for (const log of workoutLogs) {
-      if (isAfter(log.date, sixWeeksAgo)) {
-        for (const ex of log.exercises) {
-          if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
-            const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
-            const dateKey = format(log.date, 'yyyy-MM-dd');
-            
-            if (!liftHistory[dateKey]) {
-                liftHistory[dateKey] = { date: log.date, e1RM: 0, volume: 0 };
-            }
+        if (!isAfter(log.date, sixWeeksAgo)) continue;
 
-            const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
-            if (currentE1RM > liftHistory[dateKey].e1RM) {
-                liftHistory[dateKey].e1RM = currentE1RM;
+        const dateKey = format(log.date, 'yyyy-MM-dd');
+        let sessionVolume = 0;
+        let maxSessionE1RM = 0;
+
+        for (const ex of log.exercises) {
+            if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
+                const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
+                
+                const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
+                if (currentE1RM > maxSessionE1RM) {
+                    maxSessionE1RM = currentE1RM;
+                }
+                sessionVolume += weightInLbs * ex.sets * ex.reps;
             }
-            liftHistory[dateKey].volume += weightInLbs * ex.sets * ex.reps;
-          }
         }
-      }
+
+        // Only add an entry if the selected lift was actually performed on this day
+        if (sessionVolume > 0 || maxSessionE1RM > 0) {
+            liftHistory[dateKey] = { date: log.date, e1RM: maxSessionE1RM, volume: sessionVolume };
+        }
     }
 
     return Object.values(liftHistory)
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .map(item => ({
-        name: format(item.date, 'MMM d'),
-        e1RM: Math.round(item.e1RM),
-        volume: Math.round(item.volume),
-      }));
-  }, [selectedLift, workoutLogs]);
+        .sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(item => ({
+            name: format(item.date, 'MMM d'),
+            e1RM: Math.round(item.e1RM),
+            volume: Math.round(item.volume),
+        }));
+}, [selectedLift, workoutLogs]);
 
   const handleAnalyzeProgression = async () => {
     if (!userProfile || !workoutLogs || !selectedLift) {
@@ -939,7 +944,7 @@ export default function AnalysisPage() {
                                     <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }} />
                                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
                                     <Legend />
-                                    <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={4} />
+                                    <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
                                     <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
                                 </ComposedChart>
                             </ResponsiveContainer>
@@ -1025,5 +1030,3 @@ export default function AnalysisPage() {
     </div>
   );
 }
-
-    
