@@ -208,6 +208,35 @@ const ProgressionTooltip = (props: any) => {
     return null;
 };
 
+// Custom Legend for the progression chart
+const ProgressionChartLegend = (props: any) => {
+    const { payload } = props;
+    if (!payload) return null;
+
+    return (
+        <div className="flex items-center justify-center gap-4 text-xs mt-2">
+            {payload.map((entry: any, index: number) => {
+                const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
+                if (!config) return null;
+
+                return (
+                    <div key={`item-${index}`} className="flex items-center gap-1.5">
+                        {entry.dataKey === 'actualPR' ? (
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                        ) : (
+                            <span
+                                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                style={{ backgroundColor: entry.color }}
+                            />
+                        )}
+                        <span className="text-muted-foreground">{config.label}</span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 export default function AnalysisPage() {
   const { toast } = useToast();
   const [timeRange, setTimeRange] = useState('weekly');
@@ -1015,7 +1044,7 @@ export default function AnalysisPage() {
                                     <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
                                     <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }} />
                                     <Tooltip content={<ProgressionTooltip />} />
-                                    <Legend />
+                                    <Legend content={<ProgressionChartLegend />} />
                                     <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
                                     <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
                                     <Scatter yAxisId="left" dataKey="actualPR" fill="var(--color-actualPR)" shape={<TrophyShape />} />
