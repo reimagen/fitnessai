@@ -624,35 +624,42 @@ export default function AnalysisPage() {
     if (!selectedLift || !workoutLogs) return [];
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    const liftHistory: { [dateKey: string]: { date: Date; e1RM: number; volume: number } } = {};
+    const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number }>();
 
-    // First, group exercises by date and calculate totals for the selected lift
+    // Iterate through all logs within the 6-week window
     for (const log of workoutLogs) {
         if (!isAfter(log.date, sixWeeksAgo)) continue;
 
         const dateKey = format(log.date, 'yyyy-MM-dd');
-        let sessionVolume = 0;
-        let maxSessionE1RM = 0;
 
         for (const ex of log.exercises) {
+            // Only consider the selected exercise
             if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
                 const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
-                
                 const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
-                if (currentE1RM > maxSessionE1RM) {
-                    maxSessionE1RM = currentE1RM;
+                const currentVolume = weightInLbs * ex.sets * ex.reps;
+
+                // If a log for this day already exists, update it by adding volume and taking the max e1RM
+                const existingEntry = liftHistory.get(dateKey);
+                if (existingEntry) {
+                    existingEntry.volume += currentVolume;
+                    if (currentE1RM > existingEntry.e1RM) {
+                        existingEntry.e1RM = currentE1RM;
+                    }
+                } else {
+                    // Otherwise, create a new entry for this day
+                    liftHistory.set(dateKey, {
+                        date: log.date,
+                        e1RM: currentE1RM,
+                        volume: currentVolume,
+                    });
                 }
-                sessionVolume += weightInLbs * ex.sets * ex.reps;
             }
         }
-
-        // Only add an entry if the selected lift was actually performed on this day
-        if (sessionVolume > 0 || maxSessionE1RM > 0) {
-            liftHistory[dateKey] = { date: log.date, e1RM: maxSessionE1RM, volume: sessionVolume };
-        }
     }
-
-    return Object.values(liftHistory)
+    
+    // Convert map to array, sort, and format for the chart
+    return Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(item => ({
             name: format(item.date, 'MMM d'),
@@ -660,6 +667,7 @@ export default function AnalysisPage() {
             volume: Math.round(item.volume),
         }));
 }, [selectedLift, workoutLogs]);
+
 
   const handleAnalyzeProgression = async () => {
     if (!userProfile || !workoutLogs || !selectedLift) {
@@ -908,7 +916,6 @@ export default function AnalysisPage() {
                     )}
                 </CardContent>
             </Card>
-
             <Card className="shadow-lg lg:col-span-6">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" />Lift Progression Analysis</CardTitle>
