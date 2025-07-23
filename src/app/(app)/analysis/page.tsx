@@ -539,7 +539,6 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
-                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
@@ -562,7 +561,6 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
-                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
@@ -703,94 +701,6 @@ export default function AnalysisPage() {
       .map(([name]) => name);
   }, [workoutLogs]);
 
-  useEffect(() => {
-    if (!selectedLift || !workoutLogs) {
-      setProgressionStatus(null);
-      return;
-    }
-
-    const sixWeeksAgo = subWeeks(new Date(), 6);
-    
-    const weeklyData: Record<string, { e1RMs: number[] }> = {};
-    const weeks = eachWeekOfInterval({ start: sixWeeksAgo, end: new Date() }, { weekStartsOn: 1 });
-
-    for (const weekStart of weeks) {
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        weeklyData[weekKey] = { e1RMs: [] };
-    }
-    
-    workoutLogs
-      .filter(log => isAfter(log.date, sixWeeksAgo))
-      .flatMap(log =>
-        log.exercises
-          .filter(ex => ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets)
-          .map(ex => ({ date: log.date, e1RM: calculateE1RM(ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight, ex.reps) }))
-      )
-      .forEach(entry => {
-        const weekStart = startOfWeek(entry.date, { weekStartsOn: 1 });
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        if (weeklyData[weekKey]) {
-            weeklyData[weekKey].e1RMs.push(entry.e1RM);
-        }
-    });
-
-    const activeWeeksData: { week: string; avgE1RM: number }[] = [];
-    Object.entries(weeklyData).forEach(([week, data]) => {
-        if (data.e1RMs.length > 0 && data.e1RMs.some(e => e > 0)) {
-            const validE1RMs = data.e1RMs.filter(e => e > 0);
-            const avgE1RM = validE1RMs.reduce((a, b) => a + b, 0) / validE1RMs.length;
-            activeWeeksData.push({ week, avgE1RM });
-        }
-    });
-    
-    if (activeWeeksData.length < 2) {
-        setProgressionStatus(null);
-        return;
-    }
-    
-    let e1rmPercentChange = 0;
-    if (activeWeeksData.length >= 4) {
-        const firstTwoAvg = (activeWeeksData[0].avgE1RM + activeWeeksData[1].avgE1RM) / 2;
-        const lastTwoAvg = (activeWeeksData[activeWeeksData.length - 1].avgE1RM + activeWeeksData[activeWeeksData.length - 2].avgE1RM) / 2;
-        if(firstTwoAvg > 0) {
-            e1rmPercentChange = (lastTwoAvg - firstTwoAvg) / firstTwoAvg * 100;
-        }
-    } else { // Fallback for 2 or 3 weeks of data
-        const firstWeek = activeWeeksData[0];
-        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
-        if (firstWeek.avgE1RM > 0) {
-            const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
-            e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
-        }
-    }
-
-
-    let recentStagnation = false;
-    if (activeWeeksData.length >= 3) {
-        const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
-        const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
-        const week_n2 = activeWeeksData[activeWeeksData.length - 3].avgE1RM;
-        if (week_n <= week_n1 && week_n1 <= week_n2) {
-            recentStagnation = true;
-        }
-    } else if (activeWeeksData.length === 2) {
-         if (activeWeeksData[1].avgE1RM <= activeWeeksData[0].avgE1RM) {
-            recentStagnation = true;
-         }
-    }
-    
-    if (e1rmPercentChange > 5 && !recentStagnation) {
-        setProgressionStatus("Excellent");
-    } else if (e1rmPercentChange > 0) {
-        setProgressionStatus("Good");
-    } else if (e1rmPercentChange <= 0 && recentStagnation) {
-        setProgressionStatus("Regressing");
-    } else {
-        setProgressionStatus("Stagnated");
-    }
-
-  }, [selectedLift, workoutLogs]);
-
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) {
         return { chartData: [], trendlineData: null };
@@ -892,6 +802,55 @@ export default function AnalysisPage() {
     return { chartData, trendlineData };
 }, [selectedLift, workoutLogs, personalRecords]);
 
+useEffect(() => {
+    if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
+        setProgressionStatus(null);
+        return;
+    }
+    
+    const { chartData } = progressionChartData;
+    const points = chartData.map((d, i) => ({ x: i, y: d.e1RM })).filter(p => p.y > 0);
+    
+    if (points.length < 2) {
+        setProgressionStatus(null);
+        return;
+    }
+
+    const n = points.length;
+    const xSum = points.reduce((acc, p) => acc + p.x, 0);
+    const ySum = points.reduce((acc, p) => acc + p.y, 0);
+    const xySum = points.reduce((acc, p) => acc + p.x * p.y, 0);
+    const x2Sum = points.reduce((acc, p) => acc + p.x * p.x, 0);
+
+    const denominator = n * x2Sum - xSum * xSum;
+    if (denominator === 0) {
+        setProgressionStatus("Stagnated");
+        return;
+    }
+    
+    const slope = (n * xySum - xSum * ySum) / denominator;
+    
+    const firstE1RM = points[0].y;
+    if (firstE1RM === 0) {
+        setProgressionStatus("Stagnated");
+        return;
+    }
+    
+    // Normalize slope to represent a percentage change relative to the start
+    // A slope of 1 means 1lb increase per session. (1 / firstE1RM) is the percentage.
+    const normalizedSlope = (slope / firstE1RM) * 100;
+    
+    if (normalizedSlope > 5) {
+        setProgressionStatus("Excellent");
+    } else if (normalizedSlope > 1) {
+        setProgressionStatus("Good");
+    } else if (normalizedSlope < -2) {
+        setProgressionStatus("Regressing");
+    } else {
+        setProgressionStatus("Stagnated");
+    }
+
+}, [selectedLift, progressionChartData.chartData]);
 
   const handleAnalyzeProgression = async () => {
     if (!userProfile || !workoutLogs || !selectedLift) {
@@ -1294,3 +1253,6 @@ export default function AnalysisPage() {
 
     
 
+
+
+    
