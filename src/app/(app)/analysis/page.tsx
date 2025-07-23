@@ -256,7 +256,7 @@ export default function AnalysisPage() {
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
-  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift] || userProfile?.liftProgressionAnalysis?.[selectedLift];
+  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift] || userProfile?.liftProgressionAnalysis?.[selectedLift.trim().toLowerCase()];
 
 
   const handleAnalyzeStrength = async () => {
@@ -877,7 +877,7 @@ export default function AnalysisPage() {
     if (result.success && result.data) {
         setLatestProgressionAnalysis(prev => ({
             ...prev,
-            [selectedLift]: { result: result.data!, generatedDate: new Date() }
+            [selectedLift.trim().toLowerCase()]: { result: result.data!, generatedDate: new Date() }
         }));
         toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
     } else {
@@ -1129,11 +1129,13 @@ export default function AnalysisPage() {
 
                 {selectedLift && progressionChartData.length > 1 && (
                     <div className="pt-4">
-                        <div className="flex items-center justify-center gap-2 mb-2 text-center text-sm">
-                          <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                          {progressionStatus && (
-                            <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
-                          )}
+                        <div className="text-center mb-2">
+                           <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
+                           {progressionStatus && (
+                             <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
+                               Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
+                             </div>
+                           )}
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
