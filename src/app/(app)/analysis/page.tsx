@@ -256,7 +256,7 @@ export default function AnalysisPage() {
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
-  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift] || userProfile?.liftProgressionAnalysis?.[selectedLift.trim().toLowerCase()];
+  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift.trim().toLowerCase()] || userProfile?.liftProgressionAnalysis?.[selectedLift.trim().toLowerCase()];
 
 
   const handleAnalyzeStrength = async () => {
@@ -693,7 +693,6 @@ export default function AnalysisPage() {
   }, [workoutLogs]);
 
   useEffect(() => {
-    // When selected lift changes, calculate and set the status
     if (!selectedLift || !workoutLogs) {
       setProgressionStatus(null);
       return;
@@ -761,7 +760,7 @@ export default function AnalysisPage() {
         setProgressionStatus("Excellent");
     } else if (e1rmPercentChange > 0) {
         setProgressionStatus("Good");
-    } else if (e1rmPercentChange <= 0 && recentStagnation) {
+    } else if (e1rmChange < 0 && recentStagnation) {
         setProgressionStatus("Regressing");
     } else {
         setProgressionStatus("Stagnated");
@@ -1132,7 +1131,7 @@ export default function AnalysisPage() {
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
                            {progressionStatus && (
-                             <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2">
+                             <div className="text-sm text-muted-foreground mt-1">
                                Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
                              </div>
                            )}
@@ -1232,3 +1231,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
