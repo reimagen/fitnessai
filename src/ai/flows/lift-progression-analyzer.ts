@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { subWeeks, isAfter, startOfWeek, endOfWeek, eachWeekOfInterval, format } from 'date-fns';
+import { subWeeks, isAfter, startOfWeek, eachWeekOfInterval, format } from 'date-fns';
 
 // --- Helper Functions for Trend Calculation ---
 
@@ -98,32 +98,59 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     });
 
     let precomputedSummary = "Weekly Performance Data:\n";
-    let trendDirection = 0;
-    let lastE1RM = 0;
+    const activeWeeksData: { week: string; avgE1RM: number; totalVolume: number }[] = [];
 
     Object.entries(weeklyData).forEach(([week, data]) => {
         if (data.e1RMs.length > 0) {
             const avgE1RM = data.e1RMs.reduce((a, b) => a + b, 0) / data.e1RMs.length;
             const totalVolume = data.volumes.reduce((a, b) => a + b, 0);
-
-            if (lastE1RM > 0) {
-                trendDirection += (avgE1RM - lastE1RM);
-            }
-            lastE1RM = avgE1RM;
-            
+            activeWeeksData.push({ week, avgE1RM, totalVolume });
             precomputedSummary += `- Week of ${week}: Avg e1RM = ${avgE1RM.toFixed(1)}, Total Volume = ${totalVolume.toFixed(0)}\n`;
         }
     });
     
-    const overallTrend = trendDirection > 0 ? "Positive" : trendDirection < 0 ? "Negative" : "Stagnated";
-    precomputedSummary += `\nOverall e1RM Trend Direction: ${overallTrend}`;
+    let overallTrend = "Data insufficient to determine trend.";
+    if (activeWeeksData.length >= 2) {
+        const firstWeek = activeWeeksData[0];
+        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
+        
+        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
+        const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+        
+        // Check for recent stagnation (last 2 weeks)
+        let recentStagnation = false;
+        if (activeWeeksData.length >= 3) {
+            const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
+            const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
+            const week_n2 = activeWeeksData[activeWeeksData.length - 3].avgE1RM;
+            if (week_n <= week_n1 && week_n1 <= week_n2) {
+                recentStagnation = true;
+            }
+        } else if (activeWeeksData.length === 2) {
+            if (lastWeek.avgE1RM <= firstWeek.avgE1RM) {
+                recentStagnation = true;
+            }
+        }
+
+        if (e1rmPercentChange > 5 && !recentStagnation) {
+            overallTrend = `Positive (${e1rmPercentChange.toFixed(0)}% increase).`;
+        } else if (e1rmPercentChange > 0) {
+            overallTrend = `Slightly Positive, but has plateaued in the last 2-3 weeks.`;
+        } else if (e1rmPercentChange <= 0 && recentStagnation) {
+            overallTrend = `Stagnated or Regressing.`;
+        } else {
+            overallTrend = `Stagnated.`;
+        }
+    }
+    
+    precomputedSummary += `\nOverall e1RM Trend Analysis: ${overallTrend}`;
 
 
     // --- AI Prompting Step ---
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or invent data.** Base your entire analysis on the weekly summary provided below.
+        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or invent data.** Base your entire analysis on the weekly summary and trend analysis provided below.
 
         **User Context:**
         {{{userProfileContext}}}
@@ -134,12 +161,12 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         {{{precomputedSummary}}}
 
         **Your Task:**
-        Based *only* on the week-by-week data summary above, provide a JSON response with the following fields:
-        1.  **progressionStatus**: Classify the user's progress.
-            - "Excellent": e1RM shows a strong and consistent positive trend. Volume is either increasing or stable to support this.
-            - "Good": e1RM trend is generally positive but may have some flat weeks. Volume is being maintained or has slight fluctuations.
-            - "Stagnated": e1RM has remained flat or fluctuated without a clear upward trend for the last 2-3 weeks. Volume might be inconsistent or dropping.
-            - "Regressing": e1RM shows a clear negative trend over the last few weeks.
+        Based *only* on the data summary and the final 'Overall e1RM Trend Analysis' line above, provide a JSON response with the following fields:
+        1.  **progressionStatus**: Classify the user's progress based on the 'Overall e1RM Trend Analysis'.
+            - "Excellent": Trend shows a strong and consistent positive increase.
+            - "Good": Trend is generally positive but may have some flat weeks or a recent plateau.
+            - "Stagnated": Trend analysis indicates stagnation, a plateau, or slight regression.
+            - "Regressing": Trend analysis explicitly shows regression.
         2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean. Reference specific changes in e1RM and volume from the weekly data. **DO NOT invent numbers like "2250 lbs"; refer to the actual data provided.** For example, "Your strength (e1RM) has steadily climbed over the past few weeks, though your volume has varied, indicating you are getting stronger even with different workloads."
         3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks of training for this specific lift. It must be a direct suggestion to improve upon the insight.
         `,
