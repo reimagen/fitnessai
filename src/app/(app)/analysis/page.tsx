@@ -693,13 +693,84 @@ export default function AnalysisPage() {
   }, [workoutLogs]);
 
   useEffect(() => {
-    // When selected lift changes, clear the old status
-    setProgressionStatus(null);
-  }, [selectedLift]);
+    // When selected lift changes, calculate and set the status
+    if (!selectedLift || !workoutLogs) {
+      setProgressionStatus(null);
+      return;
+    }
+
+    const sixWeeksAgo = subWeeks(new Date(), 6);
+    const liftHistory = workoutLogs
+      .filter(log => isAfter(log.date, sixWeeksAgo))
+      .flatMap(log =>
+        log.exercises
+          .filter(ex => ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets)
+          .map(ex => ({ date: log.date, e1RM: calculateE1RM(ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight, ex.reps) }))
+      );
+      
+    if (liftHistory.length < 2) {
+      setProgressionStatus(null);
+      return;
+    }
+
+    const weeklyData: Record<string, { e1RMs: number[] }> = {};
+    const weeks = eachWeekOfInterval({ start: sixWeeksAgo, end: new Date() }, { weekStartsOn: 1 });
+
+    for (const weekStart of weeks) {
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        weeklyData[weekKey] = { e1RMs: [] };
+    }
+
+    liftHistory.forEach(entry => {
+        const weekStart = startOfWeek(entry.date, { weekStartsOn: 1 });
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        if (weeklyData[weekKey]) {
+            weeklyData[weekKey].e1RMs.push(entry.e1RM);
+        }
+    });
+
+    const activeWeeksData: { week: string; avgE1RM: number }[] = [];
+    Object.entries(weeklyData).forEach(([week, data]) => {
+        if (data.e1RMs.length > 0 && data.e1RMs.some(e => e > 0)) {
+            const validE1RMs = data.e1RMs.filter(e => e > 0);
+            const avgE1RM = validE1RMs.reduce((a, b) => a + b, 0) / validE1RMs.length;
+            activeWeeksData.push({ week, avgE1RM });
+        }
+    });
+    
+    if (activeWeeksData.length < 2) {
+        setProgressionStatus(null);
+        return;
+    }
+    
+    const firstWeek = activeWeeksData[0];
+    const lastWeek = activeWeeksData[activeWeeksData.length - 1];
+    const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
+    const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+
+    let recentStagnation = false;
+    if (activeWeeksData.length >= 2) {
+        const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
+        const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
+        if (week_n <= week_n1) {
+            recentStagnation = true;
+        }
+    }
+    
+    if (e1rmPercentChange > 5 && !recentStagnation) {
+        setProgressionStatus("Excellent");
+    } else if (e1rmPercentChange > 0) {
+        setProgressionStatus("Good");
+    } else if (e1rmPercentChange <= 0 && recentStagnation) {
+        setProgressionStatus("Regressing");
+    } else {
+        setProgressionStatus("Stagnated");
+    }
+
+  }, [selectedLift, workoutLogs]);
 
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) {
-        setProgressionStatus(null);
         return [];
     };
 
@@ -759,60 +830,6 @@ export default function AnalysisPage() {
             });
         }
     }
-    
-    // --- Client-side status calculation ---
-    const weeklyData: Record<string, { e1RMs: number[] }> = {};
-    const weeks = eachWeekOfInterval({ start: sixWeeksAgo, end: new Date() }, { weekStartsOn: 1 });
-
-    for (const weekStart of weeks) {
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        weeklyData[weekKey] = { e1RMs: [] };
-    }
-
-    liftHistory.forEach(entry => {
-        const weekStart = startOfWeek(entry.date, { weekStartsOn: 1 });
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        if (weeklyData[weekKey]) {
-            weeklyData[weekKey].e1RMs.push(entry.e1RM);
-        }
-    });
-
-    const activeWeeksData: { week: string; avgE1RM: number }[] = [];
-    Object.entries(weeklyData).forEach(([week, data]) => {
-        if (data.e1RMs.length > 0) {
-            const avgE1RM = data.e1RMs.reduce((a, b) => a + b, 0) / data.e1RMs.length;
-            activeWeeksData.push({ week, avgE1RM });
-        }
-    });
-
-    if (activeWeeksData.length < 2) {
-        setProgressionStatus(null); // Not enough data
-    } else {
-        const firstWeek = activeWeeksData[0];
-        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
-        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
-        const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
-
-        let recentStagnation = false;
-        if (activeWeeksData.length >= 2) {
-            const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
-            const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
-            if (week_n <= week_n1) {
-                recentStagnation = true;
-            }
-        }
-        
-        if (e1rmPercentChange > 5 && !recentStagnation) {
-            setProgressionStatus("Excellent");
-        } else if (e1rmPercentChange > 0) {
-            setProgressionStatus("Good");
-        } else if (e1rmPercentChange <= 0 && recentStagnation) {
-            setProgressionStatus("Regressing");
-        } else {
-            setProgressionStatus("Stagnated");
-        }
-    }
-    // --- End status calculation ---
 
     return Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
