@@ -1,7 +1,8 @@
 
+      
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ const chartConfig = {
   other: { label: "Other", color: "hsl(var(--chart-6))" },
   value: { label: "Value", color: "hsl(var(--accent))" },
   e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
+  volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -620,29 +622,37 @@ export default function AnalysisPage() {
 
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) return [];
-    
+
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    const liftHistory = [];
+    const liftHistory: { [dateKey: string]: { date: Date; e1RM: number; volume: number } } = {};
 
     for (const log of workoutLogs) {
       if (isAfter(log.date, sixWeeksAgo)) {
         for (const ex of log.exercises) {
-          if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps) {
+          if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
             const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
-            liftHistory.push({
-              date: log.date,
-              e1RM: calculateE1RM(weightInLbs, ex.reps),
-            });
+            const dateKey = format(log.date, 'yyyy-MM-dd');
+            
+            if (!liftHistory[dateKey]) {
+                liftHistory[dateKey] = { date: log.date, e1RM: 0, volume: 0 };
+            }
+
+            const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
+            if (currentE1RM > liftHistory[dateKey].e1RM) {
+                liftHistory[dateKey].e1RM = currentE1RM;
+            }
+            liftHistory[dateKey].volume += weightInLbs * ex.sets * ex.reps;
           }
         }
       }
     }
-    
-    return liftHistory
+
+    return Object.values(liftHistory)
       .sort((a, b) => a.date.getTime() - b.date.getTime())
       .map(item => ({
         name: format(item.date, 'MMM d'),
         e1RM: Math.round(item.e1RM),
+        volume: Math.round(item.volume),
       }));
   }, [selectedLift, workoutLogs]);
 
@@ -897,7 +907,7 @@ export default function AnalysisPage() {
             <Card className="shadow-lg lg:col-span-6">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" />Lift Progression Analysis</CardTitle>
-                <CardDescription>Select a frequently logged lift to analyze your progressive overload over the last 6 weeks.</CardDescription>
+                <CardDescription>Select a frequently logged lift to analyze your strength (e1RM) and volume trends over the last 6 weeks.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -919,16 +929,19 @@ export default function AnalysisPage() {
 
                 {selectedLift && progressionChartData.length > 1 && (
                     <div className="pt-4">
-                        <h4 className="font-semibold capitalize mb-2 text-center text-sm">{selectedLift} - Estimated 1-Rep Max Trend (Last 6 Weeks)</h4>
-                         <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                        <h4 className="font-semibold capitalize mb-2 text-center text-sm">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
+                         <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
-                                <LineChart data={progressionChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                <ComposedChart data={progressionChartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
+                                    <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
+                                    <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }} />
                                     <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                    <Line type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
-                                </LineChart>
+                                    <Legend />
+                                    <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={4} />
+                                    <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
+                                </ComposedChart>
                             </ResponsiveContainer>
                         </ChartContainer>
                     </div>
@@ -1012,3 +1025,5 @@ export default function AnalysisPage() {
     </div>
   );
 }
+
+    
