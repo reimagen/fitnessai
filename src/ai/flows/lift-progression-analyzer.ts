@@ -66,14 +66,14 @@ const ExerciseHistoryEntrySchema = z.object({
   reps: z.number().describe("The number of reps performed per set."),
 });
 
-export const AnalyzeLiftProgressionInputSchema = z.object({
+const AnalyzeLiftProgressionInputSchema = z.object({
   exerciseName: z.string().describe("The name of the exercise to be analyzed."),
   exerciseHistory: z.array(ExerciseHistoryEntrySchema).describe("An array of all logged performances for this exercise from the trailing 6 weeks."),
   userProfileContext: z.string().describe("A summary of the user's experience level and primary fitness goal."),
 });
 export type AnalyzeLiftProgressionInput = z.infer<typeof AnalyzeLiftProgressionInputSchema>;
 
-export const AnalyzeLiftProgressionOutputSchema = z.object({
+const AnalyzeLiftProgressionOutputSchema = z.object({
   progressionStatus: z.enum(["Excellent", "Good", "Stagnated", "Regressing"]).describe("The overall status of the user's progression for this lift."),
   insight: z.string().describe("A concise (1-2 sentence) explanation of the trend, combining e1RM and volume analysis."),
   recommendation: z.string().describe("A single, actionable piece of advice to help the user improve their progression."),
