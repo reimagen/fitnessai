@@ -2,7 +2,7 @@
       
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart, Scatter, ReferenceDot } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart, Scatter, ReferenceLine } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,6 +60,7 @@ const chartConfig = {
   e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
   actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
+  trend: { label: "Trend", color: "hsl(var(--muted-foreground))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -213,17 +214,27 @@ const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
 
+    // Add a dummy entry for the trendline if it exists on the chart
+    const finalPayload = [
+        ...payload,
+        { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
+    ];
+
+
     return (
         <div className="flex items-center justify-center gap-4 text-xs mt-2">
-            {payload.map((entry: any, index: number) => {
+            {finalPayload.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
                 const isLine = entry.dataKey === 'e1RM';
+                const isTrend = entry.dataKey === 'trend';
 
                 return (
                     <div key={`item-${index}`} className="flex items-center gap-1.5">
                         {entry.dataKey === 'actualPR' ? (
                             <Trophy className="h-4 w-4 text-yellow-500" />
+                        ) : isTrend ? (
+                             <span className="w-4 h-px border-t-2 border-dashed" style={{ borderColor: entry.color }} />
                         ) : (
                             <span
                                 className={`h-2.5 w-2.5 shrink-0 ${isLine ? 'rounded-full' : 'rounded-[2px]'}`}
@@ -699,19 +710,7 @@ export default function AnalysisPage() {
     }
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    const liftHistory = workoutLogs
-      .filter(log => isAfter(log.date, sixWeeksAgo))
-      .flatMap(log =>
-        log.exercises
-          .filter(ex => ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets)
-          .map(ex => ({ date: log.date, e1RM: calculateE1RM(ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight, ex.reps) }))
-      );
-      
-    if (liftHistory.length < 2) {
-      setProgressionStatus(null);
-      return;
-    }
-
+    
     const weeklyData: Record<string, { e1RMs: number[] }> = {};
     const weeks = eachWeekOfInterval({ start: sixWeeksAgo, end: new Date() }, { weekStartsOn: 1 });
 
@@ -719,8 +718,15 @@ export default function AnalysisPage() {
         const weekKey = format(weekStart, 'yyyy-MM-dd');
         weeklyData[weekKey] = { e1RMs: [] };
     }
-
-    liftHistory.forEach(entry => {
+    
+    workoutLogs
+      .filter(log => isAfter(log.date, sixWeeksAgo))
+      .flatMap(log =>
+        log.exercises
+          .filter(ex => ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets)
+          .map(ex => ({ date: log.date, e1RM: calculateE1RM(ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight, ex.reps) }))
+      )
+      .forEach(entry => {
         const weekStart = startOfWeek(entry.date, { weekStartsOn: 1 });
         const weekKey = format(weekStart, 'yyyy-MM-dd');
         if (weeklyData[weekKey]) {
@@ -746,12 +752,16 @@ export default function AnalysisPage() {
     if (activeWeeksData.length >= 4) {
         const firstTwoAvg = (activeWeeksData[0].avgE1RM + activeWeeksData[1].avgE1RM) / 2;
         const lastTwoAvg = (activeWeeksData[activeWeeksData.length - 1].avgE1RM + activeWeeksData[activeWeeksData.length - 2].avgE1RM) / 2;
-        e1rmPercentChange = (lastTwoAvg - firstTwoAvg) / firstTwoAvg * 100;
+        if(firstTwoAvg > 0) {
+            e1rmPercentChange = (lastTwoAvg - firstTwoAvg) / firstTwoAvg * 100;
+        }
     } else { // Fallback for 2 or 3 weeks of data
         const firstWeek = activeWeeksData[0];
         const lastWeek = activeWeeksData[activeWeeksData.length - 1];
-        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
-        e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+        if (firstWeek.avgE1RM > 0) {
+            const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
+            e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+        }
     }
 
 
@@ -773,7 +783,7 @@ export default function AnalysisPage() {
         setProgressionStatus("Excellent");
     } else if (e1rmPercentChange > 0) {
         setProgressionStatus("Good");
-    } else if (e1rmPercentChange < 0 && recentStagnation) {
+    } else if (e1rmPercentChange <= 0 && recentStagnation) {
         setProgressionStatus("Regressing");
     } else {
         setProgressionStatus("Stagnated");
@@ -783,7 +793,7 @@ export default function AnalysisPage() {
 
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) {
-        return [];
+        return { chartData: [], trendlineData: null };
     };
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
@@ -842,8 +852,8 @@ export default function AnalysisPage() {
             });
         }
     }
-
-    return Array.from(liftHistory.values())
+    
+    const chartData = Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(item => ({
             name: format(item.date, 'MMM d'),
@@ -852,6 +862,34 @@ export default function AnalysisPage() {
             actualPR: item.actualPR ? Math.round(item.actualPR) : undefined,
             isActualPR: item.isActualPR || false,
         }));
+        
+    // --- Trendline Calculation ---
+    let trendlineData = null;
+    const points = chartData.map((d, i) => ({ x: i, y: d.e1RM })).filter(p => p.y > 0);
+    if (points.length >= 2) {
+        const { x_mean, y_mean } = points.reduce((acc, p) => ({ x_mean: acc.x_mean + p.x, y_mean: acc.y_mean + p.y }), { x_mean: 0, y_mean: 0 });
+        const n = points.length;
+        const xMean = x_mean / n;
+        const yMean = y_mean / n;
+
+        const numerator = points.reduce((acc, p) => acc + (p.x - xMean) * (p.y - yMean), 0);
+        const denominator = points.reduce((acc, p) => acc + (p.x - xMean) ** 2, 0);
+
+        if(denominator > 0) {
+            const slope = numerator / denominator;
+            const intercept = yMean - slope * xMean;
+
+            const startY = slope * 0 + intercept;
+            const endY = slope * (chartData.length - 1) + intercept;
+            
+            trendlineData = {
+                start: { x: chartData[0].name, y: startY },
+                end: { x: chartData[chartData.length - 1].name, y: endY },
+            };
+        }
+    }
+    
+    return { chartData, trendlineData };
 }, [selectedLift, workoutLogs, personalRecords]);
 
 
@@ -1139,11 +1177,11 @@ export default function AnalysisPage() {
                     </Button>
                 </div>
 
-                {selectedLift && progressionChartData.length > 1 && (
+                {selectedLift && progressionChartData.chartData.length > 1 && (
                     <div className="pt-4">
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                           {progressionStatus && (
+                            {progressionStatus && (
                              <div className="text-sm text-muted-foreground mt-1">
                                Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
                              </div>
@@ -1151,7 +1189,7 @@ export default function AnalysisPage() {
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
-                                <ComposedChart data={progressionChartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+                                <ComposedChart data={progressionChartData.chartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                                     <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
@@ -1161,6 +1199,15 @@ export default function AnalysisPage() {
                                     <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
                                     <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
                                     <Scatter yAxisId="left" dataKey="actualPR" fill="var(--color-actualPR)" shape={<TrophyShape />} />
+                                    {progressionChartData.trendlineData && (
+                                        <ReferenceLine
+                                            yAxisId="left"
+                                            segment={[progressionChartData.trendlineData.start, progressionChartData.trendlineData.end]}
+                                            stroke="hsl(var(--muted-foreground))"
+                                            strokeDasharray="3 3"
+                                            strokeWidth={2}
+                                        />
+                                    )}
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -1246,3 +1293,4 @@ export default function AnalysisPage() {
 }
 
     
+
