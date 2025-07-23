@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { subWeeks, isAfter } from 'date-fns';
+import { subWeeks, isAfter, startOfWeek, endOfWeek, eachWeekOfInterval, format } from 'date-fns';
 
 // --- Helper Functions for Trend Calculation ---
 
@@ -25,37 +25,6 @@ function calculateE1RM(weight: number, reps: number): number {
   if (reps === 0) return 0;
   return weight * (1 + reps / 30);
 }
-
-/**
- * Performs a simple linear regression on a series of data points over time.
- * @param data An array of objects with a 'value' and 'time' (in milliseconds).
- * @returns 'Positive', 'Negative', or 'Stagnated' trend.
- */
-function calculateTrend(data: { value: number; time: number }[]): 'Positive' | 'Negative' | 'Stagnated' {
-  if (data.length < 2) {
-    return 'Stagnated';
-  }
-
-  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-  const n = data.length;
-
-  for (const point of data) {
-    sumX += point.time;
-    sumY += point.value;
-    sumXY += point.time * point.value;
-    sumXX += point.time * point.time;
-  }
-
-  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  
-  // A very small slope is effectively flat. We'll consider a change of less than 0.1% of the average value as stagnated.
-  const avgValue = sumY / n;
-  const tolerance = Math.abs(avgValue * 0.001);
-
-  if (Math.abs(slope) < tolerance) return 'Stagnated';
-  return slope > 0 ? 'Positive' : 'Negative';
-}
-
 
 // --- Zod Schemas and Types ---
 
@@ -107,34 +76,54 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         throw new Error("Not enough data within the last 6 weeks to perform a meaningful trend analysis.");
     }
     
-    const e1rmData = recentHistory.map(h => ({
-        value: calculateE1RM(h.weight, h.reps),
-        time: h.date.getTime(),
-    }));
+    const weeklyData: Record<string, { e1RMs: number[]; volumes: number[] }> = {};
+    const weeks = eachWeekOfInterval(
+        { start: sixWeeksAgo, end: new Date() },
+        { weekStartsOn: 1 } // Monday
+    );
 
-    const volumeData = recentHistory.map(h => ({
-        value: h.sets * h.reps * h.weight,
-        time: h.date.getTime(),
-    }));
+    for (const weekStart of weeks) {
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        weeklyData[weekKey] = { e1RMs: [], volumes: [] };
+    }
 
-    const e1rmTrend = calculateTrend(e1rmData);
-    const volumeTrend = calculateTrend(volumeData);
+    recentHistory.forEach(h => {
+        const weekStart = startOfWeek(h.date, { weekStartsOn: 1 });
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        
+        if (weeklyData[weekKey]) {
+            weeklyData[weekKey].e1RMs.push(calculateE1RM(h.weight, h.reps));
+            weeklyData[weekKey].volumes.push(h.sets * h.reps * h.weight);
+        }
+    });
 
-    const latestE1RM = e1rmData[e1rmData.length - 1].value.toFixed(1);
-    const latestVolume = volumeData[volumeData.length - 1].value.toFixed(0);
+    let precomputedSummary = "Weekly Performance Data:\n";
+    let trendDirection = 0;
+    let lastE1RM = 0;
 
-    const precomputedSummary = `
-      - e1RM Trend: ${e1rmTrend}
-      - Volume Trend: ${volumeTrend}
-      - Most Recent Estimated 1-Rep Max: ${latestE1RM}
-      - Most Recent Session Volume: ${latestVolume}
-    `;
+    Object.entries(weeklyData).forEach(([week, data]) => {
+        if (data.e1RMs.length > 0) {
+            const avgE1RM = data.e1RMs.reduce((a, b) => a + b, 0) / data.e1RMs.length;
+            const totalVolume = data.volumes.reduce((a, b) => a + b, 0);
+
+            if (lastE1RM > 0) {
+                trendDirection += (avgE1RM - lastE1RM);
+            }
+            lastE1RM = avgE1RM;
+            
+            precomputedSummary += `- Week of ${week}: Avg e1RM = ${avgE1RM.toFixed(1)}, Total Volume = ${totalVolume.toFixed(0)}\n`;
+        }
+    });
+    
+    const overallTrend = trendDirection > 0 ? "Positive" : trendDirection < 0 ? "Negative" : "Stagnated";
+    precomputedSummary += `\nOverall e1RM Trend Direction: ${overallTrend}`;
+
 
     // --- AI Prompting Step ---
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations.** Base your entire analysis on the summary provided.
+        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or invent data.** Base your entire analysis on the weekly summary provided below.
 
         **User Context:**
         {{{userProfileContext}}}
@@ -145,13 +134,13 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         {{{precomputedSummary}}}
 
         **Your Task:**
-        Based *only* on the data above, provide a JSON response with the following fields:
+        Based *only* on the week-by-week data summary above, provide a JSON response with the following fields:
         1.  **progressionStatus**: Classify the user's progress.
-            - "Excellent": Both e1RM and Volume have a strong Positive trend.
-            - "Good": e1RM is Positive, but Volume may be Stagnated. Or, Volume is positive but e1RM is Stagnated. This is solid progress but can be optimized.
-            - "Stagnated": Both trends are Stagnated, or one is Positive and the other is Negative (indicating inefficient training).
-            - "Regressing": e1RM trend is Negative, regardless of volume.
-        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean in relation to the user's goal. Combine the e1RM and volume trends into a single narrative.
+            - "Excellent": e1RM shows a strong and consistent positive trend. Volume is either increasing or stable to support this.
+            - "Good": e1RM trend is generally positive but may have some flat weeks. Volume is being maintained or has slight fluctuations.
+            - "Stagnated": e1RM has remained flat or fluctuated without a clear upward trend for the last 2-3 weeks. Volume might be inconsistent or dropping.
+            - "Regressing": e1RM shows a clear negative trend over the last few weeks.
+        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean. Reference specific changes in e1RM and volume from the weekly data. **DO NOT invent numbers like "2250 lbs"; refer to the actual data provided.** For example, "Your strength (e1RM) has steadily climbed over the past few weeks, though your volume has varied, indicating you are getting stronger even with different workloads."
         3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks of training for this specific lift. It must be a direct suggestion to improve upon the insight.
         `,
     });
