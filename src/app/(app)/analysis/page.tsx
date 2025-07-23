@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -218,6 +218,7 @@ const ProgressionChartLegend = (props: any) => {
             {payload.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
+                const isLine = entry.dataKey === 'e1RM';
 
                 return (
                     <div key={`item-${index}`} className="flex items-center gap-1.5">
@@ -225,7 +226,7 @@ const ProgressionChartLegend = (props: any) => {
                             <Trophy className="h-4 w-4 text-yellow-500" />
                         ) : (
                             <span
-                                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                className={`h-2.5 w-2.5 shrink-0 ${isLine ? 'rounded-full' : 'rounded-[2px]'}`}
                                 style={{ backgroundColor: entry.color }}
                             />
                         )}
@@ -697,37 +698,41 @@ export default function AnalysisPage() {
     const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number; actualPR?: number; isActualPR?: boolean; }>();
 
     // 1. Iterate through workout logs to calculate e1RM and Volume
-    for (const log of workoutLogs) {
-        if (!isAfter(log.date, sixWeeksAgo)) continue;
-        const dateKey = format(log.date, 'yyyy-MM-dd');
+    workoutLogs.forEach(log => {
+      if (!isAfter(log.date, sixWeeksAgo)) return;
 
-        for (const ex of log.exercises) {
-            if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
-                const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
-                const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
-                const currentVolume = weightInLbs * ex.sets * ex.reps;
-                
-                const existingEntry = liftHistory.get(dateKey);
-                if (existingEntry) {
-                    existingEntry.volume += currentVolume;
-                    if (currentE1RM > existingEntry.e1RM) {
-                        existingEntry.e1RM = currentE1RM;
-                    }
-                } else {
-                    liftHistory.set(dateKey, {
-                        date: log.date,
-                        e1RM: currentE1RM,
-                        volume: currentVolume,
-                    });
-                }
+      log.exercises.forEach(ex => {
+        if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
+          const dateKey = format(log.date, 'yyyy-MM-dd');
+          const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
+          const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
+          const currentVolume = weightInLbs * ex.sets * ex.reps;
+          
+          const existingEntry = liftHistory.get(dateKey);
+          if (existingEntry) {
+            existingEntry.volume += currentVolume;
+            if (currentE1RM > existingEntry.e1RM) {
+              existingEntry.e1RM = currentE1RM;
             }
+          } else {
+            liftHistory.set(dateKey, {
+              date: log.date,
+              e1RM: currentE1RM,
+              volume: currentVolume,
+            });
+          }
         }
-    }
+      });
+    });
     
     // 2. Find the best PR and merge it into the history map
     const bestPR = personalRecords
         ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
-        .reduce((max, pr) => pr.weight > max.weight ? pr : max, { weight: 0, date: new Date(0) } as PersonalRecord);
+        .reduce((max, pr) => {
+            const maxWeightLbs = max.weightUnit === 'kg' ? max.weight * 2.20462 : max.weight;
+            const prWeightLbs = pr.weightUnit === 'kg' ? pr.weight * 2.20462 : pr.weight;
+            return prWeightLbs > maxWeightLbs ? pr : max;
+        }, { weight: 0, date: new Date(0) } as PersonalRecord);
 
     if (bestPR && bestPR.weight > 0 && isAfter(bestPR.date, sixWeeksAgo)) {
         const prDateKey = format(bestPR.date, 'yyyy-MM-dd');
@@ -735,11 +740,9 @@ export default function AnalysisPage() {
         
         const existingEntry = liftHistory.get(prDateKey);
         if (existingEntry) {
-            // Merge PR info with existing workout data for that day
             existingEntry.actualPR = prWeightLbs;
             existingEntry.isActualPR = true;
         } else {
-            // Add a new entry if no workout was logged on the PR day
             liftHistory.set(prDateKey, {
                 date: bestPR.date,
                 e1RM: 0,
