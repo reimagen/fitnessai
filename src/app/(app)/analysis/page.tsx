@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay } from 'date-fns';
+import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay, eachWeekOfInterval } from 'date-fns';
 import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -247,6 +247,7 @@ export default function AnalysisPage() {
   const [selectedLift, setSelectedLift] = useState<string>('');
   const [isProgressionLoading, setIsProgressionLoading] = useState(false);
   const [latestProgressionAnalysis, setLatestProgressionAnalysis] = useState<Record<string, StoredLiftProgressionAnalysis>>({});
+  const [progressionStatus, setProgressionStatus] = useState<AnalyzeLiftProgressionOutput['progressionStatus'] | null>(null);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
@@ -691,13 +692,20 @@ export default function AnalysisPage() {
       .map(([name]) => name);
   }, [workoutLogs]);
 
+  useEffect(() => {
+    // When selected lift changes, clear the old status
+    setProgressionStatus(null);
+  }, [selectedLift]);
+
   const progressionChartData = useMemo(() => {
-    if (!selectedLift || !workoutLogs) return [];
+    if (!selectedLift || !workoutLogs) {
+        setProgressionStatus(null);
+        return [];
+    };
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number; actualPR?: number; isActualPR?: boolean; }>();
 
-    // 1. Iterate through workout logs to calculate e1RM and Volume
     workoutLogs.forEach(log => {
       if (!isAfter(log.date, sixWeeksAgo)) return;
 
@@ -725,7 +733,6 @@ export default function AnalysisPage() {
       });
     });
     
-    // 2. Find the best PR and merge it into the history map
     const bestPR = personalRecords
         ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
         .reduce((max, pr) => {
@@ -753,7 +760,60 @@ export default function AnalysisPage() {
         }
     }
     
-    // 3. Convert map to array, sort, and format
+    // --- Client-side status calculation ---
+    const weeklyData: Record<string, { e1RMs: number[] }> = {};
+    const weeks = eachWeekOfInterval({ start: sixWeeksAgo, end: new Date() }, { weekStartsOn: 1 });
+
+    for (const weekStart of weeks) {
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        weeklyData[weekKey] = { e1RMs: [] };
+    }
+
+    liftHistory.forEach(entry => {
+        const weekStart = startOfWeek(entry.date, { weekStartsOn: 1 });
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        if (weeklyData[weekKey]) {
+            weeklyData[weekKey].e1RMs.push(entry.e1RM);
+        }
+    });
+
+    const activeWeeksData: { week: string; avgE1RM: number }[] = [];
+    Object.entries(weeklyData).forEach(([week, data]) => {
+        if (data.e1RMs.length > 0) {
+            const avgE1RM = data.e1RMs.reduce((a, b) => a + b, 0) / data.e1RMs.length;
+            activeWeeksData.push({ week, avgE1RM });
+        }
+    });
+
+    if (activeWeeksData.length < 2) {
+        setProgressionStatus(null); // Not enough data
+    } else {
+        const firstWeek = activeWeeksData[0];
+        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
+        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
+        const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+
+        let recentStagnation = false;
+        if (activeWeeksData.length >= 2) {
+            const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
+            const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
+            if (week_n <= week_n1) {
+                recentStagnation = true;
+            }
+        }
+        
+        if (e1rmPercentChange > 5 && !recentStagnation) {
+            setProgressionStatus("Excellent");
+        } else if (e1rmPercentChange > 0) {
+            setProgressionStatus("Good");
+        } else if (e1rmPercentChange <= 0 && recentStagnation) {
+            setProgressionStatus("Regressing");
+        } else {
+            setProgressionStatus("Stagnated");
+        }
+    }
+    // --- End status calculation ---
+
     return Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(item => ({
@@ -842,6 +902,20 @@ export default function AnalysisPage() {
   
   const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
   const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
+
+  const getProgressionBadgeVariant = (status: typeof progressionStatus): 'default' | 'destructive' | 'secondary' => {
+      if (!status) return 'secondary';
+      switch(status) {
+          case 'Excellent':
+          case 'Good':
+              return 'default';
+          case 'Stagnated':
+          case 'Regressing':
+              return 'destructive';
+          default:
+              return 'secondary';
+      }
+  }
 
 
   return (
@@ -1038,7 +1112,12 @@ export default function AnalysisPage() {
 
                 {selectedLift && progressionChartData.length > 1 && (
                     <div className="pt-4">
-                        <h4 className="font-semibold capitalize mb-2 text-center text-sm">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
+                        <div className="flex items-center justify-center gap-2 mb-2 text-center text-sm">
+                          <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
+                          {progressionStatus && (
+                            <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
+                          )}
+                        </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
                                 <ComposedChart data={progressionChartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
@@ -1066,7 +1145,6 @@ export default function AnalysisPage() {
                         ) : progressionAnalysisToRender ? (
                             <div className="space-y-4">
                                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-                                    <Badge variant={progressionAnalysisToRender.result.progressionStatus === "Excellent" || progressionAnalysisToRender.result.progressionStatus === "Good" ? "default" : "destructive"}>{progressionAnalysisToRender.result.progressionStatus}</Badge>
                                     <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
                                 </div>
                                 <div>
