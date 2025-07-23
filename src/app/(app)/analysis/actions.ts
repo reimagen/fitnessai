@@ -61,12 +61,11 @@ export async function analyzeLiftProgressionAction(
       generatedDate: new Date(),
     };
 
-    // Save the analysis to the specific exercise key in the user's profile
+    // Save the analysis to the specific exercise key in the user's profile using dot notation
+    // This ensures we don't overwrite the entire map of analyses.
     const exerciseKey = values.exerciseName.trim().toLowerCase();
     await updateUserProfile({ 
-      liftProgressionAnalysis: {
-        [exerciseKey]: storedAnalysis
-      } 
+      [`liftProgressionAnalysis.${exerciseKey}`]: storedAnalysis 
     });
 
     return { success: true, data: analysisData };

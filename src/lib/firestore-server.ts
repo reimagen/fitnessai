@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 // --- Data Converters ---
@@ -89,6 +89,17 @@ const userProfileConverter = {
                 generatedDate: Timestamp.fromDate(profile.strengthAnalysis.generatedDate),
             };
         }
+        if (profile.liftProgressionAnalysis) {
+            const convertedAnalyses: { [key: string]: any } = {};
+            for (const key in profile.liftProgressionAnalysis) {
+                const analysis = profile.liftProgressionAnalysis[key];
+                convertedAnalyses[key] = {
+                    ...analysis,
+                    generatedDate: Timestamp.fromDate(analysis.generatedDate),
+                };
+            }
+            dataToStore.liftProgressionAnalysis = convertedAnalyses;
+        }
         return dataToStore;
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
@@ -102,10 +113,23 @@ const userProfileConverter = {
                 targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : undefined,
             })) : [];
         
-        const strengthAnalysis = data.strengthAnalysis && data.strengthAnalysis.generatedDate instanceof Timestamp ? {
+        const strengthAnalysis: StoredStrengthAnalysis | undefined = data.strengthAnalysis && data.strengthAnalysis.generatedDate instanceof Timestamp ? {
             ...data.strengthAnalysis,
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
+        
+        const liftProgressionAnalysis: { [key: string]: StoredLiftProgressionAnalysis } = {};
+        if (data.liftProgressionAnalysis) {
+            for (const key in data.liftProgressionAnalysis) {
+                const analysis = data.liftProgressionAnalysis[key];
+                if (analysis && analysis.generatedDate instanceof Timestamp) {
+                    liftProgressionAnalysis[key] = {
+                        ...analysis,
+                        generatedDate: analysis.generatedDate.toDate(),
+                    };
+                }
+            }
+        }
 
         return {
             id: snapshot.id,
@@ -114,6 +138,7 @@ const userProfileConverter = {
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,
             strengthAnalysis: strengthAnalysis,
+            liftProgressionAnalysis: liftProgressionAnalysis,
             age: data.age,
             gender: data.gender,
             heightValue: data.heightValue,
@@ -254,7 +279,19 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
             generatedDate: Timestamp.fromDate(profileData.strengthAnalysis.generatedDate),
         };
     }
+    
+    // Handle dot notation for nested map updates (like lift progression)
+    for (const key in dataToUpdate) {
+        if (key.startsWith('liftProgressionAnalysis.') && dataToUpdate[key]?.generatedDate) {
+            dataToUpdate[key].generatedDate = Timestamp.fromDate(dataToUpdate[key].generatedDate);
+        }
+    }
 
-    // Use setDoc with merge:true to be safe, it will update or create if not exists.
-    return await setDoc(profileDocRef, dataToUpdate, { merge: true });
+    // Use setDoc with merge:true for creating/updating, and updateDoc for partial updates
+    const docSnap = await getDoc(profileDocRef);
+    if (docSnap.exists()) {
+        return await updateDoc(profileDocRef, dataToUpdate);
+    } else {
+        return await setDoc(profileDocRef, dataToUpdate, { merge: true });
+    }
 };
