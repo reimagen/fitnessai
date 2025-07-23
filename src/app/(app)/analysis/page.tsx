@@ -191,24 +191,15 @@ const ProgressionTooltip = (props: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         
-        // Custom tooltip for the Actual PR point
-        if (data.isActualPR) {
-            return (
-                <div className="p-2 bg-background border rounded-md shadow-lg text-xs">
-                    <p className="font-bold text-yellow-500 flex items-center gap-1">
-                        <Trophy className="h-4 w-4" />
-                        Personal Record
-                    </p>
-                    <p className="text-muted-foreground">{data.name}</p>
-                    <p className="font-semibold">{data.actualPR} lbs</p>
-                </div>
-            );
-        }
-
-        // Default tooltip for other data points
         return (
-            <div className="p-2 bg-background border rounded-md shadow-lg text-xs">
-                <p className="font-bold">{data.name}</p>
+            <div className="p-2 bg-background border rounded-md shadow-lg text-xs space-y-1">
+                 <p className="font-bold">{data.name}</p>
+                {data.isActualPR && (
+                     <p className="font-bold text-yellow-500 flex items-center gap-1">
+                        <Trophy className="h-4 w-4" />
+                        Personal Record: {data.actualPR} lbs
+                    </p>
+                )}
                 {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM} lbs</p>}
                 {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume} lbs</p>}
             </div>
@@ -676,28 +667,9 @@ export default function AnalysisPage() {
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number; actualPR?: number; isActualPR?: boolean; }>();
 
-    // 1. Find the best PR for the selected lift
-    const bestPR = personalRecords
-        ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
-        .reduce((max, pr) => pr.weight > max.weight ? pr : max, { weight: 0, date: new Date(0) } as PersonalRecord);
-
-    // 2. If a PR exists within the 6-week window, add it to the map
-    if (bestPR && bestPR.weight > 0 && isAfter(bestPR.date, sixWeeksAgo)) {
-        const prDateKey = format(bestPR.date, 'yyyy-MM-dd');
-        const prWeightLbs = bestPR.weightUnit === 'kg' ? bestPR.weight * 2.20462 : bestPR.weight;
-        liftHistory.set(prDateKey, {
-            date: bestPR.date,
-            e1RM: 0,
-            volume: 0,
-            actualPR: prWeightLbs,
-            isActualPR: true,
-        });
-    }
-
-    // 3. Iterate through workout logs to calculate e1RM and Volume
+    // 1. Iterate through workout logs to calculate e1RM and Volume
     for (const log of workoutLogs) {
         if (!isAfter(log.date, sixWeeksAgo)) continue;
-
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         for (const ex of log.exercises) {
@@ -705,7 +677,7 @@ export default function AnalysisPage() {
                 const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
                 const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
                 const currentVolume = weightInLbs * ex.sets * ex.reps;
-
+                
                 const existingEntry = liftHistory.get(dateKey);
                 if (existingEntry) {
                     existingEntry.volume += currentVolume;
@@ -723,7 +695,33 @@ export default function AnalysisPage() {
         }
     }
     
-    // 4. Convert map to array, sort, and format
+    // 2. Find the best PR and merge it into the history map
+    const bestPR = personalRecords
+        ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
+        .reduce((max, pr) => pr.weight > max.weight ? pr : max, { weight: 0, date: new Date(0) } as PersonalRecord);
+
+    if (bestPR && bestPR.weight > 0 && isAfter(bestPR.date, sixWeeksAgo)) {
+        const prDateKey = format(bestPR.date, 'yyyy-MM-dd');
+        const prWeightLbs = bestPR.weightUnit === 'kg' ? bestPR.weight * 2.20462 : bestPR.weight;
+        
+        const existingEntry = liftHistory.get(prDateKey);
+        if (existingEntry) {
+            // Merge PR info with existing workout data for that day
+            existingEntry.actualPR = prWeightLbs;
+            existingEntry.isActualPR = true;
+        } else {
+            // Add a new entry if no workout was logged on the PR day
+            liftHistory.set(prDateKey, {
+                date: bestPR.date,
+                e1RM: 0,
+                volume: 0,
+                actualPR: prWeightLbs,
+                isActualPR: true,
+            });
+        }
+    }
+    
+    // 3. Convert map to array, sort, and format
     return Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(item => ({
