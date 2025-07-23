@@ -47,6 +47,14 @@ function findBestPr(records: PersonalRecord[], exerciseNames: string[]): Persona
     });
 }
 
+// Helper to convert a string to title case
+const toTitleCase = (str: string) => {
+  return str.replace(
+    /\w\S*/g,
+    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  );
+};
+
 
 const chartConfig = {
   distance: { label: "Distance (mi)", color: "hsl(var(--accent))" },
@@ -624,7 +632,7 @@ export default function AnalysisPage() {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
       else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
-      else interval = { start: startOfYear(today), end: endOfYear(today) };
+      else if (timeRange === 'yearly') interval = { start: startOfYear(today), end: endOfYear(today) };
       runsForPeriod = allRunningExercises.filter(run => isWithinInterval(run.date, interval));
     } else {
       runsForPeriod = allRunningExercises;
@@ -1142,10 +1150,14 @@ useEffect(() => {
               <CardContent className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Select value={selectedLift} onValueChange={setSelectedLift}>
-                        <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="Select an exercise..." /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-[250px]">
+                            <SelectValue placeholder="Select an exercise...">
+                                {selectedLift ? toTitleCase(selectedLift) : "Select an exercise..."}
+                            </SelectValue>
+                        </SelectTrigger>
                         <SelectContent>
                             {frequentlyLoggedLifts.length > 0 ? (
-                                frequentlyLoggedLifts.map(lift => <SelectItem key={lift} value={lift} className="capitalize">{lift}</SelectItem>)
+                                frequentlyLoggedLifts.map(lift => <SelectItem key={lift} value={lift}>{toTitleCase(lift)}</SelectItem>)
                             ) : (
                                 <SelectItem value="none" disabled>Log more workouts to analyze</SelectItem>
                             )}
@@ -1160,7 +1172,7 @@ useEffect(() => {
                 {selectedLift && progressionChartData.chartData.length > 1 && (
                     <div className="pt-4">
                         <div className="text-center mb-2">
-                           <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
+                           <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
                             {(progressionStatus || currentLiftLevel) && (
                                 <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
                                     {progressionStatus && (
