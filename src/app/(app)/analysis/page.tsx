@@ -744,74 +744,6 @@ export default function AnalysisPage() {
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
             <Card className="shadow-lg lg:col-span-6">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" />Lift Progression Analysis</CardTitle>
-                <CardDescription>Select a frequently logged lift to analyze your progressive overload over the last 6 weeks.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Select value={selectedLift} onValueChange={setSelectedLift}>
-                        <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="Select an exercise..." /></SelectTrigger>
-                        <SelectContent>
-                            {frequentlyLoggedLifts.length > 0 ? (
-                                frequentlyLoggedLifts.map(lift => <SelectItem key={lift} value={lift} className="capitalize">{lift}</SelectItem>)
-                            ) : (
-                                <SelectItem value="none" disabled>Log more workouts to analyze</SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
-                     <Button onClick={handleAnalyzeProgression} disabled={!selectedLift || isProgressionLoading} className="w-full sm:w-auto">
-                        {isProgressionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                        {showProgressionReanalyze ? "Re-analyze" : "Get AI Progression Analysis"}
-                    </Button>
-                </div>
-
-                {selectedLift && progressionChartData.length > 1 && (
-                    <div className="pt-4">
-                        <h4 className="font-semibold capitalize mb-2 text-center text-sm">{selectedLift} - Estimated 1-Rep Max Trend (Last 6 Weeks)</h4>
-                         <ChartContainer config={chartConfig} className="h-[200px] w-full">
-                            <ResponsiveContainer>
-                                <LineChart data={progressionChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
-                                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                    <Line type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
-                                </LineChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </div>
-                )}
-
-                 {(isProgressionLoading || progressionAnalysisToRender) && (
-                    <div className="pt-4 border-t">
-                        {isProgressionLoading ? (
-                            <div className="flex items-center justify-center text-muted-foreground p-4">
-                                <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
-                            </div>
-                        ) : progressionAnalysisToRender ? (
-                            <div className="space-y-4">
-                               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-                                    <Badge variant={progressionAnalysisToRender.result.progressionStatus === "Excellent" || progressionAnalysisToRender.result.progressionStatus === "Good" ? "default" : "destructive"}>{progressionAnalysisToRender.result.progressionStatus}</Badge>
-                                    <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
-                                </div>
-                            </div>
-                        ) : null}
-                    </div>
-                 )}
-
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex-grow">
@@ -888,7 +820,7 @@ export default function AnalysisPage() {
                                             </div>
                                             
                                             {(isAnalysisLoading && dataFinding.userRatio) || aiFinding || dataFinding.imbalanceFocus !== 'Balanced' || (dataFinding.lift1Level !== 'N/A' && dataFinding.lift1Level !== 'Elite') ? (
-                                                <div className="pt-4 mt-4 border-t">
+                                                <div className="pt-4 mt-auto border-t">
                                                     {isAnalysisLoading && dataFinding.userRatio ? (
                                                         <div className="flex items-center justify-center text-muted-foreground">
                                                             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
@@ -961,6 +893,75 @@ export default function AnalysisPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <Card className="shadow-lg lg:col-span-6">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" />Lift Progression Analysis</CardTitle>
+                <CardDescription>Select a frequently logged lift to analyze your progressive overload over the last 6 weeks.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-col sm:flex-row gap-4">
+                    <Select value={selectedLift} onValueChange={setSelectedLift}>
+                        <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="Select an exercise..." /></SelectTrigger>
+                        <SelectContent>
+                            {frequentlyLoggedLifts.length > 0 ? (
+                                frequentlyLoggedLifts.map(lift => <SelectItem key={lift} value={lift} className="capitalize">{lift}</SelectItem>)
+                            ) : (
+                                <SelectItem value="none" disabled>Log more workouts to analyze</SelectItem>
+                            )}
+                        </SelectContent>
+                    </Select>
+                     <Button onClick={handleAnalyzeProgression} disabled={!selectedLift || isProgressionLoading} className="w-full sm:w-auto">
+                        {isProgressionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                        {showProgressionReanalyze ? "Re-analyze" : "Get AI Progression Analysis"}
+                    </Button>
+                </div>
+
+                {selectedLift && progressionChartData.length > 1 && (
+                    <div className="pt-4">
+                        <h4 className="font-semibold capitalize mb-2 text-center text-sm">{selectedLift} - Estimated 1-Rep Max Trend (Last 6 Weeks)</h4>
+                         <ChartContainer config={chartConfig} className="h-[200px] w-full">
+                            <ResponsiveContainer>
+                                <LineChart data={progressionChartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
+                                    <YAxis domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
+                                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                    <Line type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    </div>
+                )}
+
+                 {(isProgressionLoading || progressionAnalysisToRender) && (
+                    <div className="pt-4 border-t">
+                        {isProgressionLoading ? (
+                            <div className="flex items-center justify-center text-muted-foreground p-4">
+                                <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
+                            </div>
+                        ) : progressionAnalysisToRender ? (
+                            <div className="space-y-4">
+                               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+                                    <Badge variant={progressionAnalysisToRender.result.progressionStatus === "Excellent" || progressionAnalysisToRender.result.progressionStatus === "Good" ? "default" : "destructive"}>{progressionAnalysisToRender.result.progressionStatus}</Badge>
+                                    <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
+                                </div>
+                            </div>
+                        ) : null}
+                    </div>
+                 )}
+
+              </CardContent>
+            </Card>
+
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
                     <CardTitle className="font-headline flex items-center gap-2"><Route className="h-6 w-6 text-accent" /> Running Progression</CardTitle>
