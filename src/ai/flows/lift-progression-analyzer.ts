@@ -150,35 +150,37 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to analyze pre-calculated workout data and provide a qualitative, insightful, and actionable assessment. **DO NOT perform any calculations or change the pre-determined progressionStatus.** Base your entire analysis on the data provided below.
+        prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations or change the pre-determined 'progressionStatus'.** Your entire analysis MUST be based on the pre-calculated data provided below.
 
         **User Context:**
         {{{userProfileContext}}}
         
         **Exercise Being Analyzed:** {{{exerciseName}}}
-        **User's Current Strength Level for this Lift:** {{{currentLevel}}}
         
         **Pre-Calculated Analysis:**
         - **Progression Status:** {{{progressionStatus}}}
         - **Trend Description:** {{{trendDescription}}}
+        - **User's Current Strength Level for this Lift:** {{{currentLevel}}}
         - **Weekly Data:**
           {{{precomputedSummary}}}
 
         **Your Task:**
-        Your output MUST be a JSON object. You will generate an 'insight' and a 'recommendation'. **You MUST use the provided 'Progression Status' as the final status in your output.**
+        Your output MUST be a JSON object containing an 'insight' and a 'recommendation'. **You MUST use the provided 'Progression Status' as the final status in your output.**
         
         **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
-        You MUST tailor your advice based on the user's **Current Strength Level**.
+        Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**. Do not mention any other level. For example, if the level is "Beginner", your insight MUST be framed for a beginner. If it is "Advanced", frame it for an advanced lifter.
+        
         1.  **For 'Beginner' or 'Intermediate' Lifts:**
-            - A "Good" or "Excellent" status is great; encourage consistency.
+            - A "Good" or "Excellent" status is great; encourage consistency and proper form.
             - A "Stagnated" or "Regressing" status is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
+        
         2.  **For 'Advanced' or 'Elite' Lifts:**
-            - A "Stagnated" status can be perfectly acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on other goals, rather than aggressively pushing for more weight.
+            - A "Stagnated" status is often acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on recovery, rather than aggressively pushing for more weight.
             - A "Regressing" status should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
         
         **Your Response Fields:**
         1.  **progressionStatus**: You MUST return the exact string provided in the "Progression Status" field above. Do not change it.
-        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, considering their strength level.
+        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, specifically for a lifter at the provided **'Current Strength Level'**.
         3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level and the trend.
         `,
     });
