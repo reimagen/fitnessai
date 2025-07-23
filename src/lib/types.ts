@@ -40,6 +40,17 @@ export interface StoredStrengthAnalysis {
   generatedDate: Date;
 }
 
+export interface AnalyzeLiftProgressionOutput {
+  progressionStatus: "Excellent" | "Good" | "Stagnated" | "Regressing";
+  insight: string;
+  recommendation: string;
+}
+
+export interface StoredLiftProgressionAnalysis {
+  result: AnalyzeLiftProgressionOutput;
+  generatedDate: Date;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -60,6 +71,9 @@ export interface UserProfile {
   experienceLevel?: ExperienceLevel;
   aiPreferencesNotes?: string; 
   strengthAnalysis?: StoredStrengthAnalysis;
+  liftProgressionAnalysis?: {
+    [exerciseName: string]: StoredLiftProgressionAnalysis;
+  };
 }
 
 export interface PersonalRecord {

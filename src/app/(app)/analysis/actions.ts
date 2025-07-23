@@ -2,8 +2,9 @@
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
+import { analyzeLiftProgression, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { updateUserProfile } from "@/lib/firestore-server";
-import type { StoredStrengthAnalysis } from "@/lib/types";
+import type { StoredStrengthAnalysis, StoredLiftProgressionAnalysis } from "@/lib/types";
 
 
 export async function analyzeStrengthAction(
@@ -38,6 +39,42 @@ export async function analyzeStrengthAction(
         } else {
             userFriendlyError = `Failed to analyze strength: ${error.message}`;
         }
+    }
+    return { success: false, error: userFriendlyError };
+  }
+}
+
+export async function analyzeLiftProgressionAction(
+  values: AnalyzeLiftProgressionInput
+): Promise<{ success: boolean; data?: AnalyzeLiftProgressionOutput; error?: string }> {
+  if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
+    const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
+    console.error("Missing API Key:", errorMessage);
+    return { success: false, error: errorMessage };
+  }
+
+  try {
+    const analysisData = await analyzeLiftProgression(values);
+
+    const storedAnalysis: StoredLiftProgressionAnalysis = {
+      result: analysisData,
+      generatedDate: new Date(),
+    };
+
+    // Save the analysis to the specific exercise key in the user's profile
+    const exerciseKey = values.exerciseName.trim().toLowerCase();
+    await updateUserProfile({ 
+      liftProgressionAnalysis: {
+        [exerciseKey]: storedAnalysis
+      } 
+    });
+
+    return { success: true, data: analysisData };
+  } catch (error) {
+    console.error("Error analyzing lift progression:", error);
+    let userFriendlyError = "An unknown error occurred while analyzing your lift progression.";
+    if (error instanceof Error) {
+        userFriendlyError = `Failed to analyze progression: ${error.message}`;
     }
     return { success: false, error: userFriendlyError };
   }
