@@ -2,7 +2,7 @@
       
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart, Scatter, ReferenceDot } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +59,7 @@ const chartConfig = {
   value: { label: "Value", color: "hsl(var(--accent))" },
   e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
+  actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -165,6 +166,55 @@ const calculateE1RM = (weight: number, reps: number): number => {
   if (reps === 1) return weight;
   if (reps === 0) return 0;
   return weight * (1 + reps / 30);
+};
+
+// Custom shape for the Scatter plot to render the Trophy icon
+const TrophyShape = (props: any) => {
+  const { cx, cy, payload } = props;
+  if (!payload.isActualPR) return null;
+  // Position the icon centered on the data point
+  return (
+    <g transform={`translate(${cx - 12}, ${cy - 12})`}>
+      <foreignObject x={0} y={0} width={24} height={24}>
+        <Trophy
+          className="h-6 w-6 text-yellow-500 fill-yellow-400 stroke-yellow-600"
+          strokeWidth={1.5}
+        />
+      </foreignObject>
+    </g>
+  );
+};
+
+// Custom Tooltip for progression chart
+const ProgressionTooltip = (props: any) => {
+    const { active, payload } = props;
+    if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        
+        // Custom tooltip for the Actual PR point
+        if (data.isActualPR) {
+            return (
+                <div className="p-2 bg-background border rounded-md shadow-lg text-xs">
+                    <p className="font-bold text-yellow-500 flex items-center gap-1">
+                        <Trophy className="h-4 w-4" />
+                        Personal Record
+                    </p>
+                    <p className="text-muted-foreground">{data.name}</p>
+                    <p className="font-semibold">{data.actualPR} lbs</p>
+                </div>
+            );
+        }
+
+        // Default tooltip for other data points
+        return (
+            <div className="p-2 bg-background border rounded-md shadow-lg text-xs">
+                <p className="font-bold">{data.name}</p>
+                {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM} lbs</p>}
+                {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume} lbs</p>}
+            </div>
+        );
+    }
+    return null;
 };
 
 export default function AnalysisPage() {
@@ -624,22 +674,38 @@ export default function AnalysisPage() {
     if (!selectedLift || !workoutLogs) return [];
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number }>();
+    const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number; actualPR?: number; isActualPR?: boolean; }>();
 
-    // Iterate through all logs within the 6-week window
+    // 1. Find the best PR for the selected lift
+    const bestPR = personalRecords
+        ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
+        .reduce((max, pr) => pr.weight > max.weight ? pr : max, { weight: 0, date: new Date(0) } as PersonalRecord);
+
+    // 2. If a PR exists within the 6-week window, add it to the map
+    if (bestPR && bestPR.weight > 0 && isAfter(bestPR.date, sixWeeksAgo)) {
+        const prDateKey = format(bestPR.date, 'yyyy-MM-dd');
+        const prWeightLbs = bestPR.weightUnit === 'kg' ? bestPR.weight * 2.20462 : bestPR.weight;
+        liftHistory.set(prDateKey, {
+            date: bestPR.date,
+            e1RM: 0,
+            volume: 0,
+            actualPR: prWeightLbs,
+            isActualPR: true,
+        });
+    }
+
+    // 3. Iterate through workout logs to calculate e1RM and Volume
     for (const log of workoutLogs) {
         if (!isAfter(log.date, sixWeeksAgo)) continue;
 
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         for (const ex of log.exercises) {
-            // Only consider the selected exercise
             if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
                 const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
                 const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
                 const currentVolume = weightInLbs * ex.sets * ex.reps;
 
-                // If a log for this day already exists, update it by adding volume and taking the max e1RM
                 const existingEntry = liftHistory.get(dateKey);
                 if (existingEntry) {
                     existingEntry.volume += currentVolume;
@@ -647,7 +713,6 @@ export default function AnalysisPage() {
                         existingEntry.e1RM = currentE1RM;
                     }
                 } else {
-                    // Otherwise, create a new entry for this day
                     liftHistory.set(dateKey, {
                         date: log.date,
                         e1RM: currentE1RM,
@@ -658,15 +723,17 @@ export default function AnalysisPage() {
         }
     }
     
-    // Convert map to array, sort, and format for the chart
+    // 4. Convert map to array, sort, and format
     return Array.from(liftHistory.values())
         .sort((a, b) => a.date.getTime() - b.date.getTime())
         .map(item => ({
             name: format(item.date, 'MMM d'),
             e1RM: Math.round(item.e1RM),
             volume: Math.round(item.volume),
+            actualPR: item.actualPR ? Math.round(item.actualPR) : undefined,
+            isActualPR: item.isActualPR || false,
         }));
-}, [selectedLift, workoutLogs]);
+}, [selectedLift, workoutLogs, personalRecords]);
 
 
   const handleAnalyzeProgression = async () => {
@@ -949,10 +1016,11 @@ export default function AnalysisPage() {
                                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
                                     <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
                                     <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }} />
-                                    <Tooltip content={<ChartTooltipContent indicator="dot" />} />
+                                    <Tooltip content={<ProgressionTooltip />} />
                                     <Legend />
                                     <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
                                     <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
+                                    <Scatter yAxisId="left" dataKey="actualPR" fill="var(--color-actualPR)" shape={<TrophyShape />} />
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </ChartContainer>
