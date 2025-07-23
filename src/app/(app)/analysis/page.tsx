@@ -259,6 +259,7 @@ export default function AnalysisPage() {
   const [isProgressionLoading, setIsProgressionLoading] = useState(false);
   const [latestProgressionAnalysis, setLatestProgressionAnalysis] = useState<Record<string, StoredLiftProgressionAnalysis>>({});
   const [progressionStatus, setProgressionStatus] = useState<AnalyzeLiftProgressionOutput['progressionStatus'] | null>(null);
+  const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
@@ -805,7 +806,17 @@ export default function AnalysisPage() {
 useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
         setProgressionStatus(null);
+        setCurrentLiftLevel(null);
         return;
+    }
+    
+    if (userProfile && personalRecords) {
+        const bestPRforLift = findBestPr(personalRecords, [selectedLift]);
+        if (bestPRforLift) {
+            setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
+        } else {
+            setCurrentLiftLevel(null);
+        }
     }
     
     const { chartData } = progressionChartData;
@@ -836,8 +847,6 @@ useEffect(() => {
         return;
     }
     
-    // Normalize slope to represent a percentage change relative to the start
-    // A slope of 1 means 1lb increase per session. (1 / firstE1RM) is the percentage.
     const normalizedSlope = (slope / firstE1RM) * 100;
     
     if (normalizedSlope > 5) {
@@ -850,7 +859,7 @@ useEffect(() => {
         setProgressionStatus("Stagnated");
     }
 
-}, [selectedLift, progressionChartData.chartData]);
+}, [selectedLift, progressionChartData.chartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
     if (!userProfile || !workoutLogs || !selectedLift) {
@@ -881,6 +890,7 @@ useEffect(() => {
       exerciseName: selectedLift,
       exerciseHistory,
       userProfileContext,
+      currentLevel: currentLiftLevel || undefined,
     });
     
     if (result.success && result.data) {
@@ -942,6 +952,17 @@ useEffect(() => {
               return 'secondary';
       }
   }
+  
+  const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
+    if (!level) return 'outline';
+    switch (level) {
+        case 'Beginner': return 'destructive';
+        case 'Intermediate': return 'secondary';
+        case 'Advanced': return 'default';
+        case 'Elite': return 'default'; // Or some other variant for elite, e.g., a custom gold one
+        default: return 'outline';
+    }
+  };
 
 
   return (
@@ -1140,10 +1161,19 @@ useEffect(() => {
                     <div className="pt-4">
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{selectedLift} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                            {progressionStatus && (
-                             <div className="text-sm text-muted-foreground mt-1">
-                               Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
-                             </div>
+                            {(progressionStatus || currentLiftLevel) && (
+                                <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
+                                    {progressionStatus && (
+                                        <span>
+                                            Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
+                                        </span>
+                                    )}
+                                    {currentLiftLevel && currentLiftLevel !== 'N/A' && (
+                                        <span>
+                                            Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
+                                        </span>
+                                    )}
+                                </div>
                            )}
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -1254,5 +1284,7 @@ useEffect(() => {
     
 
 
+
+    
 
     
