@@ -742,25 +742,38 @@ export default function AnalysisPage() {
         return;
     }
     
-    const firstWeek = activeWeeksData[0];
-    const lastWeek = activeWeeksData[activeWeeksData.length - 1];
-    const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
-    const e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+    let e1rmPercentChange = 0;
+    if (activeWeeksData.length >= 4) {
+        const firstTwoAvg = (activeWeeksData[0].avgE1RM + activeWeeksData[1].avgE1RM) / 2;
+        const lastTwoAvg = (activeWeeksData[activeWeeksData.length - 1].avgE1RM + activeWeeksData[activeWeeksData.length - 2].avgE1RM) / 2;
+        e1rmPercentChange = (lastTwoAvg - firstTwoAvg) / firstTwoAvg * 100;
+    } else { // Fallback for 2 or 3 weeks of data
+        const firstWeek = activeWeeksData[0];
+        const lastWeek = activeWeeksData[activeWeeksData.length - 1];
+        const e1rmChange = lastWeek.avgE1RM - firstWeek.avgE1RM;
+        e1rmPercentChange = (e1rmChange / firstWeek.avgE1RM) * 100;
+    }
+
 
     let recentStagnation = false;
-    if (activeWeeksData.length >= 2) {
+    if (activeWeeksData.length >= 3) {
         const week_n = activeWeeksData[activeWeeksData.length - 1].avgE1RM;
         const week_n1 = activeWeeksData[activeWeeksData.length - 2].avgE1RM;
-        if (week_n <= week_n1) {
+        const week_n2 = activeWeeksData[activeWeeksData.length - 3].avgE1RM;
+        if (week_n <= week_n1 && week_n1 <= week_n2) {
             recentStagnation = true;
         }
+    } else if (activeWeeksData.length === 2) {
+         if (activeWeeksData[1].avgE1RM <= activeWeeksData[0].avgE1RM) {
+            recentStagnation = true;
+         }
     }
     
     if (e1rmPercentChange > 5 && !recentStagnation) {
         setProgressionStatus("Excellent");
     } else if (e1rmPercentChange > 0) {
         setProgressionStatus("Good");
-    } else if (e1rmChange < 0 && recentStagnation) {
+    } else if (e1rmPercentChange < 0 && recentStagnation) {
         setProgressionStatus("Regressing");
     } else {
         setProgressionStatus("Stagnated");
