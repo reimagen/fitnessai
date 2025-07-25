@@ -4,7 +4,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from '@/components/query-provider';
 import { ThemeProvider } from '@/components/theme-provider';
-import { BottomNavigationBar } from '@/components/layout/bottom-navigation-bar';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -73,8 +72,7 @@ export default function RootLayout({
         >
           <QueryProvider>
             <div className="flex min-h-screen flex-col">
-              <main className="flex-grow pb-20 pt-4">{children}</main>
-              <BottomNavigationBar />
+              {children}
             </div>
           </QueryProvider>
           <Toaster />
