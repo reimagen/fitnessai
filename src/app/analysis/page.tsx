@@ -28,6 +28,10 @@ const IMBALANCE_TYPES = [
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
+const LIFT_NAME_ALIASES: Record<string, string> = {
+  'lat pull': 'lat pulldown',
+};
+
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2 },
@@ -825,7 +829,10 @@ useEffect(() => {
     }
     
     if (userProfile && personalRecords) {
-        const bestPRforLift = findBestPr(personalRecords, [selectedLift]);
+        const normalizedLiftName = selectedLift.trim().toLowerCase();
+        const prName = LIFT_NAME_ALIASES[normalizedLiftName] || normalizedLiftName;
+        const bestPRforLift = findBestPr(personalRecords, [prName]);
+
         if (bestPRforLift) {
             setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
         } else {
@@ -1306,4 +1313,5 @@ useEffect(() => {
     
 
     
+
 
