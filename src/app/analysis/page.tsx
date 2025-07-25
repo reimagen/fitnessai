@@ -30,6 +30,7 @@ type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
 const LIFT_NAME_ALIASES: Record<string, string> = {
   'lat pull': 'lat pulldown',
+  'biceps curl': 'bicep curl',
 };
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
@@ -1313,5 +1314,6 @@ useEffect(() => {
     
 
     
+
 
 
