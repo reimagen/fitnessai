@@ -91,6 +91,7 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         - Gender: {{{userProfile.gender}}}
         - Age: {{{userProfile.age}}}
         - Weight: {{{userProfile.weightValue}}} {{{userProfile.weightUnit}}}
+        - Height: {{{userProfile.heightValue}}} {{{userProfile.heightUnit}}}
         {{#if userProfile.fitnessGoals}}
         - Primary Goal: {{#each userProfile.fitnessGoals}}{{#if this.isPrimary}}{{{this.description}}}{{/if}}{{/each}}
         {{/if}}
@@ -125,7 +126,11 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         5.  **Tailor to Strength Level & User Profile**: Your commentary MUST be strictly tailored to the user's provided **Current Strength Level** and their **User Profile** (gender, age, goals).
             -   **For 'Beginner' or 'Intermediate' Lifts:** Focus recommendations on consistency, progressive overload, or form checks.
             -   **For 'Advanced' or 'Elite' Lifts:** A drop in volume might be a planned deload. Your recommendations can be more nuanced, focusing on variation, recovery, or post-deload strategy.
-        
+        6.  **Conditionally Incorporate Goals based on Relevance:** You may reference a user's fitness goal in your recommendation, but **ONLY** if that goal is **directly and biomechanically related** to the \`{{{exerciseName}}}\` currently being analyzed.
+            -   **GOOD Example of Relevance:** If analyzing the 'Lat Pulldown' and the user's goal is to 'achieve 10 pull-ups', you SHOULD mention how improving their pulldown will help achieve that goal.
+            -   **BAD Example of Relevance:** If analyzing the 'Adductor' and the user's goal is to 'achieve 10 pull-ups', you MUST NOT mention the pull-up goal. The two are not directly related.
+            - If none of the user's goals are directly relevant, your recommendation must focus exclusively on improving the \`{{{exerciseName}}}\` itself.
+
         **Your Response Fields:**
         1.  **insight**: A concise (1-2 sentences) explanation of what the trends and history mean, specifically for a lifter with the provided profile and at the provided **'Current Strength Level'**, incorporating the specific trend percentages.
         2.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level, the combined trends, and any patterns (like a recent deload) identified from the history.
@@ -147,5 +152,3 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
