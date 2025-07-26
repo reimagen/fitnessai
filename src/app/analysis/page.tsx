@@ -35,7 +35,7 @@ const LIFT_NAME_ALIASES: Record<string, string> = {
 };
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['chest press'], lift2Options: ['seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2 },
@@ -150,9 +150,19 @@ const RoundedBar = (props: any) => {
   return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
 };
 
-type StrengthFinding = Omit<StrengthImbalanceOutput['findings'][0], 'insight' | 'recommendation'> & {
+type StrengthFinding = {
+    imbalanceType: ImbalanceType;
+    lift1Name: string;
+    lift1Weight: number;
+    lift1Unit: "kg" | "lbs";
     lift1Level: StrengthLevel;
+    lift2Name: string;
+    lift2Weight: number;
+    lift2Unit: "kg" | "lbs";
     lift2Level: StrengthLevel;
+    userRatio: string;
+    targetRatio: string;
+    imbalanceFocus: ImbalanceFocus;
 };
 
 // Helper function to extract running exercises and convert distances to miles
@@ -288,69 +298,6 @@ export default function AnalysisPage() {
   const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift.trim().toLowerCase()] || userProfile?.liftProgressionAnalysis?.[selectedLift.trim().toLowerCase()];
 
 
-  const handleAnalyzeStrength = async () => {
-    if (!personalRecords || personalRecords.length === 0) {
-      toast({
-        title: "Not Enough Data",
-        description: "Log some personal records before running an analysis.",
-        variant: "default",
-      });
-      return;
-    }
-    if (!userProfile) {
-        toast({
-            title: "Profile Not Loaded",
-            description: "Please wait for your profile to load before running analysis.",
-            variant: "default",
-        });
-        return;
-    }
-
-    setIsAnalysisLoading(true);
-
-    const prsForAnalysis = personalRecords.map(pr => ({
-      ...pr,
-      date: pr.date.toISOString(), // Convert Date to string for server action
-    }));
-
-    const analysisInput = {
-        personalRecords: prsForAnalysis,
-        userProfile: {
-            age: userProfile.age,
-            gender: userProfile.gender,
-            heightValue: userProfile.heightValue,
-            heightUnit: userProfile.heightUnit,
-            weightValue: userProfile.weightValue,
-            weightUnit: userProfile.weightUnit,
-            skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-            skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-            fitnessGoals: userProfile.fitnessGoals
-              .filter(g => !g.achieved)
-              .map(g => ({
-                description: g.description,
-                isPrimary: g.isPrimary || false,
-              })),
-        }
-    };
-
-    const result = await analyzeStrengthAction(analysisInput);
-
-    if (result.success && result.data) {
-      setLatestAnalysis(result.data);
-      toast({
-        title: "Analysis Complete",
-        description: result.data.summary || (result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced."),
-      });
-    } else {
-      toast({
-        title: "Analysis Failed",
-        description: result.error || "An unknown error occurred.",
-        variant: "destructive",
-      });
-    }
-    setIsAnalysisLoading(false);
-  };
-  
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
     if (!personalRecords || !userProfile) {
       return [];
@@ -427,10 +374,10 @@ export default function AnalysisPage() {
 
         findings.push({
             imbalanceType: type,
-            lift1Name: lift1.exerciseName,
+            lift1Name: toTitleCase(lift1.exerciseName),
             lift1Weight: lift1.weight,
             lift1Unit: lift1.weightUnit,
-            lift2Name: lift2.exerciseName,
+            lift2Name: toTitleCase(lift2.exerciseName),
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
@@ -444,6 +391,67 @@ export default function AnalysisPage() {
     return findings;
   }, [personalRecords, userProfile]);
 
+  const handleAnalyzeStrength = async () => {
+    if (!personalRecords || personalRecords.length === 0) {
+      toast({
+        title: "Not Enough Data",
+        description: "Log some personal records before running an analysis.",
+        variant: "default",
+      });
+      return;
+    }
+    if (!userProfile) {
+        toast({
+            title: "Profile Not Loaded",
+            description: "Please wait for your profile to load before running analysis.",
+            variant: "default",
+        });
+        return;
+    }
+
+    setIsAnalysisLoading(true);
+    
+    // Filter out findings that don't have data
+    const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
+
+    const analysisInput = {
+        clientSideFindings: validFindings,
+        userProfile: {
+            age: userProfile.age,
+            gender: userProfile.gender,
+            heightValue: userProfile.heightValue,
+            heightUnit: userProfile.heightUnit,
+            weightValue: userProfile.weightValue,
+            weightUnit: userProfile.weightUnit,
+            skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+            skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+            fitnessGoals: userProfile.fitnessGoals
+              .filter(g => !g.achieved)
+              .map(g => ({
+                description: g.description,
+                isPrimary: g.isPrimary || false,
+              })),
+        }
+    };
+
+    const result = await analyzeStrengthAction(analysisInput);
+
+    if (result.success && result.data) {
+      setLatestAnalysis(result.data);
+      toast({
+        title: "Analysis Complete",
+        description: result.data.summary || (result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced."),
+      });
+    } else {
+      toast({
+        title: "Analysis Failed",
+        description: result.error || "An unknown error occurred.",
+        variant: "destructive",
+      });
+    }
+    setIsAnalysisLoading(false);
+  };
+  
 
   const filteredData = useMemo(() => {
     const today = new Date();
@@ -1045,7 +1053,7 @@ useEffect(() => {
 
                                     if ('hasData' in finding && !finding.hasData) {
                                         const config = IMBALANCE_CONFIG[type];
-                                        const requirements = `Requires: ${config.lift1Options.join('/')} & ${config.lift2Options.join('/')}`;
+                                        const requirements = `Requires: ${config.lift1Options.map(toTitleCase).join('/')} & ${config.lift2Options.map(toTitleCase).join('/')}`;
                                         return (
                                             <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                                 <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
@@ -1311,3 +1319,4 @@ useEffect(() => {
     
 
     
+
