@@ -122,6 +122,7 @@ const ImbalanceDataForAISchema = z.object({
     lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
     lift2Level: z.custom<StrengthLevel>(),
+    insightFocus: z.string().describe("A clear instruction for the AI, guiding its insight generation."),
     recommendationFocus: z.string().describe("A clear instruction for the AI, guiding its recommendation (e.g., 'focus on bringing the lagging lift to an Intermediate level for health, not matching the elite lift')."),
 });
 
@@ -162,6 +163,7 @@ The following data has been calculated by our system. Use this as the absolute s
 - **Imbalance Type:** {{{this.imbalanceType}}}
   - **Focus Area:** {{{this.imbalanceFocus}}}
   - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
+  - **System Insight Focus:** {{{this.insightFocus}}}
   - **System Recommendation Focus:** {{{this.recommendationFocus}}}
 {{/each}}
 
@@ -169,7 +171,7 @@ The following data has been calculated by our system. Use this as the absolute s
 For **each** of the imbalances listed above, you will provide expert commentary. Your output MUST be a single JSON object with a key "analyses", which is an array of objects. Each object must contain:
 1.  **imbalanceType**: The exact string from the 'Imbalance Type' field.
 2.  **imbalanceFocus**: The exact string from the 'Focus Area' field.
-3.  **insight (1-2 sentences MAX):** A concise, expert insight into the potential risks or meaning of this imbalance. You MUST use the user's goals and the provided 'Focus Area' and 'Recommendation Focus' to make the insight personal.
+3.  **insight (1-2 sentences MAX):** A concise, expert insight that directly follows the 'System Insight Focus'. You MUST use the user's goals and the provided 'Focus Area' to make the insight personal.
 4.  **recommendation (1-2 sentences MAX):** A simple, clear, and actionable recommendation that directly follows the 'System Recommendation Focus'. It must start with an action verb.
 
 **CRITICAL STYLE GUIDE:**
@@ -269,15 +271,18 @@ const strengthImbalanceFlow = ai.defineFlow(
         }
         
         let recommendationFocus = "";
+        let insightFocus = "";
 
         if (imbalanceFocus === 'Level Imbalance') {
              const weakerLift = lift1WeightKg < lift2WeightKg ? lift1 : lift2; // Simplistic but ok for focus
              const weakerLevel = lift1WeightKg < lift2WeightKg ? lift1Level : lift2Level;
              const strongerLevel = lift1WeightKg < lift2WeightKg ? lift2Level : lift1Level;
+             insightFocus = `Explain the risks of having a strength level disparity between these two lifts. Emphasize joint health.`;
              recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLift.exerciseName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
-        } else if (imbalanceFocus === 'Ratio Imbalance') { // Ratio Imbalance
+        } else if (imbalanceFocus === 'Ratio Imbalance') { 
              const weakerLiftByRatio = ratio < targetRatioValue! ? lift1.exerciseName : lift2.exerciseName;
-             recommendationFocus = `Both lifts are in the same tier (${lift1Level}), but their strength relationship is off. Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
+             insightFocus = `Both lifts are in the same tier, but their strength relationship is off. Explain why this specific ratio is important for performance and injury prevention.`;
+             recommendationFocus = `Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
         } else { // Balanced
             const currentLevel = lift1Level; // They are the same level
             let nextLevel: string | null = null;
@@ -286,11 +291,14 @@ const strengthImbalanceFlow = ai.defineFlow(
             else if (currentLevel === 'Advanced') nextLevel = 'Elite';
             
             if (nextLevel && currentLevel !== 'Elite') {
-                recommendationFocus = `The user's lifts are well-balanced with an excellent ratio. The goal is to maintain this healthy ratio while using progressive overload to advance both lifts towards the ${nextLevel} level.`;
+                insightFocus = `The user's lifts are well-balanced with an excellent ratio. Explain that this is a great foundation for progressing to the next strength level.`;
+                recommendationFocus = `The goal is to maintain this healthy ratio while using progressive overload to advance both lifts towards the ${nextLevel} level.`;
             } else if (currentLevel === 'Elite') {
-                recommendationFocus = `These lifts are balanced at an Elite level. The goal is to maintain this high level of strength and balance through consistent training.`;
+                insightFocus = `These lifts are balanced at an Elite level. Explain the importance of maintaining this balance for peak performance and longevity.`;
+                recommendationFocus = `The goal is to maintain this high level of strength and balance through consistent training.`;
             } else { // N/A
-                recommendationFocus = `These lifts appear balanced, but their strength level could not be determined. Focus on consistency and proper form.`;
+                insightFocus = `These lifts appear balanced, but their strength level could not be determined. Explain the importance of balance in general.`;
+                recommendationFocus = `Focus on consistency and proper form.`;
             }
         }
 
@@ -301,7 +309,8 @@ const strengthImbalanceFlow = ai.defineFlow(
             lift1Level: lift1Level,
             lift2Name: lift2.exerciseName,
             lift2Level: lift2Level,
-            recommendationFocus: recommendationFocus,
+            insightFocus,
+            recommendationFocus,
         });
 
         calculatedFindings.push({
