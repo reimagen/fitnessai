@@ -274,9 +274,9 @@ export default function AnalysisPage() {
   const [selectedLift, setSelectedLift] = useState<string>('');
   const [isProgressionLoading, setIsProgressionLoading] = useState(false);
   const [latestProgressionAnalysis, setLatestProgressionAnalysis] = useState<Record<string, StoredLiftProgressionAnalysis>>({});
-  const [progressionStatus, setProgressionStatus] = useState<AnalyzeLiftProgressionOutput['progressionStatus'] | null>(null);
   const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
   const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
+  const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
@@ -533,7 +533,6 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
-                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
@@ -822,9 +821,9 @@ export default function AnalysisPage() {
 
 useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
-        setProgressionStatus(null);
         setCurrentLiftLevel(null);
         setTrendImprovement(null);
+        setVolumeTrend(null);
         return;
     }
     
@@ -840,54 +839,40 @@ useEffect(() => {
         }
     }
     
-    const { chartData, trendlineData } = progressionChartData;
+    const { chartData } = progressionChartData;
     
-    // Calculate Trend Improvement Percentage
-    if (trendlineData && trendlineData.start.y > 0) {
-        const improvement = ((trendlineData.end.y - trendlineData.start.y) / trendlineData.start.y) * 100;
-        setTrendImprovement(improvement);
-    } else {
-        setTrendImprovement(null);
-    }
-    
-    const points = chartData.map((d, i) => ({ x: i, y: d.e1RM })).filter(p => p.y > 0);
-    
-    if (points.length < 2) {
-        setProgressionStatus(null);
-        return;
-    }
+    // --- Trend Calculation Function ---
+    const calculateTrend = (dataKey: 'e1RM' | 'volume') => {
+        const points = chartData.map((d, i) => ({ x: i, y: d[dataKey] })).filter(p => p.y > 0);
+        if (points.length < 2) {
+            return null;
+        }
 
-    const n = points.length;
-    const xSum = points.reduce((acc, p) => acc + p.x, 0);
-    const ySum = points.reduce((acc, p) => acc + p.y, 0);
-    const xySum = points.reduce((acc, p) => acc + p.x * p.y, 0);
-    const x2Sum = points.reduce((acc, p) => acc + p.x * p.x, 0);
+        const n = points.length;
+        const x_mean = points.reduce((acc, p) => acc + p.x, 0) / n;
+        const y_mean = points.reduce((acc, p) => acc + p.y, 0) / n;
 
-    const denominator = n * x2Sum - xSum * xSum;
-    if (denominator === 0) {
-        setProgressionStatus("Stagnated");
-        return;
-    }
-    
-    const slope = (n * xySum - xSum * ySum) / denominator;
-    
-    const firstE1RM = points[0].y;
-    if (firstE1RM === 0) {
-        setProgressionStatus("Stagnated");
-        return;
-    }
-    
-    const normalizedSlope = (slope / firstE1RM) * 100;
-    
-    if (normalizedSlope > 5) {
-        setProgressionStatus("Excellent");
-    } else if (normalizedSlope > 1) {
-        setProgressionStatus("Good");
-    } else if (normalizedSlope < -2) {
-        setProgressionStatus("Regressing");
-    } else {
-        setProgressionStatus("Stagnated");
-    }
+        const numerator = points.reduce((acc, p) => acc + (p.x - x_mean) * (p.y - y_mean), 0);
+        const denominator = points.reduce((acc, p) => acc + (p.x - x_mean) ** 2, 0);
+
+        if (denominator === 0) {
+            return null;
+        }
+
+        const slope = numerator / denominator;
+        const intercept = y_mean - slope * x_mean;
+        
+        const startY = slope * 0 + intercept;
+        const endY = slope * (chartData.length - 1) + intercept;
+        
+        if (startY > 0) {
+            return ((endY - startY) / startY) * 100;
+        }
+        return null;
+    };
+
+    setTrendImprovement(calculateTrend('e1RM'));
+    setVolumeTrend(calculateTrend('volume'));
 
 }, [selectedLift, progressionChartData, personalRecords, userProfile]);
 
@@ -921,7 +906,7 @@ useEffect(() => {
       exerciseHistory,
       userProfileContext,
       currentLevel: currentLiftLevel || undefined,
-      trendPercentage: trendImprovement || undefined,
+      trendPercentage: trendImprovement,
     });
     
     if (result.success && result.data) {
@@ -970,20 +955,6 @@ useEffect(() => {
   const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
   const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
 
-  const getProgressionBadgeVariant = (status: typeof progressionStatus): 'default' | 'destructive' | 'secondary' => {
-      if (!status) return 'secondary';
-      switch(status) {
-          case 'Excellent':
-          case 'Good':
-              return 'default';
-          case 'Stagnated':
-          case 'Regressing':
-              return 'destructive';
-          default:
-              return 'secondary';
-      }
-  }
-  
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
     if (!level) return 'outline';
     switch (level) {
@@ -1203,7 +1174,7 @@ useEffect(() => {
                     <div className="pt-4">
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                            {(progressionStatus || currentLiftLevel) && (
+                            {(currentLiftLevel) && (
                                 <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
                                     {currentLiftLevel && currentLiftLevel !== 'N/A' && (
                                         <span>
@@ -1214,6 +1185,13 @@ useEffect(() => {
                                         <span>
                                             Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
                                                 {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
+                                            </Badge>
+                                        </span>
+                                    )}
+                                    {volumeTrend !== null && (
+                                        <span>
+                                            Volume: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
+                                                {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
                                             </Badge>
                                         </span>
                                     )}
@@ -1324,3 +1302,5 @@ useEffect(() => {
     </div>
   );
 }
+
+    
