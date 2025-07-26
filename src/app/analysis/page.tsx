@@ -907,6 +907,7 @@ useEffect(() => {
       userProfileContext,
       currentLevel: currentLiftLevel || undefined,
       trendPercentage: trendImprovement,
+      volumeTrendPercentage: volumeTrend,
     });
     
     if (result.success && result.data) {
