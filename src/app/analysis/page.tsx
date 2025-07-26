@@ -898,13 +898,25 @@ useEffect(() => {
           }))
       );
 
-    const primaryGoal = userProfile.fitnessGoals.find(g => g.isPrimary)?.description || userProfile.fitnessGoals[0]?.description;
-    const userProfileContext = `Experience Level: ${userProfile.experienceLevel || 'Not specified'}. Primary Goal: ${primaryGoal || 'Not specified'}.`;
-
     const result = await analyzeLiftProgressionAction({
       exerciseName: selectedLift,
       exerciseHistory,
-      userProfileContext,
+      userProfile: {
+          age: userProfile.age,
+          gender: userProfile.gender,
+          heightValue: userProfile.heightValue,
+          heightUnit: userProfile.heightUnit,
+          weightValue: userProfile.weightValue,
+          weightUnit: userProfile.weightUnit,
+          skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+          skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+          fitnessGoals: userProfile.fitnessGoals
+            .filter(g => !g.achieved)
+            .map(g => ({
+              description: g.description,
+              isPrimary: g.isPrimary || false,
+            })),
+      },
       currentLevel: currentLiftLevel || undefined,
       trendPercentage: trendImprovement,
       volumeTrendPercentage: volumeTrend,
@@ -1303,5 +1315,7 @@ useEffect(() => {
     </div>
   );
 }
+
+    
 
     
