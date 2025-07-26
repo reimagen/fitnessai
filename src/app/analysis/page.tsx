@@ -31,10 +31,11 @@ type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 const LIFT_NAME_ALIASES: Record<string, string> = {
   'lat pull': 'lat pulldown',
   'biceps curl': 'bicep curl',
+  'reverse fly': 'reverse flys',
 };
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
+    'Horizontal Push vs. Pull': { lift1Options: ['chest press'], lift2Options: ['seated row'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2 },
@@ -42,11 +43,7 @@ const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Opt
 
 // Helper to find the best PR for a given list of exercises
 function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
-    // Special handling for variations like 'reverse fly' and 'reverse flys'
     let searchNames = [...exerciseNames];
-    if (exerciseNames.includes('reverse fly')) {
-        searchNames.push('reverse flys');
-    }
     
     const relevantRecords = records.filter(r => searchNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
@@ -279,6 +276,7 @@ export default function AnalysisPage() {
   const [latestProgressionAnalysis, setLatestProgressionAnalysis] = useState<Record<string, StoredLiftProgressionAnalysis>>({});
   const [progressionStatus, setProgressionStatus] = useState<AnalyzeLiftProgressionOutput['progressionStatus'] | null>(null);
   const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
+  const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
@@ -826,6 +824,7 @@ useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
         setProgressionStatus(null);
         setCurrentLiftLevel(null);
+        setTrendImprovement(null);
         return;
     }
     
@@ -841,7 +840,16 @@ useEffect(() => {
         }
     }
     
-    const { chartData } = progressionChartData;
+    const { chartData, trendlineData } = progressionChartData;
+    
+    // Calculate Trend Improvement Percentage
+    if (trendlineData && trendlineData.start.y > 0) {
+        const improvement = ((trendlineData.end.y - trendlineData.start.y) / trendlineData.start.y) * 100;
+        setTrendImprovement(improvement);
+    } else {
+        setTrendImprovement(null);
+    }
+    
     const points = chartData.map((d, i) => ({ x: i, y: d.e1RM })).filter(p => p.y > 0);
     
     if (points.length < 2) {
@@ -881,7 +889,7 @@ useEffect(() => {
         setProgressionStatus("Stagnated");
     }
 
-}, [selectedLift, progressionChartData.chartData, personalRecords, userProfile]);
+}, [selectedLift, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
     if (!userProfile || !workoutLogs || !selectedLift) {
@@ -985,6 +993,13 @@ useEffect(() => {
         default: return 'outline';
     }
   };
+
+  const getTrendBadgeVariant = (trend: number | null): 'default' | 'destructive' | 'secondary' => {
+    if (trend === null) return 'secondary';
+    if (trend > 1) return 'default';
+    if (trend < -1) return 'destructive';
+    return 'secondary';
+  }
 
 
   return (
@@ -1199,6 +1214,13 @@ useEffect(() => {
                                             Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
                                         </span>
                                     )}
+                                    {trendImprovement !== null && (
+                                        <span>
+                                            Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
+                                                {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
+                                            </Badge>
+                                        </span>
+                                    )}
                                 </div>
                            )}
                         </div>
@@ -1314,6 +1336,7 @@ useEffect(() => {
     
 
     
+
 
 
 
