@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { StrengthLevel } from '@/lib/types';
+import type { StrengthLevel, UserProfile } from '@/lib/types';
 
 
 // --- Zod Schemas and Types ---
@@ -22,10 +22,28 @@ const ExerciseHistoryEntrySchema = z.object({
   reps: z.number().describe("The number of reps performed per set."),
 });
 
+// Define a schema for the user profile data that will be passed to the AI.
+// This ensures we're only passing the necessary fields.
+const UserProfileForAnalysisSchema = z.object({
+    age: z.number().optional(),
+    gender: z.string().optional(),
+    heightValue: z.number().optional(),
+    heightUnit: z.enum(['cm', 'ft/in']).optional(),
+    weightValue: z.number().optional(),
+    weightUnit: z.enum(['kg', 'lbs']).optional(),
+    skeletalMuscleMassValue: z.number().optional(),
+    skeletalMuscleMassUnit: z.enum(['kg', 'lbs']).optional(),
+    fitnessGoals: z.array(z.object({
+        description: z.string(),
+        isPrimary: z.boolean().optional(),
+    })).optional(),
+});
+
+
 const AnalyzeLiftProgressionInputSchema = z.object({
   exerciseName: z.string().describe("The name of the exercise to be analyzed."),
   exerciseHistory: z.array(ExerciseHistoryEntrySchema).describe("An array of all logged performances for this exercise from the trailing 6 weeks. This is for context only; do not perform calculations on it."),
-  userProfileContext: z.string().describe("A summary of the user's experience level and primary fitness goal."),
+  userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics and goals."),
   currentLevel: z.custom<StrengthLevel>().optional().describe("The user's current strength level for this specific exercise (e.g., 'Beginner', 'Advanced')."),
   trendPercentage: z.number().optional().describe("The calculated e1RM trend percentage over the last 6 weeks, e.g., 15.2 for +15.2%."),
   volumeTrendPercentage: z.number().optional().describe("The calculated total volume trend percentage over the last 6 weeks, e.g., -5.1 for -5.1%."),
@@ -70,7 +88,12 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations.** Your entire analysis MUST be based on the pre-calculated data and workout history provided below.
 
         **User Context:**
-        {{{userProfileContext}}}
+        - Gender: {{{userProfile.gender}}}
+        - Age: {{{userProfile.age}}}
+        - Weight: {{{userProfile.weightValue}}} {{{userProfile.weightUnit}}}
+        {{#if userProfile.fitnessGoals}}
+        - Primary Goal: {{#each userProfile.fitnessGoals}}{{#if this.isPrimary}}{{{this.description}}}{{/if}}{{/each}}
+        {{/if}}
         
         **Exercise Being Analyzed:** {{{exerciseName}}}
         
@@ -93,17 +116,18 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         
         **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
         1.  **Analyze Session History First**: Your primary task is to analyze the session-by-session workout history to identify patterns. Look for things like a consistent increase followed by a decrease (which indicates a deload), a period of higher reps, or a switch to heavier, lower-rep sets. Your 'insight' must start by acknowledging these specific patterns from the history.
-        2.  **Synthesize Both Trends**: After analyzing the history, you **MUST** synthesize both the 'e1RM Trend' and the 'Volume Trend' in your 'insight'. Use their relationship to explain the user's progress. For example:
+        2.  **Acknowledge Diverse Training Styles**: Do not automatically label fluctuating weights and reps as 'inconsistent' or 'a lack of focus'. Recognize that this can be a deliberate strategy (like undulating periodization). Especially for female lifters, frame these fluctuations as a potentially smart way to manage energy levels and recovery throughout a cycle.
+        3.  **Synthesize Both Trends**: After analyzing the history, you **MUST** synthesize both the 'e1RM Trend' and the 'Volume Trend' in your 'insight'. Use their relationship to explain the user's progress. For example:
             - If e1RM is stagnant (+/- 2%) but Volume is increasing significantly (>+5%), this is a valid form of progressive overload. Frame this positively as building work capacity.
             - If e1RM is increasing but Volume is decreasing, this could indicate a shift to lower-rep, higher-intensity training, which you should confirm by looking at the session history.
             - If both are decreasing, and the history shows a recent drop-off, identify it as a potential deload and frame your recommendation accordingly.
-        3.  **Incorporate Percentages**: You **MUST** incorporate the specific percentage values into your 'insight' to add quantitative context. For example, mention "a 15% increase in e1RM" or "a 5% decrease in volume".
-        4.  **Tailor to Strength Level**: Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**.
+        4.  **Incorporate Percentages**: You **MUST** incorporate the specific percentage values into your 'insight' to add quantitative context. For example, mention "a 15% increase in e1RM" or "a 5% decrease in volume".
+        5.  **Tailor to Strength Level & User Profile**: Your commentary MUST be strictly tailored to the user's provided **Current Strength Level** and their **User Profile** (gender, age, goals).
             -   **For 'Beginner' or 'Intermediate' Lifts:** Focus recommendations on consistency, progressive overload, or form checks.
             -   **For 'Advanced' or 'Elite' Lifts:** A drop in volume might be a planned deload. Your recommendations can be more nuanced, focusing on variation, recovery, or post-deload strategy.
         
         **Your Response Fields:**
-        1.  **insight**: A concise (1-2 sentences) explanation of what the trends and history mean, specifically for a lifter at the provided **'Current Strength Level'** and incorporating the specific trend percentages.
+        1.  **insight**: A concise (1-2 sentences) explanation of what the trends and history mean, specifically for a lifter with the provided profile and at the provided **'Current Strength Level'**, incorporating the specific trend percentages.
         2.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level, the combined trends, and any patterns (like a recent deload) identified from the history.
         `,
     });
@@ -123,3 +147,5 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
