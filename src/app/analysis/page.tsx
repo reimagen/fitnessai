@@ -1205,11 +1205,6 @@ useEffect(() => {
                            <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
                             {(progressionStatus || currentLiftLevel) && (
                                 <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
-                                    {progressionStatus && (
-                                        <span>
-                                            Progression Status: <Badge variant={getProgressionBadgeVariant(progressionStatus)}>{progressionStatus}</Badge>
-                                        </span>
-                                    )}
                                     {currentLiftLevel && currentLiftLevel !== 'N/A' && (
                                         <span>
                                             Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
