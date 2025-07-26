@@ -41,6 +41,7 @@ const AnalyzeLiftProgressionInputSchema = z.object({
   exerciseHistory: z.array(ExerciseHistoryEntrySchema).describe("An array of all logged performances for this exercise from the trailing 6 weeks."),
   userProfileContext: z.string().describe("A summary of the user's experience level and primary fitness goal."),
   currentLevel: z.custom<StrengthLevel>().optional().describe("The user's current strength level for this specific exercise (e.g., 'Beginner', 'Advanced')."),
+  trendPercentage: z.number().optional().describe("The calculated trend percentage over the last 6 weeks, e.g., 15.2 for +15.2%."),
 });
 export type AnalyzeLiftProgressionInput = z.infer<typeof AnalyzeLiftProgressionInputSchema>;
 
@@ -161,6 +162,9 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         - **Progression Status:** {{{progressionStatus}}}
         - **Trend Description:** {{{trendDescription}}}
         - **User's Current Strength Level for this Lift:** {{{currentLevel}}}
+        {{#if trendPercentage}}
+        - **Calculated Trend Percentage:** {{{trendPercentage}}}%
+        {{/if}}
         - **Weekly Data:**
           {{{precomputedSummary}}}
 
@@ -168,19 +172,18 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         Your output MUST be a JSON object containing an 'insight' and a 'recommendation'. **You MUST use the provided 'Progression Status' as the final status in your output.**
         
         **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
-        Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**. Do not mention any other level. For example, if the level is "Beginner", your insight MUST be framed for a beginner. If it is "Advanced", frame it for an advanced lifter.
-        
-        1.  **For 'Beginner' or 'Intermediate' Lifts:**
-            - A "Good" or "Excellent" status is great; encourage consistency and proper form.
-            - A "Stagnated" or "Regressing" status is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
-        
-        2.  **For 'Advanced' or 'Elite' Lifts:**
-            - A "Stagnated" status is often acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on recovery, rather than aggressively pushing for more weight.
-            - A "Regressing" status should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
+        1.  **Incorporate the Trend Percentage:** If a 'Calculated Trend Percentage' is provided, you **MUST** incorporate this specific number into your 'insight' to add quantitative context. For example, if the trend is +15.2%, your insight should mention "a 15% increase". This makes the feedback more personal and impactful. Congratulate the user on specific positive gains.
+        2.  **Tailor to Strength Level:** Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**. Do not mention any other level.
+            -   **For 'Beginner' or 'Intermediate' Lifts:**
+                -   A "Good" or "Excellent" status is great; encourage consistency and proper form. Your insight should highlight their specific percentage gain as a major achievement.
+                -   A "Stagnated" or "Regressing" status is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
+            -   **For 'Advanced' or 'Elite' Lifts:**
+                -   A "Stagnated" status (e.g., a trend of +0.5%) is often acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on recovery, rather than aggressively pushing for more weight.
+                -   A "Regressing" status should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
         
         **Your Response Fields:**
         1.  **progressionStatus**: You MUST return the exact string provided in the "Progression Status" field above. Do not change it.
-        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, specifically for a lifter at the provided **'Current Strength Level'**.
+        2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, specifically for a lifter at the provided **'Current Strength Level'** and incorporating the **'Calculated Trend Percentage'**.
         3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level and the trend.
         `,
     });
@@ -192,6 +195,7 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         progressionStatus,
         trendDescription,
         precomputedSummary,
+        trendPercentage: input.trendPercentage ? input.trendPercentage.toFixed(1) : undefined,
     });
     
     if (!output) {
