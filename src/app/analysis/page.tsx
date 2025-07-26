@@ -1065,7 +1065,7 @@ useEffect(() => {
                                     return (
                                         <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
                                             <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                            <div className="text-xs text-muted-foreground mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
+                                            <div className="text-xs text-muted-foreground mt-2 pb-4 grid grid-cols-2 gap-x-4 gap-y-1">
                                                 <div>
                                                     <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
                                                     {dataFinding.lift1Level && dataFinding.lift1Level !== 'N/A' && <p className="mt-1">Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level}</span></p>}
