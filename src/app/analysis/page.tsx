@@ -921,6 +921,7 @@ useEffect(() => {
       exerciseHistory,
       userProfileContext,
       currentLevel: currentLiftLevel || undefined,
+      trendPercentage: trendImprovement || undefined,
     });
     
     if (result.success && result.data) {
@@ -1328,15 +1329,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
-
-
-
-    
-
-    
-
-
-
-
