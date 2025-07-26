@@ -112,46 +112,11 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         }
     });
     
-    // --- Trend Analysis using Linear Regression ---
-    let trendDescription = "Data insufficient to determine trend.";
-    let progressionStatus: AnalyzeLiftProgressionOutput['progressionStatus'] = "Stagnated";
-
-    if (activeWeeksData.length >= 2) {
-        const points = activeWeeksData.map((d, i) => ({ x: i, y: d.avgE1RM }));
-        const n = points.length;
-        const xSum = points.reduce((acc, p) => acc + p.x, 0);
-        const ySum = points.reduce((acc, p) => acc + p.y, 0);
-        const xySum = points.reduce((acc, p) => acc + p.x * p.y, 0);
-        const x2Sum = points.reduce((acc, p) => acc + p.x * p.x, 0);
-        
-        const denominator = n * x2Sum - xSum * xSum;
-        const slope = denominator !== 0 ? (n * xySum - xSum * ySum) / denominator : 0;
-        
-        const firstE1RM = points[0].y;
-        const normalizedSlope = firstE1RM > 0 ? (slope / firstE1RM) * 100 : 0; // Slope as a % of starting strength
-
-        if (normalizedSlope > 5) {
-            progressionStatus = "Excellent";
-            trendDescription = "Strong positive trend, indicating rapid strength gains.";
-        } else if (normalizedSlope > 1) {
-            progressionStatus = "Good";
-            trendDescription = "Positive trend, indicating steady strength gains.";
-        } else if (normalizedSlope < -2) {
-            progressionStatus = "Regressing";
-            trendDescription = "Negative trend, indicating a decline in strength.";
-        } else {
-            progressionStatus = "Stagnated";
-            trendDescription = "Flat trend, indicating a plateau in strength.";
-        }
-    }
-    
-    precomputedSummary += `\nOverall Trend Analysis: ${trendDescription}`;
-
     // --- AI Prompting Step ---
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations or change the pre-determined 'progressionStatus'.** Your entire analysis MUST be based on the pre-calculated data provided below.
+        prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations.** Your entire analysis MUST be based on the pre-calculated data provided below. Your primary task is to determine the 'progressionStatus' based on the user's level and trend percentage.
 
         **User Context:**
         {{{userProfileContext}}}
@@ -159,8 +124,6 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         **Exercise Being Analyzed:** {{{exerciseName}}}
         
         **Pre-Calculated Analysis:**
-        - **Progression Status:** {{{progressionStatus}}}
-        - **Trend Description:** {{{trendDescription}}}
         - **User's Current Strength Level for this Lift:** {{{currentLevel}}}
         {{#if trendPercentage}}
         - **Calculated Trend Percentage:** {{{trendPercentage}}}%
@@ -169,20 +132,21 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
           {{{precomputedSummary}}}
 
         **Your Task:**
-        Your output MUST be a JSON object containing an 'insight' and a 'recommendation'. **You MUST use the provided 'Progression Status' as the final status in your output.**
+        Your output MUST be a JSON object containing a 'progressionStatus', an 'insight' and a 'recommendation'. 
         
         **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
-        1.  **Incorporate the Trend Percentage:** If a 'Calculated Trend Percentage' is provided, you **MUST** incorporate this specific number into your 'insight' to add quantitative context. For example, if the trend is +15.2%, your insight should mention "a 15% increase". This makes the feedback more personal and impactful. Congratulate the user on specific positive gains.
-        2.  **Tailor to Strength Level:** Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**. Do not mention any other level.
+        1.  **Determine Progression Status:** Based on the user's **Current Strength Level** and the **Calculated Trend Percentage**, determine the most appropriate status from ["Excellent", "Good", "Stagnated", "Regressing"]. For an Advanced lifter, a small +2% gain is 'Excellent', whereas for a Beginner, it might only be 'Stagnated'. A -1% trend might be 'Stagnated' for an Elite lifter but 'Regressing' for a Beginner.
+        2.  **Incorporate the Trend Percentage:** You **MUST** incorporate the specific 'Calculated Trend Percentage' into your 'insight' to add quantitative context. For example, if the trend is +15.2%, your insight should mention "a 15% increase". This makes the feedback more personal and impactful. Congratulate the user on specific positive gains.
+        3.  **Tailor to Strength Level:** Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**. Do not mention any other level.
             -   **For 'Beginner' or 'Intermediate' Lifts:**
-                -   A "Good" or "Excellent" status is great; encourage consistency and proper form. Your insight should highlight their specific percentage gain as a major achievement.
-                -   A "Stagnated" or "Regressing" status is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
+                -   A strong positive trend is great; encourage consistency and proper form. Your insight should highlight their specific percentage gain as a major achievement.
+                -   A flat or negative trend is a problem. Your recommendation should focus on clear, actionable advice to break the plateau (e.g., progressive overload, form check, deload week).
             -   **For 'Advanced' or 'Elite' Lifts:**
-                -   A "Stagnated" status (e.g., a trend of +0.5%) is often acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on recovery, rather than aggressively pushing for more weight.
-                -   A "Regressing" status should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
+                -   A flat trend (e.g., a trend of +0.5%) is often acceptable for maintenance. Frame your insight and recommendation around maintaining strength, introducing variation, or focusing on recovery, rather than aggressively pushing for more weight.
+                -   A negative trend should still be addressed, perhaps suggesting a deload or checking recovery factors (sleep, nutrition).
         
         **Your Response Fields:**
-        1.  **progressionStatus**: You MUST return the exact string provided in the "Progression Status" field above. Do not change it.
+        1.  **progressionStatus**: The status you determined based on the rules above.
         2.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, specifically for a lifter at the provided **'Current Strength Level'** and incorporating the **'Calculated Trend Percentage'**.
         3.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level and the trend.
         `,
@@ -192,8 +156,6 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         userProfileContext: input.userProfileContext,
         exerciseName: input.exerciseName,
         currentLevel: input.currentLevel || 'N/A',
-        progressionStatus,
-        trendDescription,
         precomputedSummary,
         trendPercentage: input.trendPercentage ? input.trendPercentage.toFixed(1) : undefined,
     });
