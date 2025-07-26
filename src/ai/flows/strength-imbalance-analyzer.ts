@@ -10,8 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
-import type { PersonalRecord, StrengthLevel, UserProfile } from '@/lib/types';
+import type { StrengthLevel } from '@/lib/types';
 
 const FitnessGoalForAnalysisSchema = z.object({
   description: z.string().describe("A specific fitness goal for the user."),
@@ -30,20 +29,6 @@ const UserProfileForAnalysisSchema = z.object({
     fitnessGoals: z.array(FitnessGoalForAnalysisSchema).optional().describe("The user's active fitness goals."),
 });
 
-const PersonalRecordForAnalysisSchema = z.object({
-    exerciseName: z.string(),
-    weight: z.number(),
-    weightUnit: z.enum(['kg', 'lbs']),
-    date: z.string(),
-    category: z.string().optional(),
-});
-
-const StrengthImbalanceInputSchema = z.object({
-  personalRecords: z.array(PersonalRecordForAnalysisSchema),
-  userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics and goals."),
-});
-export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
-
 const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
@@ -52,6 +37,28 @@ const IMBALANCE_TYPES = [
 ] as const;
 
 const IMBALANCE_FOCUS_TYPES = ['Balanced', 'Level Imbalance', 'Ratio Imbalance'] as const;
+
+const ClientSideFindingSchema = z.object({
+    imbalanceType: z.enum(IMBALANCE_TYPES),
+    lift1Name: z.string(),
+    lift1Weight: z.number(),
+    lift1Unit: z.enum(['kg', 'lbs']),
+    lift1Level: z.custom<StrengthLevel>(),
+    lift2Name: z.string(),
+    lift2Weight: z.number(),
+    lift2Unit: z.enum(['kg', 'lbs']),
+    lift2Level: z.custom<StrengthLevel>(),
+    userRatio: z.string(),
+    targetRatio: z.string(),
+    imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES),
+});
+
+const StrengthImbalanceInputSchema = z.object({
+  userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics and goals."),
+  clientSideFindings: z.array(ClientSideFindingSchema).describe("The pre-calculated strength balance findings from the client-side application. This is the source of truth."),
+});
+export type StrengthImbalanceInput = z.infer<typeof StrengthImbalanceInputSchema>;
+
 
 const ImbalanceFindingSchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES).describe("The type of strength imbalance. Must be one of the predefined types."),
@@ -74,46 +81,17 @@ const StrengthImbalanceOutputSchema = z.object({
 });
 export type StrengthImbalanceOutput = z.infer<typeof StrengthImbalanceOutputSchema>;
 
-// Configuration for each imbalance type
-const IMBALANCE_CONFIG: Record<(typeof IMBALANCE_TYPES)[number], { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.75:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2 },
-};
 
 export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): Promise<StrengthImbalanceOutput> {
-  const filteredInput = {
-      ...input,
-      personalRecords: input.personalRecords.filter(pr => pr.weight > 0),
-  };
-  if (filteredInput.personalRecords.length < 1) {
+  if (input.clientSideFindings.length < 1) {
       return {
           summary: "Not enough data for AI analysis. Please log at least one personal record with weight.",
           findings: [],
       };
   }
-  return strengthImbalanceFlow(filteredInput);
+  return strengthImbalanceFlow(input);
 }
 
-// Helper to find the best PR for a given list of exercises
-function findBestPr(records: z.infer<typeof PersonalRecordForAnalysisSchema>[], exerciseNames: string[]): (PersonalRecord & {id: string}) | null {
-    const relevantRecords = records.filter(r => exerciseNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
-    if (relevantRecords.length === 0) return null;
-
-    // Start with the first record as the initial best and reduce from there
-    const bestRecord = relevantRecords.slice(1).reduce((best, current) => {
-        const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
-        const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
-        return currentWeightKg > bestWeightKg ? current : best;
-    }, relevantRecords[0]);
-
-    return {
-      ...bestRecord,
-      date: new Date(bestRecord.date),
-      id: Math.random().toString(), // add dummy id
-    };
-}
 
 const ImbalanceDataForAISchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
@@ -190,101 +168,29 @@ const strengthImbalanceFlow = ai.defineFlow(
   },
   async (input) => {
     
-    const calculatedFindings: Omit<z.infer<typeof ImbalanceFindingSchema>, 'insight' | 'recommendation'>[] = [];
     const imbalancesForAI: z.infer<typeof ImbalanceDataForAISchema>[] = [];
 
-    // The user profile needs to be compatible with the getStrengthLevel function
-    const userProfileForLevels: UserProfile = {
-        ...input.userProfile,
-        id: "temp-id",
-        name: "temp-user",
-        email: "",
-        joinedDate: new Date(),
-        fitnessGoals: (input.userProfile.fitnessGoals || []).map(g => ({...g, id: 'temp-goal-id', achieved: false })),
-        avatarUrl: undefined,
-        strengthAnalysis: undefined,
-    };
-
-
-    for (const type of IMBALANCE_TYPES) {
-        const config = IMBALANCE_CONFIG[type];
-        const lift1 = findBestPr(input.personalRecords, config.lift1Options);
-        const lift2 = findBestPr(input.personalRecords, config.lift2Options);
-
-        if (!lift1 || !lift2) continue;
-
-        const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
-        const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
-
-        if (lift2WeightKg === 0) continue;
-
-        const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        const lift1Level = getStrengthLevel(lift1, userProfileForLevels);
-        const lift2Level = getStrengthLevel(lift2, userProfileForLevels);
-        
-        let targetRatioDisplay = config.targetRatioDisplay;
-        let targetRatioValue: number | null = null;
-        
-        const staticRatioParts = config.targetRatioDisplay.split(':');
-        if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
-            targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
-        }
-        
-        if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
-            let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
-
-            const levels = [lift1Level, lift2Level];
-            if (levels.includes('Beginner')) {
-                targetLevelForRatio = 'Intermediate';
-            } else if (levels.includes('Intermediate')) {
-                targetLevelForRatio = 'Advanced';
-            }
-
-            const lift1Thresholds = getStrengthThresholds(config.lift1Options[0], userProfileForLevels, 'kg');
-            const lift2Thresholds = getStrengthThresholds(config.lift2Options[0], userProfileForLevels, 'kg');
-
-            if (lift1Thresholds && lift2Thresholds) {
-                const targetLevelKey = targetLevelForRatio.toLowerCase() as keyof typeof lift1Thresholds;
-                const targetLift1Weight = lift1Thresholds[targetLevelKey];
-                const targetLift2Weight = lift2Thresholds[targetLevelKey];
-                
-                if (targetLift2Weight > 0) {
-                    targetRatioValue = targetLift1Weight / targetLift2Weight;
-                    targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
-                }
-            }
-        }
-
-        let imbalanceFocus: 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance' = 'Balanced';
-
-        let ratioIsUnbalanced = false;
-        if (targetRatioValue !== null) {
-            const deviation = Math.abs(ratio - targetRatioValue);
-            const tolerance = targetRatioValue * 0.10; // 10% tolerance
-            ratioIsUnbalanced = deviation > tolerance;
-        }
-
-        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
-            imbalanceFocus = 'Level Imbalance';
-        } else if (ratioIsUnbalanced) {
-            imbalanceFocus = 'Ratio Imbalance';
-        }
-        
+    for (const finding of input.clientSideFindings) {
         let recommendationFocus = "";
         let insightFocus = "";
 
-        if (imbalanceFocus === 'Level Imbalance') {
-             const weakerLift = lift1WeightKg < lift2WeightKg ? lift1 : lift2; // Simplistic but ok for focus
-             const weakerLevel = lift1WeightKg < lift2WeightKg ? lift1Level : lift2Level;
-             const strongerLevel = lift1WeightKg < lift2WeightKg ? lift2Level : lift1Level;
+        if (finding.imbalanceFocus === 'Level Imbalance') {
+             const weakerLiftName = finding.lift1Level < finding.lift2Level ? finding.lift1Name : finding.lift2Name;
+             const weakerLevel = finding.lift1Level < finding.lift2Level ? finding.lift1Level : finding.lift2Level;
+             const strongerLevel = finding.lift1Level < finding.lift2Level ? finding.lift2Level : finding.lift1Level;
              insightFocus = `Explain the risks of having a strength level disparity between these two lifts. Emphasize joint health.`;
-             recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLift.exerciseName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
-        } else if (imbalanceFocus === 'Ratio Imbalance') { 
-             const weakerLiftByRatio = ratio < targetRatioValue! ? lift1.exerciseName : lift2.exerciseName;
+             recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLiftName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
+        } else if (finding.imbalanceFocus === 'Ratio Imbalance') {
+             // A simple heuristic to determine the weaker lift based on the target ratio.
+             // This is imperfect but good enough for a text instruction.
+             const userRatioNum = parseFloat(finding.userRatio.split(':')[0]);
+             const targetRatioNum = parseFloat(finding.targetRatio.split(':')[0]);
+             const weakerLiftByRatio = userRatioNum < targetRatioNum ? finding.lift1Name : finding.lift2Name;
+             
              insightFocus = `Both lifts are in the same tier, but their strength relationship is off. Explain why this specific ratio is important for performance and injury prevention.`;
              recommendationFocus = `Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
         } else { // Balanced
-            const currentLevel = lift1Level; // They are the same level
+            const currentLevel = finding.lift1Level;
             if (currentLevel === 'Elite') {
                 insightFocus = `These lifts are balanced at an Elite level. Explain the importance of maintaining this balance for peak performance and longevity.`;
                 recommendationFocus = `The goal is to maintain this high level of strength and balance through consistent training.`;
@@ -303,27 +209,14 @@ const strengthImbalanceFlow = ai.defineFlow(
         }
 
         imbalancesForAI.push({
-            imbalanceType: type,
-            imbalanceFocus: imbalanceFocus,
-            lift1Name: lift1.exerciseName,
-            lift1Level: lift1Level,
-            lift2Name: lift2.exerciseName,
-            lift2Level: lift2Level,
+            imbalanceType: finding.imbalanceType,
+            imbalanceFocus: finding.imbalanceFocus,
+            lift1Name: finding.lift1Name,
+            lift1Level: finding.lift1Level,
+            lift2Name: finding.lift2Name,
+            lift2Level: finding.lift2Level,
             insightFocus,
             recommendationFocus,
-        });
-
-        calculatedFindings.push({
-            imbalanceType: type,
-            lift1Name: lift1.exerciseName,
-            lift1Weight: lift1.weight,
-            lift1Unit: lift1.weightUnit,
-            lift2Name: lift2.exerciseName,
-            lift2Weight: lift2.weight,
-            lift2Unit: lift2.weightUnit,
-            userRatio: `${ratio.toFixed(2)}:1`,
-            targetRatio: targetRatioDisplay,
-            imbalanceFocus: imbalanceFocus,
         });
     }
 
@@ -339,7 +232,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         userProfile: input.userProfile,
     });
     
-    const finalFindings = calculatedFindings.map(finding => {
+    const finalFindings = input.clientSideFindings.map(finding => {
         const aiResult = aiAnalyses?.analyses.find(a => a.imbalanceType === finding.imbalanceType && a.imbalanceFocus === finding.imbalanceFocus);
         return {
             ...finding,
