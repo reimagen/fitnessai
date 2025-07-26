@@ -76,7 +76,7 @@ const chartConfig = {
   e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
   actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
-  trend: { label: "Trend", color: "hsl(var(--muted-foreground))" },
+  trend: { label: "e1RM Trend", color: "hsl(var(--muted-foreground))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -1183,7 +1183,7 @@ useEffect(() => {
                                     )}
                                     {trendImprovement !== null && (
                                         <span>
-                                            Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
+                                            e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
                                                 {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
                                             </Badge>
                                         </span>
