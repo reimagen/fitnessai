@@ -285,8 +285,8 @@ const strengthImbalanceFlow = ai.defineFlow(
             else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
             else if (currentLevel === 'Advanced') nextLevel = 'Elite';
             
-            if (nextLevel) {
-                recommendationFocus = `These lifts are well-balanced at the ${currentLevel} level. The primary goal is now progressive overload to advance both lifts towards the ${nextLevel} level.`;
+            if (nextLevel && currentLevel !== 'Elite') {
+                recommendationFocus = `The user's lifts are well-balanced with an excellent ratio. The goal is to maintain this healthy ratio while using progressive overload to advance both lifts towards the ${nextLevel} level.`;
             } else if (currentLevel === 'Elite') {
                 recommendationFocus = `These lifts are balanced at an Elite level. The goal is to maintain this high level of strength and balance through consistent training.`;
             } else { // N/A
