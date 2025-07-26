@@ -67,7 +67,7 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
-        prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations.** Your entire analysis MUST be based on the pre-calculated data provided below.
+        prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations.** Your entire analysis MUST be based on the pre-calculated data and workout history provided below.
 
         **User Context:**
         {{{userProfileContext}}}
@@ -82,36 +82,38 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         {{#if volumeTrendPercentage}}
         - **Calculated Volume Trend Percentage:** {{{volumeTrendPercentage}}}%
         {{/if}}
+        
+        **Workout History (Last 6 Weeks):**
+        {{#each exerciseHistory}}
+        - Date: {{this.date}}, Weight: {{this.weight}}, Sets: {{this.sets}}, Reps: {{this.reps}}
+        {{/each}}
 
         **Your Task:**
         Your output MUST be a JSON object containing an 'insight' and a 'recommendation'. 
         
         **CRITICAL INSTRUCTIONS FOR YOUR COMMENTARY:**
-        1.  **Synthesize Both Trends**: You **MUST** synthesize both the 'e1RM Trend' and the 'Volume Trend' in your 'insight'. Analyze their relationship to explain the user's progress. For example:
+        1.  **Analyze Session History First**: Your primary task is to analyze the session-by-session workout history to identify patterns. Look for things like a consistent increase followed by a decrease (which indicates a deload), a period of higher reps, or a switch to heavier, lower-rep sets. Your 'insight' must start by acknowledging these specific patterns from the history.
+        2.  **Synthesize Both Trends**: After analyzing the history, you **MUST** synthesize both the 'e1RM Trend' and the 'Volume Trend' in your 'insight'. Use their relationship to explain the user's progress. For example:
             - If e1RM is stagnant (+/- 2%) but Volume is increasing significantly (>+5%), this is a valid form of progressive overload. Frame this positively as building work capacity.
-            - If e1RM is increasing but Volume is decreasing, this could indicate a shift to lower-rep, higher-intensity training.
-            - If both are decreasing, the recommendation should be more direct about potential overtraining, the need for a deload, or checking form.
-        2.  **Incorporate Percentages**: You **MUST** incorporate the specific percentage values into your 'insight' to add quantitative context. For example, mention "a 15% increase in e1RM" or "a 5% decrease in volume". This makes the feedback more personal and impactful.
-        3.  **Tailor to Strength Level**: Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**.
-            -   **For 'Beginner' or 'Intermediate' Lifts:**
-                -   A strong positive trend in either e1RM or volume is great. Encourage consistency.
-                -   A flat or negative trend is a signal to act. Your recommendation should focus on clear advice (e.g., progressive overload, form check, deload week).
-            -   **For 'Advanced' or 'Elite' Lifts:**
-                -   A small positive or flat e1RM trend can be excellent, representing maintenance of high-level strength.
-                -   Focus recommendations on variation, recovery, or addressing small dips in performance. A drop in volume might be a planned deload.
+            - If e1RM is increasing but Volume is decreasing, this could indicate a shift to lower-rep, higher-intensity training, which you should confirm by looking at the session history.
+            - If both are decreasing, and the history shows a recent drop-off, identify it as a potential deload and frame your recommendation accordingly.
+        3.  **Incorporate Percentages**: You **MUST** incorporate the specific percentage values into your 'insight' to add quantitative context. For example, mention "a 15% increase in e1RM" or "a 5% decrease in volume".
+        4.  **Tailor to Strength Level**: Your commentary MUST be strictly tailored to the user's provided **Current Strength Level**.
+            -   **For 'Beginner' or 'Intermediate' Lifts:** Focus recommendations on consistency, progressive overload, or form checks.
+            -   **For 'Advanced' or 'Elite' Lifts:** A drop in volume might be a planned deload. Your recommendations can be more nuanced, focusing on variation, recovery, or post-deload strategy.
         
         **Your Response Fields:**
-        1.  **insight**: A concise (1-2 sentences) explanation of what the trends mean, specifically for a lifter at the provided **'Current Strength Level'** and incorporating the specific trend percentages.
-        2.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level and the combined trends.
+        1.  **insight**: A concise (1-2 sentences) explanation of what the trends and history mean, specifically for a lifter at the provided **'Current Strength Level'** and incorporating the specific trend percentages.
+        2.  **recommendation**: A single, clear, and actionable piece of advice for the user's next 2-3 weeks, tailored to their level, the combined trends, and any patterns (like a recent deload) identified from the history.
         `,
     });
 
     const { output } = await prompt({
-        userProfileContext: input.userProfileContext,
-        exerciseName: input.exerciseName,
+        ...input,
         currentLevel: input.currentLevel || 'N/A',
         trendPercentage: input.trendPercentage ? input.trendPercentage.toFixed(1) : undefined,
         volumeTrendPercentage: input.volumeTrendPercentage ? input.volumeTrendPercentage.toFixed(1) : undefined,
+        exerciseHistory: input.exerciseHistory.map(h => ({ ...h, date: new Date(h.date).toLocaleDateString() }))
     });
     
     if (!output) {
