@@ -160,6 +160,14 @@ For **each** of the imbalances listed above, you will provide expert commentary.
 `,
 });
 
+const strengthLevelRanks: Record<StrengthLevel, number> = {
+    'Beginner': 0,
+    'Intermediate': 1,
+    'Advanced': 2,
+    'Elite': 3,
+    'N/A': -1,
+};
+
 const strengthImbalanceFlow = ai.defineFlow(
   {
     name: 'strengthImbalanceFlow',
@@ -175,9 +183,11 @@ const strengthImbalanceFlow = ai.defineFlow(
         let insightFocus = "";
 
         if (finding.imbalanceFocus === 'Level Imbalance') {
-             const weakerLiftName = finding.lift1Level < finding.lift2Level ? finding.lift1Name : finding.lift2Name;
-             const weakerLevel = finding.lift1Level < finding.lift2Level ? finding.lift1Level : finding.lift2Level;
-             const strongerLevel = finding.lift1Level < finding.lift2Level ? finding.lift2Level : finding.lift1Level;
+             const isLift1Weaker = strengthLevelRanks[finding.lift1Level] < strengthLevelRanks[finding.lift2Level];
+             const weakerLiftName = isLift1Weaker ? finding.lift1Name : finding.lift2Name;
+             const weakerLevel = isLift1Weaker ? finding.lift1Level : finding.lift2Level;
+             const strongerLevel = isLift1Weaker ? finding.lift2Level : finding.lift1Level;
+             
              insightFocus = `Explain the risks of having a strength level disparity between these two lifts. Emphasize joint health.`;
              recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLiftName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
         } else if (finding.imbalanceFocus === 'Ratio Imbalance') {
