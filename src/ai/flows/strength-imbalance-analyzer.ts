@@ -285,17 +285,17 @@ const strengthImbalanceFlow = ai.defineFlow(
              recommendationFocus = `Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
         } else { // Balanced
             const currentLevel = lift1Level; // They are the same level
-            let nextLevel: string | null = null;
-            if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
-            else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
-            else if (currentLevel === 'Advanced') nextLevel = 'Elite';
-            
-            if (nextLevel && currentLevel !== 'Elite') {
-                insightFocus = `The user's lifts are well-balanced with an excellent ratio. Explain that this is a great foundation for progressing to the next strength level.`;
-                recommendationFocus = `The goal is to maintain this healthy ratio while using progressive overload to advance both lifts towards the ${nextLevel} level.`;
-            } else if (currentLevel === 'Elite') {
+            if (currentLevel === 'Elite') {
                 insightFocus = `These lifts are balanced at an Elite level. Explain the importance of maintaining this balance for peak performance and longevity.`;
                 recommendationFocus = `The goal is to maintain this high level of strength and balance through consistent training.`;
+            } else if (currentLevel !== 'N/A') {
+                let nextLevel: string | null = null;
+                if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
+                else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
+                else if (currentLevel === 'Advanced') nextLevel = 'Elite';
+
+                insightFocus = `The user's lifts are well-balanced with an excellent ratio. Explain that this is a great foundation for progressing to the next strength level.`;
+                recommendationFocus = `The goal is to maintain this healthy ratio while using progressive overload to advance both lifts towards the ${nextLevel} level.`;
             } else { // N/A
                 insightFocus = `These lifts appear balanced, but their strength level could not be determined. Explain the importance of balance in general.`;
                 recommendationFocus = `Focus on consistency and proper form.`;
