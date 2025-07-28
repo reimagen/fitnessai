@@ -80,6 +80,7 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
             )}>
           <Label
             htmlFor="pr-screenshot-upload"
+            variant="file"
             className={cn(
                 "whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium border border-primary text-primary bg-card hover:bg-primary/10 cursor-pointer shadow-sm",
                 (isLoading) && "pointer-events-none"

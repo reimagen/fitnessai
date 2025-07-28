@@ -106,6 +106,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
         >
           <Label
             htmlFor="screenshot-upload"
+            variant="file"
             className={cn(
               "whitespace-nowrap rounded-sm px-3 py-1.5 text-xs font-medium border border-primary text-primary bg-card hover:bg-primary/10 cursor-pointer shadow-sm",
               (isLoading || needsDateConfirmation) && "pointer-events-none"
