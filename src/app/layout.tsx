@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from '@/components/query-provider';
-import { ThemeProvider } from '@/components/theme-provider';
 import { BottomNavigationBar } from '@/components/layout/bottom-navigation-bar';
 
 const inter = Inter({
@@ -65,20 +64,13 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className={`${inter.variable} font-body antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            <div className="flex min-h-screen flex-col">
-              <main className="flex-grow pb-20 pt-4">{children}</main>
-              <BottomNavigationBar />
-            </div>
-          </QueryProvider>
-          <Toaster />
-        </ThemeProvider>
+        <QueryProvider>
+          <div className="flex min-h-screen flex-col">
+            <main className="flex-grow pb-20 pt-4">{children}</main>
+            <BottomNavigationBar />
+          </div>
+        </QueryProvider>
+        <Toaster />
       </body>
     </html>
   );

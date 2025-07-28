@@ -10,7 +10,6 @@ import { Settings, LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -146,22 +145,6 @@ export default function ProfilePage() {
           <CardDescription>Customize your FitnessAI experience.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-md border">
-                <div>
-                    <h4 className="font-medium">Theme</h4>
-                    <p className="text-sm text-muted-foreground">Switch between light, dark, and system modes.</p>
-                </div>
-                <ThemeToggle />
-            </div>
-             <div className="flex items-center justify-between p-3 rounded-md border">
-                <div>
-                    <h4 className="font-medium">Notification Preferences</h4>
-                    <p className="text-sm text-muted-foreground">Manage your app notifications.</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                    Manage
-                </Button>
-            </div>
              <div className="flex items-center justify-between p-3 rounded-md border">
                 <div>
                     <h4 className="font-medium">Account Data</h4>
