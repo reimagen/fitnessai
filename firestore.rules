@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // For this single-user prototype, we allow reads and writes to the
+    // specific collections used by the application.
+    // The user profile is restricted to the known document ID.
+    match /profiles/main-user-profile {
+      allow read, write: if true;
+    }
+
+    // Allow clients to read and write their own workout logs.
+    match /workoutLogs/{logId} {
+      allow read, write: if true;
+    }
+
+    // Allow clients to read and write their own personal records.
+    match /personalRecords/{recordId} {
+      allow read, write: if true;
+    }
+    
+    // Deny all other access to prevent unauthorized operations.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
