@@ -95,7 +95,7 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
             accept="image/*"
             onClick={(event) => { (event.target as HTMLInputElement).value = "" }}
             onChange={handleFileChange}
-            className="hidden"
+            className="sr-only"
             disabled={isLoading}
           />
           <span className="ml-3 text-muted-foreground truncate text-xs">

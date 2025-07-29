@@ -13,7 +13,7 @@ const labelVariants = cva(
     variants: {
       variant: {
         default: "peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-        file: "",
+        file: "cursor-pointer",
       }
     },
     defaultVariants: {
