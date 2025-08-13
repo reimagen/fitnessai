@@ -15,7 +15,7 @@ type WeeklyCardioTrackerProps = {
   userProfile?: UserProfile | null;
 };
 
-type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climbmill';
+type CardioActivity = 'Run' | 'Walk' | 'Cycle' | 'Climbmill' | 'Rowing';
 type ActivityStats = {
   distanceMi: number;
 };
@@ -30,6 +30,7 @@ const normalizeCardioActivity = (exerciseName: string): CardioActivity | null =>
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
   if (name.includes('climbmill')) return 'Climbmill';
+  if (name.includes('rowing')) return 'Rowing';
   return null;
 };
 
