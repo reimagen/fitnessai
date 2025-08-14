@@ -27,7 +27,7 @@ export default function HistoryPage() {
   const [isClient, setIsClient] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const validTabs = ['log', 'screenshot', 'upload'];
+  const validTabs = ['log', 'screenshot'];
   const defaultTabValue = initialTabQueryParam && validTabs.includes(initialTabQueryParam) ? initialTabQueryParam : 'log';
 
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -294,10 +294,9 @@ export default function HistoryPage() {
       </header>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 mb-6">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="log"><Edit className="mr-2 h-4 w-4 inline-block"/>Manual Log</TabsTrigger>
           <TabsTrigger value="screenshot"><ImageUp className="mr-2 h-4 w-4 inline-block"/>Parse Screenshot</TabsTrigger>
-          <TabsTrigger value="upload" className="hidden md:inline-flex"><FileUp className="mr-2 h-4 w-4 inline-block"/>Upload File</TabsTrigger>
         </TabsList>
 
         <TabsContent value="log">
@@ -331,21 +330,6 @@ export default function HistoryPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="font-headline">Upload Workout File (XLS/CSV)</CardTitle>
-              <CardDescription>Import your workout data from a spreadsheet file.</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center">
-              <FileUp className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-muted-foreground">
-                This feature is coming soon! You'll be able to upload XLS or CSV files.
-              </p>
-              <Button variant="outline" className="mt-4" disabled>Choose File</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       <section className="mt-12">
