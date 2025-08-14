@@ -2,7 +2,7 @@
       
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1180,3 +1180,6 @@ useEffect(() => {
     
 
 
+
+
+    
