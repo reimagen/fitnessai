@@ -2,7 +2,7 @@
       
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line, ComposedChart, Scatter, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
 import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay, eachWeekOfInterval } from 'date-fns';
-import { TrendingUp, Award, Flame, Route, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
@@ -163,30 +163,6 @@ type StrengthFinding = {
     userRatio: string;
     targetRatio: string;
     imbalanceFocus: ImbalanceFocus;
-};
-
-// Helper function to extract running exercises and convert distances to miles
-const getRunningExercises = (logs: WorkoutLog[]): (Exercise & { date: Date })[] => {
-  const runningExercises: (Exercise & { date: Date })[] = [];
-  logs.forEach(log => {
-    log.exercises.forEach(ex => {
-      const exerciseName = ex.name.trim().toLowerCase();
-      const isRunningActivity = exerciseName.includes('run') || exerciseName.includes('treadmill');
-      if (ex.category === 'Cardio' && isRunningActivity && ex.distance && ex.distance > 0) {
-        let distanceInMiles = ex.distance;
-        if (ex.distanceUnit === 'km') distanceInMiles = ex.distance * 0.621371;
-        else if (ex.distanceUnit === 'ft') distanceInMiles = ex.distance * 0.000189394;
-        
-        runningExercises.push({
-          ...ex,
-          distance: distanceInMiles, // Standardize to miles
-          distanceUnit: 'mi',
-          date: log.date,
-        });
-      }
-    });
-  });
-  return runningExercises.sort((a, b) => a.date.getTime() - b.date.getTime());
 };
 
 const calculateE1RM = (weight: number, reps: number): number => {
@@ -638,77 +614,6 @@ export default function AnalysisPage() {
     return { workoutFrequencyData, newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, periodSummary };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
-  const runningProgressionData = useMemo(() => {
-    const allRunningExercises = getRunningExercises(workoutLogs || []);
-    if (allRunningExercises.length === 0) return null;
-
-    let runsForPeriod: (Exercise & { date: Date })[];
-    const today = new Date();
-    if (timeRange !== 'all-time') {
-      let interval: Interval;
-      if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
-      else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
-      else if (timeRange === 'yearly') interval = { start: startOfYear(today), end: endOfYear(today) };
-      runsForPeriod = allRunningExercises.filter(run => isWithinInterval(run.date, interval));
-    } else {
-      runsForPeriod = allRunningExercises;
-    }
-
-    if (runsForPeriod.length === 0) return { chartData: [], totalDistance: 0, avgDistance: 0 };
-    
-    let chartData: { name: string, value: number }[] = [];
-    const totalDistance = runsForPeriod.reduce((sum, run) => sum + (run.distance || 0), 0);
-    const avgDistance = runsForPeriod.length > 0 ? totalDistance / runsForPeriod.length : 0;
-
-    switch(timeRange) {
-        case 'weekly':
-            chartData = runsForPeriod.map(run => ({ name: format(run.date, 'E d'), value: parseFloat(run.distance?.toFixed(2) || '0') }));
-            break;
-        case 'monthly': {
-            const weeklyTotals: { [week: string]: { total: number, count: number } } = {};
-            runsForPeriod.forEach(run => {
-                const weekNum = getWeekOfMonth(run.date, { weekStartsOn: 0 });
-                const weekKey = `Wk ${weekNum}`;
-                 if (!weeklyTotals[weekKey]) {
-                    weeklyTotals[weekKey] = { total: 0, count: 0 };
-                }
-                weeklyTotals[weekKey].total += run.distance || 0;
-                weeklyTotals[weekKey].count += 1;
-            });
-            chartData = Object.entries(weeklyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
-            break;
-        }
-        case 'yearly': {
-            const monthlyTotals: { [month: string]: { total: number, count: number } } = {};
-            runsForPeriod.forEach(run => {
-                const monthName = format(run.date, 'MMM');
-                if (!monthlyTotals[monthName]) {
-                    monthlyTotals[monthName] = { total: 0, count: 0 };
-                }
-                monthlyTotals[monthName].total += run.distance || 0;
-                monthlyTotals[monthName].count += 1;
-            });
-            chartData = Object.entries(monthlyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
-            break;
-        }
-        case 'all-time': {
-            const yearlyTotals: { [year: string]: { total: number, count: number } } = {};
-            runsForPeriod.forEach(run => {
-                const yearName = format(run.date, 'yyyy');
-                if (!yearlyTotals[yearName]) {
-                    yearlyTotals[yearName] = { total: 0, count: 0 };
-                }
-                yearlyTotals[yearName].total += run.distance || 0;
-                yearlyTotals[yearName].count += 1;
-            });
-            chartData = Object.entries(yearlyTotals).map(([name, data]) => ({ name, value: parseFloat(data.total.toFixed(2)) }));
-            break;
-        }
-    }
-    return { chartData, totalDistance, avgDistance };
-
-  }, [workoutLogs, timeRange]);
-
   const frequentlyLoggedLifts = useMemo(() => {
     if (!workoutLogs) return [];
     const weightedExercises = new Map<string, number>();
@@ -1264,52 +1169,6 @@ useEffect(() => {
 
               </CardContent>
             </Card>
-
-            <Card className="shadow-lg lg:col-span-6">
-                <CardHeader>
-                    <CardTitle className="font-headline flex items-center gap-2"><Route className="h-6 w-6 text-accent" /> Running Progression</CardTitle>
-                    <CardDescription>
-                        {timeRange === 'weekly' && "Your individual runs this week."}
-                        {timeRange === 'monthly' && "Your total running distance per week this month."}
-                        {timeRange === 'yearly' && "Your total distance per month."}
-                        {timeRange === 'all-time' && "Your total distance per year."}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {runningProgressionData && runningProgressionData.chartData.length > 0 ? (
-                        <>
-                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={runningProgressionData.chartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                                        <YAxis dataKey="value" domain={[0, 'auto']} label={{ value: 'mi', angle: -90, position: 'insideLeft', offset: -5, fill: 'hsl(var(--muted-foreground))' }} />
-                                        <Tooltip content={<ChartTooltipContent indicator="dot" />} />
-                                        <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} />
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </ChartContainer>
-                             <div className="mt-6 p-4 bg-secondary/50 rounded-lg">
-                                <h4 className="text-sm font-semibold text-center mb-2 text-muted-foreground">Summary for {timeRangeDisplayNames[timeRange]}</h4>
-                                <div className="flex justify-around text-center">
-                                    <div>
-                                        <p className="text-2xl font-bold text-accent">{runningProgressionData.totalDistance.toFixed(1)} mi</p>
-                                        <p className="text-xs text-muted-foreground">Total Distance</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-2xl font-bold text-accent">{runningProgressionData.avgDistance.toFixed(1)} mi</p>
-                                        <p className="text-xs text-muted-foreground">Avg. Distance / Run</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </>
-                    ) : (
-                        <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                            <p>No running data available for this period.</p>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
         </>)}
       </div>
     </div>
@@ -1319,4 +1178,5 @@ useEffect(() => {
     
 
     
+
 
