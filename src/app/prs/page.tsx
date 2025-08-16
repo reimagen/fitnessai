@@ -422,7 +422,8 @@ export default function MilestonesPage() {
                     <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
                         <div className="flex flex-col">
                             <p className="font-semibold text-primary">{goal.description}</p>
-                            {goal.targetDate && <p className="text-xs text-muted-foreground">Target Date: {format(goal.targetDate, "MMM d, yyyy")}</p>}
+                            <p className="text-xs text-muted-foreground">Target: {format(goal.targetDate, "MMM d, yyyy")}</p>
+                            {goal.dateAchieved && <p className="text-xs text-muted-foreground">Achieved on: {format(goal.dateAchieved, "MMM d, yyyy")}</p>}
                         </div>
                         <div className="flex items-center gap-2 text-green-600">
                             <CheckCircle className="h-5 w-5"/>
