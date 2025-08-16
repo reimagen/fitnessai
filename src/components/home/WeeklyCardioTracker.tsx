@@ -87,8 +87,8 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
-  const minGoal = 1200;
-  const maxGoal = 1400;
+  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1200;
+  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1400;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
@@ -124,7 +124,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          To achieve your body fat goal, your target is to burn 1200-1400 calories from cardio each week.
+          To achieve your body fat goal, your target is to burn {minGoal}-{maxGoal} calories from cardio each week.
         </CardDescription>
       </CardHeader>
       <CardContent>

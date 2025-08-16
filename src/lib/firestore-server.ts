@@ -159,6 +159,8 @@ const userProfileConverter = {
             sessionTimeMinutes: data.sessionTimeMinutes,
             experienceLevel: data.experienceLevel,
             aiPreferencesNotes: data.aiPreferencesNotes,
+            weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
+            weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
         };
     }
 };
