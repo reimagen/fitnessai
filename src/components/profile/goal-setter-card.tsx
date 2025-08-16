@@ -86,7 +86,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       form.reset(createFormValues(initialGoals));
   }, [initialGoals, form]); 
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, insert } = useFieldArray({
     control: form.control,
     name: "goals",
   });
@@ -131,8 +131,20 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         description: "You can only have up to 3 active goals. Complete or remove one to add another.",
         variant: "destructive",
       });
+      return;
+    }
+
+    const newGoal = { description: "", achieved: false, targetDate: "", dateAchieved: "", isPrimary: false };
+    
+    // Find the index of the first achieved goal.
+    const firstAchievedIndex = fields.findIndex(field => field.achieved);
+
+    if (firstAchievedIndex !== -1) {
+      // If there's an achieved goal, insert the new goal before it.
+      insert(firstAchievedIndex, newGoal);
     } else {
-      append({ description: "", achieved: false, targetDate: "", dateAchieved: "", isPrimary: false });
+      // Otherwise, just append to the end.
+      append(newGoal);
     }
   };
 
