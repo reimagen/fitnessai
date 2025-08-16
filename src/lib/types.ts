@@ -76,6 +76,8 @@ export interface UserProfile {
   liftProgressionAnalysis?: {
     [exerciseName: string]: StoredLiftProgressionAnalysis;
   };
+  weeklyCardioCalorieGoal?: number;
+  weeklyCardioStretchCalorieGoal?: number;
 }
 
 export interface PersonalRecord {

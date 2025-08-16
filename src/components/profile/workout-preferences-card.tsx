@@ -17,6 +17,8 @@ type WorkoutPreferences = {
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
   aiPreferencesNotes?: string;
+  weeklyCardioCalorieGoal?: number;
+  weeklyCardioStretchCalorieGoal?: number;
 };
 
 type WorkoutPreferencesCardProps = {
@@ -45,6 +47,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
   const [editedSessionTime, setEditedSessionTime] = useState<SessionTime>(preferences.sessionTimeMinutes || 45);
   const [editedExperienceLevel, setEditedExperienceLevel] = useState<ExperienceLevel>(preferences.experienceLevel || "intermediate");
   const [editedAiPreferencesNotes, setEditedAiPreferencesNotes] = useState(preferences.aiPreferencesNotes || "");
+  const [editedCardioGoal, setEditedCardioGoal] = useState(preferences.weeklyCardioCalorieGoal?.toString() || "");
+  const [editedCardioStretchGoal, setEditedCardioStretchGoal] = useState(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
 
   useEffect(() => {
     if (isEditing) {
@@ -52,6 +56,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       setEditedSessionTime(preferences.sessionTimeMinutes || 45);
       setEditedExperienceLevel(preferences.experienceLevel || "intermediate");
       setEditedAiPreferencesNotes(preferences.aiPreferencesNotes || "");
+      setEditedCardioGoal(preferences.weeklyCardioCalorieGoal?.toString() || "");
+      setEditedCardioStretchGoal(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
     }
   }, [isEditing, preferences]);
 
@@ -68,12 +74,30 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       });
       return;
     }
+    
+    const cardioGoal = editedCardioGoal ? parseInt(editedCardioGoal, 10) : undefined;
+    const cardioStretchGoal = editedCardioStretchGoal ? parseInt(editedCardioStretchGoal, 10) : undefined;
+
+    if (cardioGoal !== undefined && (isNaN(cardioGoal) || cardioGoal < 0)) {
+        toast({ title: "Invalid Cardio Goal", description: "Weekly cardio goal must be a positive number.", variant: "destructive" });
+        return;
+    }
+    if (cardioStretchGoal !== undefined && (isNaN(cardioStretchGoal) || cardioStretchGoal < 0)) {
+        toast({ title: "Invalid Stretch Goal", description: "Weekly stretch goal must be a positive number.", variant: "destructive" });
+        return;
+    }
+    if (cardioGoal !== undefined && cardioStretchGoal !== undefined && cardioStretchGoal < cardioGoal) {
+        toast({ title: "Invalid Goals", description: "Stretch goal must be greater than or equal to the base goal.", variant: "destructive" });
+        return;
+    }
 
     onUpdate({
       workoutsPerWeek: numWorkouts,
       sessionTimeMinutes: editedSessionTime,
       experienceLevel: editedExperienceLevel,
       aiPreferencesNotes: editedAiPreferencesNotes,
+      weeklyCardioCalorieGoal: cardioGoal,
+      weeklyCardioStretchCalorieGoal: cardioStretchGoal,
     });
     setIsEditing(false);
   };
@@ -173,6 +197,32 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 </SelectContent>
               </Select>
             </div>
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="cardio-goal-input" className="text-sm font-medium">Weekly Cardio Goal (kcal)</Label>
+                    <Input
+                        id="cardio-goal-input"
+                        type="number"
+                        min="0"
+                        value={editedCardioGoal}
+                        onChange={(e) => setEditedCardioGoal(e.target.value)}
+                        placeholder="e.g., 1200"
+                        className="mt-1"
+                    />
+                </div>
+                <div>
+                    <Label htmlFor="cardio-stretch-goal-input" className="text-sm font-medium">Weekly Stretch Goal (kcal)</Label>
+                    <Input
+                        id="cardio-stretch-goal-input"
+                        type="number"
+                        min="0"
+                        value={editedCardioStretchGoal}
+                        onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
+                        placeholder="e.g., 1400"
+                        className="mt-1"
+                    />
+                </div>
+            </div>
             <div>
               <Label htmlFor="ai-preferences-notes" className="text-sm font-medium">
                 Additional Concerns or Preferences for AI
@@ -200,6 +250,14 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
               <div>
                 <span className="font-medium text-muted-foreground">Experience: </span>
                 <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Cardio Goal: </span>
+                <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Stretch Goal: </span>
+                <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
               </div>
             </div>
             {preferences.aiPreferencesNotes && (
