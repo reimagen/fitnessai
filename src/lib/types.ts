@@ -27,7 +27,7 @@ export interface WorkoutLog {
 export interface FitnessGoal {
   id:string;
   description: string;
-  targetDate?: Date;
+  targetDate: Date;
   achieved: boolean;
   dateAchieved?: Date;
   isPrimary?: boolean;
