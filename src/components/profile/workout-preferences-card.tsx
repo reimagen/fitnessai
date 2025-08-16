@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ExperienceLevel, SessionTime } from "@/lib/types";
+import type { ExperienceLevel, SessionTime, UserProfile } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,14 +12,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, XCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-type WorkoutPreferences = {
-  workoutsPerWeek?: number;
-  sessionTimeMinutes?: SessionTime;
-  experienceLevel?: ExperienceLevel;
-  aiPreferencesNotes?: string;
-  weeklyCardioCalorieGoal?: number;
-  weeklyCardioStretchCalorieGoal?: number;
-};
+type WorkoutPreferences = Pick<UserProfile, 
+  'workoutsPerWeek' | 
+  'sessionTimeMinutes' | 
+  'experienceLevel' | 
+  'aiPreferencesNotes' | 
+  'weeklyCardioCalorieGoal' | 
+  'weeklyCardioStretchCalorieGoal'
+>;
 
 type WorkoutPreferencesCardProps = {
   preferences: WorkoutPreferences;
@@ -261,7 +261,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
               </div>
             </div>
             {preferences.aiPreferencesNotes && (
-              <div>
+              <div className="pt-2">
                 <h4 className="font-semibold text-sm text-muted-foreground mt-2">Additional Preferences for AI:</h4>
                 <p className="text-sm whitespace-pre-wrap">{preferences.aiPreferencesNotes}</p>
               </div>
