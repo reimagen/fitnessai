@@ -30,7 +30,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit'>>) => {
+  const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => {
     updateUserMutation.mutate(updatedDetails, {
       onSuccess: () => {
         toast({
@@ -44,7 +44,7 @@ export default function ProfilePage() {
     });
   };
 
-  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes'>>) => {
+  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal'>>) => {
     updateUserMutation.mutate(updatedPreferences, {
       onSuccess: () => {
         toast({
@@ -105,6 +105,8 @@ export default function ProfilePage() {
               sessionTimeMinutes: userProfile.sessionTimeMinutes,
               experienceLevel: userProfile.experienceLevel,
               aiPreferencesNotes: userProfile.aiPreferencesNotes,
+              weeklyCardioCalorieGoal: userProfile.weeklyCardioCalorieGoal,
+              weeklyCardioStretchCalorieGoal: userProfile.weeklyCardioStretchCalorieGoal,
             }}
             onUpdate={handlePreferencesUpdate}
           />
