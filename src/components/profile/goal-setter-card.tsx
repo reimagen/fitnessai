@@ -16,14 +16,17 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, ChevronDown } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useEffect } from "react";
 import { format as formatDate, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
 
 const goalSchema = z.object({
+  id: z.string().optional(),
   description: z.string().min(5, "Goal description must be at least 5 characters."),
   targetDate: z.string().min(1, "Target date is required."),
   dateAchieved: z.string().optional(),
@@ -64,6 +67,7 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
       };
       
       return {
+          id: g.id,
           description: g.description,
           targetDate: toInputDate(g.targetDate),
           dateAchieved: toInputDate(g.dateAchieved),
@@ -100,8 +104,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
   };
 
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
-    const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => {
-        const originalGoal = initialGoals?.find((_og, i) => i === index);
+    const updatedGoals: FitnessGoal[] = values.goals.map((g) => {
+        const originalGoal = initialGoals?.find((og) => og.id === g.id);
         const fromInputDate = (dateStr: string | undefined) => {
            if (!dateStr || dateStr.trim() === "") return undefined;
            // Handle YYYY-MM-DD by replacing dashes to avoid timezone issues
@@ -110,7 +114,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         }
 
         return {
-            id: originalGoal?.id || `new-${Date.now()}-${index}`,
+            id: originalGoal?.id || g.id || `new-${Date.now()}`,
             description: g.description,
             targetDate: fromInputDate(g.targetDate)!,
             dateAchieved: g.achieved ? (fromInputDate(g.dateAchieved) || new Date()) : undefined,
@@ -134,7 +138,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       return;
     }
 
-    const newGoal = { description: "", achieved: false, targetDate: "", dateAchieved: "", isPrimary: false };
+    const newGoal = { id: `new-${Date.now()}`, description: "", achieved: false, targetDate: "", dateAchieved: "", isPrimary: false };
     
     // Find the index of the first achieved goal.
     const firstAchievedIndex = fields.findIndex(field => field.achieved);
@@ -148,6 +152,9 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     }
   };
 
+  const activeFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => !field.achieved);
+  const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -160,7 +167,9 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {fields.map((field, index) => {
+            
+            {/* Active Goals */}
+            {activeFields.map(({ field, index }) => {
               const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
               const isAchieved = form.watch(`goals.${index}.achieved`);
               return (
@@ -250,7 +259,45 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 </Card>
               );
             })}
-            <div className="flex justify-between items-center">
+
+            {/* Achieved Goals Accordion */}
+            {achievedFields.length > 0 && (
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="achieved-goals" className="border rounded-md px-4 bg-secondary/30">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-2">
+                       <Star className="h-5 w-5 text-yellow-500 fill-yellow-400" />
+                       <span className="font-semibold">View {achievedFields.length} Completed Goal{achievedFields.length > 1 ? 's' : ''}</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-2">
+                    <div className="space-y-3">
+                    {achievedFields.map(({ field, index }) => (
+                      <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
+                        <div>
+                          <p className="font-medium text-foreground">{field.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                          </p>
+                        </div>
+                         <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => remove(index)}
+                            className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                      </div>
+                    ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            )}
+
+            <div className="flex justify-between items-center pt-4">
                 <Button
                 type="button"
                 variant="outline"
