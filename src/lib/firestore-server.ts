@@ -78,11 +78,16 @@ const userProfileConverter = {
             dataToStore.joinedDate = Timestamp.fromDate(profile.joinedDate);
         }
         if (profile.fitnessGoals) {
-            dataToStore.fitnessGoals = profile.fitnessGoals.map(goal => ({
-                ...goal,
-                targetDate: goal.targetDate ? Timestamp.fromDate(goal.targetDate) : undefined,
-                dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : undefined,
-            }));
+            dataToStore.fitnessGoals = profile.fitnessGoals.map(goal => {
+                const newGoal: { [key: string]: any } = { ...goal };
+                newGoal.targetDate = Timestamp.fromDate(goal.targetDate);
+                if (goal.dateAchieved) {
+                    newGoal.dateAchieved = Timestamp.fromDate(goal.dateAchieved);
+                } else {
+                    delete newGoal.dateAchieved;
+                }
+                return newGoal;
+            });
         }
         if (profile.strengthAnalysis) {
             dataToStore.strengthAnalysis = {
@@ -111,7 +116,7 @@ const userProfileConverter = {
                 description: goal.description || '',
                 achieved: !!goal.achieved,
                 isPrimary: !!goal.isPrimary,
-                targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : undefined,
+                targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : new Date(),
                 dateAchieved: goal.dateAchieved instanceof Timestamp ? goal.dateAchieved.toDate() : undefined,
             })) : [];
         
@@ -272,7 +277,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
     if (profileData.fitnessGoals) {
         dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(g => ({
             ...g,
-            targetDate: g.targetDate ? Timestamp.fromDate(g.targetDate) : undefined,
+            targetDate: Timestamp.fromDate(g.targetDate),
             dateAchieved: g.dateAchieved ? Timestamp.fromDate(g.dateAchieved) : undefined,
         }));
     }

@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
-  targetDate: z.string().optional(),
+  targetDate: z.string().min(1, "Target date is required."),
   dateAchieved: z.string().optional(),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
@@ -100,7 +100,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         return {
             id: originalGoal?.id || `new-${Date.now()}-${index}`,
             description: g.description,
-            targetDate: fromInputDate(g.targetDate),
+            targetDate: fromInputDate(g.targetDate)!, // Non-null assertion as it's required
             dateAchieved: g.achieved ? (fromInputDate(g.dateAchieved) || new Date()) : undefined,
             achieved: g.achieved,
             isPrimary: g.isPrimary,
@@ -157,7 +157,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                       name={`goals.${index}.targetDate`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Target Date (Optional)</FormLabel>
+                          <FormLabel>Target Date</FormLabel>
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
