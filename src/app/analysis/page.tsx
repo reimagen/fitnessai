@@ -307,25 +307,39 @@ export default function AnalysisPage() {
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
         let targetRatioValue: number | null = null;
+        let lowerBound: number | null = null;
+        let upperBound: number | null = null;
 
         // Custom logic for Vertical Push vs. Pull
-        if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+        if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
             const rank1 = strengthLevelRanks[lift1Level];
             const rank2 = strengthLevelRanks[lift2Level];
             const guidingLevelRank = Math.min(rank1, rank2); // Use the weaker lift's level as the guide
 
-            if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                targetRatioValue = 0.60;
-            } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                targetRatioValue = 0.65;
-            } else { // Advanced or Elite
-                targetRatioValue = 0.70;
+            if (userProfile.gender === 'Female') {
+                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.50; lowerBound = 0.50; upperBound = 0.60;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.60; lowerBound = 0.60; upperBound = 0.65;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.70;
+                }
+            } else if (userProfile.gender === 'Male') {
+                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.55; lowerBound = 0.55; upperBound = 0.65;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.75;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
+                }
             }
         } else {
             // Fallback for other ratios
             const staticRatioParts = config.targetRatioDisplay.split(':');
             if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
                 targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
+                lowerBound = targetRatioValue * 0.90; // Default 10% tolerance
+                upperBound = targetRatioValue * 1.10;
             }
         }
         
@@ -333,10 +347,9 @@ export default function AnalysisPage() {
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
-        if (targetRatioValue !== null) {
-            const deviation = Math.abs(ratio - targetRatioValue);
-            const tolerance = targetRatioValue * 0.10; // 10% tolerance
-            ratioIsUnbalanced = deviation > tolerance;
+
+        if (lowerBound !== null && upperBound !== null) {
+            ratioIsUnbalanced = ratio < lowerBound || ratio > upperBound;
         }
 
         if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
@@ -1178,6 +1191,8 @@ useEffect(() => {
 
 
 
+
+    
 
     
 
