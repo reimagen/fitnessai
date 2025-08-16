@@ -251,7 +251,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               type="text"
               value={editedName}
               onChange={(e) => setEditedName(e.target.value)}
-              className="text-2xl font-headline font-semibold leading-none tracking-tight w-full mb-1"
+              className="text-2xl font-headline font-semibold leading-none tracking-tight w-2/3 mb-1"
               aria-label="Edit user name"
             />
           ) : (
