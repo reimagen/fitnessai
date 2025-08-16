@@ -70,14 +70,18 @@ const constructUserProfileContext = (
     }
 
     context += "\nFitness Goals:\n";
-    const primaryGoal = userProfile.fitnessGoals.find(g => g.isPrimary);
-    if (primaryGoal) {
-      context += `- Primary Goal: ${primaryGoal.description}${primaryGoal.targetDate ? ` (Target: ${format(primaryGoal.targetDate, 'yyyy-MM-dd')})` : ''}\n`;
+    const activeGoals = userProfile.fitnessGoals.filter(g => !g.achieved);
+    if (activeGoals.length > 0) {
+      const primaryGoal = activeGoals.find(g => g.isPrimary);
+      if (primaryGoal) {
+        context += `- Primary Goal: ${primaryGoal.description}${primaryGoal.targetDate ? ` (Target: ${format(primaryGoal.targetDate, 'yyyy-MM-dd')})` : ''}\n`;
+      }
+      activeGoals.filter(g => !g.isPrimary).forEach(goal => {
+        context += `- Other Goal: ${goal.description}${goal.targetDate ? ` (Target: ${format(goal.targetDate, 'yyyy-MM-dd')})` : ''}\n`;
+      });
+    } else {
+      context += "- No active goals listed.\n";
     }
-    userProfile.fitnessGoals.filter(g => !g.isPrimary).forEach(goal => {
-      context += `- Other Goal: ${goal.description}${goal.targetDate ? ` (Target: ${format(goal.targetDate, 'yyyy-MM-dd')})` : ''}\n`;
-    });
-    if (userProfile.fitnessGoals.length === 0) context += "- No specific goals listed.\n";
 
     context += "\nWorkout Preferences:\n";
     context += `- Workouts Per Week: ${userProfile.workoutsPerWeek || 'Not specified'}\n`;
@@ -133,7 +137,7 @@ const constructUserProfileContext = (
             if (!existing) {
                 bestRecordsMap.set(key, pr);
             } else {
-                const existingWeightKg = existing.weightUnit === 'lbs' ? existing.weight * 0.453592 : existing.weight;
+                const existingWeightKg = existing.weightUnit === 'lbs' ? existing.weight * 0.453592 : pr.weight;
                 if (prWeightKg > existingWeightKg) {
                     bestRecordsMap.set(key, pr);
                 }
