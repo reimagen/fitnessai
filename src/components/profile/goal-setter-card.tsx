@@ -100,7 +100,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         return {
             id: originalGoal?.id || `new-${Date.now()}-${index}`,
             description: g.description,
-            targetDate: fromInputDate(g.targetDate)!, // Non-null assertion as it's required
+            targetDate: fromInputDate(g.targetDate)!,
             dateAchieved: g.achieved ? (fromInputDate(g.dateAchieved) || new Date()) : undefined,
             achieved: g.achieved,
             isPrimary: g.isPrimary,
@@ -110,10 +110,13 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
   }
 
   const handleAddNewGoal = () => {
-    if (fields.length >= 3) {
+    const currentGoals = form.getValues("goals");
+    const activeGoals = currentGoals.filter(goal => !goal.achieved);
+
+    if (activeGoals.length >= 3) {
       toast({
-        title: "Goal Limit Reached",
-        description: "You have already set 3 goals, please remove one or edit an existing goal.",
+        title: "Active Goal Limit Reached",
+        description: "You can only have up to 3 active goals. Complete or remove one to add another.",
         variant: "destructive",
       });
     } else {
@@ -128,7 +131,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
             <Target className="h-6 w-6 text-primary"/>
             Your Fitness Goals
         </CardTitle>
-        <CardDescription>Define what you want to achieve: set up to 3 goals.</CardDescription>
+        <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
