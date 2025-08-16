@@ -34,11 +34,11 @@ const LIFT_NAME_ALIASES: Record<string, string> = {
   'reverse fly': 'reverse flys',
 };
 
-const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], targetRatioDisplay: string, ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row', 'reverse fly', 'reverse flys'], targetRatioDisplay: '1:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], targetRatioDisplay: '0.65:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], targetRatioDisplay: '1.33:1', ratioCalculation: (l1, l2) => l1/l2 },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], targetRatioDisplay: '0.8:1', ratioCalculation: (l1, l2) => l1/l2 },
+const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
 };
 
 // Helper to find the best PR for a given list of exercises
@@ -309,13 +309,12 @@ export default function AnalysisPage() {
         let targetRatioValue: number | null = null;
         let lowerBound: number | null = null;
         let upperBound: number | null = null;
-
-        // Custom logic for Vertical Push vs. Pull
+        
+        const rank1 = strengthLevelRanks[lift1Level];
+        const rank2 = strengthLevelRanks[lift2Level];
+        const guidingLevelRank = Math.min(rank1, rank2);
+        
         if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
-            const rank1 = strengthLevelRanks[lift1Level];
-            const rank2 = strengthLevelRanks[lift2Level];
-            const guidingLevelRank = Math.min(rank1, rank2); // Use the weaker lift's level as the guide
-
             if (userProfile.gender === 'Female') {
                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
                     targetRatioValue = 0.50; lowerBound = 0.50; upperBound = 0.60;
@@ -333,17 +332,32 @@ export default function AnalysisPage() {
                     targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
                 }
             }
-        } else {
-            // Fallback for other ratios
-            const staticRatioParts = config.targetRatioDisplay.split(':');
-            if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
-                targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
-                lowerBound = targetRatioValue * 0.90; // Default 10% tolerance
-                upperBound = targetRatioValue * 1.10;
+        } else if (type === 'Horizontal Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
+             if (userProfile.gender === 'Female') {
+                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.50; lowerBound = 0.50; upperBound = 0.60;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.60; lowerBound = 0.60; upperBound = 0.65;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.70;
+                }
+            } else if (userProfile.gender === 'Male') {
+                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.55; lowerBound = 0.55; upperBound = 0.65;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.75;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
+                }
             }
+        } else {
+             // Fallback for other ratios (Quad/Ham, Add/Abd)
+             // These are hardcoded for now, but could be expanded with tiered logic too.
+             if (type === 'Quad vs. Hamstring') { targetRatioValue = 1.33; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
+             if (type === 'Adductor vs. Abductor') { targetRatioValue = 0.8; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
         }
         
-        const targetRatioDisplay = targetRatioValue ? `${targetRatioValue.toFixed(2)}:1` : config.targetRatioDisplay;
+        const targetRatioDisplay = targetRatioValue ? `${targetRatioValue.toFixed(2)}:1` : 'N/A';
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
