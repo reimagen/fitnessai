@@ -61,11 +61,14 @@ export default function HistoryPage() {
 
     const processedExercises: Exercise[] = data.exercises.map(ex => {
         let calculatedCalories = ex.calories ?? 0;
+        
+        // This is the key logic: check for cardio, empty calories, and user profile data.
         if (
             ex.category === 'Cardio' && 
             (!ex.calories || ex.calories === 0) &&
             userProfile && userProfile.weightValue && userProfile.weightValue > 0
         ) {
+            // It will now attempt to calculate calories for any supported cardio, including Walking.
             calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
         } else if (
             ex.category === 'Cardio' && 

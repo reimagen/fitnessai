@@ -124,7 +124,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          To achieve your body fat goal, your target is to burn {minGoal}-{maxGoal} calories from cardio each week.
+          To support your cardio health, your weekly target is to burn {minGoal}-{maxGoal} calories.
         </CardDescription>
       </CardHeader>
       <CardContent>
