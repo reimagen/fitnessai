@@ -275,11 +275,21 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         dataToUpdate.joinedDate = Timestamp.fromDate(profileData.joinedDate);
     }
     if (profileData.fitnessGoals) {
-        dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(g => ({
-            ...g,
-            targetDate: Timestamp.fromDate(g.targetDate),
-            dateAchieved: g.dateAchieved ? Timestamp.fromDate(g.dateAchieved) : undefined,
-        }));
+        dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(goal => {
+            const newGoal: { [key: string]: any } = { ...goal };
+            // Target Date is required, so we can convert it directly.
+            newGoal.targetDate = Timestamp.fromDate(goal.targetDate);
+
+            // Date Achieved is optional, so we must handle its absence.
+            if (goal.dateAchieved) {
+                newGoal.dateAchieved = Timestamp.fromDate(goal.dateAchieved);
+            } else {
+                // If dateAchieved is not present, delete the key entirely
+                // to avoid sending `undefined` to Firestore.
+                delete newGoal.dateAchieved;
+            }
+            return newGoal;
+        });
     }
     if (profileData.strengthAnalysis) {
         dataToUpdate.strengthAnalysis = {
