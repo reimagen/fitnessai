@@ -279,6 +279,10 @@ export default function AnalysisPage() {
       return [];
     }
     const findings: (StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[] = [];
+    const strengthLevelRanks: Record<StrengthLevel, number> = {
+      'Beginner': 0, 'Intermediate': 1, 'Advanced': 2, 'Elite': 3, 'N/A': -1,
+    };
+
 
     IMBALANCE_TYPES.forEach(type => {
         const config = IMBALANCE_CONFIG[type];
@@ -302,37 +306,30 @@ export default function AnalysisPage() {
         }
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-
-        let targetRatioDisplay = config.targetRatioDisplay;
         let targetRatioValue: number | null = null;
+
+        // Custom logic for Vertical Push vs. Pull
+        if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A') {
+            const rank1 = strengthLevelRanks[lift1Level];
+            const rank2 = strengthLevelRanks[lift2Level];
+            const guidingLevelRank = Math.min(rank1, rank2); // Use the weaker lift's level as the guide
+
+            if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                targetRatioValue = 0.60;
+            } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                targetRatioValue = 0.65;
+            } else { // Advanced or Elite
+                targetRatioValue = 0.70;
+            }
+        } else {
+            // Fallback for other ratios
+            const staticRatioParts = config.targetRatioDisplay.split(':');
+            if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
+                targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
+            }
+        }
         
-        const staticRatioParts = config.targetRatioDisplay.split(':');
-        if(staticRatioParts.length === 2 && !isNaN(parseFloat(staticRatioParts[0])) && !isNaN(parseFloat(staticRatioParts[1])) && parseFloat(staticRatioParts[1]) !== 0) {
-            targetRatioValue = parseFloat(staticRatioParts[0]) / parseFloat(staticRatioParts[1]);
-        }
-
-        if (lift1Level !== 'N/A' && lift2Level !== 'N/A') {
-            let targetLevelForRatio: 'Intermediate' | 'Advanced' | 'Elite' = 'Elite';
-            if (lift1Level === 'Beginner' || lift2Level === 'Beginner') {
-                targetLevelForRatio = 'Intermediate';
-            } else if (lift1Level === 'Intermediate' || lift2Level === 'Intermediate') {
-                targetLevelForRatio = 'Advanced';
-            }
-
-            const lift1Thresholds = getStrengthThresholds(config.lift1Options[0], userProfile, 'kg');
-            const lift2Thresholds = getStrengthThresholds(config.lift2Options[0], userProfile, 'kg');
-
-            if (lift1Thresholds && lift2Thresholds) {
-                const targetLevelKey = targetLevelForRatio.toLowerCase() as keyof typeof lift1Thresholds;
-                const targetLift1Weight = lift1Thresholds[targetLevelKey];
-                const targetLift2Weight = lift2Thresholds[targetLevelKey];
-                
-                if (targetLift2Weight > 0) {
-                    targetRatioValue = targetLift1Weight / targetLift2Weight;
-                    targetRatioDisplay = `${targetRatioValue.toFixed(2)}:1`;
-                }
-            }
-        }
+        const targetRatioDisplay = targetRatioValue ? `${targetRatioValue.toFixed(2)}:1` : config.targetRatioDisplay;
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
