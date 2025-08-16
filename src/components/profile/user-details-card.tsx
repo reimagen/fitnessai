@@ -14,7 +14,7 @@ import { format } from "date-fns";
 
 type UserDetailsCardProps = {
   user: UserProfile;
-  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit'>>) => void;
+  onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => void;
 };
 
 const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
@@ -52,6 +52,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedWeight, setEditedWeight] = useState("");
   const [editedSkeletalMuscleMassValue, setEditedSkeletalMuscleMassValue] = useState("");
   const [editedSkeletalMuscleMassUnit, setEditedSkeletalMuscleMassUnit] = useState<'kg' | 'lbs'>(user.skeletalMuscleMassUnit || "lbs");
+  const [editedBodyFat, setEditedBodyFat] = useState(user.bodyFatPercentage?.toString() || "");
 
   useEffect(() => {
     if (isEditing) {
@@ -84,6 +85,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       
       setEditedSkeletalMuscleMassUnit(user.skeletalMuscleMassUnit || 'lbs');
       setEditedSkeletalMuscleMassValue(user.skeletalMuscleMassValue?.toString() || "");
+      
+      setEditedBodyFat(user.bodyFatPercentage?.toString() || "");
 
     }
   }, [isEditing, user]);
@@ -173,6 +176,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         toast({ title: "Invalid Skeletal Muscle Mass", description: "Please enter a valid value for skeletal muscle mass.", variant: "destructive" }); return;
     }
     
+    const bodyFatVal = parseFloat(editedBodyFat);
+    if (editedBodyFat !== "" && (isNaN(bodyFatVal) || bodyFatVal <= 0 || bodyFatVal >= 100)) {
+        toast({ title: "Invalid Body Fat %", description: "Please enter a valid percentage for body fat.", variant: "destructive" }); return;
+    }
+
     const dateParts = editedJoinedDate.split('-').map(Number);
     // Create date object from parts to ensure local timezone interpretation
     const newJoinedDateObject = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
@@ -189,6 +197,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       weightUnit: editedWeight !== "" ? editedWeightUnit : undefined,
       skeletalMuscleMassValue: editedSkeletalMuscleMassValue !== "" ? smmVal : undefined,
       skeletalMuscleMassUnit: editedSkeletalMuscleMassValue !== "" ? editedSkeletalMuscleMassUnit : undefined,
+      bodyFatPercentage: editedBodyFat !== "" ? bodyFatVal : undefined,
     });
     setIsEditing(false);
   };
@@ -210,6 +219,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const displaySkeletalMuscleMass = () => {
     if (user.skeletalMuscleMassValue === undefined || user.skeletalMuscleMassUnit === undefined) return "Not set";
     return `${user.skeletalMuscleMassValue} ${user.skeletalMuscleMassUnit}`;
+  };
+
+  const displayBodyFat = () => {
+    if (user.bodyFatPercentage === undefined) return "Not set";
+    return `${user.bodyFatPercentage.toFixed(1)}%`;
   };
 
   return (
@@ -265,7 +279,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         <div className="mt-4 space-y-4">
           <h4 className="text-md font-semibold text-muted-foreground border-b pb-1">Personal Stats</h4>
           {isEditing ? (
-            <>
+            <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="age-input" className="text-sm font-medium">Age</Label>
@@ -320,7 +334,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                     </Select>
                   </div>
                 </div>
-            </>
+                <div>
+                    <Label htmlFor="bodyfat-input" className="text-sm font-medium">Body Fat (%)</Label>
+                    <Input id="bodyfat-input" type="number" step="0.1" value={editedBodyFat} onChange={(e) => setEditedBodyFat(e.target.value)} placeholder="e.g., 24.5" className="mt-1" />
+                </div>
+            </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
               <div>
@@ -342,6 +360,10 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               <div>
                 <span className="font-medium text-muted-foreground">Skeletal Muscle: </span>
                 <span>{displaySkeletalMuscleMass()}</span>
+              </div>
+              <div>
+                <span className="font-medium text-muted-foreground">Body Fat: </span>
+                <span>{displayBodyFat()}</span>
               </div>
             </div>
           )}

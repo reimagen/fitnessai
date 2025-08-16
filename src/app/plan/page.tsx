@@ -63,6 +63,12 @@ const constructUserProfileContext = (
       context += `Skeletal Muscle Mass: Not specified\n`;
     }
 
+    if (userProfile.bodyFatPercentage) {
+        context += `Body Fat Percentage: ${userProfile.bodyFatPercentage.toFixed(1)}%\n`;
+    } else {
+        context += `Body Fat Percentage: Not specified\n`;
+    }
+
     context += "\nFitness Goals:\n";
     const primaryGoal = userProfile.fitnessGoals.find(g => g.isPrimary);
     if (primaryGoal) {
