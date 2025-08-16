@@ -154,6 +154,7 @@ const userProfileConverter = {
             weightUnit: data.weightUnit,
             skeletalMuscleMassValue: data.skeletalMuscleMassValue,
             skeletalMuscleMassUnit: data.skeletalMuscleMassUnit,
+            bodyFatPercentage: data.bodyFatPercentage,
             workoutsPerWeek: data.workoutsPerWeek,
             sessionTimeMinutes: data.sessionTimeMinutes,
             experienceLevel: data.experienceLevel,

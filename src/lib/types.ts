@@ -67,6 +67,7 @@ export interface UserProfile {
   weightUnit?: 'kg' | 'lbs';
   skeletalMuscleMassValue?: number;
   skeletalMuscleMassUnit?: 'kg' | 'lbs';
+  bodyFatPercentage?: number;
   workoutsPerWeek?: number;
   sessionTimeMinutes?: SessionTime;
   experienceLevel?: ExperienceLevel;
