@@ -274,8 +274,11 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                     <div className="space-y-3">
                     {achievedFields.map(({ field, index }) => (
                       <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
-                        <div>
+                        <div className="flex flex-col">
                           <p className="font-medium text-foreground">{field.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
                           </p>
