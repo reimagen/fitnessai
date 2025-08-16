@@ -283,15 +283,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                             Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
                           </p>
                         </div>
-                         <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => remove(index)}
-                            className="text-destructive hover:bg-destructive/10 h-8 w-8"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                       </div>
                     ))}
                     </div>
