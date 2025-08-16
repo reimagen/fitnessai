@@ -252,11 +252,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">Cardio Calories Goal: </span>
+                <span className="font-medium text-muted-foreground">Weekly Cardio Calories Goal: </span>
                 <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">Cardio Calories Stretch Goal: </span>
+                <span className="font-medium text-muted-foreground">Weekly Cardio Calories Stretch Goal: </span>
                 <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
               </div>
             </div>
