@@ -43,8 +43,20 @@ type GoalSetterCardProps = {
 // Helper to create initial form values from initialGoals prop
 const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
   if (!Array.isArray(goalsProp) || goalsProp.length === 0) return { goals: [] };
+  
+  const sortedGoals = [...goalsProp].sort((a, b) => {
+    // Primary goal always on top
+    if (a.isPrimary) return -1;
+    if (b.isPrimary) return 1;
+    // Active goals before achieved goals
+    if (!a.achieved && b.achieved) return -1;
+    if (a.achieved && !b.achieved) return 1;
+    // Fallback to maintain a stable order (e.g., by date) if needed, but 0 is fine
+    return 0;
+  });
+
   return {
-    goals: goalsProp.map(g => {
+    goals: sortedGoals.map(g => {
       const toInputDate = (date: Date | undefined) => {
         if (!date) return "";
         const dateObj = date instanceof Date ? date : new Date(date);
