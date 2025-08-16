@@ -19,20 +19,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PlusCircle, Trash2, Target, Star } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
 import { useEffect } from "react";
-import { format as formatDate } from "date-fns";
+import { format as formatDate, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 const goalSchema = z.object({
   description: z.string().min(5, "Goal description must be at least 5 characters."),
-  targetDate: z.string().optional()
-    .refine(val => {
-      if (!val || val.trim() === "") return true; // Empty is allowed
-      const date = new Date(val);
-      return !isNaN(date.getTime()) && val.length >= 8 && (val.includes('/') || val.includes('-'));
-    }, {
-      message: "Invalid date. Please use MM/DD/YYYY or similar format.",
-    }),
+  targetDate: z.string().optional(),
+  dateAchieved: z.string().optional(),
   achieved: z.boolean().default(false),
   isPrimary: z.boolean().default(false),
 });
@@ -51,16 +45,16 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
   if (!Array.isArray(goalsProp) || goalsProp.length === 0) return { goals: [] };
   return {
     goals: goalsProp.map(g => {
-      let displayDateString = "";
-      if (g.targetDate) {
-          const dateObj = g.targetDate instanceof Date ? g.targetDate : new Date(g.targetDate);
-          if (!isNaN(dateObj.getTime())) {
-              displayDateString = formatDate(dateObj, 'MM/dd/yyyy');
-          }
-      }
+      const toInputDate = (date: Date | undefined) => {
+        if (!date) return "";
+        const dateObj = date instanceof Date ? date : new Date(date);
+        return isValid(dateObj) ? formatDate(dateObj, 'yyyy-MM-dd') : "";
+      };
+      
       return {
           description: g.description,
-          targetDate: displayDateString,
+          targetDate: toInputDate(g.targetDate),
+          dateAchieved: toInputDate(g.dateAchieved),
           achieved: g.achieved || false,
           isPrimary: g.isPrimary || false,
       };
@@ -96,11 +90,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
   function onSubmit(values: z.infer<typeof goalsFormSchema>) {
     const updatedGoals: FitnessGoal[] = values.goals.map((g, index) => {
         const originalGoal = initialGoals?.find((_og, i) => i === index);
+        const fromInputDate = (dateStr: string | undefined) => {
+           if (!dateStr || dateStr.trim() === "") return undefined;
+           // Handle YYYY-MM-DD by replacing dashes to avoid timezone issues
+           const date = new Date(dateStr.replace(/-/g, '\/'));
+           return isValid(date) ? date : undefined;
+        }
 
         return {
             id: originalGoal?.id || `new-${Date.now()}-${index}`,
             description: g.description,
-            targetDate: g.targetDate && g.targetDate.trim() !== "" ? new Date(g.targetDate) : undefined,
+            targetDate: fromInputDate(g.targetDate),
+            dateAchieved: g.achieved ? fromInputDate(g.dateAchieved) : undefined,
             achieved: g.achieved,
             isPrimary: g.isPrimary,
         }
@@ -116,7 +117,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         variant: "destructive",
       });
     } else {
-      append({ description: "", achieved: false, targetDate: "", isPrimary: false });
+      append({ description: "", achieved: false, targetDate: "", dateAchieved: "", isPrimary: false });
     }
   };
 
@@ -134,80 +135,91 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {fields.map((field, index) => {
               const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
+              const isAchieved = form.watch(`goals.${index}.achieved`);
               return (
                 <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
-                  <FormField
-                    control={form.control}
-                    name={`goals.${index}.description`}
-                    render={({ field }) => (
-                      <FormItem className="mb-2">
-                        <FormLabel>Goal Description</FormLabel>
-                        <FormControl>
-                          <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km without stopping" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                      <FormField
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`goals.${index}.description`}
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Goal Description</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
                       control={form.control}
                       name={`goals.${index}.targetDate`}
                       render={({ field }) => (
-                          <FormItem>
+                        <FormItem>
                           <FormLabel>Target Date (Optional)</FormLabel>
                           <FormControl>
-                              <Input type="text" placeholder="MM/DD/YYYY" {...field} />
+                            <Input type="date" {...field} />
                           </FormControl>
                           <FormMessage />
-                          </FormItem>
+                        </FormItem>
                       )}
-                      />
-                      <Button
+                    />
+                    {isAchieved && (
+                       <FormField
+                          control={form.control}
+                          name={`goals.${index}.dateAchieved`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Date Achieved</FormLabel>
+                              <FormControl>
+                                <Input type="date" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
+                    <div className="flex items-center gap-4">
+                       <Button
                           type="button"
                           variant={isCurrentGoalPrimary ? "default" : "outline"}
                           size="sm"
                           onClick={() => handleSetPrimary(index)}
                           disabled={isCurrentGoalPrimary}
-                          className={cn(
-                            "w-full md:w-auto whitespace-nowrap",
-                            isCurrentGoalPrimary && "disabled:opacity-100"
-                          )}
+                          className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
                       >
-                          {isCurrentGoalPrimary ? (
-                              <>
-                                  <Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal
-                              </>
-                          ) : (
-                             "Set as Primary"
-                          )}
+                          {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
                       </Button>
                       <FormField
-                      control={form.control}
-                      name={`goals.${index}.achieved`}
-                      render={({ field: checkboxField }) => ( 
-                          <FormItem className="flex flex-row items-center space-x-2 pb-1 justify-self-start md:justify-self-end">
-                          <FormControl>
-                              <Checkbox
-                              checked={checkboxField.value}
-                              onCheckedChange={checkboxField.onChange}
-                              />
-                          </FormControl>
-                          <FormLabel className="font-normal">Achieved</FormLabel>
-                          <FormMessage />
-                          </FormItem>
-                      )}
-                      />
+                        control={form.control}
+                        name={`goals.${index}.achieved`}
+                        render={({ field: checkboxField }) => ( 
+                            <FormItem className="flex flex-row items-center space-x-2">
+                            <FormControl>
+                                <Checkbox
+                                checked={checkboxField.value}
+                                onCheckedChange={checkboxField.onChange}
+                                />
+                            </FormControl>
+                            <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
+                            </FormItem>
+                        )}
+                        />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => remove(index)}
+                      className="text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => remove(index)}
-                    className="mt-3 text-destructive hover:bg-destructive/10"
-                  >
-                    <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
-                  </Button>
                 </Card>
               );
             })}
@@ -227,4 +239,3 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     </Card>
   );
 }
-

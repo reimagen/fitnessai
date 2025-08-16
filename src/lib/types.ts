@@ -29,6 +29,7 @@ export interface FitnessGoal {
   description: string;
   targetDate?: Date;
   achieved: boolean;
+  dateAchieved?: Date;
   isPrimary?: boolean;
 }
 

@@ -81,6 +81,7 @@ const userProfileConverter = {
             dataToStore.fitnessGoals = profile.fitnessGoals.map(goal => ({
                 ...goal,
                 targetDate: goal.targetDate ? Timestamp.fromDate(goal.targetDate) : undefined,
+                dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : undefined,
             }));
         }
         if (profile.strengthAnalysis) {
@@ -111,6 +112,7 @@ const userProfileConverter = {
                 achieved: !!goal.achieved,
                 isPrimary: !!goal.isPrimary,
                 targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : undefined,
+                dateAchieved: goal.dateAchieved instanceof Timestamp ? goal.dateAchieved.toDate() : undefined,
             })) : [];
         
         const strengthAnalysis: StoredStrengthAnalysis | undefined = data.strengthAnalysis && data.strengthAnalysis.generatedDate instanceof Timestamp ? {
@@ -271,6 +273,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(g => ({
             ...g,
             targetDate: g.targetDate ? Timestamp.fromDate(g.targetDate) : undefined,
+            dateAchieved: g.dateAchieved ? Timestamp.fromDate(g.dateAchieved) : undefined,
         }));
     }
     if (profileData.strengthAnalysis) {
