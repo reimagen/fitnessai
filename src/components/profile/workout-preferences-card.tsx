@@ -199,7 +199,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             </div>
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <Label htmlFor="cardio-goal-input" className="text-sm font-medium">Weekly Cardio Goal (kcal)</Label>
+                    <Label htmlFor="cardio-goal-input" className="text-sm font-medium">Weekly Cardio Calories Goal</Label>
                     <Input
                         id="cardio-goal-input"
                         type="number"
@@ -211,7 +211,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                     />
                 </div>
                 <div>
-                    <Label htmlFor="cardio-stretch-goal-input" className="text-sm font-medium">Weekly Stretch Goal (kcal)</Label>
+                    <Label htmlFor="cardio-stretch-goal-input" className="text-sm font-medium">Weekly Cardio Calories Stretch Goal</Label>
                     <Input
                         id="cardio-stretch-goal-input"
                         type="number"
@@ -252,11 +252,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">Cardio Goal: </span>
+                <span className="font-medium text-muted-foreground">Cardio Calories Goal: </span>
                 <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
               </div>
               <div>
-                <span className="font-medium text-muted-foreground">Stretch Goal: </span>
+                <span className="font-medium text-muted-foreground">Cardio Calories Stretch Goal: </span>
                 <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
               </div>
             </div>
