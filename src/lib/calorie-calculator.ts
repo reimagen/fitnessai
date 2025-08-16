@@ -17,49 +17,62 @@ const RUNNING_METS: { [speedMph: number]: number } = {
   10: 14.5, // 10 mph (6 min/mile)
 };
 
+// MET values for walking at different speeds (mph)
+// Source: Compendium of Physical Activities (Ainsworth et al.)
+const WALKING_METS: { [speedMph: number]: number } = {
+  2.0: 2.8, // 30 min/mile
+  2.5: 3.0, // 24 min/mile
+  3.0: 3.5, // 20 min/mile
+  3.5: 4.3, // 17 min/mile
+  4.0: 5.0, // 15 min/mile
+  4.5: 7.0, // ~13.3 min/mile
+};
+
 // A simplified MET value for general, moderate intensity rowing.
 // A more complex implementation could vary this based on strokes per minute or power output.
 const ROWING_MET_VALUE = 7.0;
 
-const DEFAULT_AVG_PACE_MIN_PER_MILE = 10; // 10 min/mile as a fallback for running
+const DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE = 10; // 10 min/mile as a fallback for running
+const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile as a fallback for walking
 
-function getAveragePace(workoutLogs: WorkoutLog[]): number {
-  const runningExercises: { distance: number; duration: number }[] = [];
+function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
+  const exercises: { distance: number; duration: number }[] = [];
+
+  const activityKeywords = activity === 'run' ? ['run', 'treadmill'] : ['walk'];
 
   workoutLogs.forEach(log => {
     log.exercises.forEach(ex => {
-      // For simplicity, we'll only use miles and minutes from past logs to calculate an average.
-      // A more complex implementation could convert all units.
+      const exNameLower = ex.name.toLowerCase();
       if (
         ex.category === 'Cardio' &&
         ex.distance && ex.distance > 0 &&
         ex.duration && ex.duration > 0 &&
         ex.distanceUnit === 'mi' &&
         ex.durationUnit === 'min' &&
-        (ex.name.toLowerCase().includes('run') || ex.name.toLowerCase().includes('treadmill'))
+        activityKeywords.some(keyword => exNameLower.includes(keyword))
       ) {
-        runningExercises.push({ distance: ex.distance, duration: ex.duration });
+        exercises.push({ distance: ex.distance, duration: ex.duration });
       }
     });
   });
 
-  if (runningExercises.length === 0) {
-    return DEFAULT_AVG_PACE_MIN_PER_MILE;
+  if (exercises.length === 0) {
+    return activity === 'run' ? DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE : DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE;
   }
 
-  const totalMinutes = runningExercises.reduce((sum, ex) => sum + ex.duration, 0);
-  const totalMiles = runningExercises.reduce((sum, ex) => sum + ex.distance, 0);
+  const totalMinutes = exercises.reduce((sum, ex) => sum + ex.duration, 0);
+  const totalMiles = exercises.reduce((sum, ex) => sum + ex.distance, 0);
   
   return totalMinutes / totalMiles;
 }
 
-function getMetForRunningPace(paceMinPerMile: number): number {
+function getMetForPace(paceMinPerMile: number, metTable: { [speed: number]: number }): number {
     const speedMph = 60 / paceMinPerMile;
     // Find the closest MET value from our table
-    const closestSpeed = Object.keys(RUNNING_METS)
+    const closestSpeed = Object.keys(metTable)
         .map(Number)
         .reduce((prev, curr) => (Math.abs(curr - speedMph) < Math.abs(prev - speedMph) ? curr : prev));
-    return RUNNING_METS[closestSpeed];
+    return metTable[closestSpeed];
 }
 
 
@@ -101,8 +114,8 @@ export function calculateExerciseCalories(
     const exerciseName = name.toLowerCase();
 
     // --- Determine MET value and duration in hours ---
-    if (exerciseName.includes('run') || exerciseName.includes('treadmill')) {
-        if (!distance || distance <= 0) return 0; // Running needs distance
+    if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk')) {
+        if (!distance || distance <= 0) return 0; // Running/walking needs distance
 
         let distanceInMiles = distance;
         if (distanceUnit === 'km') distanceInMiles = distance * 0.621371;
@@ -120,12 +133,15 @@ export function calculateExerciseCalories(
             durationInHours = durationInMinutes / 60;
             paceMinPerMile = durationInMinutes / distanceInMiles;
         } else {
-            const avgPace = getAveragePace(workoutLogs);
+            const isRunning = exerciseName.includes('run') || exerciseName.includes('treadmill');
+            const avgPace = getAveragePace(workoutLogs, isRunning ? 'run' : 'walk');
             const estimatedDurationMinutes = distanceInMiles * avgPace;
             durationInHours = estimatedDurationMinutes / 60;
             paceMinPerMile = avgPace;
         }
-        metValue = getMetForRunningPace(paceMinPerMile);
+
+        const metTable = exerciseName.includes('walk') ? WALKING_METS : RUNNING_METS;
+        metValue = getMetForPace(paceMinPerMile, metTable);
 
     } else if (exerciseName.includes('rowing')) {
         if (!duration || duration <= 0) return 0; // Rowing needs duration
@@ -140,7 +156,7 @@ export function calculateExerciseCalories(
         metValue = ROWING_MET_VALUE;
 
     } else {
-        // For other cardio like cycling, walking, etc., we'd need more specific MET tables.
+        // For other cardio like cycling, etc., we'd need more specific MET tables.
         // For now, return 0 if it's not a supported auto-calculation type.
         return 0;
     }
