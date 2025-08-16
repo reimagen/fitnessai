@@ -101,7 +101,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
             id: originalGoal?.id || `new-${Date.now()}-${index}`,
             description: g.description,
             targetDate: fromInputDate(g.targetDate),
-            dateAchieved: g.achieved ? fromInputDate(g.dateAchieved) : undefined,
+            dateAchieved: g.achieved ? (fromInputDate(g.dateAchieved) || new Date()) : undefined,
             achieved: g.achieved,
             isPrimary: g.isPrimary,
         }
