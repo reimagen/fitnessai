@@ -23,8 +23,8 @@ const HEIGHT_UNIT_OPTIONS = [
     { label: "Feet/Inches", value: "ft/in" },
 ];
 const WEIGHT_UNIT_OPTIONS = [
-    { label: "Kilograms", value: "kg" },
-    { label: "Pounds", value: "lbs" },
+    { label: "kg", value: "kg" },
+    { label: "lbs", value: "lbs" },
 ];
 const INCH_TO_CM = 2.54;
 const FT_TO_INCHES = 12;
