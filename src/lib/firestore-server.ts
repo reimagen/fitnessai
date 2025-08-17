@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 
@@ -113,6 +113,12 @@ const userProfileConverter = {
             }
             dataToStore.liftProgressionAnalysis = convertedAnalyses;
         }
+        if (profile.weeklyPlan) {
+            dataToStore.weeklyPlan = {
+                ...profile.weeklyPlan,
+                generatedDate: Timestamp.fromDate(profile.weeklyPlan.generatedDate),
+            };
+        }
         return dataToStore;
     },
     fromFirestore: (snapshot: any, options: any): UserProfile => {
@@ -145,6 +151,11 @@ const userProfileConverter = {
             }
         }
 
+        const weeklyPlan: StoredWeeklyPlan | undefined = data.weeklyPlan && data.weeklyPlan.generatedDate instanceof Timestamp ? {
+            ...data.weeklyPlan,
+            generatedDate: data.weeklyPlan.generatedDate.toDate(),
+        } : undefined;
+
         return {
             id: snapshot.id,
             name: data.name || "User",
@@ -153,6 +164,7 @@ const userProfileConverter = {
             fitnessGoals: fitnessGoals,
             strengthAnalysis: strengthAnalysis,
             liftProgressionAnalysis: liftProgressionAnalysis,
+            weeklyPlan: weeklyPlan,
             age: data.age,
             gender: data.gender,
             heightValue: data.heightValue,
@@ -315,6 +327,12 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         dataToUpdate.strengthAnalysis = {
             ...profileData.strengthAnalysis,
             generatedDate: Timestamp.fromDate(profileData.strengthAnalysis.generatedDate),
+        };
+    }
+    if (profileData.weeklyPlan) {
+        dataToUpdate.weeklyPlan = {
+            ...profileData.weeklyPlan,
+            generatedDate: Timestamp.fromDate(profileData.weeklyPlan.generatedDate),
         };
     }
     
