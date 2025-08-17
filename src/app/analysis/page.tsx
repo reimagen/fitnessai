@@ -21,7 +21,7 @@ import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standard
 const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
-    'Quad vs. Hamstring',
+    'Hamstring vs. Quad',
     'Adductor vs. Abductor',
 ] as const;
 
@@ -37,7 +37,7 @@ const LIFT_NAME_ALIASES: Record<string, string> = {
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Quad vs. Hamstring': { lift1Options: ['leg extension'], lift2Options: ['leg curl'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Hamstring vs. Quad': { lift1Options: ['leg curl'], lift2Options: ['leg extension'], ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
 };
 
@@ -351,9 +351,8 @@ export default function AnalysisPage() {
                 }
             }
         } else {
-             // Fallback for other ratios (Quad/Ham, Add/Abd)
-             // These are hardcoded for now, but could be expanded with tiered logic too.
-             if (type === 'Quad vs. Hamstring') { targetRatioValue = 1.33; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
+             // Fallback for other ratios (Ham/Quad, Add/Abd)
+             if (type === 'Hamstring vs. Quad') { targetRatioValue = 0.75; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
              if (type === 'Adductor vs. Abductor') { targetRatioValue = 0.8; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
         }
         
@@ -1211,3 +1210,4 @@ useEffect(() => {
     
 
     
+
