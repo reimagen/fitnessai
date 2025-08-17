@@ -247,13 +247,17 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         </div>
         <div>
           {isEditing ? (
-            <Input
-              type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              className="text-2xl font-headline font-semibold leading-none tracking-tight w-2/3 mb-1"
-              aria-label="Edit user name"
-            />
+            <div className="mb-1 mr-16">
+              <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
+              <Input
+                id="name-input"
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
+                aria-label="Edit user name"
+              />
+            </div>
           ) : (
             <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name}</CardTitle> // Added mr-16 for spacing from buttons
           )}
@@ -294,7 +298,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
                     <Label htmlFor="height-unit-select" className="text-sm font-medium">Height</Label>
                     <div className="flex items-center gap-2 mt-1">
@@ -318,7 +322,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
                   <Label className="text-sm font-medium">Weight</Label>
                   <div className="flex gap-2 mt-1">
