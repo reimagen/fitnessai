@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Flame } from 'lucide-react';
+import { Flame, Info } from 'lucide-react';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 
 type WeeklyCardioTrackerProps = {
@@ -92,12 +92,16 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
-    if (!userProfile) return null;
+    if (!userProfile) return null; // Guard clause to prevent crash
     const oneMileRun = { name: 'run', category: 'Cardio' as const, distance: 1, distanceUnit: 'mi' as const, sets: 0, reps: 0, weight: 0 };
     return calculateExerciseCalories(oneMileRun, userProfile, workoutLogs);
   }, [userProfile, workoutLogs]);
 
   const getMotivationalMessage = () => {
+    if (!userProfile) { // Guard clause for when profile doesn't exist
+      return "Set your weight and weekly goals in your profile to enable personalized cardio tracking.";
+    }
+
     if (totalWeeklyCalories >= maxGoal) {
       return "You've crushed your stretch goal! Amazing work this week.";
     }
@@ -128,23 +132,30 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          <div className="flex justify-between items-baseline mb-1">
-            <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories)} kcal</span>
-            <span className="text-sm text-muted-foreground">/ {maxGoal} kcal</span>
+        {userProfile ? (
+          <div className="space-y-4">
+            <div className="flex justify-between items-baseline mb-1">
+              <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories)} kcal</span>
+              <span className="text-sm text-muted-foreground">/ {maxGoal} kcal</span>
+            </div>
+            <div className="relative h-4 w-full">
+              <Progress value={progressPercentage} className="h-full" />
+              <div 
+                className="absolute top-0 h-full w-1 bg-muted-foreground/50" 
+                style={{ left: `${(minGoal / maxGoal) * 100}%` }}
+                title={`Minimum goal: ${minGoal} kcal`}
+              ></div>
+            </div>
+            <p className="text-sm text-muted-foreground text-center w-full pt-2">
+              {getMotivationalMessage()}
+            </p>
           </div>
-          <div className="relative h-4 w-full">
-            <Progress value={progressPercentage} className="h-full" />
-            <div 
-              className="absolute top-0 h-full w-1 bg-muted-foreground/50" 
-              style={{ left: `${(minGoal / maxGoal) * 100}%` }}
-              title={`Minimum goal: ${minGoal} kcal`}
-            ></div>
+        ) : (
+          <div className="flex items-center gap-2 p-4 rounded-md border border-yellow-500 bg-yellow-500/10 text-yellow-700 text-sm">
+              <Info className="h-5 w-5 flex-shrink-0"/> 
+              <p>{getMotivationalMessage()}</p>
           </div>
-          <p className="text-sm text-muted-foreground text-center w-full pt-2">
-            {getMotivationalMessage()}
-          </p>
-        </div>
+        )}
 
         <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
           {daysOfWeek.map(day => {
