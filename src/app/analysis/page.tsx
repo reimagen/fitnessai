@@ -450,8 +450,6 @@ export default function AnalysisPage() {
         userProfile: {
             age: userProfile.age,
             gender: userProfile.gender,
-            heightValue: userProfile.heightValue,
-            heightUnit: userProfile.heightUnit,
             weightValue: userProfile.weightValue,
             weightUnit: userProfile.weightUnit,
             skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
@@ -1244,4 +1242,5 @@ useEffect(() => {
     
 
     
+
 
