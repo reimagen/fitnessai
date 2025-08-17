@@ -20,8 +20,6 @@ const FitnessGoalForAnalysisSchema = z.object({
 const UserProfileForAnalysisSchema = z.object({
     age: z.number().optional().describe("The user's age."),
     gender: z.string().optional().describe("The user's gender."),
-    heightValue: z.number().optional().describe("The user's height value."),
-    heightUnit: z.enum(['cm', 'ft/in']).optional().describe("The user's height unit."),
     weightValue: z.number().optional().describe("The user's weight value."),
     weightUnit: z.enum(['kg', 'lbs']).optional().describe("The user's weight unit."),
     skeletalMuscleMassValue: z.number().optional().describe("The user's skeletal muscle mass value."),
@@ -32,7 +30,7 @@ const UserProfileForAnalysisSchema = z.object({
 const IMBALANCE_TYPES = [
     'Horizontal Push vs. Pull',
     'Vertical Push vs. Pull',
-    'Quad vs. Hamstring',
+    'Hamstring vs. Quad',
     'Adductor vs. Abductor',
 ] as const;
 
