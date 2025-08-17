@@ -16,7 +16,7 @@ import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePer
 import { writeBatch, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useQueryClient } from "@tanstack/react-query";
-import { getStrengthLevel, getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
+import { getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
@@ -254,7 +254,7 @@ export default function MilestonesPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                             {groupedRecords[category].map(record => {
                                 const isEditing = editingRecordId === record.id;
-                                const level = userProfile ? getStrengthLevel(record, userProfile) : 'N/A';
+                                const level = record.strengthLevel || 'N/A';
                                 const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const standardType = getStrengthStandardType(record.exerciseName);
                                 const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
