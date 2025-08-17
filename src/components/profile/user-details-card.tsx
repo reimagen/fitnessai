@@ -40,7 +40,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
 
-  const [editedName, setEditedName] = useState(user.name);
+  const [editedName, setEditedName] = useState(user.name || "");
   const [editedJoinedDate, setEditedJoinedDate] = useState(formatDateForInput(user.joinedDate));
   const [editedAge, setEditedAge] = useState(user.age?.toString() || "");
   const [editedGender, setEditedGender] = useState(user.gender || "");
@@ -56,7 +56,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   useEffect(() => {
     if (isEditing) {
-      setEditedName(user.name);
+      setEditedName(user.name || "");
       setEditedJoinedDate(formatDateForInput(user.joinedDate));
       setEditedAge(user.age?.toString() || "");
       setEditedGender(user.gender || "");
@@ -187,7 +187,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
 
     onUpdate({ 
-      name: editedName,
+      name: editedName.trim(),
       joinedDate: newJoinedDateObject,
       age: editedAge === "" ? undefined : currentAgeNum, 
       gender: editedGender === "" ? undefined : editedGender,
