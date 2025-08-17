@@ -294,26 +294,31 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                 </div>
               </div>
 
-              {/* Combined Height Input */}
-              <div>
-                <Label htmlFor="height-unit-select" className="text-sm font-medium">Height</Label>
-                <div className="flex items-center gap-2 mt-1">
-                    {editedHeightUnit === 'cm' ? (
-                        <Input id="height-cm-input" type="number" value={editedHeightCm} onChange={(e) => setEditedHeightCm(e.target.value)} placeholder="e.g., 175" aria-label="Height in cm" />
-                    ) : (
-                        <div className="flex flex-grow gap-2">
-                        <Input id="height-ft-input" type="number" value={editedHeightFt} onChange={(e) => setEditedHeightFt(e.target.value)} placeholder="ft" className="w-1/2" aria-label="Feet" />
-                        <Input id="height-in-input" type="number" value={editedHeightIn} onChange={(e) => setEditedHeightIn(e.target.value)} placeholder="in" className="w-1/2" aria-label="Inches" min="0" max="11" />
-                        </div>
-                    )}
-                    <Select value={editedHeightUnit} onValueChange={(v) => handleHeightUnitChange(v as 'cm' | 'ft/in')}>
-                        <SelectTrigger id="height-unit-select" className="w-[80px]"><SelectValue placeholder="Unit" /></SelectTrigger>
-                        <SelectContent>{HEIGHT_UNIT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-                    </Select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="height-unit-select" className="text-sm font-medium">Height</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                        {editedHeightUnit === 'cm' ? (
+                            <Input id="height-cm-input" type="number" value={editedHeightCm} onChange={(e) => setEditedHeightCm(e.target.value)} placeholder="e.g., 175" aria-label="Height in cm" />
+                        ) : (
+                            <div className="flex flex-grow gap-2">
+                            <Input id="height-ft-input" type="number" value={editedHeightFt} onChange={(e) => setEditedHeightFt(e.target.value)} placeholder="ft" className="w-1/2" aria-label="Feet" />
+                            <Input id="height-in-input" type="number" value={editedHeightIn} onChange={(e) => setEditedHeightIn(e.target.value)} placeholder="in" className="w-1/2" aria-label="Inches" min="0" max="11" />
+                            </div>
+                        )}
+                        <Select value={editedHeightUnit} onValueChange={(v) => handleHeightUnitChange(v as 'cm' | 'ft/in')}>
+                            <SelectTrigger id="height-unit-select" className="w-[80px]"><SelectValue placeholder="Unit" /></SelectTrigger>
+                            <SelectContent>{HEIGHT_UNIT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+                        </Select>
+                    </div>
+                </div>
+                <div>
+                    <Label htmlFor="bodyfat-input" className="text-sm font-medium">Body Fat (%)</Label>
+                    <Input id="bodyfat-input" type="number" step="0.1" value={editedBodyFat} onChange={(e) => setEditedBodyFat(e.target.value)} placeholder="e.g., 24.5" className="mt-1" />
                 </div>
               </div>
               
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Weight</Label>
                   <div className="flex gap-2 mt-1">
@@ -334,10 +339,6 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                     </Select>
                   </div>
                 </div>
-              </div>
-              <div>
-                  <Label htmlFor="bodyfat-input" className="text-sm font-medium">Body Fat (%)</Label>
-                  <Input id="bodyfat-input" type="number" step="0.1" value={editedBodyFat} onChange={(e) => setEditedBodyFat(e.target.value)} placeholder="e.g., 24.5" className="mt-1" />
               </div>
             </div>
           ) : (
