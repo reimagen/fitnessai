@@ -15,7 +15,7 @@ import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMo
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
+import { getStrengthThresholds } from '@/lib/strength-standards';
 
 
 const IMBALANCE_TYPES = [
@@ -294,8 +294,8 @@ export default function AnalysisPage() {
              return;
         };
 
-        const lift1Level = getStrengthLevel(lift1, userProfile);
-        const lift2Level = getStrengthLevel(lift2, userProfile);
+        const lift1Level = lift1.strengthLevel || 'N/A';
+        const lift2Level = lift2.strengthLevel || 'N/A';
 
         const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
         const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
@@ -799,7 +799,7 @@ useEffect(() => {
         const bestPRforLift = findBestPr(personalRecords, [prName]);
 
         if (bestPRforLift) {
-            setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
+            setCurrentLiftLevel(bestPRforLift.strengthLevel || 'N/A');
         } else {
             setCurrentLiftLevel(null);
         }
@@ -1242,5 +1242,6 @@ useEffect(() => {
     
 
     
+
 
 
