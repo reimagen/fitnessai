@@ -1,4 +1,5 @@
 
+
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
@@ -52,6 +53,14 @@ export interface StoredLiftProgressionAnalysis {
   generatedDate: Date;
 }
 
+export interface StoredWeeklyPlan {
+  plan: string;
+  generatedDate: Date;
+  contextUsed: string;
+  userId: string;
+  weekStartDate: string;
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -76,6 +85,7 @@ export interface UserProfile {
   liftProgressionAnalysis?: {
     [exerciseName: string]: StoredLiftProgressionAnalysis;
   };
+  weeklyPlan?: StoredWeeklyPlan;
   weeklyCardioCalorieGoal?: number;
   weeklyCardioStretchCalorieGoal?: number;
 }

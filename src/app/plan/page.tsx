@@ -7,21 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, Zap, AlertTriangle, Info } from "lucide-react";
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
-import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput } from "@/lib/types";
-import { useUserProfile, useWorkouts, usePersonalRecords } from "@/lib/firestore.service";
+import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
+import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
 import { format, differenceInWeeks, nextSunday as getNextSunday } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { getStrengthLevel } from "@/lib/strength-standards";
-
-interface StoredWeeklyPlan {
-  plan: string;
-  generatedDate: string;
-  contextUsed: string;
-  userId: string;
-  weekStartDate: string;
-}
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -166,29 +158,19 @@ export default function PlanPage() {
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
+  const updateUserMutation = useUpdateUserProfile();
   
   const [currentWeekStartDate, setCurrentWeekStartDate] = useState<string>("");
   const [apiIsLoading, setApiIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [generatedPlan, setGeneratedPlan] = useState<StoredWeeklyPlan | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [regenerationFeedback, setRegenerationFeedback] = useState("");
 
-  const AI_WEEKLY_PLAN_KEY = "fitnessAppWeeklyPlan";
 
   useEffect(() => {
     setIsClient(true);
     const nextSundayDate = getNextSunday(new Date());
     setCurrentWeekStartDate(format(nextSundayDate, 'yyyy-MM-dd'));
-
-    const storedPlanString = localStorage.getItem(AI_WEEKLY_PLAN_KEY);
-    if (storedPlanString) {
-      try {
-        setGeneratedPlan(JSON.parse(storedPlanString));
-      } catch (e) {
-        console.error("Failed to parse stored plan", e);
-      }
-    }
   }, []);
 
   const userProfileContextString = useMemo(() => {
@@ -219,15 +201,22 @@ export default function PlanPage() {
     if (result.success && result.data?.weeklyPlan) {
       const newPlanData: StoredWeeklyPlan = {
         plan: result.data.weeklyPlan,
-        generatedDate: new Date().toISOString(),
+        generatedDate: new Date(),
         contextUsed: finalContext,
         userId: userProfile.id,
         weekStartDate: currentWeekStartDate,
       };
-      setGeneratedPlan(newPlanData);
-      localStorage.setItem(AI_WEEKLY_PLAN_KEY, JSON.stringify(newPlanData));
-      setRegenerationFeedback(""); // Clear feedback box on success
-      toast({ title: "Plan Generated!", description: "Your new weekly workout plan is ready." });
+
+      updateUserMutation.mutate({ weeklyPlan: newPlanData }, {
+          onSuccess: () => {
+              setRegenerationFeedback(""); // Clear feedback box on success
+              toast({ title: "Plan Generated!", description: "Your new weekly workout plan is ready and saved to your profile." });
+          },
+          onError: (error) => {
+              setError(`Failed to save the plan to your profile: ${error.message}`);
+              toast({ title: "Save Failed", description: `Could not save plan: ${error.message}`, variant: "destructive" });
+          }
+      });
     } else {
       setError(result.error || "Failed to generate workout plan. The AI might be busy or an unexpected error occurred.");
       toast({ title: "Generation Failed", description: result.error || "Could not generate plan.", variant: "destructive" });
@@ -237,6 +226,7 @@ export default function PlanPage() {
 
   const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
+  const generatedPlan = userProfile?.weeklyPlan;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -278,12 +268,12 @@ export default function PlanPage() {
                     value={regenerationFeedback}
                     onChange={(e) => setRegenerationFeedback(e.target.value)}
                     className="min-h-[80px]"
-                    disabled={apiIsLoading}
+                    disabled={apiIsLoading || updateUserMutation.isPending}
                   />
                 </div>
               )}
-              <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                {apiIsLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading || updateUserMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                {apiIsLoading || updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
                 {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
               </Button>
             </div>
@@ -313,7 +303,7 @@ export default function PlanPage() {
           <CardHeader>
             <CardTitle className="font-headline text-primary">Current Weekly Plan</CardTitle>
             <CardDescription>
-              Generated on: {format(new Date(generatedPlan.generatedDate), 'MMMM d, yyyy \'at\' h:mm a')} for week starting {format(new Date(generatedPlan.weekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}.
+              Generated on: {format(generatedPlan.generatedDate, 'MMMM d, yyyy \'at\' h:mm a')} for week starting {format(new Date(generatedPlan.weekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}.
             </CardDescription>
           </CardHeader>
           <CardContent>
