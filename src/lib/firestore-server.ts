@@ -60,7 +60,12 @@ const personalRecordConverter = {
   fromFirestore: (snapshot: any, options: any): PersonalRecord => {
     const data = snapshot.data(options) || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
-    const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' ? data.strengthLevel as StrengthLevel : 'N/A';
+    
+    // Maintain the existing strengthLevel if it's there.
+    // The previous implementation added this field, so we should preserve it on reads.
+    const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' 
+        ? data.strengthLevel as StrengthLevel 
+        : 'N/A';
 
     return {
       id: snapshot.id,
@@ -231,6 +236,7 @@ export const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) 
   const batch = writeBatch(db);
   records.forEach(record => {
     const newDocRef = doc(personalRecordsCollection);
+    // Add the calculated strengthLevel to the new record before saving.
     const recordWithLevel: Omit<PersonalRecord, 'id'> = {
       ...record,
       strengthLevel: getStrengthLevel(record as PersonalRecord, userProfile),
@@ -326,17 +332,33 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
 
     if (needsRecalculation) {
         const allRecords = await getPersonalRecords();
-        const updatedProfile = { ...(await getUserProfile()), ...profileData };
+        // The user profile data that will be used for recalculation.
+        // We merge the currently stored profile with the incoming changes to get the most up-to-date stats.
+        const updatedProfileForCalc = { ...(await getUserProfile()), ...profileData };
 
-        if (allRecords.length > 0 && updatedProfile) {
+        if (allRecords.length > 0 && updatedProfileForCalc) {
             const batch = writeBatch(db);
-            allRecords.forEach(record => {
-                const newLevel = getStrengthLevel(record, updatedProfile as UserProfile);
+
+            // First, find the most recent record for each exercise.
+            const mostRecentRecords = new Map<string, PersonalRecord>();
+            for (const record of allRecords) {
+                const key = record.exerciseName.trim().toLowerCase();
+                const existing = mostRecentRecords.get(key);
+                if (!existing || record.date > existing.date) {
+                    mostRecentRecords.set(key, record);
+                }
+            }
+
+            // Now, recalculate the level ONLY for these most recent records.
+            for (const record of mostRecentRecords.values()) {
+                const newLevel = getStrengthLevel(record, updatedProfileForCalc as UserProfile);
+                // Only write to the database if the level has actually changed.
                 if (newLevel !== record.strengthLevel) {
                     const recordRef = doc(db, 'personalRecords', record.id);
                     batch.update(recordRef, { strengthLevel: newLevel });
                 }
-            });
+            }
+            // Commit all the updates in a single batch operation.
             await batch.commit();
         }
     }
