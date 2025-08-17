@@ -61,7 +61,6 @@ const personalRecordConverter = {
     const data = snapshot.data(options) || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
     
-    // Maintain the existing strengthLevel if it's there.
     // The previous implementation added this field, so we should preserve it on reads.
     const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' 
         ? data.strengthLevel as StrengthLevel 
