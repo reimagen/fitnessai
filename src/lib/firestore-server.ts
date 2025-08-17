@@ -3,8 +3,9 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { getStrengthLevel } from './strength-standards';
 
 // --- Data Converters ---
 // These converters handle the transformation between Firestore's data format (e.g., Timestamps)
@@ -59,6 +60,7 @@ const personalRecordConverter = {
   fromFirestore: (snapshot: any, options: any): PersonalRecord => {
     const data = snapshot.data(options) || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
+    const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' ? data.strengthLevel as StrengthLevel : 'N/A';
 
     return {
       id: snapshot.id,
@@ -67,6 +69,7 @@ const personalRecordConverter = {
       weightUnit: data.weightUnit === 'kg' || data.weightUnit === 'lbs' ? data.weightUnit : 'lbs',
       date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
       category: category,
+      strengthLevel: strengthLevel,
     };
   }
 };
@@ -220,10 +223,19 @@ export const getPersonalRecords = async (): Promise<PersonalRecord[]> => {
 };
 
 export const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) => {
+  const userProfile = await getUserProfile();
+  if (!userProfile) {
+    throw new Error("User profile not found. Cannot calculate strength levels.");
+  }
+
   const batch = writeBatch(db);
   records.forEach(record => {
     const newDocRef = doc(personalRecordsCollection);
-    batch.set(newDocRef, record);
+    const recordWithLevel: Omit<PersonalRecord, 'id'> = {
+      ...record,
+      strengthLevel: getStrengthLevel(record as PersonalRecord, userProfile),
+    };
+    batch.set(newDocRef, recordWithLevel);
   });
   await batch.commit();
 };
@@ -305,6 +317,27 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
     for (const key in dataToUpdate) {
         if (key.startsWith('liftProgressionAnalysis.') && dataToUpdate[key]?.generatedDate) {
             dataToUpdate[key].generatedDate = Timestamp.fromDate(dataToUpdate[key].generatedDate);
+        }
+    }
+
+    // --- Recalculate PR Levels if relevant stats change ---
+    const relevantKeys: (keyof UserProfile)[] = ['gender', 'age', 'weightValue', 'weightUnit', 'skeletalMuscleMassValue', 'skeletalMuscleMassUnit'];
+    const needsRecalculation = relevantKeys.some(key => key in profileData);
+
+    if (needsRecalculation) {
+        const allRecords = await getPersonalRecords();
+        const updatedProfile = { ...(await getUserProfile()), ...profileData };
+
+        if (allRecords.length > 0 && updatedProfile) {
+            const batch = writeBatch(db);
+            allRecords.forEach(record => {
+                const newLevel = getStrengthLevel(record, updatedProfile as UserProfile);
+                if (newLevel !== record.strengthLevel) {
+                    const recordRef = doc(db, 'personalRecords', record.id);
+                    batch.update(recordRef, { strengthLevel: newLevel });
+                }
+            });
+            await batch.commit();
         }
     }
 

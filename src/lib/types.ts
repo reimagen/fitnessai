@@ -87,6 +87,7 @@ export interface PersonalRecord {
   weightUnit: 'kg' | 'lbs';
   date: Date;
   category?: ExerciseCategory;
+  strengthLevel?: StrengthLevel;
 }
 
 export interface StrengthImbalanceOutput {
