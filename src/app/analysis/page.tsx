@@ -312,7 +312,7 @@ export default function AnalysisPage() {
         
         const rank1 = strengthLevelRanks[lift1Level];
         const rank2 = strengthLevelRanks[lift2Level];
-        const guidingLevelRank = Math.min(rank1, rank2);
+        const guidingLevelRank = (rank1 === -1 || rank2 === -1) ? -1 : Math.min(rank1, rank2);
         
         if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
             if (userProfile.gender === 'Female') {
@@ -350,9 +350,26 @@ export default function AnalysisPage() {
                     targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
                 }
             }
+        } else if (type === 'Hamstring vs. Quad' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
+            if (userProfile.gender === 'Female') {
+                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.63; lowerBound = 0.56; upperBound = 0.63;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.67; lowerBound = 0.59; upperBound = 0.67;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.71; lowerBound = 0.63; upperBound = 0.71;
+                }
+            } else if (userProfile.gender === 'Male') {
+                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.59; lowerBound = 0.53; upperBound = 0.59;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.63; lowerBound = 0.56; upperBound = 0.63;
+                } else { // Advanced or Elite
+                    targetRatioValue = 0.67; lowerBound = 0.59; upperBound = 0.67;
+                }
+            }
         } else {
-             // Fallback for other ratios (Ham/Quad, Add/Abd)
-             if (type === 'Hamstring vs. Quad') { targetRatioValue = 0.75; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
+             // Fallback for other ratios (Add/Abd)
              if (type === 'Adductor vs. Abductor') { targetRatioValue = 0.8; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
         }
         
@@ -1211,3 +1228,4 @@ useEffect(() => {
 
     
 
+    
