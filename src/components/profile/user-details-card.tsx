@@ -313,7 +313,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                 </div>
               </div>
               
-               <div>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <Label className="text-sm font-medium">Weight</Label>
                   <div className="flex gap-2 mt-1">
                     <Input id="weight-input" type="number" value={editedWeight} onChange={(e) => setEditedWeight(e.target.value)} placeholder="e.g., 150" className="flex-grow" aria-label="Weight" />
@@ -333,10 +334,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                     </Select>
                   </div>
                 </div>
-                <div>
-                    <Label htmlFor="bodyfat-input" className="text-sm font-medium">Body Fat (%)</Label>
-                    <Input id="bodyfat-input" type="number" step="0.1" value={editedBodyFat} onChange={(e) => setEditedBodyFat(e.target.value)} placeholder="e.g., 24.5" className="mt-1" />
-                </div>
+              </div>
+              <div>
+                  <Label htmlFor="bodyfat-input" className="text-sm font-medium">Body Fat (%)</Label>
+                  <Input id="bodyfat-input" type="number" step="0.1" value={editedBodyFat} onChange={(e) => setEditedBodyFat(e.target.value)} placeholder="e.g., 24.5" className="mt-1" />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
