@@ -368,9 +368,24 @@ export default function AnalysisPage() {
                     targetRatioValue = 0.67; lowerBound = 0.59; upperBound = 0.67;
                 }
             }
-        } else {
-             // Fallback for other ratios (Add/Abd)
-             if (type === 'Adductor vs. Abductor') { targetRatioValue = 0.8; lowerBound = targetRatioValue * 0.9; upperBound = targetRatioValue * 1.1; }
+        } else if (type === 'Adductor vs. Abductor' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
+             if (userProfile.gender === 'Female') {
+                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.83; lowerBound = 0.75; upperBound = 1.00;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.95; lowerBound = 0.85; upperBound = 1.05;
+                } else { // Advanced or Elite
+                    targetRatioValue = 1.00; lowerBound = 0.90; upperBound = 1.10;
+                }
+            } else if (userProfile.gender === 'Male') {
+                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
+                    targetRatioValue = 0.90; lowerBound = 0.85; upperBound = 1.10;
+                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
+                    targetRatioValue = 0.95; lowerBound = 0.90; upperBound = 1.05;
+                } else { // Advanced or Elite
+                    targetRatioValue = 1.00; lowerBound = 0.95; upperBound = 1.10;
+                }
+            }
         }
         
         const targetRatioDisplay = targetRatioValue ? `${targetRatioValue.toFixed(2)}:1` : 'N/A';
