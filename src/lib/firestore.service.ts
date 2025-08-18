@@ -15,6 +15,7 @@ import {
     updateUserProfile
 } from './firestore-server';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
+import { useState, useEffect } from 'react';
 
 
 // --- React Query Hooks ---
@@ -88,13 +89,20 @@ export function useUpdatePersonalRecord() {
 }
 
 export function useUserProfile() {
-    // This query will not run until the Firebase app has been initialized.
-    const isFirebaseInitialized = getApps().length > 0;
+    // This hook ensures the query is only enabled on the client-side after hydration.
+    const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+    useEffect(() => {
+        // When this effect runs, we are guaranteed to be on the client.
+        // We can safely check if the Firebase app is initialized.
+        if (getApps().length > 0) {
+            setIsFirebaseReady(true);
+        }
+    }, []);
 
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile'], 
       queryFn: getUserProfile,
-      enabled: isFirebaseInitialized, // This is the fix.
+      enabled: isFirebaseReady, // Query is disabled until Firebase is confirmed to be ready on the client.
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
     });
