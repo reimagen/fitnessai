@@ -2,7 +2,6 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getApps } from 'firebase/app';
 import {
     getWorkoutLogs,
     addWorkoutLog as serverAddWorkoutLog,
@@ -11,11 +10,9 @@ import {
     getPersonalRecords,
     addPersonalRecords,
     updatePersonalRecord,
-    getUserProfile,
-    updateUserProfile
 } from './firestore-server';
+import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
-import { useState, useEffect } from 'react';
 
 
 // --- React Query Hooks ---
@@ -89,20 +86,9 @@ export function useUpdatePersonalRecord() {
 }
 
 export function useUserProfile() {
-    // This hook ensures the query is only enabled on the client-side after hydration.
-    const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-    useEffect(() => {
-        // When this effect runs, we are guaranteed to be on the client.
-        // We can safely check if the Firebase app is initialized.
-        if (getApps().length > 0) {
-            setIsFirebaseReady(true);
-        }
-    }, []);
-
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile'], 
-      queryFn: getUserProfile,
-      enabled: isFirebaseReady, // Query is disabled until Firebase is confirmed to be ready on the client.
+      queryFn: getUserProfile, // This now calls the server action
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
     });
@@ -111,10 +97,11 @@ export function useUserProfile() {
 export function useUpdateUserProfile() {
     const queryClient = useQueryClient();
     return useMutation<void, Error, Partial<Omit<UserProfile, 'id'>>>({
-        mutationFn: updateUserProfile,
+        mutationFn: updateUserProfile, // This now calls the server action
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile'] });
-            queryClient.invalidateQueries({ queryKey: ['prs'] }); // Invalidate PRs in case goals were completed
+            // Invalidate PRs in case user stats that affect levels have changed
+            queryClient.invalidateQueries({ queryKey: ['prs'] });
         }
     })
 }
