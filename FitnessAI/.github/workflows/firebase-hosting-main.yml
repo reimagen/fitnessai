@@ -1,11 +1,11 @@
 
-name: Deploy to Firebase Hosting on merge to master
+name: Deploy to Firebase Hosting on merge to main
 'on':
   pull_request:
     types:
       - closed
     branches:
-      - master
+      - main
 jobs:
   build_and_deploy:
     if: github.event.pull_request.merged == true
