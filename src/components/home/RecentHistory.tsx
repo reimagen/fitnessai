@@ -29,20 +29,21 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
 
     const dataMap = new Map<string, { categories: Set<ExerciseCategory> }>();
 
-    workoutLogs.forEach(log => {
-      if (log.date >= weekStart && log.date <= weekEnd) {
-        const dateKey = format(log.date, 'yyyy-MM-dd');
-        if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { categories: new Set() });
-        }
-        const dayData = dataMap.get(dateKey)!;
+    // Filter logs to only include the current week before processing
+    const logsThisWeek = workoutLogs.filter(log => log.date >= weekStart && log.date <= weekEnd);
 
-        log.exercises.forEach(ex => {
-          if (ex.category) {
-            dayData.categories.add(ex.category);
-          }
-        });
+    logsThisWeek.forEach(log => {
+      const dateKey = format(log.date, 'yyyy-MM-dd');
+      if (!dataMap.has(dateKey)) {
+        dataMap.set(dateKey, { categories: new Set() });
       }
+      const dayData = dataMap.get(dateKey)!;
+
+      log.exercises.forEach(ex => {
+        if (ex.category) {
+          dayData.categories.add(ex.category);
+        }
+      });
     });
     return dataMap;
   }, [workoutLogs]);
