@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut(auth);
   }
 
-  const value = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser };
+  const value: AuthContextType = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser };
 
   return (
     <AuthContext.Provider value={value}>
