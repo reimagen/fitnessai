@@ -34,6 +34,7 @@ import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthThresholds } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { useAuth } from '@/lib/auth.service';
 
 
 const IMBALANCE_TYPES = [
@@ -271,6 +272,7 @@ const ProgressionChartLegend = (props: any) => {
 
 export default function AnalysisPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('weekly');
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
   const [latestAnalysis, setLatestAnalysis] = useState<StrengthImbalanceOutput | null>(null);
@@ -441,6 +443,10 @@ export default function AnalysisPage() {
   }, [personalRecords, userProfile]);
 
   const handleAnalyzeStrength = async () => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
+        return;
+    }
     if (!personalRecords || personalRecords.length === 0) {
       toast({
         title: "Not Enough Data",
@@ -481,7 +487,7 @@ export default function AnalysisPage() {
         }
     };
 
-    const result = await analyzeStrengthAction(analysisInput);
+    const result = await analyzeStrengthAction(user.uid, analysisInput);
 
     if (result.success && result.data) {
       setLatestAnalysis(result.data);
@@ -861,6 +867,10 @@ useEffect(() => {
 }, [selectedLift, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
+        return;
+    }
     if (!userProfile || !workoutLogs || !selectedLift) {
         toast({ title: "Missing Data", description: "Cannot run analysis without user profile, logs, and a selected lift.", variant: "destructive" });
         return;
@@ -882,29 +892,32 @@ useEffect(() => {
           }))
       );
 
-    const result = await analyzeLiftProgressionAction({
-      exerciseName: selectedLift,
-      exerciseHistory,
-      userProfile: {
-          age: userProfile.age,
-          gender: userProfile.gender,
-          heightValue: userProfile.heightValue,
-          heightUnit: userProfile.heightUnit,
-          weightValue: userProfile.weightValue,
-          weightUnit: userProfile.weightUnit,
-          skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-          skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-          fitnessGoals: userProfile.fitnessGoals
-            .filter(g => !g.achieved)
-            .map(g => ({
-              description: g.description,
-              isPrimary: g.isPrimary || false,
-            })),
-      },
-      currentLevel: currentLiftLevel || undefined,
-      trendPercentage: trendImprovement,
-      volumeTrendPercentage: volumeTrend,
-    });
+    const result = await analyzeLiftProgressionAction(
+        user.uid,
+        {
+          exerciseName: selectedLift,
+          exerciseHistory,
+          userProfile: {
+              age: userProfile.age,
+              gender: userProfile.gender,
+              heightValue: userProfile.heightValue,
+              heightUnit: userProfile.heightUnit,
+              weightValue: userProfile.weightValue,
+              weightUnit: userProfile.weightUnit,
+              skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+              skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+              fitnessGoals: userProfile.fitnessGoals
+                .filter(g => !g.achieved)
+                .map(g => ({
+                  description: g.description,
+                  isPrimary: g.isPrimary || false,
+                })),
+          },
+          currentLevel: currentLiftLevel || undefined,
+          trendPercentage: trendImprovement,
+          volumeTrendPercentage: volumeTrend,
+        }
+    );
     
     if (result.success && result.data) {
         setLatestProgressionAnalysis(prev => ({
@@ -1253,23 +1266,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    
-
-    
-
-
-
-
-
