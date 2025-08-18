@@ -315,9 +315,11 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
     const dataToUpdate: { [key: string]: any } = { ...profileData };
     
-    if (profileData.joinedDate) {
+    // Only convert joinedDate if it is explicitly provided in the update.
+    if ('joinedDate' in profileData && profileData.joinedDate) {
         dataToUpdate.joinedDate = Timestamp.fromDate(profileData.joinedDate);
     }
+
     if (profileData.fitnessGoals) {
         dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(goal => {
             const newGoal: { [key: string]: any } = { ...goal };
