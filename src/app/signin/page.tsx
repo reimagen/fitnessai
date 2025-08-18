@@ -29,11 +29,9 @@ export default function SignInPage() {
     try {
       if (isSigningUp) {
         await signUpWithEmail(email, password);
-        toast({
-          title: 'Account Created!',
-          description: 'You have been signed up successfully. Please sign in.',
-        });
-        setIsSigningUp(false); // Switch back to sign-in view after successful sign-up
+        // On successful sign-up, Firebase automatically signs the user in.
+        // The AuthGate will handle the redirect, so we just need to push them to the home page.
+        router.push('/');
       } else {
         await signInWithEmail(email, password);
         router.push('/');
