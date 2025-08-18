@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dumbbell, Target, BarChartBig, Award } from "lucide-react";
+import { Dumbbell, Target, BarChartBig, Award, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
@@ -10,19 +10,74 @@ import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
 import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
-  // The isError flag from useUserProfile is true if the profile doc doesn't exist, which is expected before creation.
-  // We must handle this case specifically.
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isProfileError } = useUserProfile();
+  const { data: profileResult, isLoading: loadingProfile } = useUserProfile();
+  const profile = profileResult?.data ?? null;
+  const profileNotFound = profileResult?.notFound === true;
 
-  const isLoading = isLoadingWorkouts || isLoadingProfile;
-  // A true error only occurs if workout loading fails. A profile error is expected for new users.
-  const isActualError = isErrorWorkouts;
-  // This state specifically checks if the only "error" is the expected one for a missing profile.
-  const isNewUserWithoutProfile = isProfileError && !userProfile && !isErrorWorkouts;
+  // Only fetch workouts if the profile has been found.
+  // This prevents errors for new users whose security rules may depend on a profile existing.
+  const {
+    data: workoutLogs = [],
+    isLoading: loadingWorkouts,
+    isError: errorWorkouts,
+  } = useWorkouts(!profileNotFound);
 
+  const isLoading = loadingProfile || (loadingWorkouts && !profileNotFound);
+
+  // A genuine failure is an error fetching workouts that is NOT because the profile is missing.
+  const isGenuineFailure = errorWorkouts && !profileNotFound;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 space-y-12">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
+  if (isGenuineFailure) {
+    return (
+       <div className="container mx-auto px-4 py-8">
+          <ErrorState message="Could not load your dashboard data. Please try again later." />
+       </div>
+    );
+  }
+
+  // New-user welcome state (no profile yet)
+  if (profileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+            <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Welcome to FitnessAI!</h1>
+            <p className="mt-2 text-lg text-muted-foreground">Let's get your profile set up to personalize your experience.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+            <CardHeader>
+                <CardTitle className="font-headline">Create Your Profile</CardTitle>
+                <CardDescription>
+                    Your profile helps the AI create workout plans and track your progress accurately.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Link href="/profile" passHref>
+                    <Button className="w-full">
+                        <UserPlus className="mr-2" />
+                        Go to Profile Setup
+                    </Button>
+                </Link>
+            </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Normal dashboard for existing users
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center">
@@ -59,22 +114,9 @@ export default function HomePage() {
       </section>
 
       <section className="mt-12 space-y-12">
-        {isLoading ? (
-          <>
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </>
-        ) : isActualError ? (
-          <ErrorState message="Could not load your dashboard data. Please try again later." />
-        ) : (
-          <>
-            {/* The components will now receive userProfile (which can be null/undefined for new users) and handle it gracefully */}
-            <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
-            <RecentHistory workoutLogs={workoutLogs || []} />
-            <WeeklyCardioTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
-          </>
-        )}
+        <WeeklyProgressTracker workoutLogs={workoutLogs} userProfile={profile} />
+        <RecentHistory workoutLogs={workoutLogs} />
+        <WeeklyCardioTracker workoutLogs={workoutLogs} userProfile={profile} />
       </section>
     </div>
   );
