@@ -10,11 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 import { checkProfileCompletion } from '@/lib/profile-completion';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home },
+  { href: '/', label: 'Home', icon: Home, restricted: true },
   { href: '/analysis', label: 'Analysis', icon: BarChart3, restricted: true },
   { href: '/prs', label: 'Milestones', icon: Award, restricted: true },
   { href: '/plan', label: 'Plan', icon: CalendarCheck, restricted: true },
-  { href: '/history', label: 'History', icon: History },
+  { href: '/history', label: 'History', icon: History, restricted: true },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 
