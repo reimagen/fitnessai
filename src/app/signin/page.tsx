@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -12,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function SignInPage() {
   const router = useRouter();
-  const { signInWithEmail, signInWithGoogle, signUpWithEmail } = useAuth();
+  const { signInWithEmail, signUpWithEmail } = useAuth();
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -37,19 +38,6 @@ export default function SignInPage() {
         await signInWithEmail(email, password);
         router.push('/');
       }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await signInWithGoogle();
-      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -115,21 +103,6 @@ export default function SignInPage() {
                 {isSigningUp ? 'Sign Up' : 'Sign In'}
               </Button>
             </form>
-
-            <div className="my-4 flex items-center">
-                <div className="flex-grow border-t border-muted"></div>
-                <span className="mx-4 text-xs uppercase text-muted-foreground">Or continue with</span>
-                <div className="flex-grow border-t border-muted"></div>
-            </div>
-
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : (
-                  <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 55.4l-62.1 62.1C335.5 95.6 294.8 80 248 80c-82.3 0-150.3 64.2-150.3 143.4s68 143.4 150.3 143.4c89.1 0 128.3-64.2 133.6-95.2H248v-65.7h239.5c1.4 9.3 2.5 19.1 2.5 29.5z"></path>
-                  </svg>
-                )}
-                Sign in with Google
-            </Button>
 
             <p className="mt-6 text-center text-sm">
                 {isSigningUp ? 'Already have an account?' : "Don't have an account?"}{' '}
