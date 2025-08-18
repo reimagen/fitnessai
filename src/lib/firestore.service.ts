@@ -2,6 +2,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getApps } from 'firebase/app';
 import {
     getWorkoutLogs,
     addWorkoutLog as serverAddWorkoutLog,
@@ -87,9 +88,13 @@ export function useUpdatePersonalRecord() {
 }
 
 export function useUserProfile() {
+    // This query will not run until the Firebase app has been initialized.
+    const isFirebaseInitialized = getApps().length > 0;
+
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile'], 
       queryFn: getUserProfile,
+      enabled: isFirebaseInitialized, // This is the fix.
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
     });
