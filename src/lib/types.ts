@@ -66,7 +66,7 @@ export interface UserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
-  joinedDate: Date;
+  joinedDate?: Date;
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;

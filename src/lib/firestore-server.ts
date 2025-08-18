@@ -125,7 +125,7 @@ const userProfileConverter = {
     },
     fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): UserProfile => {
         const data = snapshot.data() || {};
-        const joinedDate = data.joinedDate instanceof Timestamp ? data.joinedDate.toDate() : new Date();
+        const joinedDate = data.joinedDate instanceof Timestamp ? data.joinedDate.toDate() : undefined;
         const fitnessGoals = Array.isArray(data.fitnessGoals) ? data.fitnessGoals.map((goal: any) => ({
                 id: goal.id || `goal-${Math.random()}`,
                 description: goal.description || '',
@@ -160,7 +160,7 @@ const userProfileConverter = {
 
         return {
             id: snapshot.id,
-            name: data.name || "User",
+            name: data.name || "",
             email: data.email || "",
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,

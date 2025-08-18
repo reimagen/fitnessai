@@ -123,7 +123,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   };
 
   const handleSaveClick = () => {
-    if (!editedJoinedDate || isNaN(new Date(editedJoinedDate.replace(/-/g, '\/')).getTime())) { // Use replace for cross-browser compatibility with YYYY-MM-DD
+    const isJoinedDateValid = !editedJoinedDate || !isNaN(new Date(editedJoinedDate.replace(/-/g, '/')).getTime());
+    if (editedJoinedDate && !isJoinedDateValid) {
       toast({ title: "Invalid Joined Date", description: "Please enter a valid date.", variant: "destructive" });
       return;
     }
@@ -176,11 +177,12 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     if (editedBodyFat !== "" && (isNaN(bodyFatVal) || bodyFatVal <= 0 || bodyFatVal >= 100)) {
         toast({ title: "Invalid Body Fat %", description: "Please enter a valid percentage for body fat.", variant: "destructive" }); return;
     }
-
-    const dateParts = editedJoinedDate.split('-').map(Number);
-    // Create date object from parts to ensure local timezone interpretation
-    const newJoinedDateObject = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-
+    
+    let newJoinedDateObject: Date | undefined = undefined;
+    if (editedJoinedDate) {
+        const dateParts = editedJoinedDate.split('-').map(Number);
+        newJoinedDateObject = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    }
 
     onUpdate({ 
       name: editedName.trim(),
@@ -255,7 +257,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               />
             </div>
           ) : (
-            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name || "Name: Not set"}</CardTitle>
+            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name ? user.name : "Name: Not set"}</CardTitle>
           )}
            {isEditing ? (
             <div className="mt-1">
@@ -270,7 +272,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Joined: {user.joinedDate ? format(user.joinedDate instanceof Date ? user.joinedDate : new Date(user.joinedDate), "MMMM d, yyyy") : "Not set"}
+              Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
             </p>
           )}
         </div>
