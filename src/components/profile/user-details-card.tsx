@@ -44,7 +44,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedJoinedDate, setEditedJoinedDate] = useState(formatDateForInput(user.joinedDate));
   const [editedAge, setEditedAge] = useState(user.age?.toString() || "");
   const [editedGender, setEditedGender] = useState(user.gender || "");
-  const [editedHeightUnit, setEditedHeightUnit] = useState<'cm' | 'ft/in'>(user.heightUnit || "cm");
+  const [editedHeightUnit, setEditedHeightUnit] = useState<'cm' | 'ft/in'>(user.heightUnit || "ft/in");
   const [editedHeightCm, setEditedHeightCm] = useState("");
   const [editedHeightFt, setEditedHeightFt] = useState("");
   const [editedHeightIn, setEditedHeightIn] = useState("");
@@ -60,7 +60,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       setEditedJoinedDate(formatDateForInput(user.joinedDate));
       setEditedAge(user.age?.toString() || "");
       setEditedGender(user.gender || "");
-      const initialHeightUnit = user.heightUnit || "cm";
+      const initialHeightUnit = user.heightUnit || "ft/in";
       setEditedHeightUnit(initialHeightUnit);
 
       if (user.heightValue !== undefined) {
