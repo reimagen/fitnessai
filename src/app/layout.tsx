@@ -4,6 +4,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { QueryProvider } from '@/components/query-provider';
 import { BottomNavigationBar } from '@/components/layout/bottom-navigation-bar';
+import { AuthProvider } from '@/lib/auth.service';
+import { AuthGate } from '@/components/auth/auth-gate';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -65,10 +67,14 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-body antialiased`}>
         <QueryProvider>
-          <div className="flex min-h-screen flex-col">
-            <main className="flex-grow pb-20 pt-4">{children}</main>
-            <BottomNavigationBar />
-          </div>
+          <AuthProvider>
+            <AuthGate>
+              <div className="flex min-h-screen flex-col">
+                <main className="flex-grow pb-20 pt-4">{children}</main>
+                <BottomNavigationBar />
+              </div>
+            </AuthGate>
+          </AuthProvider>
         </QueryProvider>
         <Toaster />
       </body>

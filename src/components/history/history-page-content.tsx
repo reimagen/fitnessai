@@ -11,7 +11,6 @@ import type { WorkoutLog, Exercise, ExerciseCategory, UserProfile } from "@/lib/
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
 import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, useDeleteWorkoutLog } from "@/lib/firestore.service";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
@@ -22,22 +21,28 @@ import { addMonths } from 'date-fns/addMonths';
 import { subMonths } from 'date-fns/subMonths';
 import { isSameMonth } from 'date-fns/isSameMonth';
 import { ErrorState } from "../shared/ErrorState";
+import { cn } from "@/lib/utils";
+
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 export function HistoryPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
-  const initialTabQueryParam = searchParams.get('tab');
   const [isClient, setIsClient] = useState(false);
-  const [activeTab, setActiveTab] = useState(initialTabQueryParam || 'history');
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const manualLogCardRef = useRef<HTMLDivElement>(null);
+  
+  // State to control which form is visible, defaults to 'manual'
+  const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    // If there's an edit in progress, ensure the manual log form is visible
+    if (editingLogId) {
+      setActiveForm('manual');
+    }
+  }, [editingLogId]);
 
   // Fetching data with React Query, now passing the current month
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(currentMonth);
@@ -47,12 +52,6 @@ export function HistoryPageContent() {
   const addWorkoutMutation = useAddWorkoutLog();
   const updateWorkoutMutation = useUpdateWorkoutLog();
   const deleteWorkoutMutation = useDeleteWorkoutLog();
-
-  useEffect(() => {
-    if (editingLogId && activeTab === 'log' && manualLogCardRef.current) {
-      manualLogCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [editingLogId, activeTab]);
 
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
@@ -71,7 +70,7 @@ export function HistoryPageContent() {
         onSuccess: () => {
           toast({ title: "Log Updated!", description: "Your workout has been successfully updated." });
           setEditingLogId(null);
-          setActiveTab('history');
+          setActiveForm('none'); // Hide form on success
         },
         onError: (error) => {
           toast({ title: "Update Failed", description: error.message, variant: "destructive" });
@@ -81,7 +80,7 @@ export function HistoryPageContent() {
       addWorkoutMutation.mutate(finalData, {
         onSuccess: () => {
           toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
-          setActiveTab('history');
+           setActiveForm('none'); // Hide form on success
         },
         onError: (error) => {
           toast({ title: "Save Failed", description: error.message, variant: "destructive" });
@@ -152,7 +151,7 @@ export function HistoryPageContent() {
       updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
         onSuccess: () => {
           toast({ title: "Log Updated", description: `Merged parsed data, adding ${addedCount} new exercise(s).` });
-          setActiveTab('history');
+          setActiveForm('none'); // Hide form on success
         },
         onError: (error) => {
           toast({ title: "Update Failed", description: error.message, variant: "destructive" });
@@ -166,7 +165,7 @@ export function HistoryPageContent() {
       addWorkoutMutation.mutate(newLog, {
         onSuccess: () => {
           toast({ title: "Log Created", description: "Successfully created a new log from the screenshot." });
-          setActiveTab('history');
+          setActiveForm('none'); // Hide form on success
         },
         onError: (error) => {
           toast({ title: "Save Failed", description: error.message, variant: "destructive" });
@@ -191,7 +190,9 @@ export function HistoryPageContent() {
     const logToEdit = workoutLogs.find(log => log.id === logId);
     if (logToEdit) {
       setEditingLogId(logId);
-      setActiveTab('log');
+      setActiveForm('manual');
+      // Scroll to top to see the form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       toast({ title: "Error", description: "Could not find log to edit.", variant: "destructive" });
     }
@@ -199,14 +200,14 @@ export function HistoryPageContent() {
 
   const handleCancelEdit = () => {
     setEditingLogId(null);
+    setActiveForm('none');
   }
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value !== 'log') {
-      setEditingLogId(null);
-    }
-  }
+  const handleTabChange = (value: 'manual' | 'parse') => {
+    setEditingLogId(null); // Clear any edits when switching forms
+    setActiveForm(value);
+  };
+
 
   if (!isClient) {
     return (
@@ -230,57 +231,78 @@ export function HistoryPageContent() {
         </p>
       </header>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="log">
-            {editingLogId ? "Edit Log" : "Log Workout"}
-          </TabsTrigger>
-          <TabsTrigger value="parse">Parse Screenshot</TabsTrigger>
-        </TabsList>
+      {/* Show selection cards ONLY if no form is active */}
+       {activeForm === 'none' && (
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => handleTabChange('manual')}>
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2">
+                  <Edit className="h-6 w-6 text-primary" />
+                  Log Workout Manually
+                </CardTitle>
+                <CardDescription>
+                  Enter the details of your workout session exercise by exercise.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+             <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => handleTabChange('parse')}>
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2">
+                  <ImageUp className="h-6 w-6 text-primary" />
+                  Parse from Screenshot
+                </CardTitle>
+                <CardDescription>
+                  Upload an image of your workout log and let our AI do the work.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+         </div>
+       )}
 
-        <TabsContent value="log">
-          <Card ref={manualLogCardRef} className="shadow-lg">
-             <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <Edit className="h-6 w-6 text-primary" />
-                {editingLogId ? "Edit Workout Log" : "Log New Workout"}
-              </CardTitle>
-              <CardDescription>
-                {editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-               <WorkoutLogForm 
-                  onSubmitLog={handleManualLogSubmit}
-                  initialData={logBeingEdited}
-                  editingLogId={editingLogId}
-                  onCancelEdit={handleCancelEdit}
-                  isSubmitting={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
-                />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="parse">
-          <Card className="shadow-lg">
-             <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <ImageUp className="h-6 w-6 text-primary" />
-                Parse Workout from Screenshot
-              </CardTitle>
-              <CardDescription>
-                Upload an image of your workout log and let our AI extract the data.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ScreenshotParserForm
-                onParse={parseWorkoutScreenshotAction}
-                onParsedData={handleParsedData}
+      {/* Manual Log Form Card */}
+      <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+           <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Edit className="h-6 w-6 text-primary" />
+              {editingLogId ? "Edit Workout Log" : "Log New Workout"}
+            </CardTitle>
+            <CardDescription>
+              {editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+             <WorkoutLogForm 
+                onSubmitLog={handleManualLogSubmit}
+                initialData={logBeingEdited}
+                editingLogId={editingLogId}
+                onCancelEdit={handleCancelEdit}
+                isSubmitting={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
               />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Screenshot Parser Card */}
+      <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+           <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <ImageUp className="h-6 w-6 text-primary" />
+              Parse Workout from Screenshot
+            </CardTitle>
+            <CardDescription>
+              Upload an image of your workout log and let our AI extract the data.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ScreenshotParserForm
+              onParse={parseWorkoutScreenshotAction}
+              onParsedData={handleParsedData}
+            />
+          </CardContent>
+        </Card>
+      </div>
 
       <Card className="shadow-lg">
           <CardHeader>

@@ -10,11 +10,13 @@ import { Settings, LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth.service";
 
 export default function ProfilePage() {
   const { toast } = useToast();
   const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   const updateUserMutation = useUpdateUserProfile();
+  const { user, signOut: handleSignOut } = useAuth();
   
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     updateUserMutation.mutate({ fitnessGoals: updatedGoals }, {
@@ -59,9 +61,11 @@ export default function ProfilePage() {
   };
 
   const handleCreateProfile = () => {
-    // This creates the 'main-user-profile' document for the first time
+    // This creates the user's profile document for the first time
+    if (!user) return;
     const defaultProfileData = {
-      name: "Fitness Pro",
+      name: user.displayName || "Fitness Pro",
+      email: user.email || "",
       joinedDate: new Date(),
       fitnessGoals: [],
     };
@@ -120,15 +124,15 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <AlertTriangle className="h-6 w-6 text-primary" />
-                No Profile Found
+                Welcome! Let's Create Your Profile
               </CardTitle>
               <CardDescription>
-                It looks like this is a new device or you don't have a profile set up yet.
+                It looks like you're new here. Create a profile to get started.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                To get started, you can create a profile. In a real-world app, you would sign in to retrieve your existing data.
+                Creating a profile will allow you to save your workout data and track your progress.
               </p>
               <Button onClick={handleCreateProfile} disabled={updateUserMutation.isPending}>
                 {updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4"/>}
@@ -139,24 +143,8 @@ export default function ProfilePage() {
       )}
       
       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary"/>
-            App Settings
-          </CardTitle>
-          <CardDescription>Customize your FitnessAI experience.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-             <div className="flex items-center justify-between p-3 rounded-md border">
-                <div>
-                    <h4 className="font-medium">Account Data</h4>
-                    <p className="text-sm text-muted-foreground">Export or delete your account data.</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                    Manage Data
-                </Button>
-            </div>
-          <Button variant="destructive" className="w-full mt-4" disabled>
+        <CardContent className="pt-6">
+          <Button variant="destructive" className="w-full" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" /> Log Out
           </Button>
         </CardContent>
