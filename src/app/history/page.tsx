@@ -16,7 +16,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, startOfDay, addMonths, subMonths, isSameMonth } from "date-fns";
+import { format } from 'date-fns/format';
+import { startOfDay } from 'date-fns/startOfDay';
+import { addMonths } from 'date-fns/addMonths';
+import { subMonths } from 'date-fns/subMonths';
+import { isSameMonth } from 'date-fns/isSameMonth';
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
