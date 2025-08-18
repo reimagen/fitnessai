@@ -143,14 +143,7 @@ export default function ProfilePage() {
       )}
       
       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary"/>
-            Account Settings
-          </CardTitle>
-          <CardDescription>Log out of your account.</CardDescription>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <Button variant="destructive" className="w-full" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" /> Log Out
           </Button>
