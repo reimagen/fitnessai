@@ -51,10 +51,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'bench press': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 2.2, advanced: 2.7, elite: 3.2 },
-      'Female': { intermediate: 1.5, advanced: 2.0, elite: 2.5 },
+      'Male':   { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
+      'Female': { intermediate: 0.75, advanced: 1.0, elite: 1.25 },
     },
   },
   'bicep curl': {
@@ -163,10 +163,10 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
   'squat': {
-    type: 'smm',
+    type: 'bw',
     standards: {
-      'Male':   { intermediate: 3.0, advanced: 4.0, elite: 5.0 },
-      'Female': { intermediate: 2.5, advanced: 3.5, elite: 4.5 },
+      'Male':   { intermediate: 1.25, advanced: 1.75, elite: 2.25 },
+      'Female': { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
     },
   },
   'tricep extension': {
