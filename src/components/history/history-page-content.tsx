@@ -21,6 +21,7 @@ import { startOfDay } from 'date-fns/startOfDay';
 import { addMonths } from 'date-fns/addMonths';
 import { subMonths } from 'date-fns/subMonths';
 import { isSameMonth } from 'date-fns/isSameMonth';
+import { ErrorState } from "../shared/ErrorState";
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
@@ -39,7 +40,7 @@ export function HistoryPageContent() {
   }, []);
 
   // Fetching data with React Query, now passing the current month
-  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts(currentMonth);
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(currentMonth);
   const { data: userProfile } = useUserProfile();
   
   // Mutations defined directly in the component
@@ -301,6 +302,8 @@ export function HistoryPageContent() {
               <div className="flex justify-center items-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : isErrorWorkouts ? (
+              <ErrorState message="Could not load workout history. Please try refreshing."/>
             ) : (
                 <WorkoutList 
                   workoutLogs={workoutLogs || []} 
