@@ -109,17 +109,29 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     if (totalWeeklyCalories >= minGoal) {
       const caloriesToStretch = Math.round(maxGoal - totalWeeklyCalories);
       const milesToStretch = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToStretch / caloriesPerMile).toFixed(1) : null;
-      return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch} calories, only a ${milesToStretch} mi run.`;
+      if (milesToStretch) {
+        return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch} calories, only a ${milesToStretch} mi run.`;
+      }
+      return `Congrats on hitting your minimum goal! You only need another ${caloriesToStretch} calories to hit your stretch goal.`;
     }
 
     if (totalWeeklyCalories >= minGoal * 0.5) {
       const caloriesToMin = Math.round(minGoal - totalWeeklyCalories);
       const milesToMin = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToMin / caloriesPerMile).toFixed(1) : null;
-      return `You're only ${caloriesToMin} calories away from your minimum goal. Run more ${milesToMin} miles!`;
+      if (milesToMin) {
+        return `You're only ${caloriesToMin} calories away from your minimum goal. Run ${milesToMin} more miles to achieve this goal.`;
+      }
+       return `You're only ${caloriesToMin} calories away from your minimum goal. Keep pushing!`;
     }
-
-    const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (minGoal / caloriesPerMile).toFixed(1) : null;
-    return `Your minimum goal is to burn ${minGoal} calories. Run ${milesForMinGoal} miles to achieve this goal.`;
+    
+    const caloriesRemaining = minGoal - totalWeeklyCalories;
+    const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (caloriesRemaining / caloriesPerMile).toFixed(1) : null;
+    
+    if (milesForMinGoal && parseFloat(milesForMinGoal) > 0) {
+      return `Your minimum goal is to burn ${minGoal} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
+    }
+    
+    return `Your minimum goal is to burn ${minGoal} calories. Get started to make progress!`;
   };
 
 

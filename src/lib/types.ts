@@ -43,7 +43,6 @@ export interface StoredStrengthAnalysis {
 }
 
 export interface AnalyzeLiftProgressionOutput {
-  progressionStatus: "Excellent" | "Good" | "Stagnated" | "Regressing";
   insight: string;
   recommendation: string;
 }

@@ -1,4 +1,3 @@
-
       
 "use client";
 
@@ -11,11 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay, eachWeekOfInterval } from 'date-fns';
+import { format } from 'date-fns/format';
+import { isWithinInterval } from 'date-fns/isWithinInterval';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { getWeek } from 'date-fns/getWeek';
+import { getYear } from 'date-fns/getYear';
+import { parse } from 'date-fns/parse';
+import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
+import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
+import type { Interval } from 'date-fns/types';
+import { subWeeks } from 'date-fns/subWeeks';
+import { isAfter } from 'date-fns/isAfter';
+import { differenceInDays } from 'date-fns/differenceInDays';
+import { isSameDay } from 'date-fns/isSameDay';
+import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthThresholds } from '@/lib/strength-standards';
+import { ErrorState } from '@/components/shared/ErrorState';
 
 
 const IMBALANCE_TYPES = [
@@ -264,9 +282,9 @@ export default function AnalysisPage() {
   const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
   const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
 
-  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
-  const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
+  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
+  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
 
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
@@ -932,6 +950,7 @@ useEffect(() => {
   };
   
   const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
+  const isError = isErrorWorkouts || isErrorPrs || isErrorProfile;
   const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
 
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
@@ -960,13 +979,20 @@ useEffect(() => {
         <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
       </header>
       <div className="mb-6"><Select value={timeRange} onValueChange={setTimeRange}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select time range" /></SelectTrigger><SelectContent><SelectItem value="weekly">This Week</SelectItem><SelectItem value="monthly">This Month</SelectItem><SelectItem value="yearly">This Year</SelectItem><SelectItem value="all-time">All Time</SelectItem></SelectContent></Select></div>
+      
+      {isError && (
+          <div className="mb-6">
+              <ErrorState message="Could not load your progress data. Please try again later." />
+          </div>
+      )}
+      
       {isLoading ? <Card className="shadow-lg mb-6 h-40 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>
-      : chartData.periodSummary && (
+      : !isError && chartData.periodSummary && (
         <Card className="shadow-lg mb-6 bg-card"><CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><TrendingUp className="h-6 w-6 text-primary" />{chartData.periodSummary.periodLabel}</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">{Object.entries({"Workout Days": chartData.periodSummary.workoutDays, "Weight Lifted (lbs)": chartData.periodSummary.totalWeightLiftedLbs.toLocaleString(), "Distance (mi)": chartData.periodSummary.totalDistanceMi, "Cardio Duration": formatCardioDuration(chartData.periodSummary.totalCardioDurationMin), "Calories Burned": chartData.periodSummary.totalCaloriesBurned.toLocaleString()}).map(([label, value]) => <div key={label}><p className="text-3xl font-bold text-accent">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}</CardContent></Card>
       )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
-        : (<>
+        : !isError && (<>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{pr.exerciseName}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
@@ -1242,6 +1268,8 @@ useEffect(() => {
     
 
     
+
+
 
 
 

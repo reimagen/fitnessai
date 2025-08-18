@@ -2,6 +2,12 @@
 "use server";
 
 import { parsePersonalRecords, type ParsePersonalRecordsInput, type ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
+import {
+  getPersonalRecords as serverGetPersonalRecords,
+  addPersonalRecords as serverAddPersonalRecords,
+  updatePersonalRecord as serverUpdatePersonalRecord,
+} from "@/lib/firestore-server";
+import type { PersonalRecord } from "@/lib/types";
 
 export async function parsePersonalRecordsAction(
   values: ParsePersonalRecordsInput
@@ -33,4 +39,18 @@ export async function parsePersonalRecordsAction(
     }
     return { success: false, error: userFriendlyError };
   }
+}
+
+// --- Server Actions for Personal Records ---
+
+export async function getPersonalRecords(): Promise<PersonalRecord[]> {
+  return serverGetPersonalRecords();
+}
+
+export async function addPersonalRecords(records: Omit<PersonalRecord, 'id'>[]): Promise<void> {
+  return serverAddPersonalRecords(records);
+}
+
+export async function updatePersonalRecord(id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>): Promise<void> {
+  return serverUpdatePersonalRecord(id, recordData);
 }
