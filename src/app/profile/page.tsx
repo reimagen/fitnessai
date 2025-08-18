@@ -146,21 +146,12 @@ export default function ProfilePage() {
         <CardHeader>
           <CardTitle className="font-headline flex items-center gap-2">
             <Settings className="h-6 w-6 text-primary"/>
-            App Settings
+            Account Settings
           </CardTitle>
-          <CardDescription>Customize your FitnessAI experience.</CardDescription>
+          <CardDescription>Log out of your account.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-             <div className="flex items-center justify-between p-3 rounded-md border">
-                <div>
-                    <h4 className="font-medium">Account Data</h4>
-                    <p className="text-sm text-muted-foreground">Export or delete your account data.</p>
-                </div>
-                <Button variant="outline" size="sm" disabled>
-                    Manage Data
-                </Button>
-            </div>
-          <Button variant="destructive" className="w-full mt-4" onClick={handleSignOut}>
+        <CardContent>
+          <Button variant="destructive" className="w-full" onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" /> Log Out
           </Button>
         </CardContent>
