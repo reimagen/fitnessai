@@ -3,14 +3,13 @@
 
 import { auth } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 // Define the shape of the context value
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  signInWithGoogle: () => Promise<void>;
   signUpWithEmail: (email:string, password:string) => Promise<void>;
   signInWithEmail: (email:string, password:string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,11 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
   
-  const signInWithGoogle = async () => {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-  }
-  
   const signUpWithEmail = async (email:string, password:string) => {
       await createUserWithEmailAndPassword(auth, email, password);
   }
@@ -51,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signOut(auth);
   }
 
-  const value = { user, isLoading, signInWithGoogle, signUpWithEmail, signInWithEmail, signOut: signOutUser };
+  const value = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser };
 
   return (
     <AuthContext.Provider value={value}>
