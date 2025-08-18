@@ -28,7 +28,14 @@ export function HistoryPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialTabQueryParam = searchParams.get('tab');
-  const [isClient, setIsClient(true);
+  const [isClient, setIsClient] = useState(false);
+  const [activeTab, setActiveTab] = useState(initialTabQueryParam || 'history');
+  const [editingLogId, setEditingLogId] = useState<string | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const manualLogCardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setIsClient(true);
   }, []);
 
   // Fetching data with React Query, now passing the current month
@@ -49,7 +56,43 @@ export function HistoryPageContent() {
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
-  const handleManualLogSubmit = (data: Omit { title: "Parsing Error",
+  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
+    const finalData = {
+        ...data,
+        exercises: data.exercises.map(ex => {
+            const calculatedCalories = userProfile ? calculateExerciseCalories(ex, userProfile, workoutLogs || []) : 0;
+            return { ...ex, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
+        })
+    };
+
+    if (editingLogId) {
+      updateWorkoutMutation.mutate({ id: editingLogId, data: finalData }, {
+        onSuccess: () => {
+          toast({ title: "Log Updated!", description: "Your workout has been successfully updated." });
+          setEditingLogId(null);
+          setActiveTab('history');
+        },
+        onError: (error) => {
+          toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+        }
+      });
+    } else {
+      addWorkoutMutation.mutate(finalData, {
+        onSuccess: () => {
+          toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
+          setActiveTab('history');
+        },
+        onError: (error) => {
+          toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+        }
+      });
+    }
+  };
+
+  const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
+    if (!parsedData.workoutDate) {
+      toast({
+        title: "Parsing Error",
         description: "A date was not provided for the parsed log. Cannot save.",
         variant: "destructive",
       });
@@ -104,7 +147,39 @@ export function HistoryPageContent() {
         }
       });
       
-      const updatedLog: Omit {
+      const updatedLog: Omit<WorkoutLog, 'id'> = { ...existingLog, exercises: newExercises };
+      updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
+        onSuccess: () => {
+          toast({ title: "Log Updated", description: `Merged parsed data, adding ${addedCount} new exercise(s).` });
+          setActiveTab('history');
+        },
+        onError: (error) => {
+          toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+        }
+      });
+    } else {
+      const newLog: Omit<WorkoutLog, 'id'> = {
+        date: targetDate,
+        exercises: parsedExercises,
+      };
+      addWorkoutMutation.mutate(newLog, {
+        onSuccess: () => {
+          toast({ title: "Log Created", description: "Successfully created a new log from the screenshot." });
+          setActiveTab('history');
+        },
+        onError: (error) => {
+          toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+        }
+      });
+    }
+  };
+  
+  const handleDeleteLog = (logId: string) => {
+    deleteWorkoutMutation.mutate(logId, {
+          onSuccess: () => {
+              toast({ title: "Log Deleted", description: "The workout log has been removed.", variant: "destructive" });
+          },
+          onError: (error) => {
               toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
           }
     });
@@ -134,11 +209,9 @@ export function HistoryPageContent() {
 
   if (!isClient) {
     return (
-      
-        
-          
-        
-      
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
     );
   }
 
@@ -146,96 +219,97 @@ export function HistoryPageContent() {
   const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
 
   return (
-    
-      
-        
-          
-            Workout History
-          
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <header className="mb-8">
+        <h1 className="font-headline text-3xl font-bold text-primary">
+          Workout History
+        </h1>
+        <p className="text-muted-foreground">
           Log your sessions and review your past performance.
-        
-      
+        </p>
+      </header>
 
-      
-        
-          
-            Manual Log
-          
-            Parse Screenshot
-          
-        
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="log">
+            {editingLogId ? "Edit Log" : "Log Workout"}
+          </TabsTrigger>
+          <TabsTrigger value="parse">Parse Screenshot</TabsTrigger>
+        </TabsList>
 
-        
-          
-            
-              
+        <TabsContent value="log">
+          <Card ref={manualLogCardRef} className="shadow-lg">
+             <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <Edit className="h-6 w-6 text-primary" />
                 {editingLogId ? "Edit Workout Log" : "Log New Workout"}
-              
+              </CardTitle>
+              <CardDescription>
                 {editingLogId ? "Update the details of your workout session." : "Manually enter the details of your workout session."}
-              
-            
-            
-              
-                
-                  Log New Workout"}</CardTitle>
-                  
-                    Manually enter the details of your workout session."}
-                  
-                
-                
-              
-            
-          
-        
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+               <WorkoutLogForm 
+                  onSubmitLog={handleManualLogSubmit}
+                  initialData={logBeingEdited}
+                  editingLogId={editingLogId}
+                  onCancelEdit={handleCancelEdit}
+                  isSubmitting={addWorkoutMutation.isPending || updateWorkoutMutation.isPending}
+                />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        
-          
-            
-              
+        <TabsContent value="parse">
+          <Card className="shadow-lg">
+             <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <ImageUp className="h-6 w-6 text-primary" />
                 Parse Workout from Screenshot
-              
+              </CardTitle>
+              <CardDescription>
                 Upload an image of your workout log and let our AI extract the data.
-              
-            
-            
-              
-                
-              
-            
-          
-        
-      
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScreenshotParserForm
+                onParse={parseWorkoutScreenshotAction}
+                onParsedData={handleParsedData}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      
-
-          
-            
-              Logged Workouts
-            
-            
-              
-                
-                  
-                
-                {format(currentMonth, 'MMMM yyyy')}
-                
-                  
-                
-              
-            
-          
-          
-            
-              
-                
-              
-            
-          
-          
-            
-          
-        
-      
-    
+      <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="font-headline">Logged Workouts</CardTitle>
+            <div className="flex justify-between items-center">
+              <CardDescription>Review your workout history for {format(currentMonth, 'MMMM yyyy')}.</CardDescription>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={goToNextMonth} disabled={isCurrentMonthInView}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoadingWorkouts ? (
+              <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+                <WorkoutList 
+                  workoutLogs={workoutLogs || []} 
+                  onEdit={handleEditLog}
+                  onDelete={handleDeleteLog}
+                />
+            )}
+          </CardContent>
+        </Card>
+    </div>
   );
 }
