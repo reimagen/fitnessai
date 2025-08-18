@@ -3,7 +3,7 @@
 
 import { db } from './firebase';
 import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where, limit } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLift_progressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 
@@ -138,7 +138,7 @@ const userProfileConverter = {
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
         
-        const liftProgressionAnalysis: { [key: string]: StoredLiftProgressionAnalysis } = {};
+        const liftProgressionAnalysis: { [key: string]: StoredLift_progressionAnalysis } = {};
         if (data.liftProgressionAnalysis) {
             for (const key in data.liftProgressionAnalysis) {
                 const analysis = data.liftProgressionAnalysis[key];
@@ -273,8 +273,8 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
-    // Correctly point to the nested document
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
+    // Correctly point to the document within the top-level collection
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
 
     try {
         const docSnap = await getDoc(profileDocRef);
@@ -299,8 +299,8 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    // Get a reference to the specific nested document
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID, 'profiles', USER_PROFILE_DOC_ID);
+    // Get a reference to the specific document
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
     
     // Manually convert date fields for partial updates because we use setDoc with merge
     const dataToUpdate: { [key: string]: any } = { ...profileData };
@@ -382,7 +382,6 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         }
     }
 
-    // Use setDoc with merge:true for creating/updating the nested document.
-    // This will create the document if it doesn't exist, or update it if it does.
+    // Use setDoc with merge:true for creating/updating the document.
     return await setDoc(profileDocRef, dataToUpdate, { merge: true });
 };
