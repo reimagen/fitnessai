@@ -245,7 +245,7 @@ export const deleteWorkoutLog = async (userId: string, id: string) => {
 const personalRecordsCollection = adminDb.collection('personalRecords').withConverter(personalRecordConverter);
 
 export const getPersonalRecords = async (userId: string): Promise<PersonalRecord[]> => {
-  const q = personalRecordsCollection.where('userId', '==', userId).orderBy('date', 'desc');
+  const q = personalRecordsCollection.where('userId', '==', userId).orderBy('exerciseName', 'asc');
   const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.data());
 };
