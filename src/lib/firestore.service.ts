@@ -20,17 +20,16 @@ import { useAuth } from './auth.service';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth?: Date) {
+export function useWorkouts(enabled: boolean) {
   const { user } = useAuth();
   // The query key now includes the month and user ID, so each month's data is cached separately per user.
-  const queryKey = forMonth 
-    ? ['workouts', user?.uid, forMonth.toISOString().slice(0, 7)] // e.g., ['workouts', 'some-uid', '2025-07']
-    : ['workouts', user?.uid, 'all'];
+  // We'll fetch all workouts for the user now, as monthly filtering can happen on the client if needed.
+  const queryKey = ['workouts', user?.uid, 'all'];
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(user!.uid, forMonth),
-    enabled: !!user // Only run the query if the user is logged in
+    queryFn: () => getWorkoutLogs(user!.uid),
+    enabled: !!user && enabled // Only run the query if the user is logged in AND the enabled flag is true
   });
 }
 
@@ -101,9 +100,16 @@ export function useUpdatePersonalRecord() {
 
 export function useUserProfile() {
     const { user } = useAuth();
-    return useQuery<UserProfile | null, Error>({ 
+    return useQuery<{ data: UserProfile | null; notFound: boolean }, Error>({
       queryKey: ['profile', user?.uid], 
-      queryFn: () => getUserProfile(user!.uid),
+      queryFn: async () => {
+        const profile = await getUserProfile(user!.uid);
+        if (profile === null) {
+          // This is a new user, not an error.
+          return { data: null, notFound: true as const };
+        }
+        return { data: profile, notFound: false as const };
+      },
       enabled: !!user, // Only fetch profile if user is authenticated
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
