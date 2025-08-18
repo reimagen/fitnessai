@@ -2,9 +2,7 @@ require('dotenv').config();
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    actionBodySizeLimit: '10mb',
-  },
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
