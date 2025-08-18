@@ -8,12 +8,14 @@ import { RecentHistory } from "@/components/home/RecentHistory";
 import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
 import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 export default function HomePage() {
-  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
-  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
+  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
 
   const isLoading = isLoadingWorkouts || isLoadingProfile;
+  const isError = isErrorWorkouts || isErrorProfile;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -57,6 +59,8 @@ export default function HomePage() {
             <Skeleton className="h-64 w-full" />
             <Skeleton className="h-64 w-full" />
           </>
+        ) : isError ? (
+          <ErrorState message="Could not load your dashboard data. Please try again later." />
         ) : (
           <>
             <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />

@@ -1,9 +1,9 @@
 
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
-import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
+import { adminDb } from './firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLift_progressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 
@@ -18,8 +18,8 @@ const workoutLogConverter = {
       date: Timestamp.fromDate(log.date),
     };
   },
-  fromFirestore: (snapshot: any, options: any): WorkoutLog => {
-    const data = snapshot.data(options) || {};
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): WorkoutLog => {
+    const data = snapshot.data() || {};
     
     const exercises: Exercise[] = Array.isArray(data.exercises)
       ? data.exercises.map((ex: any, index: number) => {
@@ -57,8 +57,8 @@ const personalRecordConverter = {
       date: Timestamp.fromDate(record.date),
     };
   },
-  fromFirestore: (snapshot: any, options: any): PersonalRecord => {
-    const data = snapshot.data(options) || {};
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): PersonalRecord => {
+    const data = snapshot.data() || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
     
     // The previous implementation added this field, so we should preserve it on reads.
@@ -121,8 +121,8 @@ const userProfileConverter = {
         }
         return dataToStore;
     },
-    fromFirestore: (snapshot: any, options: any): UserProfile => {
-        const data = snapshot.data(options) || {};
+    fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): UserProfile => {
+        const data = snapshot.data() || {};
         const joinedDate = data.joinedDate instanceof Timestamp ? data.joinedDate.toDate() : new Date();
         const fitnessGoals = Array.isArray(data.fitnessGoals) ? data.fitnessGoals.map((goal: any) => ({
                 id: goal.id || `goal-${Math.random()}`,
@@ -138,7 +138,7 @@ const userProfileConverter = {
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
         
-        const liftProgressionAnalysis: { [key: string]: StoredLiftProgressionAnalysis } = {};
+        const liftProgressionAnalysis: { [key: string]: StoredLift_progressionAnalysis } = {};
         if (data.liftProgressionAnalysis) {
             for (const key in data.liftProgressionAnalysis) {
                 const analysis = data.liftProgressionAnalysis[key];
@@ -187,54 +187,52 @@ const userProfileConverter = {
 // --- Firestore Service Functions ---
 
 // Workout Logs
-const workoutLogsCollection = collection(db, 'workoutLogs').withConverter(workoutLogConverter);
+const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
 
 export const getWorkoutLogs = async (forMonth?: Date): Promise<WorkoutLog[]> => {
-  let q;
+  let q: FirebaseFirestore.Query<WorkoutLog>;
   if (forMonth) {
     const startDate = startOfMonth(forMonth);
     const endDate = endOfMonth(forMonth);
-    q = query(
-      workoutLogsCollection,
-      where('date', '>=', startDate),
-      where('date', '<=', endDate),
-      orderBy('date', 'desc')
-    );
+    q = workoutLogsCollection
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .orderBy('date', 'desc');
   } else {
     // Default to fetching all logs if no month is specified
-    q = query(workoutLogsCollection, orderBy('date', 'desc'));
+    q = workoutLogsCollection.orderBy('date', 'desc');
   }
-  const snapshot = await getDocs(q);
+  const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.data());
 };
 
 
 export const addWorkoutLog = async (log: Omit<WorkoutLog, 'id'>) => {
-  return await addDoc(workoutLogsCollection, log);
+  return await workoutLogsCollection.add(log);
 };
 
 export const updateWorkoutLog = async (id: string, log: Partial<Omit<WorkoutLog, 'id'>>) => {
-  const logDoc = doc(db, 'workoutLogs', id);
+  const logDoc = adminDb.collection('workoutLogs').doc(id);
   // Create a mutable copy for the update
   const dataToUpdate: { [key: string]: any } = { ...log };
   // Convert date back to timestamp if it exists in the partial update
   if (log.date) {
     dataToUpdate.date = Timestamp.fromDate(log.date);
   }
-  return await updateDoc(logDoc, dataToUpdate);
+  return await logDoc.update(dataToUpdate);
 };
 
 export const deleteWorkoutLog = async (id: string) => {
-  const logDoc = doc(db, 'workoutLogs', id);
-  return await deleteDoc(logDoc);
+  const logDoc = adminDb.collection('workoutLogs').doc(id);
+  return await logDoc.delete();
 };
 
 // Personal Records
-const personalRecordsCollection = collection(db, 'personalRecords').withConverter(personalRecordConverter);
+const personalRecordsCollection = adminDb.collection('personalRecords').withConverter(personalRecordConverter);
 
 export const getPersonalRecords = async (): Promise<PersonalRecord[]> => {
-  const q = query(personalRecordsCollection, orderBy('date', 'desc'));
-  const snapshot = await getDocs(q);
+  const q = personalRecordsCollection.orderBy('date', 'desc');
+  const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.data());
 };
 
@@ -244,9 +242,9 @@ export const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) 
     throw new Error("User profile not found. Cannot calculate strength levels.");
   }
 
-  const batch = writeBatch(db);
+  const batch = adminDb.batch();
   records.forEach(record => {
-    const newDocRef = doc(personalRecordsCollection);
+    const newDocRef = personalRecordsCollection.doc();
     // Add the calculated strengthLevel to the new record before saving.
     const recordWithLevel: Omit<PersonalRecord, 'id'> = {
       ...record,
@@ -258,14 +256,14 @@ export const addPersonalRecords = async (records: Omit<PersonalRecord, 'id'>[]) 
 };
 
 export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>) => {
-  const recordDoc = doc(db, 'personalRecords', id);
+  const recordDoc = adminDb.collection('personalRecords').doc(id);
   
   const dataToUpdate: { [key:string]: any } = { ...recordData };
   if (recordData.date) {
     dataToUpdate.date = Timestamp.fromDate(recordData.date);
   }
   
-  return await updateDoc(recordDoc, dataToUpdate);
+  return await recordDoc.update(dataToUpdate);
 };
 
 
@@ -273,16 +271,17 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
+    // Correctly point to the document within the top-level collection
+    const profileDocRef = adminDb.collection('profiles').doc(USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
 
     try {
-        const snapshot = await getDoc(profileDocRef);
-        if (!snapshot.exists()) {
-            console.warn("User profile document not found. For a multi-user app, this is expected until a user signs in and a profile is created for them.");
+        const docSnap = await profileDocRef.get();
+        if (!docSnap.exists) {
+            console.warn("User profile document does not exist at the specified path.");
             return null;
         }
         
-        const profileData = snapshot.data(); 
+        const profileData = docSnap.data();
         
         if(!profileData || !profileData.name) {
             console.warn("Profile document is empty or invalid.");
@@ -298,7 +297,8 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
+    // Get a reference to the specific document
+    const profileDocRef = adminDb.collection('profiles').doc(USER_PROFILE_DOC_ID);
     
     // Manually convert date fields for partial updates because we use setDoc with merge
     const dataToUpdate: { [key: string]: any } = { ...profileData };
@@ -354,7 +354,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         const updatedProfileForCalc = { ...(await getUserProfile()), ...profileData };
 
         if (allRecords.length > 0 && updatedProfileForCalc) {
-            const batch = writeBatch(db);
+            const batch = adminDb.batch();
 
             // First, find the most recent record for each exercise.
             const mostRecentRecords = new Map<string, PersonalRecord>();
@@ -371,7 +371,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
                 const newLevel = getStrengthLevel(record, updatedProfileForCalc as UserProfile);
                 // Only write to the database if the level has actually changed.
                 if (newLevel !== record.strengthLevel) {
-                    const recordRef = doc(db, 'personalRecords', record.id);
+                    const recordRef = adminDb.collection('personalRecords').doc(record.id);
                     batch.update(recordRef, { strengthLevel: newLevel });
                 }
             }
@@ -380,11 +380,6 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         }
     }
 
-    // Use setDoc with merge:true for creating/updating, and updateDoc for partial updates
-    const docSnap = await getDoc(profileDocRef);
-    if (docSnap.exists()) {
-        return await updateDoc(profileDocRef, dataToUpdate);
-    } else {
-        return await setDoc(profileDocRef, dataToUpdate, { merge: true });
-    }
+    // Use setDoc with merge:true for creating/updating the document.
+    return await profileDocRef.set(dataToUpdate, { merge: true });
 };

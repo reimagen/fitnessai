@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 
 // Function to group records and find the best for each exercise
@@ -56,8 +57,8 @@ export default function MilestonesPage() {
   const [editedWeight, setEditedWeight] = useState('');
   const [editedDate, setEditedDate] = useState('');
 
-  const { data: allRecords, isLoading: isLoadingPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+  const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
+  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
 
@@ -194,6 +195,7 @@ export default function MilestonesPage() {
   };
 
   const isLoading = isLoadingPrs || isLoadingProfile;
+  const isError = isErrorPrs || isErrorProfile;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -245,6 +247,8 @@ export default function MilestonesPage() {
             <div className="flex justify-center items-center h-40">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : isError ? (
+            <ErrorState message="Could not load your personal records. Please try again." />
           ) : bestRecords.length > 0 ? (
              <div className="space-y-8">
                 {categoryOrder.map(category => (
