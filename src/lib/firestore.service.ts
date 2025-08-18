@@ -4,13 +4,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     getWorkoutLogs,
-    addWorkoutLog as serverAddWorkoutLog,
-    updateWorkoutLog as serverUpdateWorkoutLog,
-    deleteWorkoutLog as serverDeleteWorkoutLog,
+    addWorkoutLog,
+    updateWorkoutLog,
+    deleteWorkoutLog,
+} from '@/app/history/actions';
+import {
     getPersonalRecords,
     addPersonalRecords,
     updatePersonalRecord,
-} from './firestore-server';
+} from '@/app/prs/actions';
 import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
 
@@ -33,7 +35,7 @@ export function useWorkouts(forMonth?: Date) {
 export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: serverAddWorkoutLog,
+        mutationFn: addWorkoutLog,
         onSuccess: () => {
             // Invalidate all workout queries to ensure any month's view is updated.
             queryClient.invalidateQueries({ queryKey: ['workouts'] });
@@ -44,7 +46,7 @@ export function useAddWorkoutLog() {
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
     return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id'>> }>({
-        mutationFn: ({ id, data }) => serverUpdateWorkoutLog(id, data),
+        mutationFn: ({ id, data }) => updateWorkoutLog(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workouts'] });
         },
@@ -54,7 +56,7 @@ export function useUpdateWorkoutLog() {
 export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: serverDeleteWorkoutLog,
+        mutationFn: deleteWorkoutLog,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workouts'] });
         },

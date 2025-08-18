@@ -2,6 +2,13 @@
 "use server";
 
 import { parseWorkoutScreenshot, type ParseWorkoutScreenshotInput, type ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
+import { 
+  addWorkoutLog as serverAddWorkoutLog,
+  updateWorkoutLog as serverUpdateWorkoutLog,
+  deleteWorkoutLog as serverDeleteWorkoutLog,
+  getWorkoutLogs as serverGetWorkoutLogs
+} from "@/lib/firestore-server";
+import type { WorkoutLog } from "@/lib/types";
 
 export async function parseWorkoutScreenshotAction(
   values: ParseWorkoutScreenshotInput
@@ -35,4 +42,22 @@ export async function parseWorkoutScreenshotAction(
     }
     return { success: false, error: userFriendlyError };
   }
+}
+
+// --- Server Actions for Workout Logs ---
+
+export async function getWorkoutLogs(forMonth?: Date): Promise<WorkoutLog[]> {
+  return serverGetWorkoutLogs(forMonth);
+}
+
+export async function addWorkoutLog(log: Omit<WorkoutLog, 'id'>): Promise<FirebaseFirestore.DocumentReference<WorkoutLog, FirebaseFirestore.DocumentData>> {
+  return serverAddWorkoutLog(log);
+}
+
+export async function updateWorkoutLog(id: string, log: Partial<Omit<WorkoutLog, 'id'>>): Promise<void> {
+  return serverUpdateWorkoutLog(id, log);
+}
+
+export async function deleteWorkoutLog(id: string): Promise<void> {
+  return serverDeleteWorkoutLog(id);
 }
