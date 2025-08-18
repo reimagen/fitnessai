@@ -1,11 +1,14 @@
 
-name: Deploy to Firebase Hosting on main
+name: Deploy to Firebase Hosting on merge to master
 'on':
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - master
 jobs:
   build_and_deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
