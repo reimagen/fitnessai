@@ -123,10 +123,6 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   };
 
   const handleSaveClick = () => {
-    if (editedName.trim() === "") {
-      toast({ title: "Invalid Name", description: "Name cannot be empty.", variant: "destructive" });
-      return;
-    }
     if (!editedJoinedDate || isNaN(new Date(editedJoinedDate.replace(/-/g, '\/')).getTime())) { // Use replace for cross-browser compatibility with YYYY-MM-DD
       toast({ title: "Invalid Joined Date", description: "Please enter a valid date.", variant: "destructive" });
       return;
