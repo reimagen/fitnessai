@@ -1,4 +1,3 @@
-
       
 "use client";
 
@@ -11,7 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
-import { format, isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, getWeek, getYear, parse, eachDayOfInterval, getWeekOfMonth, type Interval, subWeeks, isAfter, differenceInDays, isSameDay, eachWeekOfInterval } from 'date-fns';
+import { format } from 'date-fns/format';
+import { isWithinInterval } from 'date-fns/isWithinInterval';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { endOfWeek } from 'date-fns/endOfWeek';
+import { startOfMonth } from 'date-fns/startOfMonth';
+import { endOfMonth } from 'date-fns/endOfMonth';
+import { startOfYear } from 'date-fns/startOfYear';
+import { endOfYear } from 'date-fns/endOfYear';
+import { getWeek } from 'date-fns/getWeek';
+import { getYear } from 'date-fns/getYear';
+import { parse } from 'date-fns/parse';
+import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
+import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
+import type { Interval } from 'date-fns/types';
+import { subWeeks } from 'date-fns/subWeeks';
+import { isAfter } from 'date-fns/isAfter';
+import { differenceInDays } from 'date-fns/differenceInDays';
+import { isSameDay } from 'date-fns/isSameDay';
+import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
@@ -1242,6 +1259,7 @@ useEffect(() => {
     
 
     
+
 
 
 
