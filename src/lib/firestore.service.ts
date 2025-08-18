@@ -90,7 +90,6 @@ export function useUserProfile() {
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile'], 
       queryFn: getUserProfile, 
-      retry: false 
     });
 }
 
