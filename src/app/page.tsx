@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dumbbell, Target, BarChartBig, Award, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
