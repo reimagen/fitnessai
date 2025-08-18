@@ -273,18 +273,17 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
-    const profilesCollection = collection(db, 'profiles').withConverter(userProfileConverter);
-    const q = query(profilesCollection, limit(1));
+    // Correctly point to the nested document
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
 
     try {
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-            console.warn("No user profile document found in 'profiles' collection.");
+        const docSnap = await getDoc(profileDocRef);
+        if (!docSnap.exists()) {
+            console.warn("User profile document does not exist at the specified path.");
             return null;
         }
         
-        const profileDoc = snapshot.docs[0];
-        const profileData = profileDoc.data();
+        const profileData = docSnap.data();
         
         if(!profileData || !profileData.name) {
             console.warn("Profile document is empty or invalid.");
@@ -300,19 +299,8 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    // To update, we must first find the profile document ID
-    const profilesCollection = collection(db, 'profiles');
-    const q = query(profilesCollection, limit(1));
-    const snapshot = await getDocs(q);
-    
-    let profileDocRef;
-    if (snapshot.empty) {
-        // If no profile exists, create one with a default ID. This is robust for first-time use.
-        profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
-    } else {
-        // Otherwise, use the ID of the found document.
-        profileDocRef = snapshot.docs[0].ref;
-    }
+    // Get a reference to the specific nested document
+    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID, 'profiles', USER_PROFILE_DOC_ID);
     
     // Manually convert date fields for partial updates because we use setDoc with merge
     const dataToUpdate: { [key: string]: any } = { ...profileData };
@@ -394,11 +382,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         }
     }
 
-    // Use setDoc with merge:true for creating/updating, and updateDoc for partial updates
-    const docSnap = await getDoc(profileDocRef);
-    if (docSnap.exists()) {
-        return await updateDoc(profileDocRef, dataToUpdate);
-    } else {
-        return await setDoc(profileDocRef, dataToUpdate, { merge: true });
-    }
+    // Use setDoc with merge:true for creating/updating the nested document.
+    // This will create the document if it doesn't exist, or update it if it does.
+    return await setDoc(profileDocRef, dataToUpdate, { merge: true });
 };
