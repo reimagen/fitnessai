@@ -89,7 +89,9 @@ export function useUpdatePersonalRecord() {
 export function useUserProfile() {
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile'], 
-      queryFn: getUserProfile, 
+      queryFn: getUserProfile,
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      refetchOnWindowFocus: false,
     });
 }
 
