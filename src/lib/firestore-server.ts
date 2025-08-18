@@ -351,26 +351,32 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 
+    // Defer strength level recalculation until after the profile is updated.
+    await profileDocRef.set(dataToUpdate, { merge: true });
+
+    // --- Recalculate Strength Levels if necessary ---
     const relevantKeys: (keyof UserProfile)[] = ['gender', 'age', 'weightValue', 'weightUnit', 'skeletalMuscleMassValue', 'skeletalMuscleMassUnit'];
     const needsRecalculation = relevantKeys.some(key => key in profileData);
 
     if (needsRecalculation) {
-        const allRecords = await getPersonalRecords(userId);
-        const updatedProfileForCalc = { ...(await getUserProfile(userId)), ...profileData };
+        // First, check if the user has any records to avoid an unnecessary query for new users.
+        const recordsCountSnapshot = await personalRecordsCollection.where('userId', '==', userId).limit(1).get();
 
-        if (allRecords.length > 0 && updatedProfileForCalc) {
-            const batch = adminDb.batch();
+        if (!recordsCountSnapshot.empty) {
+            const allRecords = await getPersonalRecords(userId);
+            const updatedProfile = await getUserProfile(userId); // Fetch the newly updated profile
 
-            for (const record of allRecords) {
-                const newLevel = getStrengthLevel(record, updatedProfileForCalc as UserProfile);
-                if (newLevel !== record.strengthLevel) {
-                    const recordRef = adminDb.collection('personalRecords').doc(record.id);
-                    batch.update(recordRef, { strengthLevel: newLevel });
+            if (allRecords.length > 0 && updatedProfile) {
+                const batch = adminDb.batch();
+                for (const record of allRecords) {
+                    const newLevel = getStrengthLevel(record, updatedProfile);
+                    if (newLevel !== record.strengthLevel) {
+                        const recordRef = adminDb.collection('personalRecords').doc(record.id);
+                        batch.update(recordRef, { strengthLevel: newLevel });
+                    }
                 }
+                await batch.commit();
             }
-            await batch.commit();
         }
     }
-
-    return await profileDocRef.set(dataToUpdate, { merge: true });
 };
