@@ -3,7 +3,7 @@
 
 import { adminDb } from './firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLift_progressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 
@@ -138,7 +138,7 @@ const userProfileConverter = {
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
         
-        const liftProgressionAnalysis: { [key: string]: StoredLift_progressionAnalysis } = {};
+        const liftProgressionAnalysis: { [key: string]: StoredLiftProgressionAnalysis } = {};
         if (data.liftProgressionAnalysis) {
             for (const key in data.liftProgressionAnalysis) {
                 const analysis = data.liftProgressionAnalysis[key];
@@ -263,6 +263,17 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
     dataToUpdate.date = Timestamp.fromDate(recordData.date);
   }
   
+  // After updating a PR's weight or date, we should also recalculate its strength level
+  const userProfile = await getUserProfile();
+  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get();
+  const currentRecordData = currentRecordSnapshot.data();
+
+  if (userProfile && currentRecordData) {
+      // Create a temporary record object with the merged old and new data to pass to the calculator
+      const updatedRecordForCalc = { ...currentRecordData, ...recordData } as PersonalRecord;
+      dataToUpdate.strengthLevel = getStrengthLevel(updatedRecordForCalc, userProfile);
+  }
+
   return await recordDoc.update(dataToUpdate);
 };
 
@@ -356,18 +367,7 @@ export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, '
         if (allRecords.length > 0 && updatedProfileForCalc) {
             const batch = adminDb.batch();
 
-            // First, find the most recent record for each exercise.
-            const mostRecentRecords = new Map<string, PersonalRecord>();
             for (const record of allRecords) {
-                const key = record.exerciseName.trim().toLowerCase();
-                const existing = mostRecentRecords.get(key);
-                if (!existing || record.date > existing.date) {
-                    mostRecentRecords.set(key, record);
-                }
-            }
-
-            // Now, recalculate the level ONLY for these most recent records.
-            for (const record of mostRecentRecords.values()) {
                 const newLevel = getStrengthLevel(record, updatedProfileForCalc as UserProfile);
                 // Only write to the database if the level has actually changed.
                 if (newLevel !== record.strengthLevel) {
