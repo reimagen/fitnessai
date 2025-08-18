@@ -7,34 +7,32 @@ import { Home, BarChart3, Award, CalendarCheck, History, User } from 'lucide-rea
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/use-toast';
+import { checkProfileCompletion } from '@/lib/profile-completion';
 
 const navItems = [
   { href: '/', label: 'Home', icon: Home },
-  { href: '/analysis', label: 'Analysis', icon: BarChart3 },
-  { href: '/prs', label: 'Milestones', icon: Award },
-  { href: '/plan', label: 'Plan', icon: CalendarCheck },
+  { href: '/analysis', label: 'Analysis', icon: BarChart3, restricted: true },
+  { href: '/prs', label: 'Milestones', icon: Award, restricted: true },
+  { href: '/plan', label: 'Plan', icon: CalendarCheck, restricted: true },
   { href: '/history', label: 'History', icon: History },
   { href: '/profile', label: 'Profile', icon: User },
 ];
 
-// Pages that are allowed to be accessed even without a profile
-const UNRESTRICTED_PAGES = ['/', '/profile'];
-
 export function BottomNavigationBar() {
   const pathname = usePathname();
   const { data: profileResult } = useUserProfile();
+  const userProfile = profileResult?.data;
   const { toast } = useToast();
   
-  // A user is considered "new" if their profile document was explicitly not found.
-  const isNewUser = profileResult?.notFound === true;
+  const completionStatus = userProfile ? checkProfileCompletion(userProfile) : null;
+  const isProfileIncomplete = completionStatus ? !completionStatus.isCoreComplete : false;
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    // If the user is new and the page is restricted, prevent navigation and show a toast.
-    if (isNewUser && !UNRESTRICTED_PAGES.includes(href)) {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, item: (typeof navItems)[0]) => {
+    if (item.restricted && isProfileIncomplete && completionStatus) {
       e.preventDefault();
       toast({
-        title: "Set Up Your Profile",
-        description: "Please create your profile first to access this page.",
+        title: "Complete Your Profile",
+        description: `Please add the following to unlock this page: ${completionStatus.missingCoreFields.join(', ')}.`,
         variant: "default",
       });
     }
@@ -45,14 +43,13 @@ export function BottomNavigationBar() {
       <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
-          // A link is considered disabled if the user is new and the page is restricted.
-          const isDisabled = isNewUser && !UNRESTRICTED_PAGES.includes(item.href);
+          const isDisabled = item.restricted && isProfileIncomplete;
 
           return (
             <Link
               key={item.label}
               href={item.href}
-              onClick={(e) => handleLinkClick(e, item.href)}
+              onClick={(e) => handleLinkClick(e, item)}
               className={cn(
                 'flex flex-col items-center justify-center p-2 rounded-md transition-colors duration-150 ease-in-out',
                 isActive ? 'text-primary' : 'text-muted-foreground',

@@ -6,11 +6,42 @@ import { GoalSetterCard } from "@/components/profile/goal-setter-card";
 import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react";
+import { Settings, LogOut, Loader2, AlertTriangle, UserPlus, Info } from "lucide-react";
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth.service";
+import { checkProfileCompletion } from "@/lib/profile-completion";
+import Link from "next/link";
+
+function ProfileCompletionNotice({ profile }: { profile: UserProfile }) {
+  const status = checkProfileCompletion(profile);
+
+  if (status.isCoreComplete) {
+    return null; // Don't show if core profile is complete
+  }
+
+  return (
+    <Card className="shadow-lg border-primary bg-primary/5">
+      <CardHeader>
+        <CardTitle className="font-headline flex items-center gap-2">
+          <Info className="h-6 w-6 text-primary" />
+          Complete Your Profile
+        </CardTitle>
+        <CardDescription>
+          Fill in the required fields below to unlock all app features like workout planning and analysis.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm font-semibold text-primary mb-2">Required Information:</p>
+        <ul className="grid grid-cols-2 gap-x-4 gap-y-1 list-disc list-inside text-sm text-muted-foreground">
+          {status.missingCoreFields.map(field => <li key={field}>{field}</li>)}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -99,6 +130,7 @@ export default function ProfilePage() {
         </div>
       ) : userProfile ? (
         <>
+          <ProfileCompletionNotice profile={userProfile} />
           <UserDetailsCard 
             user={userProfile} 
             onUpdate={handleProfileDetailsUpdate}
