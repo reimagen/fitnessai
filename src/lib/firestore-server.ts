@@ -2,7 +2,7 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { db } from './firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, writeBatch, Timestamp, query, orderBy, setDoc, getDoc, where, limit } from 'firebase/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
@@ -273,16 +273,18 @@ export const updatePersonalRecord = async (id: string, recordData: Partial<Omit<
 const USER_PROFILE_DOC_ID = "main-user-profile";
 
 export const getUserProfile = async (): Promise<UserProfile | null> => {
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID).withConverter(userProfileConverter);
+    const profilesCollection = collection(db, 'profiles').withConverter(userProfileConverter);
+    const q = query(profilesCollection, limit(1));
 
     try {
-        const snapshot = await getDoc(profileDocRef);
-        if (!snapshot.exists()) {
-            console.warn("User profile document not found. For a multi-user app, this is expected until a user signs in and a profile is created for them.");
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+            console.warn("No user profile document found in 'profiles' collection.");
             return null;
         }
         
-        const profileData = snapshot.data(); 
+        const profileDoc = snapshot.docs[0];
+        const profileData = profileDoc.data();
         
         if(!profileData || !profileData.name) {
             console.warn("Profile document is empty or invalid.");
@@ -298,7 +300,19 @@ export const getUserProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const updateUserProfile = async (profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    const profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
+    // To update, we must first find the profile document ID
+    const profilesCollection = collection(db, 'profiles');
+    const q = query(profilesCollection, limit(1));
+    const snapshot = await getDocs(q);
+    
+    let profileDocRef;
+    if (snapshot.empty) {
+        // If no profile exists, create one with a default ID. This is robust for first-time use.
+        profileDocRef = doc(db, 'profiles', USER_PROFILE_DOC_ID);
+    } else {
+        // Otherwise, use the ID of the found document.
+        profileDocRef = snapshot.docs[0].ref;
+    }
     
     // Manually convert date fields for partial updates because we use setDoc with merge
     const dataToUpdate: { [key: string]: any } = { ...profileData };
