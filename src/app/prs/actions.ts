@@ -43,14 +43,23 @@ export async function parsePersonalRecordsAction(
 
 // --- Server Actions for Personal Records ---
 
-export async function getPersonalRecords(): Promise<PersonalRecord[]> {
-  return serverGetPersonalRecords();
+export async function getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  return serverGetPersonalRecords(userId);
 }
 
-export async function addPersonalRecords(records: Omit<PersonalRecord, 'id'>[]): Promise<void> {
-  return serverAddPersonalRecords(records);
+export async function addPersonalRecords(userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  return serverAddPersonalRecords(userId, records);
 }
 
-export async function updatePersonalRecord(id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>): Promise<void> {
-  return serverUpdatePersonalRecord(id, recordData);
+export async function updatePersonalRecord(userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  return serverUpdatePersonalRecord(userId, id, recordData);
 }
