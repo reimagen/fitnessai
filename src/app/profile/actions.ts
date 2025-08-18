@@ -11,5 +11,5 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 }
 
 export async function updateUserProfile(data: Partial<Omit<UserProfile, 'id'>>): Promise<void> {
-    return updateUserProfileFromServer(data);
+    await updateUserProfileFromServer(data);
 }
