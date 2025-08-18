@@ -13,13 +13,15 @@ import { ErrorState } from "@/components/shared/ErrorState";
 
 export default function HomePage() {
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
-  // We specifically check if the profile query is still loading.
   // The isError flag from useUserProfile is true if the profile doc doesn't exist, which is expected before creation.
+  // We must handle this case specifically.
   const { data: userProfile, isLoading: isLoadingProfile, isError: isProfileError } = useUserProfile();
 
   const isLoading = isLoadingWorkouts || isLoadingProfile;
-  // We only consider it a true error if it's not a profile-not-found situation or if workout loading fails.
+  // A true error only occurs if workout loading fails. A profile error is expected for new users.
   const isActualError = isErrorWorkouts;
+  // This state specifically checks if the only "error" is the expected one for a missing profile.
+  const isNewUserWithoutProfile = isProfileError && !userProfile && !isErrorWorkouts;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -67,7 +69,7 @@ export default function HomePage() {
           <ErrorState message="Could not load your dashboard data. Please try again later." />
         ) : (
           <>
-            {/* The components will now receive userProfile (which can be null) and handle it gracefully */}
+            {/* The components will now receive userProfile (which can be null/undefined for new users) and handle it gracefully */}
             <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
             <RecentHistory workoutLogs={workoutLogs || []} />
             <WeeklyCardioTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
