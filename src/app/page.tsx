@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +13,13 @@ import { ErrorState } from "@/components/shared/ErrorState";
 
 export default function HomePage() {
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  // We specifically check if the profile query is still loading.
+  // The isError flag from useUserProfile is true if the profile doc doesn't exist, which is expected before creation.
+  const { data: userProfile, isLoading: isLoadingProfile, isError: isProfileError } = useUserProfile();
 
   const isLoading = isLoadingWorkouts || isLoadingProfile;
-  const isError = isErrorWorkouts || isErrorProfile;
+  // We only consider it a true error if it's not a profile-not-found situation or if workout loading fails.
+  const isActualError = isErrorWorkouts;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -59,10 +63,11 @@ export default function HomePage() {
             <Skeleton className="h-64 w-full" />
             <Skeleton className="h-64 w-full" />
           </>
-        ) : isError ? (
+        ) : isActualError ? (
           <ErrorState message="Could not load your dashboard data. Please try again later." />
         ) : (
           <>
+            {/* The components will now receive userProfile (which can be null) and handle it gracefully */}
             <WeeklyProgressTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
             <RecentHistory workoutLogs={workoutLogs || []} />
             <WeeklyCardioTracker workoutLogs={workoutLogs || []} userProfile={userProfile} />
