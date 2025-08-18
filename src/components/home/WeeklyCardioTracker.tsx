@@ -126,10 +126,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     
     const caloriesRemaining = minGoal - totalWeeklyCalories;
     const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (caloriesRemaining / caloriesPerMile).toFixed(1) : null;
-
+    
     if (milesForMinGoal && parseFloat(milesForMinGoal) > 0) {
       return `Your minimum goal is to burn ${minGoal} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
     }
+    
     return `Your minimum goal is to burn ${minGoal} calories. Get started to make progress!`;
   };
 
