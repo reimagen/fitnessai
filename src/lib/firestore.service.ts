@@ -16,20 +16,21 @@ import {
 import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
 import { useAuth } from './auth.service';
+import { format } from 'date-fns';
 
 
 // --- React Query Hooks ---
 
-export function useWorkouts(enabled: boolean) {
+export function useWorkouts(forMonth?: Date) {
   const { user } = useAuth();
   // The query key now includes the month and user ID, so each month's data is cached separately per user.
-  // We'll fetch all workouts for the user now, as monthly filtering can happen on the client if needed.
-  const queryKey = ['workouts', user?.uid, 'all'];
+  const monthKey = forMonth ? format(forMonth, 'yyyy-MM') : 'all';
+  const queryKey = ['workouts', user?.uid, monthKey];
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(user!.uid),
-    enabled: !!user && enabled // Only run the query if the user is logged in AND the enabled flag is true
+    queryFn: () => getWorkoutLogs(user!.uid, forMonth),
+    enabled: !!user
   });
 }
 

@@ -23,7 +23,7 @@ export default function HomePage() {
     data: workoutLogs = [],
     isLoading: loadingWorkouts,
     isError: errorWorkouts,
-  } = useWorkouts(!profileNotFound);
+  } = useWorkouts();
 
   const isLoading = loadingProfile || (loadingWorkouts && !profileNotFound);
 
