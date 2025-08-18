@@ -20,6 +20,7 @@ export interface Exercise {
 
 export interface WorkoutLog {
   id: string;
+  userId: string;
   date: Date;
   exercises: Exercise[];
   notes?: string;
@@ -91,6 +92,7 @@ export interface UserProfile {
 
 export interface PersonalRecord {
   id: string;
+  userId: string;
   exerciseName: string;
   weight: number;
   weightUnit: 'kg' | 'lbs';
