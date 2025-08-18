@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -259,7 +258,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               />
             </div>
           ) : (
-            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name}</CardTitle> // Added mr-16 for spacing from buttons
+            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name}</CardTitle>
           )}
            {isEditing ? (
             <div className="mt-1">
