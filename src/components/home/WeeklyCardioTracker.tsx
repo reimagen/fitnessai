@@ -140,7 +140,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          To support your cardio health, your weekly target is to burn {minGoal}-{maxGoal} calories.
+          {userProfile ? `To support your cardio health, your weekly target is to burn ${minGoal}-${maxGoal} calories.` : "Set your profile goals to track your weekly cardio."}
         </CardDescription>
       </CardHeader>
       <CardContent>
