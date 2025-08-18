@@ -259,7 +259,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
               />
             </div>
           ) : (
-            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name}</CardTitle>
+            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name || "Name: Not set"}</CardTitle>
           )}
            {isEditing ? (
             <div className="mt-1">

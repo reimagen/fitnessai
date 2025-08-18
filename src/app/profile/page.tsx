@@ -65,10 +65,10 @@ export default function ProfilePage() {
     // This creates the user's profile document for the first time
     if (!user) return;
     const defaultProfileData = {
-      name: user.displayName || "Fitness Pro",
       email: user.email || "",
       joinedDate: new Date(),
       fitnessGoals: [],
+      name: "", // Initialize name as an empty string
     };
     updateUserMutation.mutate(defaultProfileData, {
       onSuccess: () => {
