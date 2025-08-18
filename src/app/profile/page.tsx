@@ -14,7 +14,8 @@ import { useAuth } from "@/lib/auth.service";
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
   const updateUserMutation = useUpdateUserProfile();
   const { user, signOut: handleSignOut } = useAuth();
   
