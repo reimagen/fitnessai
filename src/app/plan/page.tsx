@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { getStrengthLevel } from "@/lib/strength-standards";
+import { ErrorState } from "@/components/shared/ErrorState";
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -155,9 +156,9 @@ const constructUserProfileContext = (
 
 export default function PlanPage() {
   const { toast } = useToast();
-  const { data: userProfile, isLoading: isLoadingProfile } = useUserProfile();
-  const { data: workoutLogs, isLoading: isLoadingWorkouts } = useWorkouts();
-  const { data: personalRecords, isLoading: isLoadingPrs } = usePersonalRecords();
+  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
+  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const updateUserMutation = useUpdateUserProfile();
   
   const [currentWeekStartDate, setCurrentWeekStartDate] = useState<string>("");
@@ -174,9 +175,10 @@ export default function PlanPage() {
   }, []);
 
   const userProfileContextString = useMemo(() => {
+    if (isLoadingProfile || isLoadingWorkouts || isLoadingPrs) return null;
     if (!userProfile || !workoutLogs || !personalRecords) return null;
     return constructUserProfileContext(userProfile, workoutLogs, personalRecords, userProfile.strengthAnalysis?.result);
-  }, [userProfile, workoutLogs, personalRecords]);
+  }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
     if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
@@ -226,6 +228,7 @@ export default function PlanPage() {
 
   const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
+  const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
 
   return (
@@ -249,6 +252,8 @@ export default function PlanPage() {
         <CardContent>
           {isLoading ? (
              <p className="text-muted-foreground flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin"/> Loading profile data...</p>
+          ) : isError ? (
+            <ErrorState message="Could not load the necessary data to generate a plan. Please check your connection and try again." />
           ) : !hasMinimumProfileForPlan ? (
             <div className="flex items-center gap-2 p-4 rounded-md border border-yellow-500 bg-yellow-500/10 text-yellow-700">
               <Info className="h-5 w-5"/> 
