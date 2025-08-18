@@ -29,7 +29,7 @@ export function useWorkouts(forMonth?: Date) {
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(forMonth),
+    queryFn: () => getWorkoutLogs(user!.uid, forMonth),
     enabled: !!user // Only run the query if the user is logged in
   });
 }
@@ -38,7 +38,7 @@ export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     return useMutation({
-        mutationFn: addWorkoutLog,
+        mutationFn: (log: Omit<WorkoutLog, 'id' | 'userId'>) => addWorkoutLog(user!.uid, log),
         onSuccess: () => {
             // Invalidate all workout queries for the current user to ensure any month's view is updated.
             queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
@@ -49,8 +49,8 @@ export function useAddWorkoutLog() {
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id'>> }>({
-        mutationFn: ({ id, data }) => updateWorkoutLog(id, data),
+    return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id' | 'userId'>> }>({
+        mutationFn: ({ id, data }) => updateWorkoutLog(user!.uid, id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
@@ -61,7 +61,7 @@ export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     return useMutation({
-        mutationFn: deleteWorkoutLog,
+        mutationFn: (id: string) => deleteWorkoutLog(user!.uid, id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
@@ -72,7 +72,7 @@ export function usePersonalRecords() {
   const { user } = useAuth();
   return useQuery<PersonalRecord[], Error>({ 
     queryKey: ['prs', user?.uid], 
-    queryFn: getPersonalRecords,
+    queryFn: () => getPersonalRecords(user!.uid),
     enabled: !!user // Only run the query if the user is logged in
   });
 }
@@ -81,7 +81,7 @@ export function useAddPersonalRecords() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     return useMutation({
-        mutationFn: addPersonalRecords,
+        mutationFn: (records: Omit<PersonalRecord, 'id' | 'userId'>[]) => addPersonalRecords(user!.uid, records),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
         }
@@ -91,8 +91,8 @@ export function useAddPersonalRecords() {
 export function useUpdatePersonalRecord() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<PersonalRecord, 'id'>> }>({
-        mutationFn: ({ id, data }) => updatePersonalRecord(id, data),
+    return useMutation<void, Error, { id: string, data: Partial<Omit<PersonalRecord, 'id' | 'userId'>> }>({
+        mutationFn: ({ id, data }) => updatePersonalRecord(user!.uid, id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
         },
@@ -103,7 +103,7 @@ export function useUserProfile() {
     const { user } = useAuth();
     return useQuery<UserProfile | null, Error>({ 
       queryKey: ['profile', user?.uid], 
-      queryFn: getUserProfile,
+      queryFn: () => getUserProfile(user!.uid),
       enabled: !!user, // Only fetch profile if user is authenticated
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
@@ -114,7 +114,7 @@ export function useUpdateUserProfile() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     return useMutation<void, Error, Partial<Omit<UserProfile, 'id'>>>({
-        mutationFn: updateUserProfile, 
+        mutationFn: (data: Partial<Omit<UserProfile, 'id'>>) => updateUserProfile(user!.uid, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
             // Invalidate PRs in case user stats that affect levels have changed
