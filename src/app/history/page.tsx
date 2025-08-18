@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ScreenshotParserForm } from "@/components/history/screenshot-parser-form";
 import { WorkoutLogForm } from "@/components/history/workout-log-form";
@@ -24,7 +24,7 @@ import { isSameMonth } from 'date-fns/isSameMonth';
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
-export default function HistoryPage() {
+function HistoryPageContent() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const initialTabQueryParam = searchParams.get('tab');
@@ -364,5 +364,13 @@ export default function HistoryPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8 flex justify-center items-center h-screen"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}>
+      <HistoryPageContent />
+    </Suspense>
   );
 }
