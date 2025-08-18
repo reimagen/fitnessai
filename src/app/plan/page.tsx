@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { getStrengthLevel } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { useAuth } from "@/lib/auth.service";
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -156,6 +157,7 @@ const constructUserProfileContext = (
 
 export default function PlanPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
@@ -181,6 +183,10 @@ export default function PlanPage() {
   }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
+    if (!user) {
+      toast({ title: "Authentication Error", description: "You must be logged in to generate a plan.", variant: "destructive"});
+      return;
+    }
     if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
       toast({ title: "Missing Data", description: "User profile or workout history is not available yet. Please wait or complete your profile.", variant: "destructive"});
       return;
@@ -195,7 +201,7 @@ export default function PlanPage() {
     }
 
     const result = await generateWeeklyWorkoutPlanAction({
-      userId: userProfile.id,
+      userId: user.uid,
       userProfileContext: finalContext,
       weekStartDate: currentWeekStartDate,
     });
@@ -205,7 +211,7 @@ export default function PlanPage() {
         plan: result.data.weeklyPlan,
         generatedDate: new Date(),
         contextUsed: finalContext,
-        userId: userProfile.id,
+        userId: user.uid,
         weekStartDate: currentWeekStartDate,
       };
 

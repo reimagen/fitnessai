@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { useAuth } from "@/lib/auth.service";
 
 
 // Function to group records and find the best for each exercise
@@ -52,6 +53,7 @@ const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
 export default function MilestonesPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [editedWeight, setEditedWeight] = useState('');
@@ -66,15 +68,16 @@ export default function MilestonesPage() {
   const completedGoals = useMemo(() => userProfile?.fitnessGoals.filter(g => g.achieved) || [], [userProfile]);
   
   const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
+    if (!user) return;
     let addedCount = 0;
-    const newRecords: Omit<PersonalRecord, 'id'>[] = [];
+    const newRecords: Omit<PersonalRecord, 'id' | 'userId'>[] = [];
 
     const existingRecordKeys = new Set((allRecords || []).map(r => `${r.exerciseName.trim().toLowerCase()}|${format(r.date, 'yyyy-MM-dd')}`));
 
     parsedData.records.forEach(rec => {
         const key = `${rec.exerciseName.trim().toLowerCase()}|${rec.dateString}`;
         if (!existingRecordKeys.has(key)) {
-            const newRecord: Omit<PersonalRecord, 'id'> = {
+            const newRecord: Omit<PersonalRecord, 'id' | 'userId'> = {
                 exerciseName: rec.exerciseName,
                 weight: rec.weight,
                 weightUnit: rec.weightUnit,
@@ -113,15 +116,17 @@ export default function MilestonesPage() {
   };
 
   const performClearRecords = async () => {
-    if (!allRecords || allRecords.length === 0) return;
+    if (!allRecords || allRecords.length === 0 || !user) return;
     try {
         const batch = writeBatch(db);
         allRecords.forEach(record => {
-            const docRef = doc(db, 'personalRecords', record.id);
+            // Note: This is less secure as it doesn't check ownership on the client.
+            // A server-side "clearAll" function would be better.
+            const docRef = doc(db, 'users', user.uid, 'personalRecords', record.id);
             batch.delete(docRef);
         });
         await batch.commit();
-        queryClient.invalidateQueries({ queryKey: ['prs'] });
+        queryClient.invalidateQueries({ queryKey: ['prs', user.uid] });
         toast({
             title: "Records Cleared",
             description: "All personal records have been removed.",
