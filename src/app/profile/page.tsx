@@ -66,9 +66,8 @@ export default function ProfilePage() {
     if (!user) return;
     const defaultProfileData = {
       email: user.email || "",
-      joinedDate: new Date(),
       fitnessGoals: [],
-      name: "", // Initialize name as an empty string
+      // name and joinedDate are intentionally omitted to allow "Not set" to display
     };
     updateUserMutation.mutate(defaultProfileData, {
       onSuccess: () => {
