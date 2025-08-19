@@ -287,20 +287,23 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   
   // Start with the new data.
   const dataToUpdate: { [key:string]: any } = { ...recordData };
+  let dateForCalc: Date = currentRecordData.date;
   
-  // Create a new Date object from the date string, explicitly treating it as UTC.
-  // This prevents timezone shifts. "2025-08-19" becomes 2025-08-19T00:00:00.000Z
+  // If a new date string is provided, convert it to a Firestore Timestamp correctly.
   if (recordData.date && typeof recordData.date === 'string') {
-    const newDateObject = new Date(`${recordData.date}T00:00:00Z`);
-    dataToUpdate.date = Timestamp.fromDate(newDateObject);
+    // Deconstruct the string to avoid timezone interpretation issues.
+    const [year, month, day] = recordData.date.split('-').map(Number);
+    // Create a Date object explicitly in UTC.
+    const dateObjectInUTC = new Date(Date.UTC(year, month - 1, day));
+    // Convert to Firestore Timestamp. This is now unambiguous.
+    dataToUpdate.date = Timestamp.fromDate(dateObjectInUTC);
+    dateForCalc = dateObjectInUTC;
   }
 
-  // Create a merged object for the strength level calculation.
-  // This object uses the newly created Date object to ensure the calculation is correct.
   const updatedRecordForCalc: PersonalRecord = { 
     ...currentRecordData, 
     ...recordData,
-    date: dataToUpdate.date ? dataToUpdate.date.toDate() : currentRecordData.date,
+    date: dateForCalc,
   };
   
   const userProfile = await getUserProfile(userId);
@@ -399,4 +402,5 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
 
