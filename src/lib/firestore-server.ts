@@ -275,7 +275,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
   await batch.commit();
 };
 
-export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>) => {
+export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
   const recordDoc = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   
   const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get();
@@ -296,7 +296,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
       dataToUpdate.strengthLevel = getStrengthLevel(updatedRecordForCalc, userProfile);
   }
 
-  return await recordDoc.update(dataToUpdate);
+  await recordDoc.update(dataToUpdate);
 };
 
 

@@ -60,7 +60,7 @@ export async function addPersonalRecords(userId: string, records: Omit<PersonalR
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverAddPersonalRecords(userId, records);
+  await serverAddPersonalRecords(userId, records);
 }
 
 export async function updatePersonalRecord(userId: string, id: string, recordData: UpdatePersonalRecordClientData): Promise<void> {
@@ -73,5 +73,5 @@ export async function updatePersonalRecord(userId: string, id: string, recordDat
     // Safely parse the date string. Using replace() helps avoid timezone issues.
     dataForServer.date = new Date(recordData.date.replace(/-/g, '/'));
   }
-  return serverUpdatePersonalRecord(userId, id, dataForServer);
+  await serverUpdatePersonalRecord(userId, id, dataForServer);
 }
