@@ -57,20 +57,20 @@ export async function addWorkoutLog(userId: string, log: Omit<WorkoutLog, 'id' |
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  const docRef = await serverAddWorkoutLog(userId, log);
-  return { id: docRef.id };
+  const result = await serverAddWorkoutLog(userId, log);
+  return result;
 }
 
 export async function updateWorkoutLog(userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>): Promise<void> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverUpdateWorkoutLog(userId, id, log);
+  await serverUpdateWorkoutLog(userId, id, log);
 }
 
 export async function deleteWorkoutLog(userId: string, id: string): Promise<void> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverDeleteWorkoutLog(userId, id);
+  await serverDeleteWorkoutLog(userId, id);
 }
