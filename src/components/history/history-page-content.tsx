@@ -44,9 +44,17 @@ export function HistoryPageContent() {
     }
   }, [editingLogId]);
 
+  const { data: profileResult, isLoading: isLoadingProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
+  const isNewUser = profileResult?.notFound === true;
+
   // Fetching data with React Query, now passing the current month
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(currentMonth);
-  const { data: userProfile } = useUserProfile();
+  // This hook is now enabled only when the profile has loaded and is confirmed to exist.
+  const { 
+    data: workoutLogs, 
+    isLoading: isLoadingWorkouts, 
+    isError: isErrorWorkouts 
+  } = useWorkouts(currentMonth, !isLoadingProfile && !!userProfile);
   
   // Mutations defined directly in the component
   const addWorkoutMutation = useAddWorkoutLog();
@@ -220,6 +228,43 @@ export function HistoryPageContent() {
   const logBeingEdited = editingLogId ? workoutLogs?.find(log => log.id === editingLogId) : undefined;
   const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
 
+  const renderWorkoutContent = () => {
+    // Show a loader while profile is loading, or while workout logs are loading for an existing user.
+    if (isLoadingProfile || (isLoadingWorkouts && !isNewUser)) {
+      return (
+        <div className="flex justify-center items-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    
+    // If there was an error fetching workouts for an existing user, show error state.
+    if (isErrorWorkouts) {
+      return <ErrorState message="Could not load workout history. Please try refreshing." />;
+    }
+    
+    // For a new user (profile not found) or an existing user with no logs, show the empty list component.
+    // The `isNewUser` check prevents showing an error before the workout query even runs.
+    if (isNewUser || (workoutLogs && workoutLogs.length === 0)) {
+      return (
+        <WorkoutList 
+          workoutLogs={[]} 
+          onEdit={handleEditLog}
+          onDelete={handleDeleteLog}
+        />
+      );
+    }
+    
+    // If we have logs, display them.
+    return (
+      <WorkoutList 
+        workoutLogs={workoutLogs || []} 
+        onEdit={handleEditLog}
+        onDelete={handleDeleteLog}
+      />
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
@@ -320,19 +365,7 @@ export function HistoryPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoadingWorkouts ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : isErrorWorkouts ? (
-              <ErrorState message="Could not load workout history. Please try refreshing."/>
-            ) : (
-                <WorkoutList 
-                  workoutLogs={workoutLogs || []} 
-                  onEdit={handleEditLog}
-                  onDelete={handleDeleteLog}
-                />
-            )}
+            {renderWorkoutContent()}
           </CardContent>
         </Card>
     </div>
