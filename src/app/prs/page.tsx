@@ -9,7 +9,7 @@ import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { ManualPrForm } from "@/components/prs/manual-pr-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -179,16 +179,19 @@ export default function MilestonesPage() {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
         return;
     }
-
+    
+    // Create a Date object in the client's local timezone.
     const date = new Date(editedDate.replace(/-/g, '/'));
     if (isNaN(date.getTime())) {
         toast({ title: 'Invalid Date', description: 'Please enter a valid date.', variant: 'destructive' });
         return;
     }
+    // Normalize to the start of the day to ensure consistency.
+    const normalizedDate = startOfDay(date);
 
-    // Pass the date as a string in 'yyyy-MM-dd' format
+    // Pass the full, timezone-aware Date object to the server.
     updateRecordMutation.mutate(
-        { id: recordId, data: { weight, date: editedDate } },
+        { id: recordId, data: { weight, date: normalizedDate } },
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });

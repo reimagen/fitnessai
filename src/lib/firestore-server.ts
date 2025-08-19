@@ -289,15 +289,11 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   const dataToUpdate: { [key:string]: any } = { ...recordData };
   let dateForCalc: Date = currentRecordData.date;
   
-  // If a new date string is provided, convert it to a Firestore Timestamp correctly.
-  if (recordData.date && typeof recordData.date === 'string') {
-    // Deconstruct the string to avoid timezone interpretation issues.
-    const [year, month, day] = recordData.date.split('-').map(Number);
-    // Create a Date object explicitly in UTC.
-    const dateObjectInUTC = new Date(Date.UTC(year, month - 1, day));
-    // Convert to Firestore Timestamp. This is now unambiguous.
-    dataToUpdate.date = Timestamp.fromDate(dateObjectInUTC);
-    dateForCalc = dateObjectInUTC;
+  // If a new Date object is provided, convert it to a Firestore Timestamp.
+  // This is now aligned with the 'add' logic.
+  if (recordData.date) {
+    dataToUpdate.date = Timestamp.fromDate(recordData.date);
+    dateForCalc = recordData.date;
   }
 
   const updatedRecordForCalc: PersonalRecord = { 
@@ -402,5 +398,6 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
 
 
