@@ -13,7 +13,7 @@ import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout
 import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, useDeleteWorkoutLog } from "@/lib/firestore.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns/format';
 import { startOfDay } from 'date-fns/startOfDay';
@@ -327,7 +327,16 @@ export function HistoryPageContent() {
       {/* Manual Log Form Card */}
       <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-           <CardHeader>
+           <CardHeader className="relative">
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
             <CardTitle className="font-headline flex items-center gap-2">
               <Edit className="h-6 w-6 text-primary" />
               {editingLogId ? "Edit Workout Log" : "Log New Workout"}
@@ -351,7 +360,16 @@ export function HistoryPageContent() {
       {/* Screenshot Parser Card */}
       <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-           <CardHeader>
+           <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
             <CardTitle className="font-headline flex items-center gap-2">
               <ImageUp className="h-6 w-6 text-primary" />
               Parse Workout from Screenshot
