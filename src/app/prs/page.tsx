@@ -84,7 +84,7 @@ export default function MilestonesPage() {
                 exerciseName: rec.exerciseName,
                 weight: rec.weight,
                 weightUnit: rec.weightUnit,
-                date: new Date(rec.dateString.replace(/-/g, '/')),
+                date: new Date(`${rec.dateString}T00:00:00Z`),
                 category: rec.category,
             };
             newRecords.push(newRecord);

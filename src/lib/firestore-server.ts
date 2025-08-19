@@ -288,21 +288,19 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   // Start with the new data.
   const dataToUpdate: { [key:string]: any } = { ...recordData };
   
-  // If a new date string was passed, convert it to a Date object. This is the fix.
-  // It ensures the new date from the client is prioritized and correctly formatted.
-  let newDateObject: Date | undefined = undefined;
+  // Create a new Date object from the date string, explicitly treating it as UTC.
+  // This prevents timezone shifts. "2025-08-19" becomes 2025-08-19T00:00:00.000Z
   if (recordData.date && typeof recordData.date === 'string') {
-    const [year, month, day] = recordData.date.split('-').map(Number);
-    newDateObject = new Date(Date.UTC(year, month - 1, day));
+    const newDateObject = new Date(`${recordData.date}T00:00:00Z`);
     dataToUpdate.date = Timestamp.fromDate(newDateObject);
   }
 
   // Create a merged object for the strength level calculation.
-  // Prioritize the newly created Date object if it exists.
+  // This object uses the newly created Date object to ensure the calculation is correct.
   const updatedRecordForCalc: PersonalRecord = { 
     ...currentRecordData, 
     ...recordData,
-    date: newDateObject || currentRecordData.date, // Use new date object if available
+    date: dataToUpdate.date ? dataToUpdate.date.toDate() : currentRecordData.date,
   };
   
   const userProfile = await getUserProfile(userId);
@@ -401,3 +399,4 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
