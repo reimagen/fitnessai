@@ -87,8 +87,8 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
-  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1200;
-  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1400;
+  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1000;
+  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1200;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
