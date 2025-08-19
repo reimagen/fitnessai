@@ -43,6 +43,12 @@ export async function parsePersonalRecordsAction(
 
 // --- Server Actions for Personal Records ---
 
+// This type defines what the client can send to the server action. Note 'date' is a string.
+type UpdatePersonalRecordClientData = {
+  weight?: number;
+  date?: string; // Expect a string in 'yyyy-MM-dd' format
+}
+
 export async function getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
   if (!userId) {
     throw new Error("User not authenticated.");
@@ -57,9 +63,15 @@ export async function addPersonalRecords(userId: string, records: Omit<PersonalR
   return serverAddPersonalRecords(userId, records);
 }
 
-export async function updatePersonalRecord(userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> {
+export async function updatePersonalRecord(userId: string, id: string, recordData: UpdatePersonalRecordClientData): Promise<void> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverUpdatePersonalRecord(userId, id, recordData);
+  // The server action now receives the string and converts it to a Date object.
+  const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
+  if (recordData.date) {
+    // Safely parse the date string. Using replace() helps avoid timezone issues.
+    dataForServer.date = new Date(recordData.date.replace(/-/g, '/'));
+  }
+  return serverUpdatePersonalRecord(userId, id, dataForServer);
 }
