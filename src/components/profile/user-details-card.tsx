@@ -245,18 +245,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         </div>
 
         <div>
-          {isEditing ? (
-            <div className="mb-1">
-              {/* This space intentionally left blank in edit mode to be replaced by the input field below */}
-            </div>
-          ) : (
-            <>
-              <CardTitle className="font-headline text-3xl mb-1">{user.name ? user.name : "Name: Not set"}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
-              </p>
-            </>
-          )}
+            <CardTitle className="font-headline text-3xl mb-1">{!isEditing && (user.name || "Name: Not set")}</CardTitle>
+            <CardDescription>{!isEditing && `Joined: ${user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}`}</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -264,7 +254,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
           <h4 className="text-md font-semibold text-muted-foreground border-b pb-1">Personal Stats</h4>
           {isEditing ? (
             <div className="space-y-4">
-               <div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <Label htmlFor="name-input" className="text-sm font-medium">Name</Label>
                   <Input
                     id="name-input"
@@ -276,8 +267,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                     aria-label="Edit user name"
                   />
                 </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+                 <div>
                   <Label htmlFor="joined-date-input" className="text-sm font-medium">Joined Date</Label>
                    <Input 
                     id="joined-date-input"
