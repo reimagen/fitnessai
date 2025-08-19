@@ -229,7 +229,8 @@ export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<W
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
     const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
-    return await workoutLogsCollection.add(log as Omit<WorkoutLog, 'id'>);
+    const docRef = await workoutLogsCollection.add(log as Omit<WorkoutLog, 'id'>);
+    return { id: docRef.id };
 };
 
 export const updateWorkoutLog = async (userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>) => {
@@ -239,12 +240,12 @@ export const updateWorkoutLog = async (userId: string, id: string, log: Partial<
   if (log.date) {
     dataToUpdate.date = Timestamp.fromDate(log.date);
   }
-  return await logDoc.update(dataToUpdate);
+  await logDoc.update(dataToUpdate);
 };
 
-export const deleteWorkoutLog = async (userId: string, id: string) => {
+export const deleteWorkoutLog = async (userId: string, id: string): Promise<void> => {
   const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
-  return await logDoc.delete();
+  await logDoc.delete();
 };
 
 // Personal Records
