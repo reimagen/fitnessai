@@ -21,7 +21,7 @@ import { format } from 'date-fns';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth?: Date) {
+export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   const { user } = useAuth();
   // The query key now includes the month and user ID, so each month's data is cached separately per user.
   const monthKey = forMonth ? format(forMonth, 'yyyy-MM') : 'all';
@@ -30,7 +30,7 @@ export function useWorkouts(forMonth?: Date) {
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
     queryFn: () => getWorkoutLogs(user!.uid, forMonth),
-    enabled: !!user
+    enabled: !!user && enabled
   });
 }
 
