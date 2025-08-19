@@ -336,8 +336,11 @@ export default function MilestonesPage() {
                             {groupedRecords[category].map(record => {
                                 const isEditing = editingRecordId === record.id;
                                 const level = record.strengthLevel || 'N/A';
-                                const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const standardType = getStrengthStandardType(record.exerciseName);
+                                const isSmmExercise = standardType === 'smm';
+                                const needsSmmData = isSmmExercise && (!userProfile?.skeletalMuscleMassValue || !userProfile.gender);
+
+                                const thresholds = userProfile && !needsSmmData ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
 
                                 let progressData: { value: number; text?: string; } | null = null;
@@ -400,19 +403,8 @@ export default function MilestonesPage() {
                                                     <div>
                                                         <div className="flex items-center gap-2 flex-wrap mb-1">
                                                             <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                                            {level !== 'N/A' ? (
+                                                            {level !== 'N/A' && (
                                                                 <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
-                                                            ) : (
-                                                                <TooltipProvider>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            <p>Set SMM & gender in profile to classify.</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </TooltipProvider>
                                                             )}
                                                         </div>
                                                         <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
@@ -425,14 +417,19 @@ export default function MilestonesPage() {
                                             </div>
                                             
                                             <div className="flex-grow my-3">
-                                              {progressData && (
+                                              {needsSmmData ? (
+                                                <div className="p-2 my-2 text-center text-xs text-muted-foreground bg-background/50 border rounded-md">
+                                                  <Info className="h-4 w-4 mx-auto mb-1" />
+                                                  <p>This exercise requires your Skeletal Muscle Mass to classify your strength level. Please update your profile.</p>
+                                                </div>
+                                              ) : progressData ? (
                                                 <div className="space-y-1.5">
                                                     <Progress value={progressData.value} className="h-2 [&>div]:bg-accent" />
                                                     {progressData.text && (
                                                         <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
                                                     )}
                                                 </div>
-                                              )}
+                                              ) : null}
                                             </div>
                                             
                                             {thresholds && level !== 'N/A' && (
