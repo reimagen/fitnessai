@@ -3,9 +3,10 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info, Edit } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
+import { ManualPrForm } from "@/components/prs/manual-pr-form";
 import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -115,6 +116,24 @@ export default function MilestonesPage() {
         });
     }
   };
+  
+  const handleManualAdd = (newRecord: Omit<PersonalRecord, 'id' | 'userId'>) => {
+    addPersonalRecordsMutation.mutate([newRecord], {
+        onSuccess: () => {
+            toast({
+                title: "PR Added!",
+                description: `Your new record for ${newRecord.exerciseName} has been saved.`,
+            });
+        },
+        onError: (error) => {
+            toast({
+                title: "Save Failed",
+                description: `Could not save the new record: ${error.message}`,
+                variant: "destructive"
+            });
+        }
+    });
+  };
 
   const performClearRecords = async () => {
     if (!allRecords || allRecords.length === 0 || !user) return;
@@ -209,32 +228,42 @@ export default function MilestonesPage() {
         <h1 className="font-headline text-3xl font-bold text-primary flex items-center">
           <Award className="mr-3 h-8 w-8" /> Milestones & Achievements
         </h1>
-        <p className="text-muted-foreground">A showcase of your best lifts and completed goals, with strength level classifications.</p>
+        <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
       </header>
 
-       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <UploadCloud className="h-6 w-6 text-accent" />
-            Upload Personal Records
-          </CardTitle>
-          <CardDescription>
-            Upload a screenshot of your achievements to update your PR history.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          {allRecords && allRecords.length > 0 && (
-              <Button
-                variant="destructive"
-                className="w-full mt-4"
-                onClick={performClearRecords}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-              </Button>
-          )}
-        </CardContent>
-      </Card>
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <Edit className="h-6 w-6 text-accent" />
+                Add PR Manually
+              </CardTitle>
+              <CardDescription>
+                Log a single personal record for a classifiable exercise.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ManualPrForm 
+                onAdd={handleManualAdd} 
+                isSubmitting={addPersonalRecordsMutation.isPending} 
+              />
+            </CardContent>
+          </Card>
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <UploadCloud className="h-6 w-6 text-accent" />
+                Upload from Screenshot
+              </CardTitle>
+              <CardDescription>
+                Upload an image to parse multiple PRs at once.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+            </CardContent>
+          </Card>
+       </div>
       
       <Card className="shadow-lg">
         <CardHeader>
@@ -246,6 +275,16 @@ export default function MilestonesPage() {
             Your top recorded lift (1RM) for each exercise. Levels are classified based on your personal stats. 
             Body-weight based levels use ratios from strengthlevel.com. 
             Otherwise, level calculations are based on your skeletal muscle mass.
+            {allRecords && allRecords.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full sm:w-auto sm:float-right mt-2 sm:mt-0"
+                onClick={performClearRecords}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+              </Button>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -408,7 +447,7 @@ export default function MilestonesPage() {
              <div className="flex flex-col items-center justify-center h-40 text-center">
                 <Trophy className="h-16 w-16 text-primary/30 mb-4" />
                 <p className="text-muted-foreground">
-                    No personal records logged yet. Upload a screenshot to get started!
+                    No personal records logged yet. Add a PR or upload a screenshot to get started!
                 </p>
             </div>
           )}
