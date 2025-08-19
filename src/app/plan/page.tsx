@@ -232,7 +232,7 @@ export default function PlanPage() {
     setApiIsLoading(false);
   };
 
-  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
+  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
