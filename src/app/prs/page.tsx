@@ -59,6 +59,7 @@ export default function MilestonesPage() {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [editedWeight, setEditedWeight] = useState('');
   const [editedDate, setEditedDate] = useState('');
+  const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
 
   const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
@@ -99,6 +100,7 @@ export default function MilestonesPage() {
                     title: "Records Updated",
                     description: `Added ${addedCount} new personal record(s).`,
                 });
+                setActiveForm('none');
             },
             onError: (error) => {
                  toast({
@@ -114,6 +116,7 @@ export default function MilestonesPage() {
             description: "The uploaded screenshot contained no new records.",
             variant: "default",
         });
+        setActiveForm('none');
     }
   };
   
@@ -124,6 +127,7 @@ export default function MilestonesPage() {
                 title: "PR Added!",
                 description: `Your new record for ${newRecord.exerciseName} has been saved.`,
             });
+            setActiveForm('none');
         },
         onError: (error) => {
             toast({
@@ -140,8 +144,6 @@ export default function MilestonesPage() {
     try {
         const batch = writeBatch(db);
         allRecords.forEach(record => {
-            // Note: This is less secure as it doesn't check ownership on the client.
-            // A server-side "clearAll" function would be better.
             const docRef = doc(db, 'users', user.uid, 'personalRecords', record.id);
             batch.delete(docRef);
         });
@@ -231,25 +233,20 @@ export default function MilestonesPage() {
         <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
       </header>
 
-       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="shadow-lg">
+      {activeForm === 'none' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('manual')}>
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <Edit className="h-6 w-6 text-accent" />
-                Add PR Manually
+                Log PR Manually
               </CardTitle>
               <CardDescription>
                 Log a single personal record for a classifiable exercise.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ManualPrForm 
-                onAdd={handleManualAdd} 
-                isSubmitting={addPersonalRecordsMutation.isPending} 
-              />
-            </CardContent>
           </Card>
-          <Card className="shadow-lg">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('parse')}>
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <UploadCloud className="h-6 w-6 text-accent" />
@@ -259,11 +256,46 @@ export default function MilestonesPage() {
                 Upload an image to parse multiple PRs at once.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-            </CardContent>
           </Card>
-       </div>
+        </div>
+      )}
+
+      <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+          <CardHeader>
+             <CardTitle className="font-headline flex items-center gap-2">
+                <Edit className="h-6 w-6 text-accent" />
+                Add PR Manually
+              </CardTitle>
+              <CardDescription>
+                Log a single personal record for a classifiable exercise.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ManualPrForm 
+              onAdd={handleManualAdd} 
+              isSubmitting={addPersonalRecordsMutation.isPending} 
+            />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+           <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <UploadCloud className="h-6 w-6 text-accent" />
+                Upload from Screenshot
+              </CardTitle>
+              <CardDescription>
+                Upload an image to parse multiple PRs at once.
+              </CardDescription>
+            </CardHeader>
+          <CardContent>
+            <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+          </CardContent>
+        </Card>
+      </div>
       
       <Card className="shadow-lg">
         <CardHeader>
