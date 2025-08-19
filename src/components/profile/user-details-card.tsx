@@ -226,55 +226,44 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="pb-4 relative">
-        <div className="absolute top-6 right-6 flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-                <XCircle className="h-5 w-5" />
-              </Button>
-              <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
-                <Save className="h-5 w-5" />
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
-              <Edit2 className="h-5 w-5" />
-            </Button>
-          )}
-        </div>
-        <div>
-          {isEditing ? (
-            <div className="mb-1 mr-16">
-              <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
-              <Input
-                id="name-input"
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
-                aria-label="Edit user name"
-              />
-            </div>
-          ) : (
-            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name ? user.name : "Name: Not set"}</CardTitle>
-          )}
-           {isEditing ? (
-            <div className="mt-1">
-              <Label htmlFor="joined-date-input" className="text-sm font-medium text-muted-foreground">Joined:</Label>
-              <Input 
-                id="joined-date-input"
-                type="date" 
-                value={editedJoinedDate} 
-                onChange={(e) => setEditedJoinedDate(e.target.value)} 
-                className="text-sm w-full md:w-auto"
-              />
-            </div>
-          ) : (
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex-grow">
+            {isEditing ? (
+              <div className="mb-1">
+                <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
+                <Input
+                  id="name-input"
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
+                  aria-label="Edit user name"
+                />
+              </div>
+            ) : (
+              <CardTitle className="font-headline text-3xl mb-1">{user.name ? user.name : "Name: Not set"}</CardTitle>
+            )}
             <p className="text-sm text-muted-foreground">
               Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
             </p>
-          )}
+          </div>
+          <div className="flex-shrink-0">
+            {isEditing ? (
+              <div className="flex gap-2">
+                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </div>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
+                <Edit2 className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -284,6 +273,16 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="joined-date-input" className="text-sm font-medium">Joined Date</Label>
+                   <Input 
+                    id="joined-date-input"
+                    type="date" 
+                    value={editedJoinedDate} 
+                    onChange={(e) => setEditedJoinedDate(e.target.value)} 
+                    className="text-sm mt-1 w-full"
+                  />
+                </div>
+                 <div>
                   <Label htmlFor="age-input" className="text-sm font-medium">Age</Label>
                   <Input id="age-input" type="number" value={editedAge} onChange={(e) => setEditedAge(e.target.value)} placeholder="Your age" className="mt-1" />
                 </div>
