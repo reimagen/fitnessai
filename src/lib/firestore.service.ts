@@ -89,12 +89,12 @@ export function useAddPersonalRecords() {
 }
 
 // Define the type for data sent from the client to the mutation.
-// The date should be a string to avoid serialization issues.
+// The date should now be a Date object to align with the 'create' flow.
 type UpdatePersonalRecordClientPayload = {
   id: string;
   data: {
     weight?: number;
-    date?: string;
+    date?: Date;
   };
 };
 

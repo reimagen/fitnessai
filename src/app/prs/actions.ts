@@ -43,10 +43,10 @@ export async function parsePersonalRecordsAction(
 
 // --- Server Actions for Personal Records ---
 
-// This type defines what the client can send to the server action. Note 'date' is a string.
+// This type defines what the client can send to the server action. Note 'date' is now a Date object.
 type UpdatePersonalRecordClientData = {
   weight?: number;
-  date?: string; // Expect a string in 'yyyy-MM-dd' format
+  date?: Date; 
 }
 
 export async function getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
@@ -68,9 +68,8 @@ export async function updatePersonalRecord(userId: string, id: string, recordDat
     throw new Error("User not authenticated.");
   }
   
-  // The server action receives the client data, which includes the date string.
+  // The server action receives the client data, which now includes a proper Date object.
   // It will pass this directly to the server-side firestore function.
-  // No Date object conversion should happen here.
   const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
 
   await serverUpdatePersonalRecord(userId, id, dataForServer);
