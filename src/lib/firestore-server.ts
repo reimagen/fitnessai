@@ -183,7 +183,7 @@ const userProfileConverter = {
             workoutsPerWeek: data.workoutsPerWeek,
             sessionTimeMinutes: data.sessionTimeMinutes,
             experienceLevel: data.experienceLevel,
-            aiPreferencesNotes: data.aiPreferencesNotes,
+aiPreferencesNotes: data.aiPreferencesNotes,
             weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
             weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
         };
@@ -285,21 +285,25 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
     throw new Error("Document not found.");
   }
   
+  // Start with the new data.
   const dataToUpdate: { [key:string]: any } = { ...recordData };
   
-  // Create a merged object for strength level calculation
-  const updatedRecordForCalc = { ...currentRecordData, ...recordData } as PersonalRecord;
-
+  // If a new date string was passed, convert it to a Date object. This is the fix.
+  // It ensures the new date from the client is prioritized and correctly formatted.
+  let newDateObject: Date | undefined = undefined;
   if (recordData.date && typeof recordData.date === 'string') {
-    // Correctly parse the yyyy-MM-dd string into a UTC date object.
-    const dateString = recordData.date;
-    const [year, month, day] = dateString.split('-').map(Number);
-    // Create a UTC date to avoid timezone shifts when creating the Timestamp.
-    const utcDate = new Date(Date.UTC(year, month - 1, day));
-    dataToUpdate.date = Timestamp.fromDate(utcDate);
-    // Update the object used for calculation with the new Date object
-    updatedRecordForCalc.date = utcDate;
+    const [year, month, day] = recordData.date.split('-').map(Number);
+    newDateObject = new Date(Date.UTC(year, month - 1, day));
+    dataToUpdate.date = Timestamp.fromDate(newDateObject);
   }
+
+  // Create a merged object for the strength level calculation.
+  // Prioritize the newly created Date object if it exists.
+  const updatedRecordForCalc: PersonalRecord = { 
+    ...currentRecordData, 
+    ...recordData,
+    date: newDateObject || currentRecordData.date, // Use new date object if available
+  };
   
   const userProfile = await getUserProfile(userId);
   if (userProfile) {
