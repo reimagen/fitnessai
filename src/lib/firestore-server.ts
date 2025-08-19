@@ -13,13 +13,17 @@ import { getStrengthLevel } from './strength-standards';
 
 const workoutLogConverter = {
   toFirestore: (log: Omit<WorkoutLog, 'id'>) => {
+    // The userId is part of the path, so it doesn't need to be in the document data.
+    const { userId, ...rest } = log;
     return {
-      ...log,
+      ...rest,
       date: Timestamp.fromDate(log.date),
     };
   },
   fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): WorkoutLog => {
     const data = snapshot.data() || {};
+    // The userId is retrieved from the document path, not the data itself.
+    const userId = snapshot.ref.parent.parent?.id || '';
     
     const exercises: Exercise[] = Array.isArray(data.exercises)
       ? data.exercises.map((ex: any, index: number) => {
@@ -43,7 +47,7 @@ const workoutLogConverter = {
 
     return {
       id: snapshot.id,
-      userId: data.userId || '',
+      userId: userId,
       date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
       notes: typeof data.notes === 'string' ? data.notes : '',
       exercises: exercises,
@@ -52,7 +56,7 @@ const workoutLogConverter = {
 };
 
 const personalRecordConverter = {
-  toFirestore: (record: Omit<PersonalRecord, 'id'>) => {
+  toFirestore: (record: Omit<PersonalRecord, 'id' | 'userId'>) => {
     return {
       ...record,
       date: Timestamp.fromDate(record.date),
@@ -61,15 +65,15 @@ const personalRecordConverter = {
   fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): PersonalRecord => {
     const data = snapshot.data() || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
+    const userId = snapshot.ref.parent.parent?.id || '';
     
-    // The previous implementation added this field, so we should preserve it on reads.
     const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' 
         ? data.strengthLevel as StrengthLevel 
         : 'N/A';
 
     return {
       id: snapshot.id,
-      userId: data.userId || '',
+      userId: userId,
       exerciseName: typeof data.exerciseName === 'string' ? data.exerciseName : 'Unnamed Exercise',
       weight: Number(data.weight || 0),
       weightUnit: data.weightUnit === 'kg' || data.weightUnit === 'lbs' ? data.weightUnit : 'lbs',
@@ -189,10 +193,10 @@ const userProfileConverter = {
 // --- Firestore Service Functions ---
 
 export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<WorkoutLog[]> => {
-  const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
+  const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
-  const baseQuery = workoutLogsCollection.where('userId', '==', userId);
+  const baseQuery = workoutLogsCollection;
 
   if (forMonth) {
     const startDate = startOfMonth(forMonth);
@@ -209,14 +213,14 @@ export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<W
     const snapshot = await q.get();
     return snapshot.docs.map(doc => doc.data());
   } catch (error: any) {
-    // This handles the case where a new user's subcollection doesn't exist,
-    // which Firestore's security rules may flag as a permission error.
-    // We can treat this as an empty list, not a fatal error.
+    if (error.code === 5 && error.details?.includes('requires an index')) {
+        console.warn(`Firestore index missing for workoutLogs query for user ${userId}. Returning empty list. Please create the required index in the Firebase console.`);
+        return [];
+    }
     if (error.code === 7 || (error.details && error.details.includes('Permission denied'))) {
       console.log(`Gracefully handling Firestore permission error for user ${userId}. Returning empty log list.`);
       return [];
     }
-    // For all other errors, we re-throw them.
     console.error("Error fetching workout logs:", error);
     throw error;
   }
@@ -224,18 +228,12 @@ export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<W
 
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
-    const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
-    const newLog = { ...log, userId };
-    return await workoutLogsCollection.add(newLog as Omit<WorkoutLog, 'id'>);
+    const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
+    return await workoutLogsCollection.add(log as Omit<WorkoutLog, 'id'>);
 };
 
 export const updateWorkoutLog = async (userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>) => {
-  const logDoc = adminDb.collection('workoutLogs').doc(id);
-  // Ensure the user owns this document before updating
-  const currentDoc = await logDoc.get();
-  if (!currentDoc.exists || currentDoc.data()?.userId !== userId) {
-      throw new Error("Permission denied or document not found.");
-  }
+  const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
 
   const dataToUpdate: { [key: string]: any } = { ...log };
   if (log.date) {
@@ -245,24 +243,20 @@ export const updateWorkoutLog = async (userId: string, id: string, log: Partial<
 };
 
 export const deleteWorkoutLog = async (userId: string, id: string) => {
-  const logDoc = adminDb.collection('workoutLogs').doc(id);
-  const currentDoc = await logDoc.get();
-  if (!currentDoc.exists || currentDoc.data()?.userId !== userId) {
-      throw new Error("Permission denied or document not found.");
-  }
+  const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
   return await logDoc.delete();
 };
 
 // Personal Records
-const personalRecordsCollection = adminDb.collection('personalRecords').withConverter(personalRecordConverter);
-
 export const getPersonalRecords = async (userId: string): Promise<PersonalRecord[]> => {
-  const q = personalRecordsCollection.where('userId', '==', userId).orderBy('exerciseName', 'asc');
+  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
+  const q = personalRecordsCollection.orderBy('exerciseName', 'asc');
   const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.data());
 };
 
 export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]) => {
+  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
   const userProfile = await getUserProfile(userId);
   if (!userProfile) {
     throw new Error("User profile not found. Cannot calculate strength levels.");
@@ -271,9 +265,8 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
   const batch = adminDb.batch();
   records.forEach(record => {
     const newDocRef = personalRecordsCollection.doc();
-    const recordWithLevel: Omit<PersonalRecord, 'id'> = {
+    const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
       ...record,
-      userId,
       strengthLevel: getStrengthLevel({ ...record, userId } as PersonalRecord, userProfile),
     };
     batch.set(newDocRef, recordWithLevel);
@@ -282,13 +275,13 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 };
 
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>) => {
-  const recordDoc = adminDb.collection('personalRecords').doc(id);
+  const recordDoc = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   
   const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get();
   const currentRecordData = currentRecordSnapshot.data();
 
-  if (!currentRecordData || currentRecordData.userId !== userId) {
-    throw new Error("Permission denied or document not found.");
+  if (!currentRecordData) {
+    throw new Error("Document not found.");
   }
   
   const dataToUpdate: { [key:string]: any } = { ...recordData };
@@ -308,7 +301,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
 
 // User Profile
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-    const profileDocRef = adminDb.collection('profiles').doc(userId).withConverter(userProfileConverter);
+    const profileDocRef = adminDb.collection('users').doc(userId).withConverter(userProfileConverter);
 
     try {
         const docSnap = await profileDocRef.get();
@@ -323,11 +316,10 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 };
 
 export const updateUserProfile = async (userId: string, profileData: Partial<Omit<UserProfile, 'id'>>) => {
-    const profileDocRef = adminDb.collection('profiles').doc(userId);
+    const profileDocRef = adminDb.collection('users').doc(userId);
     
     const dataToUpdate: { [key: string]: any } = { ...profileData };
     
-    // Only convert joinedDate if it is explicitly provided in the update.
     if ('joinedDate' in profileData && profileData.joinedDate) {
         dataToUpdate.joinedDate = Timestamp.fromDate(profileData.joinedDate);
     }
@@ -363,27 +355,25 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 
-    // Defer strength level recalculation until after the profile is updated.
     await profileDocRef.set(dataToUpdate, { merge: true });
 
-    // --- Recalculate Strength Levels if necessary ---
     const relevantKeys: (keyof UserProfile)[] = ['gender', 'age', 'weightValue', 'weightUnit', 'skeletalMuscleMassValue', 'skeletalMuscleMassUnit'];
     const needsRecalculation = relevantKeys.some(key => key in profileData);
 
     if (needsRecalculation) {
-        // First, check if the user has any records to avoid an unnecessary query for new users.
-        const recordsCountSnapshot = await personalRecordsCollection.where('userId', '==', userId).limit(1).get();
+        const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`);
+        const recordsCountSnapshot = await personalRecordsCollection.limit(1).get();
 
         if (!recordsCountSnapshot.empty) {
             const allRecords = await getPersonalRecords(userId);
-            const updatedProfile = await getUserProfile(userId); // Fetch the newly updated profile
+            const updatedProfile = await getUserProfile(userId); 
 
             if (allRecords.length > 0 && updatedProfile) {
                 const batch = adminDb.batch();
                 for (const record of allRecords) {
                     const newLevel = getStrengthLevel(record, updatedProfile);
                     if (newLevel !== record.strengthLevel) {
-                        const recordRef = adminDb.collection('personalRecords').doc(record.id);
+                        const recordRef = personalRecordsCollection.doc(record.id);
                         batch.update(recordRef, { strengthLevel: newLevel });
                     }
                 }
@@ -392,3 +382,5 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 };
+
+    
