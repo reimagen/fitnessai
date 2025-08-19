@@ -53,11 +53,12 @@ export async function getWorkoutLogs(userId: string, forMonth?: Date): Promise<W
   return serverGetWorkoutLogs(userId, forMonth);
 }
 
-export async function addWorkoutLog(userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>): Promise<FirebaseFirestore.DocumentReference<WorkoutLog, FirebaseFirestore.DocumentData>> {
+export async function addWorkoutLog(userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>): Promise<{ id: string }> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverAddWorkoutLog(userId, log);
+  const docRef = await serverAddWorkoutLog(userId, log);
+  return { id: docRef.id };
 }
 
 export async function updateWorkoutLog(userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>): Promise<void> {
