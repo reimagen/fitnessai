@@ -64,7 +64,7 @@ const constructUserProfileContext = (
     }
 
     context += "\nFitness Goals:\n";
-    const activeGoals = userProfile.fitnessGoals.filter(g => !g.achieved);
+    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
     if (activeGoals.length > 0) {
       const primaryGoal = activeGoals.find(g => g.isPrimary);
       if (primaryGoal) {
