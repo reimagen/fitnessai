@@ -88,10 +88,20 @@ export function useAddPersonalRecords() {
     })
 }
 
+// Define the type for data sent from the client to the mutation.
+// The date should be a string to avoid serialization issues.
+type UpdatePersonalRecordClientPayload = {
+  id: string;
+  data: {
+    weight?: number;
+    date?: string;
+  };
+};
+
 export function useUpdatePersonalRecord() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<PersonalRecord, 'id' | 'userId'>> }>({
+    return useMutation<void, Error, UpdatePersonalRecordClientPayload>({
         mutationFn: ({ id, data }) => updatePersonalRecord(user!.uid, id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });

@@ -186,8 +186,9 @@ export default function MilestonesPage() {
         return;
     }
 
+    // Pass the date as a string in 'yyyy-MM-dd' format
     updateRecordMutation.mutate(
-        { id: recordId, data: { weight, date } },
+        { id: recordId, data: { weight, date: editedDate } },
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });
