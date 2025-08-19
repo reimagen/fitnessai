@@ -44,17 +44,21 @@ export function HistoryPageContent() {
     }
   }, [editingLogId]);
 
-  const { data: profileResult, isLoading: isLoadingProfile } = useUserProfile();
+  const { 
+    data: profileResult, 
+    isLoading: isLoadingProfile, 
+    isError: isErrorProfile 
+  } = useUserProfile();
   const userProfile = profileResult?.data;
   const isNewUser = profileResult?.notFound === true;
 
   // Fetching data with React Query, now passing the current month
-  // This hook is now enabled only when the profile has loaded and is confirmed to exist.
+  // This hook is now enabled only when the profile has loaded and is confirmed to exist for an existing user.
   const { 
     data: workoutLogs, 
     isLoading: isLoadingWorkouts, 
     isError: isErrorWorkouts 
-  } = useWorkouts(currentMonth, !isLoadingProfile && !!userProfile);
+  } = useWorkouts(currentMonth, !isLoadingProfile && !isNewUser);
   
   // Mutations defined directly in the component
   const addWorkoutMutation = useAddWorkoutLog();
@@ -229,33 +233,49 @@ export function HistoryPageContent() {
   const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
 
   const renderWorkoutContent = () => {
-    // Show a loader while profile is loading, or while workout logs are loading for an existing user.
-    if (isLoadingProfile || (isLoadingWorkouts && !isNewUser)) {
+    // State 1: Handle profile loading (highest priority)
+    if (isLoadingProfile) {
       return (
         <div className="flex justify-center items-center h-40">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
     }
+
+    // State 2: Handle profile fetch error
+    if (isErrorProfile) {
+        return <ErrorState message="Could not load your user profile. Please try refreshing." />;
+    }
+
+    // State 3: Handle new user case (profile loaded, but document not found)
+    // This correctly short-circuits before the workout query can run and fail.
+    if (isNewUser) {
+        return (
+            <WorkoutList 
+              workoutLogs={[]} 
+              onEdit={handleEditLog}
+              onDelete={handleDeleteLog}
+            />
+        );
+    }
     
-    // If there was an error fetching workouts for an existing user, show error state.
+    // --- Logic for existing users only from this point on ---
+
+    // State 4: Handle workout data loading for existing user
+    if (isLoadingWorkouts) {
+      return (
+        <div className="flex justify-center items-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    // State 5: Handle workout fetch error for existing user
     if (isErrorWorkouts) {
       return <ErrorState message="Could not load workout history. Please try refreshing." />;
     }
-    
-    // For a new user (profile not found) or an existing user with no logs, show the empty list component.
-    // The `isNewUser` check prevents showing an error before the workout query even runs.
-    if (isNewUser || (workoutLogs && workoutLogs.length === 0)) {
-      return (
-        <WorkoutList 
-          workoutLogs={[]} 
-          onEdit={handleEditLog}
-          onDelete={handleDeleteLog}
-        />
-      );
-    }
-    
-    // If we have logs, display them.
+
+    // State 6: Success state for existing user (with or without logs)
     return (
       <WorkoutList 
         workoutLogs={workoutLogs || []} 
