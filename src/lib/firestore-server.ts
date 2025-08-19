@@ -188,10 +188,8 @@ const userProfileConverter = {
 
 // --- Firestore Service Functions ---
 
-// Workout Logs
-const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
-
 export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<WorkoutLog[]> => {
+  const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
   const baseQuery = workoutLogsCollection.where('userId', '==', userId);
@@ -204,15 +202,29 @@ export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<W
       .where('date', '<=', endDate)
       .orderBy('date', 'desc');
   } else {
-    // Default to fetching all logs if no month is specified
     q = baseQuery.orderBy('date', 'desc');
   }
-  const snapshot = await q.get();
-  return snapshot.docs.map(doc => doc.data());
+  
+  try {
+    const snapshot = await q.get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (error: any) {
+    // This handles the case where a new user's subcollection doesn't exist,
+    // which Firestore's security rules may flag as a permission error.
+    // We can treat this as an empty list, not a fatal error.
+    if (error.code === 7 || (error.details && error.details.includes('Permission denied'))) {
+      console.log(`Gracefully handling Firestore permission error for user ${userId}. Returning empty log list.`);
+      return [];
+    }
+    // For all other errors, we re-throw them.
+    console.error("Error fetching workout logs:", error);
+    throw error;
+  }
 };
 
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
+    const workoutLogsCollection = adminDb.collection('workoutLogs').withConverter(workoutLogConverter);
     const newLog = { ...log, userId };
     return await workoutLogsCollection.add(newLog as Omit<WorkoutLog, 'id'>);
 };
