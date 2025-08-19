@@ -286,18 +286,23 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   }
   
   const dataToUpdate: { [key:string]: any } = { ...recordData };
-  if (recordData.date) {
+  
+  // Create a merged object for strength level calculation
+  const updatedRecordForCalc = { ...currentRecordData, ...recordData } as PersonalRecord;
+
+  if (recordData.date && typeof recordData.date === 'string') {
     // Correctly parse the yyyy-MM-dd string into a UTC date object.
-    const date = recordData.date;
-    const [year, month, day] = (date as unknown as string).split('-').map(Number);
+    const dateString = recordData.date;
+    const [year, month, day] = dateString.split('-').map(Number);
     // Create a UTC date to avoid timezone shifts when creating the Timestamp.
     const utcDate = new Date(Date.UTC(year, month - 1, day));
     dataToUpdate.date = Timestamp.fromDate(utcDate);
+    // Update the object used for calculation with the new Date object
+    updatedRecordForCalc.date = utcDate;
   }
   
   const userProfile = await getUserProfile(userId);
-  if (userProfile && currentRecordData) {
-      const updatedRecordForCalc = { ...currentRecordData, ...recordData } as PersonalRecord;
+  if (userProfile) {
       dataToUpdate.strengthLevel = getStrengthLevel(updatedRecordForCalc, userProfile);
   }
 
@@ -388,5 +393,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 };
+
+    
 
     
