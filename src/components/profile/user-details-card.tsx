@@ -245,24 +245,18 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
         </div>
 
         <div>
-            {isEditing ? (
-              <div className="mb-1 pr-24">
-                <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
-                <Input
-                  id="name-input"
-                  type="text"
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  className="text-2xl font-headline font-semibold leading-none tracking-tight h-auto p-0 border-0"
-                  aria-label="Edit user name"
-                />
-              </div>
-            ) : (
+          {isEditing ? (
+            <div className="mb-1">
+              {/* This space intentionally left blank in edit mode to be replaced by the input field below */}
+            </div>
+          ) : (
+            <>
               <CardTitle className="font-headline text-3xl mb-1">{user.name ? user.name : "Name: Not set"}</CardTitle>
-            )}
-            <p className="text-sm text-muted-foreground">
-              Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
-            </p>
+              <p className="text-sm text-muted-foreground">
+                Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
+              </p>
+            </>
+          )}
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -270,6 +264,18 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
           <h4 className="text-md font-semibold text-muted-foreground border-b pb-1">Personal Stats</h4>
           {isEditing ? (
             <div className="space-y-4">
+               <div>
+                  <Label htmlFor="name-input" className="text-sm font-medium">Name</Label>
+                  <Input
+                    id="name-input"
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder="Your name"
+                    className="mt-1"
+                    aria-label="Edit user name"
+                  />
+                </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="joined-date-input" className="text-sm font-medium">Joined Date</Label>
