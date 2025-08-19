@@ -311,17 +311,17 @@ export default function MilestonesPage() {
             Your top recorded lift (1RM) for each exercise. Levels are classified based on your personal stats. 
             Body-weight based levels use ratios from strengthlevel.com. 
             Otherwise, level calculations are based on your skeletal muscle mass.
-            {allRecords && allRecords.length > 0 && (
+          </CardDescription>
+          {allRecords && allRecords.length > 0 && (
               <Button
                 variant="destructive"
                 size="sm"
-                className="w-full sm:w-auto sm:float-right mt-2 sm:mt-0"
+                className="w-full mt-4"
                 onClick={performClearRecords}
               >
                 <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
               </Button>
             )}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -354,7 +354,7 @@ export default function MilestonesPage() {
                                   const nextLevel = levelOrder[currentLevelIndex + 1];
                                   
                                   const currentThreshold = level === 'Beginner' ? 0 : thresholds[level.toLowerCase() as keyof typeof thresholds];
-                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof typeof thresholds];
+                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof thresholds];
                                   
                                   if (record.weight < nextThreshold) {
                                     const range = nextThreshold - currentThreshold;
@@ -528,3 +528,4 @@ export default function MilestonesPage() {
     </div>
   );
 }
+ 
