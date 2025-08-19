@@ -226,18 +226,34 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
 
   return (
     <Card className="shadow-lg">
-      <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex-grow">
+      <CardHeader className="pb-4 relative">
+        <div className="absolute top-4 right-4 flex gap-2">
             {isEditing ? (
-              <div className="mb-1">
+              <>
+                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
+                <Edit2 className="h-5 w-5" />
+              </Button>
+            )}
+        </div>
+
+        <div>
+            {isEditing ? (
+              <div className="mb-1 pr-24">
                 <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
                 <Input
                   id="name-input"
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
-                  className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
+                  className="text-2xl font-headline font-semibold leading-none tracking-tight h-auto p-0 border-0"
                   aria-label="Edit user name"
                 />
               </div>
@@ -247,23 +263,6 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
             <p className="text-sm text-muted-foreground">
               Joined: {user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}
             </p>
-          </div>
-          <div className="flex-shrink-0">
-            {isEditing ? (
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-                  <XCircle className="h-5 w-5" />
-                </Button>
-                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
-                  <Save className="h-5 w-5" />
-                </Button>
-              </div>
-            ) : (
-              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
-                <Edit2 className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
