@@ -60,12 +60,13 @@ export default function MilestonesPage() {
   const [editedDate, setEditedDate] = useState('');
 
   const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
 
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
-  const completedGoals = useMemo(() => userProfile?.fitnessGoals.filter(g => g.achieved) || [], [userProfile]);
+  const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
   
   const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
     if (!user) return;
