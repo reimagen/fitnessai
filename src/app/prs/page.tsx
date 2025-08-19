@@ -266,7 +266,16 @@ export default function MilestonesPage() {
 
       <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-          <CardHeader>
+          <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
              <CardTitle className="font-headline flex items-center gap-2">
                 <Edit className="h-6 w-6 text-accent" />
                 Add PR Manually
@@ -286,7 +295,16 @@ export default function MilestonesPage() {
       
       <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-           <CardHeader>
+           <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
               <CardTitle className="font-headline flex items-center gap-2">
                 <UploadCloud className="h-6 w-6 text-accent" />
                 Upload from Screenshot
