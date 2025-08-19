@@ -287,7 +287,12 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   
   const dataToUpdate: { [key:string]: any } = { ...recordData };
   if (recordData.date) {
-    dataToUpdate.date = Timestamp.fromDate(recordData.date);
+    // Correctly parse the yyyy-MM-dd string into a UTC date object.
+    const date = recordData.date;
+    const [year, month, day] = (date as unknown as string).split('-').map(Number);
+    // Create a UTC date to avoid timezone shifts when creating the Timestamp.
+    const utcDate = new Date(Date.UTC(year, month - 1, day));
+    dataToUpdate.date = Timestamp.fromDate(utcDate);
   }
   
   const userProfile = await getUserProfile(userId);
