@@ -67,14 +67,11 @@ export async function updatePersonalRecord(userId: string, id: string, recordDat
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  // The server action now receives the string and converts it to a Date object.
+  
+  // The server action receives the client data, which includes the date string.
+  // It will pass this directly to the server-side firestore function.
+  // No Date object conversion should happen here.
   const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
-  if (recordData.date) {
-    // Safely parse the date string. Using replace() helps avoid timezone issues.
-    // By creating the date this way, we are interpreting the string in the server's local time,
-    // which, on most cloud platforms, is UTC. Crucially, this creates a Date object that
-    // correctly represents the *start* of that calendar day in UTC.
-    dataForServer.date = new Date(recordData.date.replace(/-/g, '/'));
-  }
+
   await serverUpdatePersonalRecord(userId, id, dataForServer);
 }
