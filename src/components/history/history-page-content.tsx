@@ -292,7 +292,7 @@ export function HistoryPageContent() {
           Workout History
         </h1>
         <p className="text-muted-foreground">
-          Log your sessions and review your past performance.
+          Log your sessions and review past performance.
         </p>
       </header>
 
@@ -306,7 +306,7 @@ export function HistoryPageContent() {
                   Log Workout Manually
                 </CardTitle>
                 <CardDescription>
-                  Enter the details of your workout session exercise by exercise.
+                  Enter your workout details.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -314,10 +314,10 @@ export function HistoryPageContent() {
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                   <ImageUp className="h-6 w-6 text-primary" />
-                  Parse from Screenshot
+                  Upload Screenshot
                 </CardTitle>
                 <CardDescription>
-                  Upload an image of your workout log and let our AI do the work.
+                  Upload an image of your workout log and let AI extract the data.
                 </CardDescription>
               </CardHeader>
             </Card>
