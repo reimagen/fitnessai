@@ -254,10 +254,10 @@ export default function MilestonesPage() {
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <UploadCloud className="h-6 w-6 text-accent" />
-                Upload from Screenshot
+                Upload Screenshot
               </CardTitle>
               <CardDescription>
-                Upload an image to parse multiple PRs at once.
+                Upload an image and let AI extract your PRs. Must be a classifiable exercise, list available in manual PR entry tab.
               </CardDescription>
             </CardHeader>
           </Card>
