@@ -29,12 +29,13 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays } from 'date-fns/differenceInDays';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
+import Link from 'next/link';
 
 
 const IMBALANCE_TYPES = [
@@ -285,11 +286,14 @@ export default function AnalysisPage() {
   const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
   const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
 
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
-  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
+  const isProfileNotFound = profileResult?.notFound === true;
 
+  const enableDataFetching = !isLoadingProfile && !!userProfile;
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
+  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
+  
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
@@ -964,8 +968,8 @@ useEffect(() => {
     return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">{legendOrder.map(name => { const entry = payloadMap[name]; if (!entry || !chartConfig[name]) return null; return <div key={`item-${entry.dataKey}`} className="flex items-center justify-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} /><span className="text-muted-foreground">{chartConfig[name].label}</span></div>; })}</div>;
   };
   
-  const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
-  const isError = isErrorWorkouts || isErrorPrs || isErrorProfile;
+  const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
+  const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
   const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
 
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
@@ -986,6 +990,48 @@ useEffect(() => {
     return 'secondary';
   }
 
+  if (isLoadingProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isErrorProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <ErrorState message="Could not load your profile data. Please try again later." />
+      </div>
+    );
+  }
+
+  if (isProfileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Unlock Your Analysis</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Create a profile to view your progress and get AI-powered insights.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+            <CardDescription>
+              Your profile is needed to analyze workout data and calculate strength metrics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/profile" passHref>
+              <Button className="w-full">
+                <UserPlus className="mr-2" />
+                Go to Profile Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
