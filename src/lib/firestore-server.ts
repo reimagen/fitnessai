@@ -310,6 +310,22 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   await recordDoc.update(dataToUpdate);
 };
 
+export const clearAllPersonalRecords = async (userId: string): Promise<void> => {
+    const collectionRef = adminDb.collection(`users/${userId}/personalRecords`);
+    const snapshot = await collectionRef.get();
+    
+    if (snapshot.empty) {
+        return;
+    }
+
+    const batch = adminDb.batch();
+    snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+    });
+
+    await batch.commit();
+};
+
 
 // User Profile
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -398,6 +414,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
 
 
 

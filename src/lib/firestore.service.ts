@@ -12,6 +12,7 @@ import {
     getPersonalRecords,
     addPersonalRecords,
     updatePersonalRecord,
+    clearAllPersonalRecords,
 } from '@/app/prs/actions';
 import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
@@ -34,36 +35,48 @@ export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   });
 }
 
+type AddWorkoutPayload = {
+  userId: string;
+  data: Omit<WorkoutLog, 'id' | 'userId'>;
+};
+
 export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: (log: Omit<WorkoutLog, 'id' | 'userId'>) => addWorkoutLog(user!.uid, log),
-        onSuccess: () => {
-            // Invalidate all workout queries for the current user to ensure any month's view is updated.
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
+
+type UpdateWorkoutPayload = {
+  userId: string;
+  id: string;
+  data: Partial<Omit<WorkoutLog, 'id' | 'userId'>>;
+};
 
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id' | 'userId'>> }>({
-        mutationFn: ({ id, data }) => updateWorkoutLog(user!.uid, id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+    return useMutation<void, Error, UpdateWorkoutPayload>({
+        mutationFn: ({ userId, id, data }) => updateWorkoutLog(userId, id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
 
+type DeleteWorkoutPayload = {
+  userId: string;
+  logId: string;
+};
+
 export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: (id: string) => deleteWorkoutLog(user!.uid, id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        mutationFn: ({ userId, logId }: DeleteWorkoutPayload) => deleteWorkoutLog(userId, logId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
@@ -77,20 +90,23 @@ export function usePersonalRecords() {
   });
 }
 
+type AddPersonalRecordsPayload = {
+  userId: string;
+  records: Omit<PersonalRecord, 'id' | 'userId'>[];
+};
+
 export function useAddPersonalRecords() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: (records: Omit<PersonalRecord, 'id' | 'userId'>[]) => addPersonalRecords(user!.uid, records),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
+        mutationFn: ({ userId, records }: AddPersonalRecordsPayload) => addPersonalRecords(userId, records),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', variables.userId] });
         }
     })
 }
 
-// Define the type for data sent from the client to the mutation.
-// The date should now be a Date object to align with the 'create' flow.
-type UpdatePersonalRecordClientPayload = {
+type UpdatePersonalRecordPayload = {
+  userId: string;
   id: string;
   data: {
     weight?: number;
@@ -100,12 +116,21 @@ type UpdatePersonalRecordClientPayload = {
 
 export function useUpdatePersonalRecord() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
-    return useMutation<void, Error, UpdatePersonalRecordClientPayload>({
-        mutationFn: ({ id, data }) => updatePersonalRecord(user!.uid, id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
+    return useMutation<void, Error, UpdatePersonalRecordPayload>({
+        mutationFn: ({ userId, id, data }) => updatePersonalRecord(userId, id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', variables.userId] });
         },
+    });
+}
+
+export function useClearAllPersonalRecords() {
+    const queryClient = useQueryClient();
+    return useMutation<void, Error, string>({
+        mutationFn: (userId: string) => clearAllPersonalRecords(userId),
+        onSuccess: (_, userId) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', userId] });
+        }
     });
 }
 
@@ -123,8 +148,8 @@ export function useUserProfile() {
       },
       enabled: !!user, // Only fetch profile if user is authenticated
       staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-      refetchOnMount: true, // Always refetch when the component mounts
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
     });
 }
 

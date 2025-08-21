@@ -22,12 +22,14 @@ import { subMonths } from 'date-fns/subMonths';
 import { isSameMonth } from 'date-fns/isSameMonth';
 import { ErrorState } from "../shared/ErrorState";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth.service";
 
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 export function HistoryPageContent() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -69,6 +71,11 @@ export function HistoryPageContent() {
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to modify logs.", variant: "destructive" });
+        return;
+    }
+
     const finalData = {
         ...data,
         exercises: data.exercises.map(ex => {
@@ -78,7 +85,7 @@ export function HistoryPageContent() {
     };
 
     if (editingLogId) {
-      updateWorkoutMutation.mutate({ id: editingLogId, data: finalData }, {
+      updateWorkoutMutation.mutate({ userId: user.uid, id: editingLogId, data: finalData }, {
         onSuccess: () => {
           toast({ title: "Log Updated!", description: "Your workout has been successfully updated." });
           setEditingLogId(null);
@@ -89,7 +96,7 @@ export function HistoryPageContent() {
         }
       });
     } else {
-      addWorkoutMutation.mutate(finalData, {
+      addWorkoutMutation.mutate({ userId: user.uid, data: finalData }, {
         onSuccess: () => {
           toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
            setActiveForm('none'); // Hide form on success
@@ -102,6 +109,10 @@ export function HistoryPageContent() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to save logs.", variant: "destructive" });
+        return;
+    }
     if (!parsedData.workoutDate) {
       toast({
         title: "Parsing Error",
@@ -159,8 +170,8 @@ export function HistoryPageContent() {
         }
       });
       
-      const updatedLog: Omit<WorkoutLog, 'id'> = { ...existingLog, exercises: newExercises };
-      updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
+      const updatedLog: Omit<WorkoutLog, 'id' | 'userId'> = { ...existingLog, exercises: newExercises };
+      updateWorkoutMutation.mutate({ userId: user.uid, id: existingLog.id, data: updatedLog }, {
         onSuccess: () => {
           toast({ title: "Log Updated", description: `Merged parsed data, adding ${addedCount} new exercise(s).` });
           setActiveForm('none'); // Hide form on success
@@ -170,11 +181,11 @@ export function HistoryPageContent() {
         }
       });
     } else {
-      const newLog: Omit<WorkoutLog, 'id'> = {
+      const newLog: Omit<WorkoutLog, 'id' | 'userId'> = {
         date: targetDate,
         exercises: parsedExercises,
       };
-      addWorkoutMutation.mutate(newLog, {
+      addWorkoutMutation.mutate({ userId: user.uid, data: newLog }, {
         onSuccess: () => {
           toast({ title: "Log Created", description: "Successfully created a new log from the screenshot." });
           setActiveForm('none'); // Hide form on success
@@ -187,7 +198,11 @@ export function HistoryPageContent() {
   };
   
   const handleDeleteLog = (logId: string) => {
-    deleteWorkoutMutation.mutate(logId, {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to delete logs.", variant: "destructive" });
+        return;
+    }
+    deleteWorkoutMutation.mutate({ userId: user.uid, logId: logId }, {
           onSuccess: () => {
               toast({ title: "Log Deleted", description: "The workout log has been removed.", variant: "destructive" });
           },
