@@ -81,12 +81,12 @@ export function useDeleteWorkoutLog() {
     });
 }
 
-export function usePersonalRecords() {
+export function usePersonalRecords(enabled: boolean = true) {
   const { user } = useAuth();
   return useQuery<PersonalRecord[], Error>({ 
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
-    enabled: !!user // Only run the query if the user is logged in
+    enabled: !!user && enabled
   });
 }
 

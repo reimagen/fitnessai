@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info, Edit } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info, Edit, UserPlus } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { ManualPrForm } from "@/components/prs/manual-pr-form";
@@ -21,6 +21,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
+import Link from "next/link";
 
 
 // Function to group records and find the best for each exercise
@@ -57,9 +58,12 @@ export default function MilestonesPage() {
   const [editedDate, setEditedDate] = useState('');
   const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
 
-  const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
+
+  // Enable PR fetching only if the profile has loaded and exists.
+  const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(!isLoadingProfile && !!userProfile);
+
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
   const clearAllRecordsMutation = useClearAllPersonalRecords();
@@ -220,8 +224,51 @@ export default function MilestonesPage() {
     }
   };
 
-  const isLoading = isLoadingPrs || isLoadingProfile;
-  const isError = isErrorPrs || isErrorProfile;
+  const isLoading = isLoadingProfile || isLoadingPrs;
+  const isError = isErrorProfile || isErrorPrs;
+
+  if (isLoadingProfile) {
+      return (
+          <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+      );
+  }
+
+  if (isErrorProfile) {
+      return (
+          <div className="container mx-auto px-4 py-8">
+              <ErrorState message="Could not load your profile data. Please try again later." />
+          </div>
+      );
+  }
+
+  if (profileResult?.notFound) {
+      return (
+        <div className="container mx-auto px-4 py-8 text-center">
+            <header className="mb-12">
+                <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Track Your Milestones</h1>
+                <p className="mt-2 text-lg text-muted-foreground">Create a profile to start logging personal records and achievements.</p>
+            </header>
+            <Card className="shadow-lg max-w-md mx-auto">
+                <CardHeader>
+                    <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+                    <CardDescription>
+                        Your profile is needed to calculate strength levels and save your milestones.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/profile" passHref>
+                        <Button className="w-full">
+                            <UserPlus className="mr-2" />
+                            Go to Profile Setup
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+      );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
