@@ -158,7 +158,8 @@ const constructUserProfileContext = (
 export default function PlanPage() {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const updateUserMutation = useUpdateUserProfile();
@@ -232,7 +233,7 @@ export default function PlanPage() {
     setApiIsLoading(false);
   };
 
-  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
+  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals && userProfile.fitnessGoals.filter(g => !g.achieved).length > 0 && userProfile.experienceLevel;
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
