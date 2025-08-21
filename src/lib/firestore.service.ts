@@ -124,6 +124,7 @@ export function useUserProfile() {
       enabled: !!user, // Only fetch profile if user is authenticated
       staleTime: 1000 * 60 * 5, // 5 minutes
       refetchOnWindowFocus: false,
+      refetchOnMount: true, // Always refetch when the component mounts
     });
 }
 
