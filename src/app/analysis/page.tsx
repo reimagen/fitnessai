@@ -1,4 +1,4 @@
-      
+
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line } from 'recharts';
@@ -32,7 +32,7 @@ import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { getStrengthThresholds } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 
@@ -287,7 +287,8 @@ export default function AnalysisPage() {
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
 
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
@@ -315,8 +316,8 @@ export default function AnalysisPage() {
              return;
         };
 
-        const lift1Level = lift1.strengthLevel || 'N/A';
-        const lift2Level = lift2.strengthLevel || 'N/A';
+        const lift1Level = getStrengthLevel(lift1, userProfile);
+        const lift2Level = getStrengthLevel(lift2, userProfile);
 
         const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
         const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
@@ -479,7 +480,7 @@ export default function AnalysisPage() {
             weightUnit: userProfile.weightUnit,
             skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
             skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-            fitnessGoals: userProfile.fitnessGoals
+            fitnessGoals: (userProfile.fitnessGoals || [])
               .filter(g => !g.achieved)
               .map(g => ({
                 description: g.description,
@@ -704,7 +705,7 @@ export default function AnalysisPage() {
       });
     });
     return Array.from(weightedExercises.entries())
-      .filter(([, count]) => count > 2) // Must be logged at least 3 times
+      .filter(([, count]) => count > 1) // Must log at least 2 workouts
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
   }, [workoutLogs]);
@@ -824,7 +825,7 @@ useEffect(() => {
         const bestPRforLift = findBestPr(personalRecords, [prName]);
 
         if (bestPRforLift) {
-            setCurrentLiftLevel(bestPRforLift.strengthLevel || 'N/A');
+            setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
         } else {
             setCurrentLiftLevel(null);
         }
@@ -907,7 +908,7 @@ useEffect(() => {
               weightUnit: userProfile.weightUnit,
               skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
               skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-              fitnessGoals: userProfile.fitnessGoals
+              fitnessGoals: (userProfile.fitnessGoals || [])
                 .filter(g => !g.achieved)
                 .map(g => ({
                   description: g.description,
@@ -1135,7 +1136,7 @@ useEffect(() => {
                                                                         <>
                                                                             <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
                                                                             <p className="text-xs text-muted-foreground mt-1">
-                                                                                Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+                                                                                Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
                                                                             </p>
                                                                         </>
                                                                     );
