@@ -51,6 +51,7 @@ export default function ProfilePage() {
   const { user, signOut: handleSignOut } = useAuth();
   
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
+    if (!user) return;
     updateUserMutation.mutate({ fitnessGoals: updatedGoals }, {
       onSuccess: () => {
         toast({
@@ -65,6 +66,7 @@ export default function ProfilePage() {
   };
 
   const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => {
+    if (!user) return;
     updateUserMutation.mutate(updatedDetails, {
       onSuccess: () => {
         toast({
@@ -79,6 +81,7 @@ export default function ProfilePage() {
   };
 
   const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal'>>) => {
+    if (!user) return;
     updateUserMutation.mutate(updatedPreferences, {
       onSuccess: () => {
         toast({
@@ -96,9 +99,11 @@ export default function ProfilePage() {
     // This creates the user's profile document for the first time
     if (!user) return;
     const defaultProfileData = {
+      id: user.uid, // Set the user's ID in the document
       email: user.email || "",
       fitnessGoals: [],
-      // name and joinedDate are intentionally omitted to allow "Not set" to display
+      joinedDate: new Date(), // Set the joined date to now
+      // name is intentionally omitted to allow "Not set" to display
     };
     updateUserMutation.mutate(defaultProfileData, {
       onSuccess: () => {
