@@ -169,7 +169,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           </div>
         )}
 
-        <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
+        <div className="space-y-2 pt-4 md:grid md:grid-cols-7 md:gap-4 md:space-y-0">
           {daysOfWeek.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayData = weeklyData.get(dateKey);
@@ -181,7 +181,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]",
+                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center gap-4 md:flex-col md:p-3 md:min-h-[160px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
@@ -189,8 +189,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
-                <div className="mt-2 flex-grow flex flex-col text-center justify-between">
-                  <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
+                
+                <div className="h-full w-px bg-border md:h-px md:w-full"></div>
+
+                <div className="flex-grow flex flex-col items-center justify-center text-center md:justify-between w-full">
+                   <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
                     {totalCalories > 0 ? (
                       <>
                         <Flame className="h-4 w-4" />
@@ -201,7 +204,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                     )}
                   </div>
                   {totalCalories > 0 && (
-                    <div className="text-xs text-muted-foreground space-y-1 mt-1 overflow-y-auto">
+                    <div className="text-xs text-muted-foreground space-y-1 mt-1 overflow-y-auto w-full">
                       {activities && Array.from(activities.entries()).map(([activity, stats]) => (
                          <p key={activity} className="w-full truncate font-semibold text-foreground">
                             {activity}
