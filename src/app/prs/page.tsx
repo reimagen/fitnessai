@@ -7,16 +7,13 @@ import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loade
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { ManualPrForm } from "@/components/prs/manual-pr-form";
-import { parsePersonalRecordsAction } from "./actions";
+import { parsePersonalRecordsAction, clearAllPersonalRecords } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord } from "@/lib/firestore.service";
-import { writeBatch, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useQueryClient } from "@tanstack/react-query";
+import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord, useClearAllPersonalRecords } from "@/lib/firestore.service";
 import { getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -53,7 +50,6 @@ const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
 
 export default function MilestonesPage() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { user } = useAuth();
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
@@ -66,6 +62,7 @@ export default function MilestonesPage() {
   const userProfile = profileResult?.data;
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
+  const clearAllRecordsMutation = useClearAllPersonalRecords();
 
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
   const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
@@ -94,7 +91,7 @@ export default function MilestonesPage() {
     });
 
     if (addedCount > 0) {
-        addPersonalRecordsMutation.mutate(newRecords, {
+        addPersonalRecordsMutation.mutate({ userId: user.uid, records: newRecords }, {
             onSuccess: () => {
                 toast({
                     title: "Records Updated",
@@ -121,7 +118,8 @@ export default function MilestonesPage() {
   };
   
   const handleManualAdd = (newRecord: Omit<PersonalRecord, 'id' | 'userId'>) => {
-    addPersonalRecordsMutation.mutate([newRecord], {
+    if (!user) return;
+    addPersonalRecordsMutation.mutate({ userId: user.uid, records: [newRecord] }, {
         onSuccess: () => {
             toast({
                 title: "PR Added!",
@@ -141,26 +139,22 @@ export default function MilestonesPage() {
 
   const performClearRecords = async () => {
     if (!allRecords || allRecords.length === 0 || !user) return;
-    try {
-        const batch = writeBatch(db);
-        allRecords.forEach(record => {
-            const docRef = doc(db, 'users', user.uid, 'personalRecords', record.id);
-            batch.delete(docRef);
-        });
-        await batch.commit();
-        queryClient.invalidateQueries({ queryKey: ['prs', user.uid] });
-        toast({
-            title: "Records Cleared",
-            description: "All personal records have been removed.",
-            variant: "destructive",
-        });
-    } catch(error: any) {
-        toast({
-            title: "Clear Failed",
-            description: `Could not clear records: ${error.message}`,
-            variant: "destructive"
-        });
-    }
+    clearAllRecordsMutation.mutate(user.uid, {
+        onSuccess: () => {
+            toast({
+                title: "Records Cleared",
+                description: "All personal records have been removed.",
+                variant: "destructive",
+            });
+        },
+        onError: (error) => {
+            toast({
+                title: "Clear Failed",
+                description: `Could not clear records: ${error.message}`,
+                variant: "destructive"
+            });
+        }
+    });
   };
   
   const handleEditClick = (record: PersonalRecord) => {
@@ -174,6 +168,7 @@ export default function MilestonesPage() {
   };
 
   const handleSaveEdit = (recordId: string) => {
+    if (!user) return;
     const weight = parseFloat(editedWeight);
     if (isNaN(weight) || weight <= 0) {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
@@ -191,7 +186,7 @@ export default function MilestonesPage() {
 
     // Pass the full, timezone-aware Date object to the server.
     updateRecordMutation.mutate(
-        { id: recordId, data: { weight, date: normalizedDate } },
+        { userId: user.uid, id: recordId, data: { weight, date: normalizedDate } },
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });
@@ -336,8 +331,10 @@ export default function MilestonesPage() {
                 size="sm"
                 className="w-full mt-4"
                 onClick={performClearRecords}
+                disabled={clearAllRecordsMutation.isPending}
               >
-                <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
+                {clearAllRecordsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Clear All Records
               </Button>
             )}
         </CardHeader>

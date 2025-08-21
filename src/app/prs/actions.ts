@@ -6,6 +6,7 @@ import {
   getPersonalRecords as serverGetPersonalRecords,
   addPersonalRecords as serverAddPersonalRecords,
   updatePersonalRecord as serverUpdatePersonalRecord,
+  clearAllPersonalRecords as serverClearAllPersonalRecords,
 } from "@/lib/firestore-server";
 import type { PersonalRecord } from "@/lib/types";
 
@@ -73,4 +74,11 @@ export async function updatePersonalRecord(userId: string, id: string, recordDat
   const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
 
   await serverUpdatePersonalRecord(userId, id, dataForServer);
+}
+
+export async function clearAllPersonalRecords(userId: string): Promise<void> {
+    if (!userId) {
+        throw new Error("User not authenticated.");
+    }
+    await serverClearAllPersonalRecords(userId);
 }

@@ -705,7 +705,7 @@ export default function AnalysisPage() {
       });
     });
     return Array.from(weightedExercises.entries())
-      .filter(([, count]) => count > 1) // Must log at least 2 workouts
+      .filter(([, count]) => count > 1) // Need at least 2 workouts to calc regression
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
   }, [workoutLogs]);
