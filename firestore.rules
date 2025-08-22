@@ -3,26 +3,19 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // For this single-user prototype, we allow reads and writes to the
-    // specific collections used by the application.
-    // The user profile is restricted to the known document ID.
-    match /profiles/main-user-profile {
-      allow read, write: if true;
-    }
+    // Users can only read and write to their own user profile document.
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
 
-    // Allow clients to read and write their own workout logs.
-    match /workoutLogs/{logId} {
-      allow read, write: if true;
-    }
+      // A user can only access their own workout logs and personal records.
+      match /workoutLogs/{logId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
 
-    // Allow clients to read and write their own personal records.
-    match /personalRecords/{recordId} {
-      allow read, write: if true;
-    }
-    
-    // Deny all other access to prevent unauthorized operations.
-    match /{document=**} {
-      allow read, write: if false;
+      match /personalRecords/{recordId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }
