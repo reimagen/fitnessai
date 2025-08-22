@@ -185,13 +185,13 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center p-2">
+                <div className="flex flex-col items-center justify-center text-center p-2 pr-4 md:p-0">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
                 
                 <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
-
+                
                 <div className="flex-grow flex items-center md:flex-col md:items-stretch md:justify-center text-center">
                   {totalCalories > 0 && activities ? (
                     <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
@@ -213,8 +213,12 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                         </div>
                     </div>
                   ) : (
-                    <div className="flex-grow flex items-center justify-center h-full">
-                        <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                    <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
+                      <div className="flex items-center justify-center text-sm font-medium text-muted-foreground/60 md:h-8 md:mb-2">
+                        None
+                      </div>
+                      {/* Empty div to maintain the two-column structure on mobile */}
+                      <div className="hidden md:block"></div>
                     </div>
                   )}
                 </div>
