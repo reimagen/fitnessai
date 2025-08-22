@@ -17,7 +17,7 @@ type UserDetailsCardProps = {
   onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => void;
 };
 
-const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
+const GENDER_OPTIONS = ["Male", "Female"];
 const HEIGHT_UNIT_OPTIONS = [
     { label: "cm", value: "cm" },
     { label: "ft/in", value: "ft/in" },
