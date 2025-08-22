@@ -22,6 +22,7 @@ import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 import { startOfDay } from 'date-fns';
+import { StepperInput } from "@/components/ui/stepper-input";
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
@@ -222,7 +223,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Sets</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                         <StepperInput {...field} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -235,7 +236,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Reps</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <StepperInput {...field} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -248,7 +249,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Weight</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <StepperInput {...field} onChange={field.onChange} step={5} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -282,7 +283,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Distance</FormLabel>
                       <FormControl>
-                        <Input type="number" step="any" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <StepperInput {...field} onChange={field.onChange} step={0.1} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -318,7 +319,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Duration</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <StepperInput {...field} onChange={field.onChange} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -353,7 +354,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Calories</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                        <StepperInput {...field} onChange={field.onChange} step={10} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
