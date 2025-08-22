@@ -249,7 +249,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Weight</FormLabel>
                       <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} step={5} />
+                        <StepperInput {...field} onChange={field.onChange} step={1} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -354,7 +354,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     <FormItem>
                       <FormLabel>Calories</FormLabel>
                       <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} step={10} />
+                        <StepperInput {...field} onChange={field.onChange} step={1} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
