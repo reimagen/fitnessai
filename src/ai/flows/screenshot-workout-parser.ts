@@ -33,7 +33,7 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'])
                 .describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name. If truly unsure or it doesn\'t fit standard categories, default to "Other".'),
       distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling). For non-cardio exercises, this should be 0 unless explicitly stated.'),
-      distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'),
+      distanceUnit: z.enum(['mi', 'km', 'ft', 'm']).optional().describe('The unit of distance (mi, km, ft, or m).'),
       duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated.'),
       durationUnit: z.enum(['min', 'hr', 'sec']).optional().describe('The unit of duration (min, hr, or sec).'),
       calories: z.number().describe('The number of calories burned. If a dash ("-"), "N/A", or no value is clearly visible for calories, output 0.'),
@@ -74,7 +74,7 @@ const COMMON_INSTRUCTIONS = `
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical, Climbmill):
         *   Prioritize extracting 'duration', 'durationUnit', and 'calories'.
         *   **MANDATORY DURATION RULE**: If you see text like "5m 1s", "5 min 1 sec", or an OCR artifact like "5 mi- 301 sec", you MUST interpret this as a duration. For example, "5m 1s" MUST be parsed into 'duration: 301, durationUnit: 'sec''.
-        *   **MANDATORY DISTANCE RULE**: You MUST NOT assign a 'distance' value unless an explicit distance unit ("mi", "km", "ft") is clearly visible and associated with a number. In cases like "Climbmill - 5m 1s", the distance MUST be 0. Do NOT misinterpret "m" for "mi". If you see "5 mi", the distance is 5 and the unit is 'mi'. If you see "5m", that is a duration of 5 minutes.
+        *   **MANDATORY DISTANCE RULE**: You MUST NOT assign a 'distance' value unless an explicit distance unit ("mi", "km", "ft", "m") is clearly visible and associated with a number. In cases like "Climbmill - 5m 1s", the distance MUST be 0. Do NOT misinterpret "m" for "mi". If you see "5 mi", the distance is 5 and the unit is 'mi'. If you see "5m", that is a duration of 5 minutes. If you see "500 m", the distance is 500 and the unit is 'm'.
         *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio).
         *   Do not mistake distance values (like "5383 ft") for 'reps'.
 5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
@@ -87,7 +87,7 @@ const COMMON_INSTRUCTIONS = `
 7.  **Duration Parsing**:
     *   If duration is in a format like MM:SS (e.g., "5m 1s" or "0:09:26"), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so 'duration: 566, durationUnit: 'sec''). If it's simpler (e.g., "30 min"), parse as is ('duration: 30, durationUnit: 'min'').
 8.  **Distance Unit**:
-    *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
+    *   Identify the unit of distance (e.g., km, mi, ft, m). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
 9.  **Critical: Avoid Duplicating Single Exercise Entries**:
     *   Pay very close attention to how many times an exercise is *actually logged* in the screenshot.
     *   If an exercise like "Treadmill" and its associated stats (e.g., "5383 ft, 566 sec") appear as a *single distinct entry* in the image, you MUST list it *only once* in your output.
