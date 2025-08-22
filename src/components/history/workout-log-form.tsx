@@ -174,6 +174,9 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
             const distanceUnit = exercisesWatcher?.[index]?.distanceUnit;
             const distanceStep = (distanceUnit === 'mi' || distanceUnit === 'km') ? 0.25 : 1;
             
+            const durationUnit = exercisesWatcher?.[index]?.durationUnit;
+            const durationStep = durationUnit === 'hr' ? 0.5 : 1;
+            
             return (
               <Card key={field.id} className="mb-4 p-4 border rounded-md shadow-sm relative">
                 <Button
@@ -325,7 +328,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                       <FormItem>
                         <FormLabel>Duration</FormLabel>
                         <FormControl>
-                          <StepperInput {...field} onChange={field.onChange} />
+                          <StepperInput {...field} onChange={field.onChange} step={durationStep} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
