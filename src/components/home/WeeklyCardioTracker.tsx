@@ -181,16 +181,16 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center gap-2 md:flex-col md:items-stretch md:p-3 md:min-h-[160px] md:gap-2",
+                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-row items-baseline gap-2 text-center w-[50px] shrink-0 md:flex-col md:items-center md:justify-center md:gap-0 md:w-full">
+                <div className="flex flex-col items-center text-center p-2 md:p-0">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
                 
-                <div className="h-full w-px bg-border md:h-px md:w-full"></div>
+                <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
 
                 <div className="flex-grow flex flex-col items-stretch justify-center text-center">
                   <div className="md:h-8 md:mb-2 flex items-center justify-center">
