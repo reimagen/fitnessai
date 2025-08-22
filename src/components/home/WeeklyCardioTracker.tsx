@@ -185,41 +185,38 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center p-2 md:p-0">
+                <div className="flex flex-col items-center text-center p-2">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
                 
                 <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
 
-                <div className="flex-grow flex flex-col items-stretch justify-center text-center">
-                  <div className="md:h-8 md:mb-2 flex items-center justify-center">
-                    <div className="flex items-center justify-center font-bold text-accent min-w-[60px] md:min-w-0">
-                        {totalCalories > 0 ? (
+                <div className="flex-grow flex items-center md:flex-col md:items-stretch md:justify-center text-center">
+                  {totalCalories > 0 && activities ? (
+                    <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
+                       <div className="flex items-center justify-center font-bold text-accent md:h-8 md:mb-2">
                             <div className="flex items-center gap-1">
                                 <Flame className="h-4 w-4" />
                                 <span>{Math.round(totalCalories)}</span>
                             </div>
-                        ) : (
-                        <div className="flex-grow flex items-center justify-center h-full">
-                            <span className="text-sm font-medium text-muted-foreground/60">None</span>
                         </div>
-                        )}
+                        <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
+                             {Array.from(activities.entries()).map(([activity, stats]) => (
+                                <p key={activity} className="w-full text-left md:text-center truncate font-semibold text-foreground">
+                                    {activity}
+                                    {stats.distanceMi > 0 && (
+                                        <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                                    )}
+                                </p>
+                            ))}
+                        </div>
                     </div>
-                  </div>
-                  
-                  <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
-                       {totalCalories > 0 && activities && Array.from(activities.entries()).length > 0 && (
-                          Array.from(activities.entries()).map(([activity, stats]) => (
-                              <p key={activity} className="w-full text-left md:text-center truncate font-semibold text-foreground">
-                                  {activity}
-                                  {stats.distanceMi > 0 && (
-                                      <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
-                                  )}
-                              </p>
-                          ))
-                      )}
-                  </div>
+                  ) : (
+                    <div className="flex-grow flex items-center justify-center h-full">
+                        <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
