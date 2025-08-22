@@ -18,6 +18,7 @@ import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { startOfDay } from 'date-fns';
 import { classifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
+import { StepperInput } from "../ui/stepper-input";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -105,7 +106,7 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
                 <FormItem>
                 <FormLabel>Weight</FormLabel>
                 <FormControl>
-                    <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? 0 : +e.target.value)} />
+                    <StepperInput {...field} onChange={field.onChange} step={1} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
