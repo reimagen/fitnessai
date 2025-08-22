@@ -192,18 +192,20 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                 
                 <div className="h-full w-px bg-border md:h-px md:w-full"></div>
 
-                <div className="flex-grow flex flex-row items-center justify-start text-center w-full md:flex-col">
-                  <div className="flex items-center justify-center font-bold text-accent min-w-[60px] md:min-w-0 md:h-8 md:mb-2">
-                      {totalCalories > 0 ? (
-                          <div className="flex items-center gap-1">
-                              <Flame className="h-4 w-4" />
-                              <span>{Math.round(totalCalories)}</span>
-                          </div>
-                      ) : (
+                <div className="flex-grow flex flex-row items-center justify-center text-center w-full md:flex-col">
+                  <div className="md:h-8 md:mb-2 flex items-center justify-center">
+                    <div className="flex items-center justify-center font-bold text-accent min-w-[60px] md:min-w-0">
+                        {totalCalories > 0 ? (
+                            <div className="flex items-center gap-1">
+                                <Flame className="h-4 w-4" />
+                                <span>{Math.round(totalCalories)}</span>
+                            </div>
+                        ) : (
                         <div className="flex items-center justify-center h-full">
-                           <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                            <span className="text-sm font-medium text-muted-foreground/60">None</span>
                         </div>
-                      )}
+                        )}
+                    </div>
                   </div>
                   
                   <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
