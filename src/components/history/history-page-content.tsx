@@ -13,7 +13,7 @@ import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout
 import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, useDeleteWorkoutLog } from "@/lib/firestore.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight, X, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns/format';
 import { startOfDay } from 'date-fns/startOfDay';
@@ -23,6 +23,7 @@ import { isSameMonth } from 'date-fns/isSameMonth';
 import { ErrorState } from "../shared/ErrorState";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth.service";
+import Link from "next/link";
 
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
@@ -52,7 +53,7 @@ export function HistoryPageContent() {
     isError: isErrorProfile 
   } = useUserProfile();
   const userProfile = profileResult?.data;
-  const isNewUser = profileResult?.notFound === true;
+  const isProfileNotFound = profileResult?.notFound === true;
 
   // Fetching data with React Query, now passing the current month
   // This hook is now enabled only when the profile has loaded and is confirmed to exist for an existing user.
@@ -60,7 +61,7 @@ export function HistoryPageContent() {
     data: workoutLogs, 
     isLoading: isLoadingWorkouts, 
     isError: isErrorWorkouts 
-  } = useWorkouts(currentMonth, !isLoadingProfile && !isNewUser);
+  } = useWorkouts(currentMonth, !isLoadingProfile && !isProfileNotFound);
   
   // Mutations defined directly in the component
   const addWorkoutMutation = useAddWorkoutLog();
@@ -236,10 +237,37 @@ export function HistoryPageContent() {
   };
 
 
-  if (!isClient) {
+  if (!isClient || isLoadingProfile) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  if (isProfileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Log Your History</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Create a profile to save your workout logs and track your performance over time.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+            <CardDescription>
+              Your profile is needed to save your workout history.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/profile" passHref>
+              <Button className="w-full">
+                <UserPlus className="mr-2" />
+                Go to Profile Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -248,15 +276,8 @@ export function HistoryPageContent() {
   const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
 
   const renderWorkoutContent = () => {
-    // State 1: Handle profile loading (highest priority)
-    if (isLoadingProfile) {
-      return (
-        <div className="flex justify-center items-center h-40">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-
+    // State 1: Handle profile loading (highest priority) - already handled above
+    
     // State 2: Handle profile fetch error
     if (isErrorProfile) {
         return <ErrorState message="Could not load your user profile. Please try refreshing." />;
@@ -264,7 +285,7 @@ export function HistoryPageContent() {
 
     // State 3: Handle new user case (profile loaded, but document not found)
     // This correctly short-circuits before the workout query can run and fail.
-    if (isNewUser) {
+    if (isProfileNotFound) {
         return (
             <WorkoutList 
               workoutLogs={[]} 
