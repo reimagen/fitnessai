@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
+import { StepperInput } from "@/components/ui/stepper-input";
 
 
 // Function to group records and find the best for each exercise
@@ -54,7 +55,7 @@ export default function MilestonesPage() {
   const { user } = useAuth();
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
-  const [editedWeight, setEditedWeight] = useState('');
+  const [editedWeight, setEditedWeight] = useState(0);
   const [editedDate, setEditedDate] = useState('');
   const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
 
@@ -163,7 +164,7 @@ export default function MilestonesPage() {
   
   const handleEditClick = (record: PersonalRecord) => {
     setEditingRecordId(record.id);
-    setEditedWeight(record.weight.toString());
+    setEditedWeight(record.weight);
     setEditedDate(format(record.date, 'yyyy-MM-dd'));
   };
 
@@ -173,7 +174,7 @@ export default function MilestonesPage() {
 
   const handleSaveEdit = (recordId: string) => {
     if (!user) return;
-    const weight = parseFloat(editedWeight);
+    const weight = editedWeight;
     if (isNaN(weight) || weight <= 0) {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
         return;
@@ -438,12 +439,12 @@ export default function MilestonesPage() {
                                         <div className="flex flex-col gap-2 h-full">
                                           <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
                                           <div className="flex items-center gap-2">
-                                            <Input 
-                                                type="number" 
-                                                value={editedWeight} 
-                                                onChange={(e) => setEditedWeight(e.target.value)} 
-                                                className="w-2/3" 
-                                                aria-label="Edit weight"
+                                            <StepperInput
+                                              value={editedWeight}
+                                              onChange={setEditedWeight}
+                                              step={1}
+                                              className="w-full"
+                                              aria-label="Edit weight"
                                             />
                                             <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span>
                                           </div>
@@ -591,3 +592,5 @@ export default function MilestonesPage() {
   );
 }
  
+
+    
