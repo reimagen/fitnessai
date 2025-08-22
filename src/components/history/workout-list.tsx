@@ -88,10 +88,26 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         break;
     }
 
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
 
-    return `${minutes}m ${seconds}s`;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    let result = '';
+    if (hours > 0) {
+        result += `${hours}h `;
+    }
+    if (minutes > 0) {
+        result += `${minutes}m `;
+    }
+    if (seconds > 0) {
+        result += `${seconds}s`;
+    }
+
+    return result.trim();
   };
 
   return (
