@@ -18,9 +18,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['@genkit-ai/firebase', 'firebase-admin'],
-  },
+  serverExternalPackages: ['@genkit-ai/firebase', 'firebase-admin'],
 };
 
 module.exports = nextConfig;
