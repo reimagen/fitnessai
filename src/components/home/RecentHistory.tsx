@@ -75,19 +75,19 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center p-2">
+                <div className="flex flex-col items-center text-center p-2 md:p-0">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
                 
                 <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
 
-                <div className="flex-grow flex flex-wrap gap-1.5 items-center justify-center md:space-y-1 md:mt-2 pb-2 md:pb-0">
+                <div className="flex-grow flex flex-wrap gap-1.5 items-center justify-start md:justify-center md:w-full md:flex-col md:space-y-1 md:mt-2 pb-2 md:pb-0">
                   {categories && categories.size > 0 ? (
                     Array.from(categories).map(category => (
                       <span
                         key={category}
-                        className={'w-full md:w-full text-center text-xs font-medium p-1 rounded-full truncate'}
+                        className={'w-full text-center text-xs font-medium p-1 rounded-full truncate'}
                         style={categoryStyles[category] || categoryStyles['Other']}
                       >
                         {category}
