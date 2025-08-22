@@ -41,6 +41,11 @@ const toTitleCase = (str: string) => {
   );
 };
 
+// Filter the exercise list to hide the "reverse fly" alias from the dropdown
+const exercisesForDropdown = classifiedExercises.filter(
+  (exercise) => exercise !== "reverse fly"
+);
+
 export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
@@ -82,7 +87,7 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {classifiedExercises.map(exercise => (
+                  {exercisesForDropdown.map(exercise => (
                     <SelectItem key={exercise} value={exercise}>{toTitleCase(exercise)}</SelectItem>
                   ))}
                 </SelectContent>
