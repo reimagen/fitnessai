@@ -169,7 +169,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           </div>
         )}
 
-        <div className="space-y-2 pt-4 md:grid md:grid-cols-7 md:gap-4 md:space-y-0">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 pt-4">
           {daysOfWeek.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayData = weeklyData.get(dateKey);
@@ -192,31 +192,54 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                 
                 <div className="h-full w-px bg-border md:h-px md:w-full"></div>
 
-                <div className="flex-grow flex flex-row items-center justify-center text-center w-full">
-                  <div className="flex items-center justify-center font-bold text-accent h-full w-1/2 md:w-full md:h-6 md:flex-row md:items-center md:gap-1">
-                    {totalCalories > 0 ? (
-                      <div className="flex items-center gap-1">
-                        <Flame className="h-4 w-4" />
-                        <span>{Math.round(totalCalories)}</span>
+                <div className="flex-grow flex flex-col items-center justify-center text-center w-full">
+                  {/* Small screens: side-by-side layout */}
+                  <div className="flex md:hidden flex-row items-center justify-center text-center w-full">
+                      <div className="flex items-center justify-center font-bold text-accent h-full w-1/2">
+                          {totalCalories > 0 && (
+                              <div className="flex items-center gap-1">
+                                  <Flame className="h-4 w-4" />
+                                  <span>{Math.round(totalCalories)}</span>
+                              </div>
+                          )}
                       </div>
-                    ) : (
-                      <span className="text-sm font-medium text-muted-foreground/60 md:hidden">None</span>
-                    )}
+                      <div className="flex flex-col items-center justify-center text-xs text-muted-foreground w-1/2 overflow-y-auto">
+                           {totalCalories > 0 && activities && Array.from(activities.entries()).length > 0 ? (
+                              Array.from(activities.entries()).map(([activity, stats]) => (
+                                  <p key={activity} className="w-full truncate font-semibold text-foreground">
+                                      {activity}
+                                      {stats.distanceMi > 0 && (
+                                          <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                                      )}
+                                  </p>
+                              ))
+                          ) : (
+                              <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                          )}
+                      </div>
                   </div>
-                  <div className="flex flex-col justify-center text-xs text-muted-foreground w-1/2 overflow-y-auto md:w-full md:mt-1">
-                    {totalCalories > 0 && activities && Array.from(activities.entries()).length > 0 ? (
-                        Array.from(activities.entries()).map(([activity, stats]) => (
-                            <p key={activity} className="w-full truncate font-semibold text-foreground text-left md:text-center">
-                                {activity}
-                                {stats.distanceMi > 0 && (
-                                    <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
-                                )}
-                            </p>
-                        ))
-                    ) : (
-                        <div className="hidden md:flex items-start justify-center h-full">
-                           <span className="text-sm font-medium text-muted-foreground/60">None</span>
+                  
+                  {/* Medium+ screens: stacked layout */}
+                  <div className="hidden md:flex flex-col items-center justify-center h-full w-full">
+                    {totalCalories > 0 ? (
+                      <>
+                        <div className="flex items-center gap-1 font-bold text-accent mb-2">
+                           <Flame className="h-4 w-4" />
+                           <span>{Math.round(totalCalories)}</span>
                         </div>
+                        <div className="flex flex-col items-center justify-center text-xs text-muted-foreground space-y-1">
+                          {activities && Array.from(activities.entries()).map(([activity, stats]) => (
+                            <p key={activity} className="w-full truncate font-semibold text-foreground">
+                              {activity}
+                              {stats.distanceMi > 0 && (
+                                <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                              )}
+                            </p>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     )}
                   </div>
                 </div>
