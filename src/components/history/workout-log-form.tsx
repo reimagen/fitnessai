@@ -85,6 +85,8 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     control: form.control,
     name: "exercises",
   });
+  
+  const exercisesWatcher = form.watch("exercises");
 
   useEffect(() => {
     if (editingLogId && initialData) {
@@ -168,201 +170,206 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
 
         <div>
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
-          {fields.map((field, index) => (
-            <Card key={field.id} className="mb-4 p-4 border rounded-md shadow-sm relative">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => remove(index)}
-                className="absolute right-2 top-2 text-destructive hover:bg-destructive/10"
-                aria-label="Remove exercise"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.name`}
-                  render={({ field }) => (
-                    <FormItem className="md:col-span-2 lg:col-span-1">
-                      <FormLabel>Exercise Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Bench Press" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`exercises.${index}.category`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+          {fields.map((field, index) => {
+            const distanceUnit = exercisesWatcher?.[index]?.distanceUnit;
+            const distanceStep = (distanceUnit === 'mi' || distanceUnit === 'km') ? 0.25 : 1;
+            
+            return (
+              <Card key={field.id} className="mb-4 p-4 border rounded-md shadow-sm relative">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => remove(index)}
+                  className="absolute right-2 top-2 text-destructive hover:bg-destructive/10"
+                  aria-label="Remove exercise"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.name`}
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2 lg:col-span-1">
+                        <FormLabel>Exercise Name</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select category" />
-                          </SelectTrigger>
+                          <Input placeholder="e.g., Bench Press" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {CATEGORY_OPTIONS.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.sets`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sets</FormLabel>
-                      <FormControl>
-                         <StepperInput {...field} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.reps`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Reps</FormLabel>
-                      <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`exercises.${index}.weight`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight</FormLabel>
-                      <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} step={1} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.weightUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "lbs"}>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.category`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CATEGORY_OPTIONS.map(option => (
+                              <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.sets`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Sets</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unit" />
-                          </SelectTrigger>
+                          <StepperInput {...field} onChange={field.onChange} step={1} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="kg">kg</SelectItem>
-                          <SelectItem value="lbs">lbs</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.distance`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Distance</FormLabel>
-                      <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} step={0.25} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`exercises.${index}.distanceUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Distance Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "mi"}>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.reps`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Reps</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Unit" />
-                          </SelectTrigger>
+                          <StepperInput {...field} onChange={field.onChange} step={1} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="mi">mi</SelectItem>
-                          <SelectItem value="km">km</SelectItem>
-                          <SelectItem value="ft">ft</SelectItem>
-                          <SelectItem value="m">m</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.duration`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duration</FormLabel>
-                      <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.durationUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Duration Unit</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || "min"}>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.weight`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select unit" />
-                          </SelectTrigger>
+                          <StepperInput {...field} onChange={field.onChange} step={1} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="sec">sec</SelectItem>
-                          <SelectItem value="min">min</SelectItem>
-                          <SelectItem value="hr">hr</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`exercises.${index}.calories`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Calories</FormLabel>
-                      <FormControl>
-                        <StepperInput {...field} onChange={field.onChange} step={1} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </Card>
-          ))}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.weightUnit`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight Unit</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "lbs"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="lbs">lbs</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.distance`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Distance</FormLabel>
+                        <FormControl>
+                          <StepperInput {...field} onChange={field.onChange} step={distanceStep} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.distanceUnit`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Distance Unit</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "mi"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Unit" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="mi">mi</SelectItem>
+                            <SelectItem value="km">km</SelectItem>
+                            <SelectItem value="ft">ft</SelectItem>
+                            <SelectItem value="m">m</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.duration`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Duration</FormLabel>
+                        <FormControl>
+                          <StepperInput {...field} onChange={field.onChange} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.durationUnit`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Duration Unit</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || "min"}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select unit" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="sec">sec</SelectItem>
+                            <SelectItem value="min">min</SelectItem>
+                            <SelectItem value="hr">hr</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`exercises.${index}.calories`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Calories</FormLabel>
+                        <FormControl>
+                          <StepperInput {...field} onChange={field.onChange} step={1} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </Card>
+            )
+          })}
           <Button
             type="button"
             variant="outline"
