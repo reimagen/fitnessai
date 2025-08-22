@@ -37,7 +37,7 @@ const workoutLogConverter = {
             weightUnit: ex.weightUnit === 'kg' || ex.weightUnit === 'lbs' ? ex.weightUnit : 'lbs',
             category: category,
             distance: Number(ex.distance || 0),
-            distanceUnit: ex.distanceUnit === 'mi' || ex.distanceUnit === 'km' || ex.distanceUnit === 'ft' ? ex.distanceUnit : 'mi',
+            distanceUnit: ex.distanceUnit === 'mi' || ex.distanceUnit === 'km' || ex.distanceUnit === 'ft' || ex.distanceUnit === 'm' ? ex.distanceUnit : 'mi',
             duration: Number(ex.duration || 0),
             durationUnit: ex.durationUnit === 'min' || ex.durationUnit === 'hr' || ex.durationUnit === 'sec' ? ex.durationUnit : 'min',
             calories: Number(ex.calories || 0),
@@ -414,6 +414,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
 
 
 

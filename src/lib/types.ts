@@ -12,7 +12,7 @@ export interface Exercise {
   weightUnit?: 'kg' | 'lbs';
   category?: ExerciseCategory;
   distance?: number;
-  distanceUnit?: 'mi' | 'km' | 'ft'; // Added 'ft'
+  distanceUnit?: 'mi' | 'km' | 'ft' | 'm'; // Added 'm'
   duration?: number;
   durationUnit?: 'min' | 'hr' | 'sec';
   calories?: number;

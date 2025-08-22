@@ -34,7 +34,7 @@ const exerciseSchema = z.object({
   weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'),
   category: z.enum(CATEGORY_OPTIONS).default("Other"), 
   distance: z.coerce.number().min(0).optional().default(0),
-  distanceUnit: z.enum(['mi', 'km', 'ft']).optional().default('mi'),
+  distanceUnit: z.enum(['mi', 'km', 'ft', 'm']).optional().default('mi'),
   duration: z.coerce.number().min(0).optional().default(0),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional().default('min'),
   calories: z.coerce.number().min(0).optional().default(0),
@@ -304,6 +304,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                           <SelectItem value="mi">mi</SelectItem>
                           <SelectItem value="km">km</SelectItem>
                           <SelectItem value="ft">ft</SelectItem>
+                          <SelectItem value="m">m</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
