@@ -185,14 +185,14 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center md:flex-row md:items-baseline md:justify-center md:gap-2">
+                <div className="flex flex-col items-center text-center w-[50px] shrink-0 md:flex-row md:items-baseline md:justify-center md:gap-2 md:w-full">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
                 
                 <div className="h-full w-px bg-border md:h-px md:w-full"></div>
 
-                <div className="flex-grow flex flex-row items-center justify-center text-center w-full md:flex-col">
+                <div className="flex-grow flex flex-row items-center justify-start text-center md:flex-col md:justify-center">
                   <div className="md:h-8 md:mb-2 flex items-center justify-center">
                     <div className="flex items-center justify-center font-bold text-accent min-w-[60px] md:min-w-0">
                         {totalCalories > 0 ? (
@@ -201,7 +201,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                                 <span>{Math.round(totalCalories)}</span>
                             </div>
                         ) : (
-                        <div className="flex items-center justify-center h-full">
+                        <div className="flex-grow flex items-center justify-center h-full">
                             <span className="text-sm font-medium text-muted-foreground/60">None</span>
                         </div>
                         )}
