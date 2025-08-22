@@ -15,6 +15,12 @@ interface StepperInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
   step?: number;
 }
 
+// Function to determine the number of decimal places in a number
+const countDecimals = (value: number) => {
+  if (Math.floor(value) === value) return 0;
+  return value.toString().split('.')[1]?.length || 0;
+};
+
 const StepperInput = React.forwardRef<HTMLInputElement, StepperInputProps>(
   ({ className, value = 0, onChange, min = 0, max, step = 1, ...props }, ref) => {
     
@@ -27,7 +33,12 @@ const StepperInput = React.forwardRef<HTMLInputElement, StepperInputProps>(
         if (max !== undefined) {
           clampedValue = Math.min(clampedValue, max);
         }
-        onChange(clampedValue);
+        
+        // Round to handle floating point precision issues
+        const stepDecimals = countDecimals(step);
+        const roundedValue = parseFloat(clampedValue.toFixed(stepDecimals));
+        
+        onChange(roundedValue);
       }
     };
 
