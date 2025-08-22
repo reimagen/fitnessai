@@ -192,18 +192,18 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                 
                 <div className="h-full w-px bg-border md:h-px md:w-full"></div>
 
-                <div className="flex-grow flex flex-row items-start justify-center text-center md:flex-col md:justify-between w-full">
-                   <div className="flex flex-col items-center justify-center font-bold text-accent h-full w-1/2 md:w-full md:h-6 md:flex-row md:items-center md:gap-1">
+                <div className="flex-grow flex flex-row items-center justify-center text-center w-full">
+                  <div className="flex items-center justify-center font-bold text-accent h-full w-1/2 md:w-full md:h-6 md:flex-row md:items-center md:gap-1">
                     {totalCalories > 0 ? (
-                      <>
+                      <div className="flex items-center gap-1">
                         <Flame className="h-4 w-4" />
                         <span>{Math.round(totalCalories)}</span>
-                      </>
+                      </div>
                     ) : (
                       <span className="text-sm font-medium text-muted-foreground/60 md:hidden">None</span>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground space-y-1 w-1/2 overflow-y-auto md:w-full md:mt-1">
+                  <div className="flex flex-col justify-center text-xs text-muted-foreground w-1/2 overflow-y-auto md:w-full md:mt-1">
                     {totalCalories > 0 && activities && Array.from(activities.entries()).length > 0 ? (
                         Array.from(activities.entries()).map(([activity, stats]) => (
                             <p key={activity} className="w-full truncate font-semibold text-foreground text-left md:text-center">
