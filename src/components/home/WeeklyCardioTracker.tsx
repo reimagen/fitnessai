@@ -185,7 +185,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center w-[50px] shrink-0 md:flex-row md:items-baseline md:justify-center md:gap-2 md:w-full">
+                <div className="flex flex-row items-baseline gap-2 text-center w-[50px] shrink-0 md:flex-col md:items-center md:justify-center md:gap-0 md:w-full">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
