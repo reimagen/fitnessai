@@ -41,9 +41,10 @@ const toTitleCase = (str: string) => {
   );
 };
 
-// Filter the exercise list to hide the "reverse fly" alias from the dropdown
+// Filter the exercise list to hide aliases from the dropdown
+const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown"];
 const exercisesForDropdown = classifiedExercises.filter(
-  (exercise) => exercise !== "reverse fly"
+  (exercise) => !exercisesToHide.includes(exercise)
 );
 
 export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
