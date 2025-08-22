@@ -192,7 +192,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                 
                 <div className="h-full w-px bg-border md:h-px md:w-full"></div>
 
-                <div className="flex-grow flex flex-row items-center justify-start text-center md:flex-col md:justify-center">
+                <div className="flex-grow flex flex-col items-stretch justify-center text-center">
                   <div className="md:h-8 md:mb-2 flex items-center justify-center">
                     <div className="flex items-center justify-center font-bold text-accent min-w-[60px] md:min-w-0">
                         {totalCalories > 0 ? (
