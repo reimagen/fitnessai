@@ -171,9 +171,6 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         <div>
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
           {fields.map((field, index) => {
-            const distanceUnit = exercisesWatcher?.[index]?.distanceUnit;
-            const distanceStep = (distanceUnit === 'mi' || distanceUnit === 'km') ? 0.25 : 1;
-            
             const durationUnit = exercisesWatcher?.[index]?.durationUnit;
             const durationStep = durationUnit === 'hr' ? 0.5 : 1;
             
@@ -292,7 +289,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                       <FormItem>
                         <FormLabel>Distance</FormLabel>
                         <FormControl>
-                          <StepperInput {...field} onChange={field.onChange} step={distanceStep} />
+                          <StepperInput {...field} onChange={field.onChange} step={1} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
