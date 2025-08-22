@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,7 +41,7 @@ const toTitleCase = (str: string) => {
 };
 
 // Filter the exercise list to hide aliases from the dropdown
-const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown"];
+const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown", "squat"];
 const exercisesForDropdown = classifiedExercises.filter(
   (exercise) => !exercisesToHide.includes(exercise)
 );
