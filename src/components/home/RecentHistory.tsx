@@ -60,7 +60,7 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
         <CardDescription>A summary of your completed workout categories.</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-7 gap-2 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-2">
           {daysOfWeek.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayData = dailyData.get(dateKey);
@@ -71,27 +71,30 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[140px]",
+                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:p-3 md:min-h-[140px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center">
+                <div className="flex flex-col items-center text-center p-2">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
-                <div className="mt-2 flex-grow space-y-1 overflow-y-auto pb-2">
+                
+                <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
+
+                <div className="flex-grow flex flex-wrap gap-1.5 items-center justify-center md:space-y-1 md:mt-2 pb-2 md:pb-0">
                   {categories && categories.size > 0 ? (
                     Array.from(categories).map(category => (
                       <span
                         key={category}
-                        className={'block w-full text-center text-xs font-medium p-1 rounded-full truncate'}
+                        className={'w-full md:w-full text-center text-xs font-medium p-1 rounded-full truncate'}
                         style={categoryStyles[category] || categoryStyles['Other']}
                       >
                         {category}
                       </span>
                     ))
                   ) : (
-                    <div className="flex items-start justify-center h-full">
+                    <div className="flex items-center justify-center h-full w-full">
                       <span className="text-sm font-medium text-muted-foreground/60">None</span>
                     </div>
                   )}
