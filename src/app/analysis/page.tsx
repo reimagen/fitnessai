@@ -1161,43 +1161,39 @@ useEffect(() => {
                                                             </div>
                                                             <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
                                                         </div>
-                                                    ) : (dataFinding.lift1Level !== 'N/A' && dataFinding.lift1Level !== 'Elite') ? (
-                                                        <div>
-                                                            <div className="mb-4">
-                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                            </div>
-                                                            {(() => {
-                                                                const currentLevel = dataFinding.lift1Level;
-                                                                if (currentLevel === 'N/A') return null;
+                                                    ) : (() => {
+                                                          const currentLevel = dataFinding.lift1Level;
+                                                          if (currentLevel === 'N/A' || currentLevel === 'Elite') {
+                                                              return null;
+                                                          }
+                                                          // This block will only render for Beginner, Intermediate, and Advanced
+                                                          return (
+                                                              <div>
+                                                                  <div className="mb-4">
+                                                                      <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+                                                                  </div>
+                                                                  {(() => {
+                                                                      let nextLevel: string | null = null;
+                                                                      if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
+                                                                      else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
+                                                                      else if (currentLevel === 'Advanced') nextLevel = 'Elite';
 
-                                                                if (currentLevel === 'Elite') {
-                                                                    return (
-                                                                        <>
-                                                                            <p className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-accent" />Elite Status</p>
-                                                                            <p className="text-xs text-muted-foreground mt-1">You've reached the Elite level while maintaining balance. Incredible work!</p>
-                                                                        </>
-                                                                    );
-                                                                }
-
-                                                                let nextLevel: string | null = null;
-                                                                if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
-                                                                else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
-                                                                else if (currentLevel === 'Advanced') nextLevel = 'Elite';
-
-                                                                if (nextLevel) {
-                                                                    return (
-                                                                        <>
-                                                                            <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
-                                                                            <p className="text-xs text-muted-foreground mt-1">
-                                                                                Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
-                                                                            </p>
-                                                                        </>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            })()}
-                                                        </div>
-                                                    ) : null}
+                                                                      if (nextLevel) {
+                                                                          return (
+                                                                              <>
+                                                                                  <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
+                                                                                  <p className="text-xs text-muted-foreground mt-1">
+                                                                                      Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+                                                                                  </p>
+                                                                              </>
+                                                                          );
+                                                                      }
+                                                                      return null;
+                                                                  })()}
+                                                              </div>
+                                                          );
+                                                      })()
+                                                    }
                                                 </div>
                                             </div>
                                         </Card>
