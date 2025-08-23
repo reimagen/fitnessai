@@ -539,8 +539,8 @@ export default function AnalysisPage() {
     type ExerciseCategoryKey = keyof Omit<ChartDataPoint, 'date' | 'dateLabel'>;
 
     // Helper function to process logs for a given period and return unique exercise counts
-    const getUniqueExerciseCounts = (logs: WorkoutLog[]): Partial<ChartDataPoint> => {
-      const uniqueExercises: { [key in ExerciseCategoryKey]?: Set<string> } = {};
+    const getUniqueExerciseCounts = (logs: WorkoutLog[]): Partial<Record<ExerciseCategoryKey, number>> => {
+      const uniqueExercises: Partial<Record<ExerciseCategoryKey, Set<string>>> = {};
       
       logs.forEach(log => {
         log.exercises.forEach(ex => {
@@ -552,7 +552,7 @@ export default function AnalysisPage() {
         });
       });
       
-      const counts: { [key in ExerciseCategoryKey]?: number } = {};
+      const counts: Partial<Record<ExerciseCategoryKey, number>> = {};
       for (const category in uniqueExercises) {
           const catKey = category as ExerciseCategoryKey;
           counts[catKey] = uniqueExercises[catKey]!.size;
@@ -604,6 +604,7 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
+                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
@@ -627,6 +628,7 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
+                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
@@ -649,6 +651,7 @@ export default function AnalysisPage() {
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
+                    core: counts.core || 0,
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
