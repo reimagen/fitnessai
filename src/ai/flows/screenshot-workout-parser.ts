@@ -32,9 +32,9 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
       weightUnit: z.enum(['kg', 'lbs']).optional().describe('The unit of weight (kg or lbs). Defaults to kg if not specified and weight > 0.'),
       category: z.enum(['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'])
                 .describe('The category of the exercise. Must be one of: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other". Infer based on the exercise name. If truly unsure or it doesn\'t fit standard categories, default to "Other".'),
-      distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling). For non-cardio exercises, this should be 0 unless explicitly stated.'),
-      distanceUnit: z.enum(['mi', 'km', 'ft']).optional().describe('The unit of distance (mi, km, or ft).'),
-      duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated.'),
+      distance: z.number().optional().describe('The distance covered, if applicable (e.g., for running, cycling). For non-cardio exercises, this should be 0 unless explicitly stated otherwise.'),
+      distanceUnit: z.enum(['mi', 'km', 'ft', 'm']).optional().describe('The unit of distance (mi, km, ft, or m).'),
+      duration: z.number().optional().describe('The duration of the exercise, if applicable (e.g., in minutes or seconds). For non-cardio exercises, this should be 0 unless explicitly stated otherwise.'),
       durationUnit: z.enum(['min', 'hr', 'sec']).optional().describe('The unit of duration (min, hr, or sec).'),
       calories: z.number().describe('The number of calories burned. If a dash ("-"), "N/A", or no value is clearly visible for calories, output 0.'),
     })
@@ -74,7 +74,7 @@ const COMMON_INSTRUCTIONS = `
     *   If an exercise is categorized as "Cardio" (e.g., Treadmill, Running, Cycling, Elliptical, Climbmill):
         *   Prioritize extracting 'duration', 'durationUnit', and 'calories'.
         *   **MANDATORY DURATION RULE**: If you see text like "5m 1s", "5 min 1 sec", or an OCR artifact like "5 mi- 301 sec", you MUST interpret this as a duration. For example, "5m 1s" MUST be parsed into 'duration: 301, durationUnit: 'sec''.
-        *   **MANDATORY DISTANCE RULE**: You MUST NOT assign a 'distance' value unless an explicit distance unit ("mi", "km", "ft") is clearly visible and associated with a number. In cases like "Climbmill - 5m 1s", the distance MUST be 0. Do NOT misinterpret "m" for "mi". If you see "5 mi", the distance is 5 and the unit is 'mi'. If you see "5m", that is a duration of 5 minutes.
+        *   **MANDATORY DISTANCE RULE**: You MUST NOT assign a 'distance' value unless an explicit distance unit ("mi", "km", "ft", "m") is clearly visible and associated with a number. In cases like "Climbmill - 5m 1s", the distance MUST be 0. Do NOT misinterpret "m" for "mi". If you see "5 mi", the distance is 5 and the unit is 'mi'. If you see "5m", that is a duration of 5 minutes. If you see "500 m", the distance is 500 and the unit is 'm'.
         *   For these "Cardio" exercises, 'sets', 'reps', and 'weight' should be set to 0, *unless* the screenshot explicitly shows relevant values for these (which is rare for pure cardio).
         *   Do not mistake distance values (like "5383 ft") for 'reps'.
 5.  **Handling for Non-Cardio Exercises (Upper Body, Lower Body, Full Body, Core, Other)**:
@@ -84,10 +84,19 @@ const COMMON_INSTRUCTIONS = `
     *   Identify the unit of weight (e.g., kg or lbs).
     *   If you see "lbs00" or "kg00" (or "lbs000", "kg000", etc.) in the screenshot, interpret this as "lbs" or "kg" respectively. The trailing zeros are an artifact and not part of the unit.
     *   If the unit is not clearly visible or specified, default to 'kg' if there is a weight value greater than 0. If weight is 0, 'weightUnit' can be omitted or kept as default.
-7.  **Duration Parsing**:
-    *   If duration is in a format like MM:SS (e.g., "5m 1s" or "0:09:26"), parse it into total seconds (e.g., 9 minutes * 60 + 26 seconds = 566 seconds, so 'duration: 566, durationUnit: 'sec''). If it's simpler (e.g., "30 min"), parse as is ('duration: 30, durationUnit: 'min'').
+7.  **Duration Parsing - CRITICAL**:
+    *   You MUST correctly parse durations written in various formats.
+    *   **RULE 1: ALWAYS CONVERT TO TOTAL SECONDS.** Your final output for any complex duration MUST be a single number representing the total seconds, with 'durationUnit' set to 'sec'.
+    *   **RULE 2: HANDLE MIXED UNITS.** Recognize combinations of hours (h, hr), minutes (m, min), and seconds (s, sec).
+    *   **EXAMPLES:**
+        *   "1h 15m" -> 'duration: 4500', 'durationUnit: 'sec'' (1*3600 + 15*60)
+        *   "45m 30s" -> 'duration: 2730', 'durationUnit: 'sec'' (45*60 + 30)
+        *   "8m 32s"  -> 'duration: 512', 'durationUnit: 'sec'' (8*60 + 32)
+        *   "0:09:26" -> 'duration: 566', 'durationUnit: 'sec'' (9*60 + 26)
+        *   "90 min"  -> 'duration: 5400', 'durationUnit: 'sec'' (90*60)
+    *   If a duration is a simple, single unit (e.g., "30 min"), you can output it as is ('duration: 30, durationUnit: 'min''), but converting to seconds is preferred for consistency.
 8.  **Distance Unit**:
-    *   Identify the unit of distance (e.g., km, mi, ft). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
+    *   Identify the unit of distance (e.g., km, mi, ft, m). Ensure 'ft' is recognized if present (e.g., "5383 ft" should be 'distance: 5383, distanceUnit: 'ft'').
 9.  **Critical: Avoid Duplicating Single Exercise Entries**:
     *   Pay very close attention to how many times an exercise is *actually logged* in the screenshot.
     *   If an exercise like "Treadmill" and its associated stats (e.g., "5383 ft, 566 sec") appear as a *single distinct entry* in the image, you MUST list it *only once* in your output.
@@ -286,3 +295,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
+
+    

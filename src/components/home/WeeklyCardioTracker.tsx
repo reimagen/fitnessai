@@ -87,8 +87,8 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
-  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1200;
-  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1400;
+  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1000;
+  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1200;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
@@ -140,7 +140,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          To support your cardio health, your weekly target is to burn {minGoal}-{maxGoal} calories.
+          {userProfile ? `To support your cardio health, your weekly target is to burn ${minGoal}-${maxGoal} calories.` : "Set your profile goals to track your weekly cardio."}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -169,7 +169,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           </div>
         )}
 
-        <div className="grid grid-cols-7 gap-2 md:gap-4 pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-7 gap-4 pt-4">
           {daysOfWeek.map(day => {
             const dateKey = format(day, 'yyyy-MM-dd');
             const dayData = weeklyData.get(dateKey);
@@ -181,35 +181,44 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 md:p-3 shadow-sm flex flex-col h-full min-h-[160px]",
+                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
-                <div className="flex flex-col items-center text-center">
+                <div className="flex flex-col items-center justify-center text-center p-2 pr-4 md:p-0">
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
-                <div className="mt-2 flex-grow flex flex-col text-center justify-between">
-                  <div className="flex items-center justify-center gap-1 font-bold text-accent h-6">
-                    {totalCalories > 0 ? (
-                      <>
-                        <Flame className="h-4 w-4" />
-                        <span>{Math.round(totalCalories)}</span>
-                      </>
-                    ) : (
-                      <span className="text-sm font-medium text-muted-foreground/60">None</span>
-                    )}
-                  </div>
-                  {totalCalories > 0 && (
-                    <div className="text-xs text-muted-foreground space-y-1 mt-1 overflow-y-auto">
-                      {activities && Array.from(activities.entries()).map(([activity, stats]) => (
-                         <p key={activity} className="w-full truncate font-semibold text-foreground">
-                            {activity}
-                            {stats.distanceMi > 0 && (
-                                <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
-                            )}
-                        </p>
-                      ))}
+                
+                <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
+                
+                <div className="flex-grow flex items-center md:flex-col md:items-stretch md:justify-center text-center">
+                  {totalCalories > 0 && activities ? (
+                    <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
+                       <div className="flex items-center justify-center font-bold text-accent md:h-8 md:mb-2">
+                            <div className="flex items-center gap-1">
+                                <Flame className="h-4 w-4" />
+                                <span>{Math.round(totalCalories)}</span>
+                            </div>
+                        </div>
+                        <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
+                             {Array.from(activities.entries()).map(([activity, stats]) => (
+                                <p key={activity} className="w-full text-left md:text-center truncate font-semibold text-foreground">
+                                    {activity}
+                                    {stats.distanceMi > 0 && (
+                                        <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                                    )}
+                                </p>
+                            ))}
+                        </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
+                      <div className="flex items-center justify-center text-sm font-medium text-muted-foreground/60 md:h-8 md:mb-2">
+                        None
+                      </div>
+                      {/* Empty div to maintain the two-column structure on mobile */}
+                      <div className="hidden md:block"></div>
                     </div>
                   )}
                 </div>

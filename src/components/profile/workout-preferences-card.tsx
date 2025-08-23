@@ -206,7 +206,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                         min="0"
                         value={editedCardioGoal}
                         onChange={(e) => setEditedCardioGoal(e.target.value)}
-                        placeholder="e.g., 1200"
+                        placeholder="e.g., 1000"
                         className="mt-1"
                     />
                 </div>
@@ -218,7 +218,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                         min="0"
                         value={editedCardioStretchGoal}
                         onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
-                        placeholder="e.g., 1400"
+                        placeholder="e.g., 1200"
                         className="mt-1"
                     />
                 </div>

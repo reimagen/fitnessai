@@ -13,7 +13,7 @@ import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout
 import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, useDeleteWorkoutLog } from "@/lib/firestore.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight, X, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns/format';
 import { startOfDay } from 'date-fns/startOfDay';
@@ -22,12 +22,15 @@ import { subMonths } from 'date-fns/subMonths';
 import { isSameMonth } from 'date-fns/isSameMonth';
 import { ErrorState } from "../shared/ErrorState";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth.service";
+import Link from "next/link";
 
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
 
 export function HistoryPageContent() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const [editingLogId, setEditingLogId] = useState<string | null>(null);
@@ -44,9 +47,21 @@ export function HistoryPageContent() {
     }
   }, [editingLogId]);
 
+  const { 
+    data: profileResult, 
+    isLoading: isLoadingProfile, 
+    isError: isErrorProfile 
+  } = useUserProfile();
+  const userProfile = profileResult?.data;
+  const isProfileNotFound = profileResult?.notFound === true;
+
   // Fetching data with React Query, now passing the current month
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(currentMonth);
-  const { data: userProfile } = useUserProfile();
+  // This hook is now enabled only when the profile has loaded and is confirmed to exist for an existing user.
+  const { 
+    data: workoutLogs, 
+    isLoading: isLoadingWorkouts, 
+    isError: isErrorWorkouts 
+  } = useWorkouts(currentMonth, !isLoadingProfile && !isProfileNotFound);
   
   // Mutations defined directly in the component
   const addWorkoutMutation = useAddWorkoutLog();
@@ -57,6 +72,11 @@ export function HistoryPageContent() {
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
   const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to modify logs.", variant: "destructive" });
+        return;
+    }
+
     const finalData = {
         ...data,
         exercises: data.exercises.map(ex => {
@@ -66,7 +86,7 @@ export function HistoryPageContent() {
     };
 
     if (editingLogId) {
-      updateWorkoutMutation.mutate({ id: editingLogId, data: finalData }, {
+      updateWorkoutMutation.mutate({ userId: user.uid, id: editingLogId, data: finalData }, {
         onSuccess: () => {
           toast({ title: "Log Updated!", description: "Your workout has been successfully updated." });
           setEditingLogId(null);
@@ -77,7 +97,7 @@ export function HistoryPageContent() {
         }
       });
     } else {
-      addWorkoutMutation.mutate(finalData, {
+      addWorkoutMutation.mutate({ userId: user.uid, data: finalData }, {
         onSuccess: () => {
           toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
            setActiveForm('none'); // Hide form on success
@@ -90,6 +110,10 @@ export function HistoryPageContent() {
   };
 
   const handleParsedData = (parsedData: ParseWorkoutScreenshotOutput) => {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to save logs.", variant: "destructive" });
+        return;
+    }
     if (!parsedData.workoutDate) {
       toast({
         title: "Parsing Error",
@@ -147,8 +171,8 @@ export function HistoryPageContent() {
         }
       });
       
-      const updatedLog: Omit<WorkoutLog, 'id'> = { ...existingLog, exercises: newExercises };
-      updateWorkoutMutation.mutate({ id: existingLog.id, data: updatedLog }, {
+      const updatedLog: Omit<WorkoutLog, 'id' | 'userId'> = { ...existingLog, exercises: newExercises };
+      updateWorkoutMutation.mutate({ userId: user.uid, id: existingLog.id, data: updatedLog }, {
         onSuccess: () => {
           toast({ title: "Log Updated", description: `Merged parsed data, adding ${addedCount} new exercise(s).` });
           setActiveForm('none'); // Hide form on success
@@ -158,11 +182,11 @@ export function HistoryPageContent() {
         }
       });
     } else {
-      const newLog: Omit<WorkoutLog, 'id'> = {
+      const newLog: Omit<WorkoutLog, 'id' | 'userId'> = {
         date: targetDate,
         exercises: parsedExercises,
       };
-      addWorkoutMutation.mutate(newLog, {
+      addWorkoutMutation.mutate({ userId: user.uid, data: newLog }, {
         onSuccess: () => {
           toast({ title: "Log Created", description: "Successfully created a new log from the screenshot." });
           setActiveForm('none'); // Hide form on success
@@ -175,7 +199,11 @@ export function HistoryPageContent() {
   };
   
   const handleDeleteLog = (logId: string) => {
-    deleteWorkoutMutation.mutate(logId, {
+    if (!user) {
+        toast({ title: "Not Authenticated", description: "You must be logged in to delete logs.", variant: "destructive" });
+        return;
+    }
+    deleteWorkoutMutation.mutate({ userId: user.uid, logId: logId }, {
           onSuccess: () => {
               toast({ title: "Log Deleted", description: "The workout log has been removed.", variant: "destructive" });
           },
@@ -209,16 +237,89 @@ export function HistoryPageContent() {
   };
 
 
-  if (!isClient) {
+  if (!isClient || isLoadingProfile) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
+  
+  if (isProfileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Log Your History</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Create a profile to save your workout logs and track your performance over time.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+            <CardDescription>
+              Your profile is needed to save your workout history.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/profile" passHref>
+              <Button className="w-full">
+                <UserPlus className="mr-2" />
+                Go to Profile Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const logBeingEdited = editingLogId ? workoutLogs?.find(log => log.id === editingLogId) : undefined;
   const isCurrentMonthInView = isSameMonth(currentMonth, new Date());
+
+  const renderWorkoutContent = () => {
+    // State 1: Handle profile loading (highest priority) - already handled above
+    
+    // State 2: Handle profile fetch error
+    if (isErrorProfile) {
+        return <ErrorState message="Could not load your user profile. Please try refreshing." />;
+    }
+
+    // State 3: Handle new user case (profile loaded, but document not found)
+    // This correctly short-circuits before the workout query can run and fail.
+    if (isProfileNotFound) {
+        return (
+            <WorkoutList 
+              workoutLogs={[]} 
+              onEdit={handleEditLog}
+              onDelete={handleDeleteLog}
+            />
+        );
+    }
+    
+    // --- Logic for existing users only from this point on ---
+
+    // State 4: Handle workout data loading for existing user
+    if (isLoadingWorkouts) {
+      return (
+        <div className="flex justify-center items-center h-40">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    // State 5: Handle workout fetch error for existing user
+    if (isErrorWorkouts) {
+      return <ErrorState message="Could not load workout history. Please try refreshing." />;
+    }
+
+    // State 6: Success state for existing user (with or without logs)
+    return (
+      <WorkoutList 
+        workoutLogs={workoutLogs || []} 
+        onEdit={handleEditLog}
+        onDelete={handleDeleteLog}
+      />
+    );
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -227,7 +328,7 @@ export function HistoryPageContent() {
           Workout History
         </h1>
         <p className="text-muted-foreground">
-          Log your sessions and review your past performance.
+          Log your sessions and review past performance.
         </p>
       </header>
 
@@ -241,7 +342,7 @@ export function HistoryPageContent() {
                   Log Workout Manually
                 </CardTitle>
                 <CardDescription>
-                  Enter the details of your workout session exercise by exercise.
+                  Enter your workout details.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -249,10 +350,10 @@ export function HistoryPageContent() {
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
                   <ImageUp className="h-6 w-6 text-primary" />
-                  Parse from Screenshot
+                  Upload Screenshot
                 </CardTitle>
                 <CardDescription>
-                  Upload an image of your workout log and let our AI do the work.
+                  Upload an image of your workout log and let AI extract the data.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -262,7 +363,16 @@ export function HistoryPageContent() {
       {/* Manual Log Form Card */}
       <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-           <CardHeader>
+           <CardHeader className="relative">
+            <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
             <CardTitle className="font-headline flex items-center gap-2">
               <Edit className="h-6 w-6 text-primary" />
               {editingLogId ? "Edit Workout Log" : "Log New Workout"}
@@ -286,7 +396,16 @@ export function HistoryPageContent() {
       {/* Screenshot Parser Card */}
       <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
         <Card className="shadow-lg">
-           <CardHeader>
+           <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
             <CardTitle className="font-headline flex items-center gap-2">
               <ImageUp className="h-6 w-6 text-primary" />
               Parse Workout from Screenshot
@@ -320,19 +439,7 @@ export function HistoryPageContent() {
             </div>
           </CardHeader>
           <CardContent>
-            {isLoadingWorkouts ? (
-              <div className="flex justify-center items-center h-40">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : isErrorWorkouts ? (
-              <ErrorState message="Could not load workout history. Please try refreshing."/>
-            ) : (
-                <WorkoutList 
-                  workoutLogs={workoutLogs || []} 
-                  onEdit={handleEditLog}
-                  onDelete={handleDeleteLog}
-                />
-            )}
+            {renderWorkoutContent()}
           </CardContent>
         </Card>
     </div>

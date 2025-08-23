@@ -32,6 +32,9 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
   ).length;
 
   const getFooterMessage = () => {
+    if (!userProfile) {
+        return "Set your preferences in your profile to track weekly workout goals.";
+    }
     const workoutsLeft = workoutGoal - completedThisWeek;
     if (workoutsLeft <= 0) {
       return "Goal achieved! Great job this week!";
@@ -47,7 +50,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
       <CardHeader>
         <CardTitle className="font-headline">Weekly Progress</CardTitle>
         <CardDescription>
-          You've completed {completedThisWeek} of your {workoutGoal} workout goal this week.
+          {userProfile ? `You've completed ${completedThisWeek} of your ${workoutGoal} workout goal this week.` : "Your weekly workout progress will appear here once you set your goals."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex justify-around items-center">

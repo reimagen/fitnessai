@@ -12,101 +12,144 @@ import {
     getPersonalRecords,
     addPersonalRecords,
     updatePersonalRecord,
+    clearAllPersonalRecords,
 } from '@/app/prs/actions';
 import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
 import { useAuth } from './auth.service';
+import { format } from 'date-fns';
 
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth?: Date) {
+export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   const { user } = useAuth();
   // The query key now includes the month and user ID, so each month's data is cached separately per user.
-  const queryKey = forMonth 
-    ? ['workouts', user?.uid, forMonth.toISOString().slice(0, 7)] // e.g., ['workouts', 'some-uid', '2025-07']
-    : ['workouts', user?.uid, 'all'];
+  const monthKey = forMonth ? format(forMonth, 'yyyy-MM') : 'all';
+  const queryKey = ['workouts', user?.uid, monthKey];
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(forMonth),
-    enabled: !!user // Only run the query if the user is logged in
+    queryFn: () => getWorkoutLogs(user!.uid, forMonth),
+    enabled: !!user && enabled
   });
 }
+
+type AddWorkoutPayload = {
+  userId: string;
+  data: Omit<WorkoutLog, 'id' | 'userId'>;
+};
 
 export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: addWorkoutLog,
-        onSuccess: () => {
-            // Invalidate all workout queries for the current user to ensure any month's view is updated.
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
+
+type UpdateWorkoutPayload = {
+  userId: string;
+  id: string;
+  data: Partial<Omit<WorkoutLog, 'id' | 'userId'>>;
+};
 
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<WorkoutLog, 'id'>> }>({
-        mutationFn: ({ id, data }) => updateWorkoutLog(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+    return useMutation<void, Error, UpdateWorkoutPayload>({
+        mutationFn: ({ userId, id, data }) => updateWorkoutLog(userId, id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
+
+type DeleteWorkoutPayload = {
+  userId: string;
+  logId: string;
+};
 
 export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: deleteWorkoutLog,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        mutationFn: ({ userId, logId }: DeleteWorkoutPayload) => deleteWorkoutLog(userId, logId),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
         },
     });
 }
 
-export function usePersonalRecords() {
+export function usePersonalRecords(enabled: boolean = true) {
   const { user } = useAuth();
   return useQuery<PersonalRecord[], Error>({ 
     queryKey: ['prs', user?.uid], 
-    queryFn: getPersonalRecords,
-    enabled: !!user // Only run the query if the user is logged in
+    queryFn: () => getPersonalRecords(user!.uid),
+    enabled: !!user && enabled
   });
 }
 
+type AddPersonalRecordsPayload = {
+  userId: string;
+  records: Omit<PersonalRecord, 'id' | 'userId'>[];
+};
+
 export function useAddPersonalRecords() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
-        mutationFn: addPersonalRecords,
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
+        mutationFn: ({ userId, records }: AddPersonalRecordsPayload) => addPersonalRecords(userId, records),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', variables.userId] });
         }
     })
 }
 
+type UpdatePersonalRecordPayload = {
+  userId: string;
+  id: string;
+  data: {
+    weight?: number;
+    date?: Date;
+  };
+};
+
 export function useUpdatePersonalRecord() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
-    return useMutation<void, Error, { id: string, data: Partial<Omit<PersonalRecord, 'id'>> }>({
-        mutationFn: ({ id, data }) => updatePersonalRecord(id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
+    return useMutation<void, Error, UpdatePersonalRecordPayload>({
+        mutationFn: ({ userId, id, data }) => updatePersonalRecord(userId, id, data),
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', variables.userId] });
         },
+    });
+}
+
+export function useClearAllPersonalRecords() {
+    const queryClient = useQueryClient();
+    return useMutation<void, Error, string>({
+        mutationFn: (userId: string) => clearAllPersonalRecords(userId),
+        onSuccess: (_, userId) => {
+            queryClient.invalidateQueries({ queryKey: ['prs', userId] });
+        }
     });
 }
 
 export function useUserProfile() {
     const { user } = useAuth();
-    return useQuery<UserProfile | null, Error>({ 
+    return useQuery<{ data: UserProfile | null; notFound: boolean }, Error>({
       queryKey: ['profile', user?.uid], 
-      queryFn: getUserProfile,
+      queryFn: async () => {
+        const profile = await getUserProfile(user!.uid);
+        if (profile === null) {
+          // This is a new user, not an error.
+          return { data: null, notFound: true as const };
+        }
+        return { data: profile, notFound: false as const };
+      },
       enabled: !!user, // Only fetch profile if user is authenticated
       staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
     });
 }
 
@@ -114,7 +157,7 @@ export function useUpdateUserProfile() {
     const queryClient = useQueryClient();
     const { user } = useAuth();
     return useMutation<void, Error, Partial<Omit<UserProfile, 'id'>>>({
-        mutationFn: updateUserProfile, 
+        mutationFn: (data: Partial<Omit<UserProfile, 'id'>>) => updateUserProfile(user!.uid, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
             // Invalidate PRs in case user stats that affect levels have changed

@@ -144,16 +144,37 @@ export function calculateExerciseCalories(
         metValue = getMetForPace(paceMinPerMile, metTable);
 
     } else if (exerciseName.includes('rowing')) {
-        if (!duration || duration <= 0) return 0; // Rowing needs duration
-        
-        let durationInMinutes = 0;
-        switch (durationUnit) {
-            case 'hr': durationInMinutes = duration * 60; break;
-            case 'sec': durationInMinutes = duration / 60; break;
-            default: durationInMinutes = duration; break;
+        // Rowing can be calculated from duration OR distance
+        if ((!duration || duration <= 0) && (!distance || distance <= 0)) {
+            return 0; // Need at least one metric
         }
-        durationInHours = durationInMinutes / 60;
+
         metValue = ROWING_MET_VALUE;
+
+        if (duration && duration > 0) {
+            // Use provided duration if available
+            let durationInMinutes = 0;
+            switch (durationUnit) {
+                case 'hr': durationInMinutes = duration * 60; break;
+                case 'sec': durationInMinutes = duration / 60; break;
+                default: durationInMinutes = duration; break; // Assumes 'min'
+            }
+            durationInHours = durationInMinutes / 60;
+        } else {
+            // Estimate duration from distance
+            let distanceInKm = distance!; // We know distance exists from the check above
+            if (distanceUnit === 'mi') {
+                distanceInKm = distance! * 1.60934;
+            } else if (distanceUnit === 'm') {
+                distanceInKm = distance! / 1000;
+            } else if (distanceUnit === 'ft') {
+                distanceInKm = (distance! * 0.3048) / 1000;
+            }
+            
+            const AVG_ROWING_PACE_MIN_PER_KM = 5; // Assume 5 min/km pace
+            const estimatedDurationMinutes = distanceInKm * AVG_ROWING_PACE_MIN_PER_KM;
+            durationInHours = estimatedDurationMinutes / 60;
+        }
 
     } else {
         // For other cardio like cycling, etc., we'd need more specific MET tables.

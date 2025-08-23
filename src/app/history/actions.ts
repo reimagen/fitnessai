@@ -46,18 +46,31 @@ export async function parseWorkoutScreenshotAction(
 
 // --- Server Actions for Workout Logs ---
 
-export async function getWorkoutLogs(forMonth?: Date): Promise<WorkoutLog[]> {
-  return serverGetWorkoutLogs(forMonth);
+export async function getWorkoutLogs(userId: string, forMonth?: Date): Promise<WorkoutLog[]> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  return serverGetWorkoutLogs(userId, forMonth);
 }
 
-export async function addWorkoutLog(log: Omit<WorkoutLog, 'id'>): Promise<FirebaseFirestore.DocumentReference<WorkoutLog, FirebaseFirestore.DocumentData>> {
-  return serverAddWorkoutLog(log);
+export async function addWorkoutLog(userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>): Promise<{ id: string }> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  const result = await serverAddWorkoutLog(userId, log);
+  return result;
 }
 
-export async function updateWorkoutLog(id: string, log: Partial<Omit<WorkoutLog, 'id'>>): Promise<void> {
-  return serverUpdateWorkoutLog(id, log);
+export async function updateWorkoutLog(userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  await serverUpdateWorkoutLog(userId, id, log);
 }
 
-export async function deleteWorkoutLog(id: string): Promise<void> {
-  return serverDeleteWorkoutLog(id);
+export async function deleteWorkoutLog(userId: string, id: string): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  await serverDeleteWorkoutLog(userId, id);
 }

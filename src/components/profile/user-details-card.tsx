@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import type { UserProfile } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,7 @@ type UserDetailsCardProps = {
   onUpdate: (details: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => void;
 };
 
-const GENDER_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
+const GENDER_OPTIONS = ["Male", "Female"];
 const HEIGHT_UNIT_OPTIONS = [
     { label: "cm", value: "cm" },
     { label: "ft/in", value: "ft/in" },
@@ -44,7 +44,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedJoinedDate, setEditedJoinedDate] = useState(formatDateForInput(user.joinedDate));
   const [editedAge, setEditedAge] = useState(user.age?.toString() || "");
   const [editedGender, setEditedGender] = useState(user.gender || "");
-  const [editedHeightUnit, setEditedHeightUnit] = useState<'cm' | 'ft/in'>(user.heightUnit || "cm");
+  const [editedHeightUnit, setEditedHeightUnit] = useState<'cm' | 'ft/in'>(user.heightUnit || "ft/in");
   const [editedHeightCm, setEditedHeightCm] = useState("");
   const [editedHeightFt, setEditedHeightFt] = useState("");
   const [editedHeightIn, setEditedHeightIn] = useState("");
@@ -60,7 +60,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       setEditedJoinedDate(formatDateForInput(user.joinedDate));
       setEditedAge(user.age?.toString() || "");
       setEditedGender(user.gender || "");
-      const initialHeightUnit = user.heightUnit || "cm";
+      const initialHeightUnit = user.heightUnit || "ft/in";
       setEditedHeightUnit(initialHeightUnit);
 
       if (user.heightValue !== undefined) {
@@ -123,11 +123,8 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   };
 
   const handleSaveClick = () => {
-    if (editedName.trim() === "") {
-      toast({ title: "Invalid Name", description: "Name cannot be empty.", variant: "destructive" });
-      return;
-    }
-    if (!editedJoinedDate || isNaN(new Date(editedJoinedDate.replace(/-/g, '\/')).getTime())) { // Use replace for cross-browser compatibility with YYYY-MM-DD
+    const isJoinedDateValid = !editedJoinedDate || !isNaN(new Date(editedJoinedDate.replace(/-/g, '/')).getTime());
+    if (editedJoinedDate && !isJoinedDateValid) {
       toast({ title: "Invalid Joined Date", description: "Please enter a valid date.", variant: "destructive" });
       return;
     }
@@ -180,11 +177,12 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     if (editedBodyFat !== "" && (isNaN(bodyFatVal) || bodyFatVal <= 0 || bodyFatVal >= 100)) {
         toast({ title: "Invalid Body Fat %", description: "Please enter a valid percentage for body fat.", variant: "destructive" }); return;
     }
-
-    const dateParts = editedJoinedDate.split('-').map(Number);
-    // Create date object from parts to ensure local timezone interpretation
-    const newJoinedDateObject = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-
+    
+    let newJoinedDateObject: Date | undefined = undefined;
+    if (editedJoinedDate) {
+        const dateParts = editedJoinedDate.split('-').map(Number);
+        newJoinedDateObject = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+    }
 
     onUpdate({ 
       name: editedName.trim(),
@@ -229,54 +227,26 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader className="pb-4 relative">
-        <div className="absolute top-6 right-6 flex gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-                <XCircle className="h-5 w-5" />
+        <div className="absolute top-4 right-4 flex gap-2">
+            {isEditing ? (
+              <>
+                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
+                <Edit2 className="h-5 w-5" />
               </Button>
-              <Button size="icon" onClick={handleSaveClick} aria-label="Save details">
-                <Save className="h-5 w-5" />
-              </Button>
-            </>
-          ) : (
-            <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
-              <Edit2 className="h-5 w-5" />
-            </Button>
-          )}
+            )}
         </div>
+
         <div>
-          {isEditing ? (
-            <div className="mb-1 mr-16">
-              <Label htmlFor="name-input" className="text-sm font-medium text-muted-foreground">Name:</Label>
-              <Input
-                id="name-input"
-                type="text"
-                value={editedName}
-                onChange={(e) => setEditedName(e.target.value)}
-                className="text-2xl font-headline font-semibold leading-none tracking-tight w-full"
-                aria-label="Edit user name"
-              />
-            </div>
-          ) : (
-            <CardTitle className="font-headline text-3xl mb-1 mr-16">{user.name}</CardTitle> // Added mr-16 for spacing from buttons
-          )}
-           {isEditing ? (
-            <div className="mt-1">
-              <Label htmlFor="joined-date-input" className="text-sm font-medium text-muted-foreground">Joined:</Label>
-              <Input 
-                id="joined-date-input"
-                type="date" 
-                value={editedJoinedDate} 
-                onChange={(e) => setEditedJoinedDate(e.target.value)} 
-                className="text-sm w-full md:w-auto"
-              />
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Joined: {user.joinedDate ? format(user.joinedDate instanceof Date ? user.joinedDate : new Date(user.joinedDate), "MMMM d, yyyy") : "Not set"}
-            </p>
-          )}
+            <CardTitle className="font-headline text-3xl mb-1">{!isEditing && (user.name || "Name: Not set")}</CardTitle>
+            <CardDescription>{!isEditing && `Joined: ${user.joinedDate ? format(user.joinedDate, "MMMM d, yyyy") : "Not set"}`}</CardDescription>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -286,6 +256,28 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <Label htmlFor="name-input" className="text-sm font-medium">Name</Label>
+                  <Input
+                    id="name-input"
+                    type="text"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    placeholder="Your name"
+                    className="mt-1"
+                    aria-label="Edit user name"
+                  />
+                </div>
+                 <div>
+                  <Label htmlFor="joined-date-input" className="text-sm font-medium">Joined Date</Label>
+                   <Input 
+                    id="joined-date-input"
+                    type="date" 
+                    value={editedJoinedDate} 
+                    onChange={(e) => setEditedJoinedDate(e.target.value)} 
+                    className="text-sm mt-1 w-full"
+                  />
+                </div>
+                 <div>
                   <Label htmlFor="age-input" className="text-sm font-medium">Age</Label>
                   <Input id="age-input" type="number" value={editedAge} onChange={(e) => setEditedAge(e.target.value)} placeholder="Your age" className="mt-1" />
                 </div>

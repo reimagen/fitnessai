@@ -1,4 +1,4 @@
-      
+
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line } from 'recharts';
@@ -29,11 +29,13 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays } from 'date-fns/differenceInDays';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { getStrengthThresholds } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
+import { useAuth } from '@/lib/auth.service';
+import Link from 'next/link';
 
 
 const IMBALANCE_TYPES = [
@@ -53,7 +55,7 @@ const LIFT_NAME_ALIASES: Record<string, string> = {
 };
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press', 'butterfly'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
     'Hamstring vs. Quad': { lift1Options: ['leg curl'], lift2Options: ['leg extension'], ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
@@ -75,6 +77,7 @@ function findBestPr(records: PersonalRecord[], exerciseNames: string[]): Persona
 
 // Helper to convert a string to title case
 const toTitleCase = (str: string) => {
+  if (!str) return "";
   return str.replace(
     /\w\S*/g,
     (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
@@ -271,6 +274,7 @@ const ProgressionChartLegend = (props: any) => {
 
 export default function AnalysisPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('weekly');
   const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
   const [latestAnalysis, setLatestAnalysis] = useState<StrengthImbalanceOutput | null>(null);
@@ -282,10 +286,14 @@ export default function AnalysisPage() {
   const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
   const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
 
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
-  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
+  const isProfileNotFound = profileResult?.notFound === true;
 
+  const enableDataFetching = !isLoadingProfile && !!userProfile;
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
+  const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
+  
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
@@ -312,8 +320,8 @@ export default function AnalysisPage() {
              return;
         };
 
-        const lift1Level = lift1.strengthLevel || 'N/A';
-        const lift2Level = lift2.strengthLevel || 'N/A';
+        const lift1Level = getStrengthLevel(lift1, userProfile);
+        const lift2Level = getStrengthLevel(lift2, userProfile);
 
         const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
         const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
@@ -441,6 +449,10 @@ export default function AnalysisPage() {
   }, [personalRecords, userProfile]);
 
   const handleAnalyzeStrength = async () => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
+        return;
+    }
     if (!personalRecords || personalRecords.length === 0) {
       toast({
         title: "Not Enough Data",
@@ -472,7 +484,7 @@ export default function AnalysisPage() {
             weightUnit: userProfile.weightUnit,
             skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
             skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-            fitnessGoals: userProfile.fitnessGoals
+            fitnessGoals: (userProfile.fitnessGoals || [])
               .filter(g => !g.achieved)
               .map(g => ({
                 description: g.description,
@@ -481,7 +493,7 @@ export default function AnalysisPage() {
         }
     };
 
-    const result = await analyzeStrengthAction(analysisInput);
+    const result = await analyzeStrengthAction(user.uid, analysisInput);
 
     if (result.success && result.data) {
       setLatestAnalysis(result.data);
@@ -697,7 +709,7 @@ export default function AnalysisPage() {
       });
     });
     return Array.from(weightedExercises.entries())
-      .filter(([, count]) => count > 2) // Must be logged at least 3 times
+      .filter(([, count]) => count > 1) // Need at least 2 workouts to calc regression
       .sort((a, b) => b[1] - a[1])
       .map(([name]) => name);
   }, [workoutLogs]);
@@ -817,7 +829,7 @@ useEffect(() => {
         const bestPRforLift = findBestPr(personalRecords, [prName]);
 
         if (bestPRforLift) {
-            setCurrentLiftLevel(bestPRforLift.strengthLevel || 'N/A');
+            setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
         } else {
             setCurrentLiftLevel(null);
         }
@@ -861,6 +873,10 @@ useEffect(() => {
 }, [selectedLift, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
+    if (!user) {
+        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
+        return;
+    }
     if (!userProfile || !workoutLogs || !selectedLift) {
         toast({ title: "Missing Data", description: "Cannot run analysis without user profile, logs, and a selected lift.", variant: "destructive" });
         return;
@@ -882,29 +898,32 @@ useEffect(() => {
           }))
       );
 
-    const result = await analyzeLiftProgressionAction({
-      exerciseName: selectedLift,
-      exerciseHistory,
-      userProfile: {
-          age: userProfile.age,
-          gender: userProfile.gender,
-          heightValue: userProfile.heightValue,
-          heightUnit: userProfile.heightUnit,
-          weightValue: userProfile.weightValue,
-          weightUnit: userProfile.weightUnit,
-          skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-          skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-          fitnessGoals: userProfile.fitnessGoals
-            .filter(g => !g.achieved)
-            .map(g => ({
-              description: g.description,
-              isPrimary: g.isPrimary || false,
-            })),
-      },
-      currentLevel: currentLiftLevel || undefined,
-      trendPercentage: trendImprovement,
-      volumeTrendPercentage: volumeTrend,
-    });
+    const result = await analyzeLiftProgressionAction(
+        user.uid,
+        {
+          exerciseName: selectedLift,
+          exerciseHistory,
+          userProfile: {
+              age: userProfile.age,
+              gender: userProfile.gender,
+              heightValue: userProfile.heightValue,
+              heightUnit: userProfile.heightUnit,
+              weightValue: userProfile.weightValue,
+              weightUnit: userProfile.weightUnit,
+              skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+              skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+              fitnessGoals: (userProfile.fitnessGoals || [])
+                .filter(g => !g.achieved)
+                .map(g => ({
+                  description: g.description,
+                  isPrimary: g.isPrimary || false,
+                })),
+          },
+          currentLevel: currentLiftLevel || undefined,
+          trendPercentage: trendImprovement,
+          volumeTrendPercentage: volumeTrend,
+        }
+    );
     
     if (result.success && result.data) {
         setLatestProgressionAnalysis(prev => ({
@@ -949,8 +968,8 @@ useEffect(() => {
     return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">{legendOrder.map(name => { const entry = payloadMap[name]; if (!entry || !chartConfig[name]) return null; return <div key={`item-${entry.dataKey}`} className="flex items-center justify-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} /><span className="text-muted-foreground">{chartConfig[name].label}</span></div>; })}</div>;
   };
   
-  const isLoading = isLoadingWorkouts || isLoadingPrs || isLoadingProfile;
-  const isError = isErrorWorkouts || isErrorPrs || isErrorProfile;
+  const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
+  const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
   const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
 
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
@@ -971,6 +990,48 @@ useEffect(() => {
     return 'secondary';
   }
 
+  if (isLoadingProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isErrorProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <ErrorState message="Could not load your profile data. Please try again later." />
+      </div>
+    );
+  }
+
+  if (isProfileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Unlock Your Analysis</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Create a profile to view your progress and get AI-powered insights.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+            <CardDescription>
+              Your profile is needed to analyze workout data and calculate strength metrics.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/profile" passHref>
+              <Button className="w-full">
+                <UserPlus className="mr-2" />
+                Go to Profile Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -994,7 +1055,7 @@ useEffect(() => {
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : !isError && (<>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{pr.exerciseName}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
@@ -1068,8 +1129,8 @@ useEffect(() => {
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
                                                 <div className="flex-grow">
-                                                    {isAnalysisLoading && dataFinding.userRatio ? (
-                                                        <div className="flex items-center justify-center text-muted-foreground">
+                                                    {isAnalysisLoading ? (
+                                                        <div className="flex items-center justify-center text-muted-foreground text-sm">
                                                             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                         </div>
                                                     ) : aiFinding ? (
@@ -1121,7 +1182,7 @@ useEffect(() => {
                                                                         <>
                                                                             <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
                                                                             <p className="text-xs text-muted-foreground mt-1">
-                                                                                Your lifts are well-balanced. Focus on progressive overload to advance from <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+                                                                                Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
                                                                             </p>
                                                                         </>
                                                                     );
@@ -1222,29 +1283,27 @@ useEffect(() => {
                     </div>
                 )}
 
-                 {(isProgressionLoading || progressionAnalysisToRender) && (
-                    <div className="pt-4 border-t">
-                        {isProgressionLoading ? (
-                            <div className="flex items-center justify-center text-muted-foreground p-4">
-                                <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
+                 <div className="pt-4 border-t">
+                    {isProgressionLoading ? (
+                        <div className="flex items-center justify-center text-muted-foreground p-4 text-sm">
+                            <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
+                        </div>
+                    ) : progressionAnalysisToRender ? (
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+                                <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
                             </div>
-                        ) : progressionAnalysisToRender ? (
-                            <div className="space-y-4">
-                               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-                                    <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
-                                </div>
+                            <div>
+                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
                             </div>
-                        ) : null}
-                    </div>
-                 )}
+                            <div>
+                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
+                            </div>
+                        </div>
+                    ) : null}
+                 </div>
 
               </CardContent>
             </Card>
@@ -1253,23 +1312,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
-
-    
-
-
-
-
-    
-
-    
-
-    
-
-    
-
-
-
-
-

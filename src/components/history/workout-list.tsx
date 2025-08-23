@@ -19,6 +19,7 @@ type WorkoutListProps = {
 };
 
 const FEET_IN_A_MILE = 5280;
+const METERS_IN_A_KILOMETER = 1000;
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
@@ -47,11 +48,15 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     );
   }
 
-  const formatDistanceForDisplay = (distance?: number, unit?: 'mi' | 'km' | 'ft'): string => {
+  const formatDistanceForDisplay = (distance?: number, unit?: 'mi' | 'km' | 'ft' | 'm'): string => {
     if (distance === undefined || distance === null || distance <= 0) return "-";
     if (unit === 'ft') {
       const miles = distance / FEET_IN_A_MILE;
       return `${miles.toFixed(2)} mi`;
+    }
+    if (unit === 'm' && distance >= METERS_IN_A_KILOMETER) {
+        const km = distance / METERS_IN_A_KILOMETER;
+        return `${km.toFixed(2)} km`;
     }
     return `${distance} ${unit || ''}`.trim();
   };
@@ -83,10 +88,26 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         break;
     }
 
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    }
 
-    return `${minutes}m ${seconds}s`;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    
+    let result = '';
+    if (hours > 0) {
+        result += `${hours}h `;
+    }
+    if (minutes > 0) {
+        result += `${minutes}m `;
+    }
+    if (seconds > 0) {
+        result += `${seconds}s`;
+    }
+
+    return result.trim();
   };
 
   return (

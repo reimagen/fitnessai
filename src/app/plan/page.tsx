@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Zap, AlertTriangle, Info } from "lucide-react";
+import { Loader2, Zap, AlertTriangle, Info, UserPlus } from "lucide-react";
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
@@ -15,6 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { getStrengthLevel } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { useAuth } from "@/lib/auth.service";
+import Link from "next/link";
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -63,7 +65,7 @@ const constructUserProfileContext = (
     }
 
     context += "\nFitness Goals:\n";
-    const activeGoals = userProfile.fitnessGoals.filter(g => !g.achieved);
+    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
     if (activeGoals.length > 0) {
       const primaryGoal = activeGoals.find(g => g.isPrimary);
       if (primaryGoal) {
@@ -156,7 +158,11 @@ const constructUserProfileContext = (
 
 export default function PlanPage() {
   const { toast } = useToast();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { user } = useAuth();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
+  const isProfileNotFound = profileResult?.notFound === true;
+
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const updateUserMutation = useUpdateUserProfile();
@@ -181,6 +187,10 @@ export default function PlanPage() {
   }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
+    if (!user) {
+      toast({ title: "Authentication Error", description: "You must be logged in to generate a plan.", variant: "destructive"});
+      return;
+    }
     if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
       toast({ title: "Missing Data", description: "User profile or workout history is not available yet. Please wait or complete your profile.", variant: "destructive"});
       return;
@@ -195,7 +205,7 @@ export default function PlanPage() {
     }
 
     const result = await generateWeeklyWorkoutPlanAction({
-      userId: userProfile.id,
+      userId: user.uid,
       userProfileContext: finalContext,
       weekStartDate: currentWeekStartDate,
     });
@@ -205,7 +215,7 @@ export default function PlanPage() {
         plan: result.data.weeklyPlan,
         generatedDate: new Date(),
         contextUsed: finalContext,
-        userId: userProfile.id,
+        userId: user.uid,
         weekStartDate: currentWeekStartDate,
       };
 
@@ -226,10 +236,45 @@ export default function PlanPage() {
     setApiIsLoading(false);
   };
 
-  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals.length > 0 && userProfile.experienceLevel;
+  const hasMinimumProfileForPlan = userProfile && userProfile.fitnessGoals && userProfile.fitnessGoals.filter(g => !g.achieved).length > 0 && userProfile.experienceLevel;
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
+
+  if (isLoadingProfile) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (isProfileNotFound) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <header className="mb-12">
+          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Get Your AI Plan</h1>
+          <p className="mt-2 text-lg text-muted-foreground">Create a profile to generate a personalized workout plan.</p>
+        </header>
+        <Card className="shadow-lg max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+            <CardDescription>
+              Your profile is needed for the AI to create a workout plan tailored to your goals and stats.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/profile" passHref>
+              <Button className="w-full">
+                <UserPlus className="mr-2" />
+                Go to Profile Setup
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
