@@ -1,4 +1,3 @@
-
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
@@ -6,6 +5,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
+import { cache } from 'react';
 
 // --- Data Converters ---
 // These converters handle the transformation between Firestore's data format (e.g., Timestamps)
@@ -249,12 +249,12 @@ export const deleteWorkoutLog = async (userId: string, id: string): Promise<void
 };
 
 // Personal Records
-export const getPersonalRecords = async (userId: string): Promise<PersonalRecord[]> => {
+export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
   const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
   const q = personalRecordsCollection.orderBy('exerciseName', 'asc');
   const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.data());
-};
+});
 
 export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]) => {
   const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
@@ -414,6 +414,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
     
 
     
+
 
 
 
