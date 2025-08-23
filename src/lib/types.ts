@@ -12,7 +12,7 @@ export interface Exercise {
   weightUnit?: 'kg' | 'lbs';
   category?: ExerciseCategory;
   distance?: number;
-  distanceUnit?: 'mi' | 'km' | 'ft'; // Added 'ft'
+  distanceUnit?: 'mi' | 'km' | 'ft' | 'm'; // Added 'm'
   duration?: number;
   durationUnit?: 'min' | 'hr' | 'sec';
   calories?: number;
@@ -20,6 +20,7 @@ export interface Exercise {
 
 export interface WorkoutLog {
   id: string;
+  userId: string;
   date: Date;
   exercises: Exercise[];
   notes?: string;
@@ -65,7 +66,7 @@ export interface UserProfile {
   name: string;
   email: string;
   avatarUrl?: string;
-  joinedDate: Date;
+  joinedDate?: Date;
   fitnessGoals: FitnessGoal[];
   age?: number;
   gender?: string;
@@ -91,6 +92,7 @@ export interface UserProfile {
 
 export interface PersonalRecord {
   id: string;
+  userId: string;
   exerciseName: string;
   weight: number;
   weightUnit: 'kg' | 'lbs';

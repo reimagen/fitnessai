@@ -3,25 +3,26 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info } from "lucide-react";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info, Edit, UserPlus } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
-import { parsePersonalRecordsAction } from "./actions";
+import { ManualPrForm } from "@/components/prs/manual-pr-form";
+import { parsePersonalRecordsAction, clearAllPersonalRecords } from "./actions";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord } from "@/lib/firestore.service";
-import { writeBatch, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { useQueryClient } from "@tanstack/react-query";
+import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord, useClearAllPersonalRecords } from "@/lib/firestore.service";
 import { getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/shared/ErrorState";
+import { useAuth } from "@/lib/auth.service";
+import Link from "next/link";
+import { StepperInput } from "@/components/ui/stepper-input";
 
 
 // Function to group records and find the best for each exercise
@@ -51,34 +52,41 @@ const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
 
 export default function MilestonesPage() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
-  const [editedWeight, setEditedWeight] = useState('');
+  const [editedWeight, setEditedWeight] = useState(0);
   const [editedDate, setEditedDate] = useState('');
+  const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
 
-  const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
-  const { data: userProfile, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
+  const userProfile = profileResult?.data;
+
+  // Enable PR fetching only if the profile has loaded and exists.
+  const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(!isLoadingProfile && !!userProfile);
+
   const addPersonalRecordsMutation = useAddPersonalRecords();
   const updateRecordMutation = useUpdatePersonalRecord();
+  const clearAllRecordsMutation = useClearAllPersonalRecords();
 
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
-  const completedGoals = useMemo(() => userProfile?.fitnessGoals.filter(g => g.achieved) || [], [userProfile]);
+  const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
   
   const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
+    if (!user) return;
     let addedCount = 0;
-    const newRecords: Omit<PersonalRecord, 'id'>[] = [];
+    const newRecords: Omit<PersonalRecord, 'id' | 'userId'>[] = [];
 
     const existingRecordKeys = new Set((allRecords || []).map(r => `${r.exerciseName.trim().toLowerCase()}|${format(r.date, 'yyyy-MM-dd')}`));
 
     parsedData.records.forEach(rec => {
         const key = `${rec.exerciseName.trim().toLowerCase()}|${rec.dateString}`;
         if (!existingRecordKeys.has(key)) {
-            const newRecord: Omit<PersonalRecord, 'id'> = {
+            const newRecord: Omit<PersonalRecord, 'id' | 'userId'> = {
                 exerciseName: rec.exerciseName,
                 weight: rec.weight,
                 weightUnit: rec.weightUnit,
-                date: new Date(rec.dateString.replace(/-/g, '/')),
+                date: new Date(`${rec.dateString}T00:00:00Z`),
                 category: rec.category,
             };
             newRecords.push(newRecord);
@@ -88,12 +96,13 @@ export default function MilestonesPage() {
     });
 
     if (addedCount > 0) {
-        addPersonalRecordsMutation.mutate(newRecords, {
+        addPersonalRecordsMutation.mutate({ userId: user.uid, records: newRecords }, {
             onSuccess: () => {
                 toast({
                     title: "Records Updated",
                     description: `Added ${addedCount} new personal record(s).`,
                 });
+                setActiveForm('none');
             },
             onError: (error) => {
                  toast({
@@ -109,36 +118,53 @@ export default function MilestonesPage() {
             description: "The uploaded screenshot contained no new records.",
             variant: "default",
         });
+        setActiveForm('none');
     }
+  };
+  
+  const handleManualAdd = (newRecord: Omit<PersonalRecord, 'id' | 'userId'>) => {
+    if (!user) return;
+    addPersonalRecordsMutation.mutate({ userId: user.uid, records: [newRecord] }, {
+        onSuccess: () => {
+            toast({
+                title: "PR Added!",
+                description: `Your new record for ${newRecord.exerciseName} has been saved.`,
+            });
+            setActiveForm('none');
+        },
+        onError: (error) => {
+            toast({
+                title: "Save Failed",
+                description: `Could not save the new record: ${error.message}`,
+                variant: "destructive"
+            });
+        }
+    });
   };
 
   const performClearRecords = async () => {
-    if (!allRecords || allRecords.length === 0) return;
-    try {
-        const batch = writeBatch(db);
-        allRecords.forEach(record => {
-            const docRef = doc(db, 'personalRecords', record.id);
-            batch.delete(docRef);
-        });
-        await batch.commit();
-        queryClient.invalidateQueries({ queryKey: ['prs'] });
-        toast({
-            title: "Records Cleared",
-            description: "All personal records have been removed.",
-            variant: "destructive",
-        });
-    } catch(error: any) {
-        toast({
-            title: "Clear Failed",
-            description: `Could not clear records: ${error.message}`,
-            variant: "destructive"
-        });
-    }
+    if (!allRecords || allRecords.length === 0 || !user) return;
+    clearAllRecordsMutation.mutate(user.uid, {
+        onSuccess: () => {
+            toast({
+                title: "Records Cleared",
+                description: "All personal records have been removed.",
+                variant: "destructive",
+            });
+        },
+        onError: (error) => {
+            toast({
+                title: "Clear Failed",
+                description: `Could not clear records: ${error.message}`,
+                variant: "destructive"
+            });
+        }
+    });
   };
   
   const handleEditClick = (record: PersonalRecord) => {
     setEditingRecordId(record.id);
-    setEditedWeight(record.weight.toString());
+    setEditedWeight(record.weight);
     setEditedDate(format(record.date, 'yyyy-MM-dd'));
   };
 
@@ -147,20 +173,25 @@ export default function MilestonesPage() {
   };
 
   const handleSaveEdit = (recordId: string) => {
-    const weight = parseFloat(editedWeight);
+    if (!user) return;
+    const weight = editedWeight;
     if (isNaN(weight) || weight <= 0) {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
         return;
     }
-
+    
+    // Create a Date object in the client's local timezone.
     const date = new Date(editedDate.replace(/-/g, '/'));
     if (isNaN(date.getTime())) {
         toast({ title: 'Invalid Date', description: 'Please enter a valid date.', variant: 'destructive' });
         return;
     }
+    // Normalize to the start of the day to ensure consistency.
+    const normalizedDate = startOfDay(date);
 
+    // Pass the full, timezone-aware Date object to the server.
     updateRecordMutation.mutate(
-        { id: recordId, data: { weight, date } },
+        { userId: user.uid, id: recordId, data: { weight, date: normalizedDate } },
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });
@@ -194,8 +225,51 @@ export default function MilestonesPage() {
     }
   };
 
-  const isLoading = isLoadingPrs || isLoadingProfile;
-  const isError = isErrorPrs || isErrorProfile;
+  const isLoading = isLoadingProfile || isLoadingPrs;
+  const isError = isErrorProfile || isErrorPrs;
+
+  if (isLoadingProfile) {
+      return (
+          <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          </div>
+      );
+  }
+
+  if (isErrorProfile) {
+      return (
+          <div className="container mx-auto px-4 py-8">
+              <ErrorState message="Could not load your profile data. Please try again later." />
+          </div>
+      );
+  }
+
+  if (profileResult?.notFound) {
+      return (
+        <div className="container mx-auto px-4 py-8 text-center">
+            <header className="mb-12">
+                <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Track Your Milestones</h1>
+                <p className="mt-2 text-lg text-muted-foreground">Create a profile to start logging personal records and achievements.</p>
+            </header>
+            <Card className="shadow-lg max-w-md mx-auto">
+                <CardHeader>
+                    <CardTitle className="font-headline">Create Your Profile First</CardTitle>
+                    <CardDescription>
+                        Your profile is needed to calculate strength levels and save your milestones.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Link href="/profile" passHref>
+                        <Button className="w-full">
+                            <UserPlus className="mr-2" />
+                            Go to Profile Setup
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
+        </div>
+      );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -203,32 +277,90 @@ export default function MilestonesPage() {
         <h1 className="font-headline text-3xl font-bold text-primary flex items-center">
           <Award className="mr-3 h-8 w-8" /> Milestones & Achievements
         </h1>
-        <p className="text-muted-foreground">A showcase of your best lifts and completed goals, with strength level classifications.</p>
+        <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
       </header>
 
-       <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">
-            <UploadCloud className="h-6 w-6 text-accent" />
-            Upload Personal Records
-          </CardTitle>
-          <CardDescription>
-            Upload a screenshot of your achievements to update your PR history.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          {allRecords && allRecords.length > 0 && (
-              <Button
-                variant="destructive"
-                className="w-full mt-4"
-                onClick={performClearRecords}
-              >
-                <Trash2 className="mr-2 h-4 w-4" /> Clear All Records
-              </Button>
-          )}
-        </CardContent>
-      </Card>
+      {activeForm === 'none' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('manual')}>
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <Edit className="h-6 w-6 text-accent" />
+                Log PR Manually
+              </CardTitle>
+              <CardDescription>
+                Log a single personal record for a classifiable exercise.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('parse')}>
+            <CardHeader>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <UploadCloud className="h-6 w-6 text-accent" />
+                Upload Screenshot
+              </CardTitle>
+              <CardDescription>
+                Upload an image and let AI extract your PRs. Must be a classifiable exercise, list available in manual PR entry tab.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      )}
+
+      <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+          <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
+             <CardTitle className="font-headline flex items-center gap-2">
+                <Edit className="h-6 w-6 text-accent" />
+                Add PR Manually
+              </CardTitle>
+              <CardDescription>
+                Log a single personal record for a classifiable exercise.
+              </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ManualPrForm 
+              onAdd={handleManualAdd} 
+              isSubmitting={addPersonalRecordsMutation.isPending} 
+            />
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
+        <Card className="shadow-lg">
+           <CardHeader className="relative">
+             <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setActiveForm('none')}
+                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
+                aria-label="Close form"
+            >
+                <X className="h-5 w-5" />
+            </Button>
+              <CardTitle className="font-headline flex items-center gap-2">
+                <UploadCloud className="h-6 w-6 text-accent" />
+                Upload from Screenshot
+              </CardTitle>
+              <CardDescription>
+                Upload an image to parse multiple PRs at once.
+              </CardDescription>
+            </CardHeader>
+          <CardContent>
+            <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
+          </CardContent>
+        </Card>
+      </div>
       
       <Card className="shadow-lg">
         <CardHeader>
@@ -241,6 +373,18 @@ export default function MilestonesPage() {
             Body-weight based levels use ratios from strengthlevel.com. 
             Otherwise, level calculations are based on your skeletal muscle mass.
           </CardDescription>
+          {allRecords && allRecords.length > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full mt-4"
+                onClick={performClearRecords}
+                disabled={clearAllRecordsMutation.isPending}
+              >
+                {clearAllRecordsMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+                Clear All Records
+              </Button>
+            )}
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -259,8 +403,11 @@ export default function MilestonesPage() {
                             {groupedRecords[category].map(record => {
                                 const isEditing = editingRecordId === record.id;
                                 const level = record.strengthLevel || 'N/A';
-                                const thresholds = userProfile ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const standardType = getStrengthStandardType(record.exerciseName);
+                                const isSmmExercise = standardType === 'smm';
+                                const needsSmmData = isSmmExercise && (!userProfile?.skeletalMuscleMassValue || !userProfile.gender);
+
+                                const thresholds = userProfile && !needsSmmData ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
                                 const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
 
                                 let progressData: { value: number; text?: string; } | null = null;
@@ -270,7 +417,7 @@ export default function MilestonesPage() {
                                   const nextLevel = levelOrder[currentLevelIndex + 1];
                                   
                                   const currentThreshold = level === 'Beginner' ? 0 : thresholds[level.toLowerCase() as keyof typeof thresholds];
-                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof typeof thresholds];
+                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof thresholds];
                                   
                                   if (record.weight < nextThreshold) {
                                     const range = nextThreshold - currentThreshold;
@@ -292,12 +439,12 @@ export default function MilestonesPage() {
                                         <div className="flex flex-col gap-2 h-full">
                                           <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
                                           <div className="flex items-center gap-2">
-                                            <Input 
-                                                type="number" 
-                                                value={editedWeight} 
-                                                onChange={(e) => setEditedWeight(e.target.value)} 
-                                                className="w-2/3" 
-                                                aria-label="Edit weight"
+                                            <StepperInput
+                                              value={editedWeight}
+                                              onChange={setEditedWeight}
+                                              step={1}
+                                              className="w-full"
+                                              aria-label="Edit weight"
                                             />
                                             <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span>
                                           </div>
@@ -323,19 +470,8 @@ export default function MilestonesPage() {
                                                     <div>
                                                         <div className="flex items-center gap-2 flex-wrap mb-1">
                                                             <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                                            {level !== 'N/A' ? (
+                                                            {level !== 'N/A' && (
                                                                 <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
-                                                            ) : (
-                                                                <TooltipProvider>
-                                                                    <Tooltip>
-                                                                        <TooltipTrigger>
-                                                                            <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                                                                        </TooltipTrigger>
-                                                                        <TooltipContent>
-                                                                            <p>Set SMM & gender in profile to classify.</p>
-                                                                        </TooltipContent>
-                                                                    </Tooltip>
-                                                                </TooltipProvider>
                                                             )}
                                                         </div>
                                                         <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
@@ -348,14 +484,19 @@ export default function MilestonesPage() {
                                             </div>
                                             
                                             <div className="flex-grow my-3">
-                                              {progressData && (
+                                              {needsSmmData ? (
+                                                <div className="p-2 my-2 text-center text-xs text-muted-foreground bg-background/50 border rounded-md">
+                                                  <Info className="h-4 w-4 mx-auto mb-1" />
+                                                  <p>This exercise requires your Skeletal Muscle Mass to classify your strength level. Please update your profile.</p>
+                                                </div>
+                                              ) : progressData ? (
                                                 <div className="space-y-1.5">
                                                     <Progress value={progressData.value} className="h-2 [&>div]:bg-accent" />
                                                     {progressData.text && (
                                                         <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
                                                     )}
                                                 </div>
-                                              )}
+                                              ) : null}
                                             </div>
                                             
                                             {thresholds && level !== 'N/A' && (
@@ -402,7 +543,7 @@ export default function MilestonesPage() {
              <div className="flex flex-col items-center justify-center h-40 text-center">
                 <Trophy className="h-16 w-16 text-primary/30 mb-4" />
                 <p className="text-muted-foreground">
-                    No personal records logged yet. Upload a screenshot to get started!
+                    No personal records logged yet. Add a PR or upload a screenshot to get started!
                 </p>
             </div>
           )}
@@ -450,3 +591,6 @@ export default function MilestonesPage() {
     </div>
   );
 }
+ 
+
+    

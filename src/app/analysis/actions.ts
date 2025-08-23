@@ -8,12 +8,16 @@ import type { StoredStrengthAnalysis, StoredLiftProgressionAnalysis } from "@/li
 
 
 export async function analyzeStrengthAction(
+  userId: string,
   values: StrengthImbalanceInput
 ): Promise<{ success: boolean; data?: StrengthImbalanceOutput; error?: string }> {
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
     const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
     console.error("Missing API Key:", errorMessage);
     return { success: false, error: errorMessage };
+  }
+  if (!userId) {
+    return { success: false, error: "User not authenticated." };
   }
 
   try {
@@ -25,7 +29,7 @@ export async function analyzeStrengthAction(
     };
 
     // After getting analysis, save it to the user's profile in Firestore
-    await updateUserProfile({ strengthAnalysis: storedAnalysis });
+    await updateUserProfile(userId, { strengthAnalysis: storedAnalysis });
 
     return { success: true, data: analysisData };
   } catch (error) {
@@ -45,12 +49,16 @@ export async function analyzeStrengthAction(
 }
 
 export async function analyzeLiftProgressionAction(
+  userId: string,
   values: AnalyzeLiftProgressionInput
 ): Promise<{ success: boolean; data?: AnalyzeLiftProgressionOutput; error?: string }> {
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
     const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
     console.error("Missing API Key:", errorMessage);
     return { success: false, error: errorMessage };
+  }
+  if (!userId) {
+    return { success: false, error: "User not authenticated." };
   }
 
   try {
@@ -64,7 +72,7 @@ export async function analyzeLiftProgressionAction(
     // Save the analysis to the specific exercise key in the user's profile using dot notation
     // This ensures we don't overwrite the entire map of analyses.
     const exerciseKey = values.exerciseName.trim().toLowerCase();
-    await updateUserProfile({ 
+    await updateUserProfile(userId, { 
       [`liftProgressionAnalysis.${exerciseKey}`]: storedAnalysis 
     });
 

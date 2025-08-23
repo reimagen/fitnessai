@@ -1,5 +1,3 @@
-require('dotenv').config();
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -18,6 +16,7 @@ const nextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['@genkit-ai/firebase', 'firebase-admin'],
 };
 
 module.exports = nextConfig;

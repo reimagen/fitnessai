@@ -3,24 +3,26 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // For this single-user prototype, we allow reads and writes to the
-    // specific collections used by the application.
-    // The user profile is restricted to the known document ID.
-    match /profiles/main-user-profile {
-      allow read, write: if true;
+    // Helper function to check if the user is the owner of the document
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow clients to read and write their own workout logs.
-    match /workoutLogs/{logId} {
-      allow read, write: if true;
+    // Match any document in the 'users' collection
+    match /users/{userId} {
+      // Allow users to read and write (create, update, delete) their own profile document.
+      allow read, write: if isOwner(userId);
+
+      // Match any document in any subcollection under a user's document
+      // This covers workoutLogs, personalRecords, etc.
+      match /{subcollection}/{docId} {
+        // Allow users to read and write documents in their own subcollections.
+        allow read, write: if isOwner(userId);
+      }
     }
 
-    // Allow clients to read and write their own personal records.
-    match /personalRecords/{recordId} {
-      allow read, write: if true;
-    }
-    
-    // Deny all other access to prevent unauthorized operations.
+    // Explicitly deny access to any other collection by default.
+    // This is good practice, though Firestore denies by default if no rule matches.
     match /{document=**} {
       allow read, write: if false;
     }

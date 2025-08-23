@@ -6,6 +6,7 @@ import {
   getPersonalRecords as serverGetPersonalRecords,
   addPersonalRecords as serverAddPersonalRecords,
   updatePersonalRecord as serverUpdatePersonalRecord,
+  clearAllPersonalRecords as serverClearAllPersonalRecords,
 } from "@/lib/firestore-server";
 import type { PersonalRecord } from "@/lib/types";
 
@@ -43,14 +44,41 @@ export async function parsePersonalRecordsAction(
 
 // --- Server Actions for Personal Records ---
 
-export async function getPersonalRecords(): Promise<PersonalRecord[]> {
-  return serverGetPersonalRecords();
+// This type defines what the client can send to the server action. Note 'date' is now a Date object.
+type UpdatePersonalRecordClientData = {
+  weight?: number;
+  date?: Date; 
 }
 
-export async function addPersonalRecords(records: Omit<PersonalRecord, 'id'>[]): Promise<void> {
-  return serverAddPersonalRecords(records);
+export async function getPersonalRecords(userId: string): Promise<PersonalRecord[]> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  return serverGetPersonalRecords(userId);
 }
 
-export async function updatePersonalRecord(id: string, recordData: Partial<Omit<PersonalRecord, 'id'>>): Promise<void> {
-  return serverUpdatePersonalRecord(id, recordData);
+export async function addPersonalRecords(userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  await serverAddPersonalRecords(userId, records);
+}
+
+export async function updatePersonalRecord(userId: string, id: string, recordData: UpdatePersonalRecordClientData): Promise<void> {
+  if (!userId) {
+    throw new Error("User not authenticated.");
+  }
+  
+  // The server action receives the client data, which now includes a proper Date object.
+  // It will pass this directly to the server-side firestore function.
+  const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
+
+  await serverUpdatePersonalRecord(userId, id, dataForServer);
+}
+
+export async function clearAllPersonalRecords(userId: string): Promise<void> {
+    if (!userId) {
+        throw new Error("User not authenticated.");
+    }
+    await serverClearAllPersonalRecords(userId);
 }
