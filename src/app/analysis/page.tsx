@@ -23,7 +23,7 @@ import { getYear } from 'date-fns/getYear';
 import { parse } from 'date-fns/parse';
 import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
 import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
-import type { Interval } from 'date-fns/types';
+import type { Interval } from 'date-fns';
 import { subWeeks } from 'date-fns/subWeeks';
 import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays } from 'date-fns/differenceInDays';
