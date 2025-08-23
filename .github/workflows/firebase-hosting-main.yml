@@ -19,4 +19,5 @@ jobs:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FITNESSAI_STUDIO }}'
           channelId: live
-          projectId: fitnessai-studio
+          projectId: your-new-project-id
+
