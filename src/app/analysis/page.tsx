@@ -535,9 +535,12 @@ export default function AnalysisPage() {
 
     let workoutFrequencyData: ChartDataPoint[] = [];
     
+    // Define a more specific type for the keys of the unique exercises object.
+    type ExerciseCategoryKey = keyof Omit<ChartDataPoint, 'date' | 'dateLabel'>;
+
     // Helper function to process logs for a given period and return unique exercise counts
-    const getUniqueExerciseCounts = (logs: WorkoutLog[]) => {
-      const uniqueExercises: { [key in keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>]?: Set<string> } = {};
+    const getUniqueExerciseCounts = (logs: WorkoutLog[]): Partial<ChartDataPoint> => {
+      const uniqueExercises: { [key in ExerciseCategoryKey]?: Set<string> } = {};
       
       logs.forEach(log => {
         log.exercises.forEach(ex => {
@@ -549,9 +552,10 @@ export default function AnalysisPage() {
         });
       });
       
-      const counts: Partial<ChartDataPoint> = {};
+      const counts: { [key in ExerciseCategoryKey]?: number } = {};
       for (const category in uniqueExercises) {
-        counts[category as keyof typeof counts] = uniqueExercises[category as keyof typeof counts]!.size;
+          const catKey = category as ExerciseCategoryKey;
+          counts[catKey] = uniqueExercises[catKey]!.size;
       }
       return counts;
     };
