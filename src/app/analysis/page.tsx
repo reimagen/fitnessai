@@ -927,8 +927,8 @@ useEffect(() => {
                 })),
           },
           currentLevel: currentLiftLevel || undefined,
-          trendPercentage: trendImprovement,
-          volumeTrendPercentage: volumeTrend,
+          trendPercentage: trendImprovement ?? undefined,
+          volumeTrendPercentage: volumeTrend ?? undefined,
         }
     );
     
