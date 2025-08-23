@@ -36,12 +36,26 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
         return "Set your preferences in your profile to track weekly workout goals.";
     }
     const workoutsLeft = workoutGoal - completedThisWeek;
+    
+    // Day of the week (Sunday = 0, Saturday = 6)
+    const currentDayOfWeek = today.getDay(); 
+    // Days remaining in the week, including today.
+    // e.g., on Friday (5), days remaining is 7 - 5 = 2 (Friday, Saturday)
+    const daysRemaining = 7 - currentDayOfWeek;
+
     if (workoutsLeft <= 0) {
       return "Goal achieved! Great job this week!";
     }
+    
+    // New logic: Check if the goal is still achievable
+    if (workoutsLeft > daysRemaining) {
+      return "Missed the workout goal this week, try again next week!";
+    }
+
     if (workoutsLeft === 1) {
       return "Just 1 more workout to hit your goal!";
     }
+    
     return `You're ${workoutsLeft} workouts away from your goal. Keep going!`;
   };
 
