@@ -10,7 +10,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ text }) => {
     return null;
   }
 
-  const elements: JSX.Element[] = [];
+  const elements: React.JSX.Element[] = [];
   const lines = text.split('\n');
 
   // Regex to detect day headings like "**Monday: Upper Body**"
