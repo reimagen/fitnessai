@@ -1129,8 +1129,8 @@ useEffect(() => {
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
                                                 <div className="flex-grow">
-                                                    {isAnalysisLoading && dataFinding.userRatio ? (
-                                                        <div className="flex items-center justify-center text-muted-foreground">
+                                                    {isAnalysisLoading ? (
+                                                        <div className="flex items-center justify-center text-muted-foreground text-sm">
                                                             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                         </div>
                                                     ) : aiFinding ? (
@@ -1283,29 +1283,27 @@ useEffect(() => {
                     </div>
                 )}
 
-                 {(isProgressionLoading || progressionAnalysisToRender) && (
-                    <div className="pt-4 border-t">
-                        {isProgressionLoading ? (
-                            <div className="flex items-center justify-center text-muted-foreground p-4">
-                                <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
+                 <div className="pt-4 border-t">
+                    {isProgressionLoading ? (
+                        <div className="flex items-center justify-center text-muted-foreground p-4 text-sm">
+                            <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
+                        </div>
+                    ) : progressionAnalysisToRender ? (
+                        <div className="space-y-4">
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
+                                <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
                             </div>
-                        ) : progressionAnalysisToRender ? (
-                            <div className="space-y-4">
-                               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-                                    <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
-                                </div>
-                                <div>
-                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
-                                </div>
+                            <div>
+                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
                             </div>
-                        ) : null}
-                    </div>
-                 )}
+                            <div>
+                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
+                            </div>
+                        </div>
+                    ) : null}
+                 </div>
 
               </CardContent>
             </Card>
@@ -1314,5 +1312,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
