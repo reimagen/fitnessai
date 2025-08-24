@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression } from '@/lib/firestore.service';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput } from '@/lib/types';
+import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
 import { isWithinInterval } from 'date-fns/isWithinInterval';
 import { startOfWeek } from 'date-fns/startOfWeek';
@@ -30,8 +30,6 @@ import { differenceInDays } from 'date-fns/differenceInDays';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
-import { analyzeStrengthAction } from './actions';
-import { useToast } from '@/hooks/use-toast';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
@@ -270,8 +268,6 @@ export default function AnalysisPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('weekly');
-  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
-  const [latestAnalysis, setLatestAnalysis] = useState<StrengthImbalanceOutput | null>(null);
   
   const [selectedLift, setSelectedLift] = useState<string>('');
   const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
@@ -281,14 +277,16 @@ export default function AnalysisPage() {
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
   const isProfileNotFound = profileResult?.notFound === true;
+  
   const analyzeProgressionMutation = useAnalyzeLiftProgression();
+  const analyzeStrengthMutation = useAnalyzeStrength();
 
   const enableDataFetching = !isLoadingProfile && !!userProfile;
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   
-  const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
-  const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
+  const analysisToRender = userProfile?.strengthAnalysis?.result;
+  const generatedDate = userProfile?.strengthAnalysis?.generatedDate;
   
   const selectedLiftKey = getNormalizedExerciseName(selectedLift);
   const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
@@ -463,13 +461,11 @@ export default function AnalysisPage() {
         });
         return;
     }
-
-    setIsAnalysisLoading(true);
     
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
-    const analysisInput = {
+    const analysisInput: StrengthImbalanceInput = {
         clientSideFindings: validFindings,
         userProfile: {
             age: userProfile.age,
@@ -487,22 +483,7 @@ export default function AnalysisPage() {
         }
     };
 
-    const result = await analyzeStrengthAction(user.uid, analysisInput);
-
-    if (result.success && result.data) {
-      setLatestAnalysis(result.data);
-      toast({
-        title: "Analysis Complete",
-        description: result.data.summary || (result.data.findings.length > 0 ? "Potential areas for improvement found." : "Your strength appears well-balanced."),
-      });
-    } else {
-      toast({
-        title: "Analysis Failed",
-        description: result.error || "An unknown error occurred.",
-        variant: "destructive",
-      });
-    }
-    setIsAnalysisLoading(false);
+    analyzeStrengthMutation.mutate(analysisInput);
   };
   
 
@@ -1059,8 +1040,8 @@ useEffect(() => {
                               )}
                             </CardDescription>
                         </div>
-                        <Button onClick={handleAnalyzeStrength} disabled={isAnalysisLoading || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
-                            {isAnalysisLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                        <Button onClick={handleAnalyzeStrength} disabled={analyzeStrengthMutation.isPending || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
+                            {analyzeStrengthMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
                             {userProfile?.strengthAnalysis ? "Re-analyze Insights" : "Get AI Insights"}
                         </Button>
                     </div>
@@ -1113,7 +1094,7 @@ useEffect(() => {
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
                                                 <div className="flex-grow">
-                                                    {isAnalysisLoading ? (
+                                                    {analyzeStrengthMutation.isPending ? (
                                                         <div className="flex items-center justify-center text-muted-foreground text-sm">
                                                             <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
                                                         </div>
@@ -1292,3 +1273,5 @@ useEffect(() => {
     </div>
   );
 }
+
+    
