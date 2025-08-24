@@ -281,7 +281,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
   const recordDoc = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   
-  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get();
+  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get() as FirebaseFirestore.DocumentSnapshot<PersonalRecord>;
   const currentRecordData = currentRecordSnapshot.data();
 
   if (!currentRecordData) {
@@ -303,8 +303,6 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   const updatedRecordForCalc: PersonalRecord = {
       ...currentRecordData, // Start with the existing full record
       ...recordData,         // Apply the updates
-      id: currentRecordData.id, // Explicitly keep the original id
-      userId: currentRecordData.userId, // Explicitly keep the original userId
       date: dateForCalc,        // Use the correct date object
   };
   
