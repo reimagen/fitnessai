@@ -299,10 +299,13 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
     dateForCalc = recordData.date;
   }
 
-  const updatedRecordForCalc: PersonalRecord = { 
-    ...currentRecordData, 
-    ...recordData,
-    date: dateForCalc,
+  // Construct a full PR object for the strength level calculation, ensuring all required fields are present.
+  const updatedRecordForCalc: PersonalRecord = {
+      ...currentRecordData, // Start with the existing full record
+      ...recordData,         // Apply the updates
+      id: currentRecordData.id, // Explicitly keep the original id
+      userId: currentRecordData.userId, // Explicitly keep the original userId
+      date: dateForCalc,        // Use the correct date object
   };
   
   const userProfile = await getUserProfile(userId);
