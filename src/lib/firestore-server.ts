@@ -1,7 +1,7 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
-import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
@@ -281,7 +281,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
   const recordDoc = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   
-  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get() as FirebaseFirestore.DocumentSnapshot<PersonalRecord>;
+  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get() as DocumentSnapshot<PersonalRecord>;
   const currentRecordData = currentRecordSnapshot.data();
 
   if (!currentRecordData) {
@@ -333,7 +333,7 @@ export const clearAllPersonalRecords = async (userId: string): Promise<void> => 
 
 // User Profile
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
-    const profileDocRef = adminDb.collection('users').doc(userId).withConverter(userProfileConverter);
+    const profileDocRef = adminDb.collection('users').doc(userId).withConverter(userProfileConverter) as FirebaseFirestore.DocumentReference<UserProfile>;
 
     try {
         const docSnap = await profileDocRef.get();
