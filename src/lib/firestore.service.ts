@@ -19,7 +19,8 @@ import {
     updateUserProfile,
     analyzeLiftProgressionAction,
 } from '@/app/profile/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput } from './types';
+import { analyzeStrengthAction } from '@/app/analysis/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput } from './types';
 import { useAuth } from './auth.service';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -185,7 +186,6 @@ export function useAnalyzeLiftProgression() {
             }),
         onSuccess: () => {
             toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
-            // This is the key step: invalidate the profile to refetch the new analysis.
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
         },
         onError: (error) => {
@@ -193,3 +193,28 @@ export function useAnalyzeLiftProgression() {
         }
     });
 }
+
+export function useAnalyzeStrength() {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    return useMutation<void, Error, StrengthImbalanceInput>({
+        mutationFn: (values: StrengthImbalanceInput) =>
+            analyzeStrengthAction(user!.uid, values).then(result => {
+                if (!result.success) {
+                    throw new Error(result.error || "An unknown error occurred during strength analysis.");
+                }
+                return;
+            }),
+        onSuccess: () => {
+            toast({ title: "Strength Analysis Complete!", description: "Your AI-powered insights have been generated." });
+            queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+        },
+        onError: (error) => {
+            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+        },
+    });
+}
+
+    

@@ -1,5 +1,4 @@
 
-
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
@@ -42,6 +41,36 @@ export interface StoredStrengthAnalysis {
   result: StrengthImbalanceOutput;
   generatedDate: Date;
 }
+
+export interface StrengthImbalanceInput {
+  clientSideFindings: {
+      imbalanceType: string;
+      lift1Name: string;
+      lift1Weight: number;
+      lift1Unit: "kg" | "lbs";
+      lift1Level: StrengthLevel;
+      lift2Name: string;
+      lift2Weight: number;
+      lift2Unit: "kg" | "lbs";
+      lift2Level: StrengthLevel;
+      userRatio: string;
+      targetRatio: string;
+      imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
+  }[];
+  userProfile: {
+      age?: number;
+      gender?: string;
+      weightValue?: number;
+      weightUnit?: 'kg' | 'lbs';
+      skeletalMuscleMassValue?: number;
+      skeletalMuscleMassUnit?: 'kg' | 'lbs';
+      fitnessGoals?: {
+          description: string;
+          isPrimary?: boolean;
+      }[];
+  };
+}
+
 
 export interface AnalyzeLiftProgressionInput {
   exerciseName: string;
@@ -156,3 +185,5 @@ export interface AggregatedWorkoutDaySummary {
   totalReps: number;
   categories: Record<string, number>;
 }
+
+    
