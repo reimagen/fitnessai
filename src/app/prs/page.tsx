@@ -215,7 +215,7 @@ export default function MilestonesPage() {
 
   const categoryOrder: ExerciseCategory[] = ['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Cardio', 'Other'];
 
-  const levelToBadgeVariant = (level: StrengthLevel | null | undefined) => {
+  const levelToBadgeVariant = (level: StrengthLevel | null | undefined): 'secondary' | 'default' | 'destructive' | 'outline' | 'accent' => {
     switch (level) {
       case 'Beginner': return 'destructive';
       case 'Intermediate': return 'secondary';
@@ -417,7 +417,7 @@ export default function MilestonesPage() {
                                   const nextLevel = levelOrder[currentLevelIndex + 1];
                                   
                                   const currentThreshold = level === 'Beginner' ? 0 : thresholds[level.toLowerCase() as keyof typeof thresholds];
-                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof thresholds];
+                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof typeof thresholds];
                                   
                                   if (record.weight < nextThreshold) {
                                     const range = nextThreshold - currentThreshold;
@@ -592,5 +592,3 @@ export default function MilestonesPage() {
   );
 }
  
-
-    
