@@ -45,9 +45,17 @@ export async function analyzeLiftProgressionAction(
     };
 
     const exerciseKey = getNormalizedExerciseName(values.exerciseName);
-    await updateUserProfileFromServer(userId, { 
-      [`liftProgressionAnalysis.${exerciseKey}`]: storedAnalysis 
-    });
+
+    // This is the corrected part. We create a proper nested object structure
+    // instead of using dot notation in the field name, which Firestore
+    // interprets as a literal string.
+    const updatePayload = {
+      liftProgressionAnalysis: {
+        [exerciseKey]: storedAnalysis
+      }
+    };
+    
+    await updateUserProfileFromServer(userId, updatePayload);
 
     return { success: true, data: analysisData };
   } catch (error) {
