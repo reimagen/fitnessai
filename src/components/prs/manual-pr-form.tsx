@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { startOfDay } from 'date-fns';
-import { classifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
+import { classifiedExercises, getExerciseCategory, getNormalizedExerciseName } from "@/lib/strength-standards";
 import { StepperInput } from "../ui/stepper-input";
 
 const manualPrSchema = z.object({
@@ -42,7 +43,7 @@ const toTitleCase = (str: string) => {
 };
 
 // Filter the exercise list to hide aliases from the dropdown
-const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown", "squat"];
+const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown", "squat", "biceps curl"];
 const exercisesForDropdown = classifiedExercises.filter(
   (exercise) => !exercisesToHide.includes(exercise)
 );
@@ -61,9 +62,10 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   function onSubmit(values: ManualPrFormData) {
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
     const category = getExerciseCategory(values.exerciseName);
+    const canonicalName = getNormalizedExerciseName(values.exerciseName);
 
     onAdd({
-      exerciseName: values.exerciseName,
+      exerciseName: canonicalName,
       weight: values.weight,
       weightUnit: values.weightUnit,
       date: normalizedDate,

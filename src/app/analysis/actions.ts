@@ -5,6 +5,7 @@ import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthIm
 import { analyzeLiftProgression, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { updateUserProfile } from "@/lib/firestore-server";
 import type { StoredStrengthAnalysis, StoredLiftProgressionAnalysis } from "@/lib/types";
+import { getNormalizedExerciseName } from "@/lib/strength-standards";
 
 
 export async function analyzeStrengthAction(
@@ -71,7 +72,7 @@ export async function analyzeLiftProgressionAction(
 
     // Save the analysis to the specific exercise key in the user's profile using dot notation
     // This ensures we don't overwrite the entire map of analyses.
-    const exerciseKey = values.exerciseName.trim().toLowerCase();
+    const exerciseKey = getNormalizedExerciseName(values.exerciseName);
     await updateUserProfile(userId, { 
       [`liftProgressionAnalysis.${exerciseKey}`]: storedAnalysis 
     });

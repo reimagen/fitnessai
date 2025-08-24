@@ -32,7 +32,7 @@ import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
 import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
-import { getStrengthLevel, getStrengthThresholds } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
@@ -48,12 +48,6 @@ const IMBALANCE_TYPES = [
 type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
-const LIFT_NAME_ALIASES: Record<string, string> = {
-  'lat pull': 'lat pulldown',
-  'biceps curl': 'bicep curl',
-  'reverse fly': 'reverse flys',
-};
-
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
     'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
@@ -65,7 +59,7 @@ const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Opt
 function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
     let searchNames = [...exerciseNames];
     
-    const relevantRecords = records.filter(r => searchNames.some(name => r.exerciseName.trim().toLowerCase() === name.trim().toLowerCase()));
+    const relevantRecords = records.filter(r => searchNames.some(name => getNormalizedExerciseName(r.exerciseName) === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;
 
     return relevantRecords.reduce((best, current) => {
@@ -297,7 +291,8 @@ export default function AnalysisPage() {
   const analysisToRender = latestAnalysis || userProfile?.strengthAnalysis?.result;
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
-  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLift.trim().toLowerCase()] || userProfile?.liftProgressionAnalysis?.[selectedLift.trim().toLowerCase()];
+  const selectedLiftKey = getNormalizedExerciseName(selectedLift);
+  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLiftKey] || userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
 
 
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
@@ -733,7 +728,7 @@ export default function AnalysisPage() {
       if (!isAfter(log.date, sixWeeksAgo)) return;
 
       log.exercises.forEach(ex => {
-        if (ex.name.trim().toLowerCase() === selectedLift && ex.weight && ex.reps && ex.sets) {
+        if (getNormalizedExerciseName(ex.name) === selectedLiftKey && ex.weight && ex.reps && ex.sets) {
           const dateKey = format(log.date, 'yyyy-MM-dd');
           const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
           const currentE1RM = calculateE1RM(weightInLbs, ex.reps);
@@ -757,7 +752,7 @@ export default function AnalysisPage() {
     });
     
     const bestPR = personalRecords
-        ?.filter(pr => pr.exerciseName.trim().toLowerCase() === selectedLift)
+        ?.filter(pr => getNormalizedExerciseName(pr.exerciseName) === selectedLiftKey)
         .reduce((max, pr) => {
             const maxWeightLbs = max.weightUnit === 'kg' ? max.weight * 2.20462 : max.weight;
             const prWeightLbs = pr.weightUnit === 'kg' ? pr.weight * 2.20462 : pr.weight;
@@ -820,7 +815,7 @@ export default function AnalysisPage() {
     }
     
     return { chartData, trendlineData };
-}, [selectedLift, workoutLogs, personalRecords]);
+}, [selectedLift, selectedLiftKey, workoutLogs, personalRecords]);
 
 useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
@@ -831,9 +826,7 @@ useEffect(() => {
     }
     
     if (userProfile && personalRecords) {
-        const normalizedLiftName = selectedLift.trim().toLowerCase();
-        const prName = LIFT_NAME_ALIASES[normalizedLiftName] || normalizedLiftName;
-        const bestPRforLift = findBestPr(personalRecords, [prName]);
+        const bestPRforLift = findBestPr(personalRecords, [selectedLiftKey]);
 
         if (bestPRforLift) {
             setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
@@ -877,7 +870,7 @@ useEffect(() => {
     setTrendImprovement(calculateTrend('e1RM'));
     setVolumeTrend(calculateTrend('volume'));
 
-}, [selectedLift, progressionChartData, personalRecords, userProfile]);
+}, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
     if (!user) {
@@ -896,7 +889,7 @@ useEffect(() => {
       .filter(log => isAfter(log.date, sixWeeksAgo))
       .flatMap(log => 
         log.exercises
-          .filter(ex => ex.name.trim().toLowerCase() === selectedLift)
+          .filter(ex => getNormalizedExerciseName(ex.name) === selectedLiftKey)
           .map(ex => ({
             date: log.date.toISOString(),
             weight: ex.weight || 0,
@@ -908,7 +901,7 @@ useEffect(() => {
     const result = await analyzeLiftProgressionAction(
         user.uid,
         {
-          exerciseName: selectedLift,
+          exerciseName: selectedLift, // Send the original name for the AI's context
           exerciseHistory,
           userProfile: {
               age: userProfile.age,
@@ -935,7 +928,7 @@ useEffect(() => {
     if (result.success && result.data) {
         setLatestProgressionAnalysis(prev => ({
             ...prev,
-            [selectedLift.trim().toLowerCase()]: { result: result.data!, generatedDate: new Date() }
+            [selectedLiftKey]: { result: result.data!, generatedDate: new Date() }
         }));
         toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
     } else {

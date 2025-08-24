@@ -11,6 +11,7 @@ import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
+import { getNormalizedExerciseName } from "@/lib/strength-standards";
 
 type PrUploaderFormProps = {
   onParse: (data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
@@ -53,8 +54,15 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
     const result = await onParse({ photoDataUri: previewUrl });
 
     if (result.success && result.data) {
-        setParsedResult(result.data);
-        onParsedData(result.data);
+        // Normalize exercise names before passing them on
+        const normalizedData: ParsePersonalRecordsOutput = {
+            records: result.data.records.map(rec => ({
+                ...rec,
+                exerciseName: getNormalizedExerciseName(rec.exerciseName),
+            })),
+        };
+        setParsedResult(normalizedData);
+        onParsedData(normalizedData);
     } else {
       setError(result.error || "Failed to parse screenshot.");
     }

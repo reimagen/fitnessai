@@ -143,14 +143,6 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
       'Female': { intermediate: 0.50, advanced: 0.85, elite: 1.20 },
     },
   },
-  'reverse fly': {
-    type: 'bw',
-    category: 'Upper Body',
-    standards: {
-      'Male': { intermediate: 0.25, advanced: 0.40, elite: 0.60 },
-      'Female': { intermediate: 0.20, advanced: 0.35, elite: 0.55 },
-    },
-  },
   'reverse flys': {
     type: 'bw',
     category: 'Upper Body',
@@ -191,22 +183,6 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
       'Female': { intermediate: 1.0, advanced: 1.5, elite: 2.0 },
     },
   },
-  'tricep extension': {
-    type: 'bw',
-    category: 'Upper Body',
-    standards: {
-      'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
-      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.50 },
-    },
-  },
-  'tricep pushdown': {
-    type: 'bw',
-    category: 'Upper Body',
-    standards: {
-      'Male':   { intermediate: 0.50, advanced: 0.75, elite: 1.0 },
-      'Female': { intermediate: 0.75, advanced: 1.25, elite: 1.50 },
-    },
-  },
   'triceps': {
     type: 'bw',
     category: 'Upper Body',
@@ -216,6 +192,30 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
     },
   },
 };
+
+/**
+ * A map of common exercise name variations to their canonical names.
+ */
+export const LIFT_NAME_ALIASES: Record<string, string> = {
+  'lat pull': 'lat pulldown',
+  'biceps curl': 'bicep curl',
+  'reverse fly': 'reverse flys',
+  'tricep extension': 'triceps',
+  'tricep pushdown': 'triceps',
+  'squats': 'squat',
+};
+
+/**
+ * Normalizes an exercise name by converting it to lowercase and checking for aliases.
+ * @param name The raw exercise name.
+ * @returns The normalized, canonical exercise name.
+ */
+export function getNormalizedExerciseName(name: string): string {
+  if (!name) return "";
+  const lowerCaseName = name.trim().toLowerCase();
+  return LIFT_NAME_ALIASES[lowerCaseName] || lowerCaseName;
+}
+
 
 /**
  * An exported array of all exercise names that have strength standards.
@@ -228,7 +228,8 @@ export const classifiedExercises = Object.keys(strengthStandards).sort();
  * @returns The ExerciseCategory or null if not found.
  */
 export function getExerciseCategory(exerciseName: string): ExerciseCategory | null {
-  const exerciseData = strengthStandards[exerciseName.trim().toLowerCase()];
+  const normalizedName = getNormalizedExerciseName(exerciseName);
+  const exerciseData = strengthStandards[normalizedName];
   return exerciseData ? exerciseData.category : null;
 }
 
@@ -240,7 +241,8 @@ export function getExerciseCategory(exerciseName: string): ExerciseCategory | nu
 export function getStrengthStandardType(
   exerciseName: string
 ): 'smm' | 'bw' | null {
-  const exerciseData = strengthStandards[exerciseName.trim().toLowerCase()];
+  const normalizedName = getNormalizedExerciseName(exerciseName);
+  const exerciseData = strengthStandards[normalizedName];
   if (!exerciseData) {
     return null;
   }
@@ -258,9 +260,9 @@ export function getStrengthLevel(
   record: PersonalRecord,
   profile: UserProfile
 ): StrengthLevel {
-  const exerciseName = record.exerciseName.trim().toLowerCase();
+  const normalizedName = getNormalizedExerciseName(record.exerciseName);
   
-  const exerciseData = strengthStandards[exerciseName];
+  const exerciseData = strengthStandards[normalizedName];
   if (!exerciseData) {
     return 'N/A'; // No standards available for this exercise
   }
@@ -324,9 +326,9 @@ export function getStrengthThresholds(
   profile: UserProfile,
   outputUnit: 'lbs' | 'kg'
 ): { intermediate: number; advanced: number; elite: number } | null {
-  const exerciseNameToUse = exerciseName.trim().toLowerCase();
+  const normalizedName = getNormalizedExerciseName(exerciseName);
 
-  const exerciseData = strengthStandards[exerciseNameToUse];
+  const exerciseData = strengthStandards[normalizedName];
   if (!exerciseData) {
     return null; // No standards available for this exercise
   }
