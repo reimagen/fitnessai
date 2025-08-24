@@ -14,10 +14,15 @@ import {
     updatePersonalRecord,
     clearAllPersonalRecords,
 } from '@/app/prs/actions';
-import { getUserProfile, updateUserProfile } from '@/app/profile/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile } from './types';
+import {
+    getUserProfile,
+    updateUserProfile,
+    analyzeLiftProgressionAction,
+} from '@/app/profile/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput } from './types';
 import { useAuth } from './auth.service';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 
 // --- React Query Hooks ---
@@ -164,4 +169,27 @@ export function useUpdateUserProfile() {
             queryClient.invalidateQueries({ queryKey: ['prs', user?.uid] });
         }
     })
+}
+
+export function useAnalyzeLiftProgression() {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    return useMutation<void, Error, AnalyzeLiftProgressionInput>({
+        mutationFn: (values: AnalyzeLiftProgressionInput) => 
+            analyzeLiftProgressionAction(user!.uid, values).then(result => {
+                if (!result.success) {
+                    throw new Error(result.error || "An unknown error occurred during analysis.");
+                }
+            }),
+        onSuccess: () => {
+            toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
+            // This is the key step: invalidate the profile to refetch the new analysis.
+            queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+        },
+        onError: (error) => {
+            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+        }
+    });
 }

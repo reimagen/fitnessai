@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput } from '@/lib/types';
+import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
 import { isWithinInterval } from 'date-fns/isWithinInterval';
 import { startOfWeek } from 'date-fns/startOfWeek';
@@ -30,7 +30,7 @@ import { differenceInDays } from 'date-fns/differenceInDays';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
-import { analyzeStrengthAction, analyzeLiftProgressionAction } from './actions';
+import { analyzeStrengthAction } from './actions';
 import { useToast } from '@/hooks/use-toast';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
@@ -274,8 +274,6 @@ export default function AnalysisPage() {
   const [latestAnalysis, setLatestAnalysis] = useState<StrengthImbalanceOutput | null>(null);
   
   const [selectedLift, setSelectedLift] = useState<string>('');
-  const [isProgressionLoading, setIsProgressionLoading] = useState(false);
-  const [latestProgressionAnalysis, setLatestProgressionAnalysis] = useState<Record<string, StoredLiftProgressionAnalysis>>({});
   const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
   const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
   const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
@@ -283,6 +281,7 @@ export default function AnalysisPage() {
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
   const isProfileNotFound = profileResult?.notFound === true;
+  const analyzeProgressionMutation = useAnalyzeLiftProgression();
 
   const enableDataFetching = !isLoadingProfile && !!userProfile;
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
@@ -292,7 +291,7 @@ export default function AnalysisPage() {
   const generatedDate = latestAnalysis ? new Date() : userProfile?.strengthAnalysis?.generatedDate;
   
   const selectedLiftKey = getNormalizedExerciseName(selectedLift);
-  const progressionAnalysisToRender = latestProgressionAnalysis[selectedLiftKey] || userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
+  const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
 
 
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
@@ -881,8 +880,6 @@ useEffect(() => {
         toast({ title: "Missing Data", description: "Cannot run analysis without user profile, logs, and a selected lift.", variant: "destructive" });
         return;
     }
-    
-    setIsProgressionLoading(true);
 
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const exerciseHistory = workoutLogs
@@ -898,44 +895,31 @@ useEffect(() => {
           }))
       );
 
-    const result = await analyzeLiftProgressionAction(
-        user.uid,
-        {
-          exerciseName: selectedLift, // Send the original name for the AI's context
-          exerciseHistory,
-          userProfile: {
-              age: userProfile.age,
-              gender: userProfile.gender,
-              heightValue: userProfile.heightValue,
-              heightUnit: userProfile.heightUnit,
-              weightValue: userProfile.weightValue,
-              weightUnit: userProfile.weightUnit,
-              skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-              skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-              fitnessGoals: (userProfile.fitnessGoals || [])
-                .filter(g => !g.achieved)
-                .map(g => ({
-                  description: g.description,
-                  isPrimary: g.isPrimary || false,
-                })),
-          },
-          currentLevel: currentLiftLevel || undefined,
-          trendPercentage: trendImprovement ?? undefined,
-          volumeTrendPercentage: volumeTrend ?? undefined,
-        }
-    );
+    const analysisInput: AnalyzeLiftProgressionInput = {
+        exerciseName: selectedLift, // Send the original name for the AI's context
+        exerciseHistory,
+        userProfile: {
+            age: userProfile.age,
+            gender: userProfile.gender,
+            heightValue: userProfile.heightValue,
+            heightUnit: userProfile.heightUnit,
+            weightValue: userProfile.weightValue,
+            weightUnit: userProfile.weightUnit,
+            skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+            skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+            fitnessGoals: (userProfile.fitnessGoals || [])
+              .filter(g => !g.achieved)
+              .map(g => ({
+                description: g.description,
+                isPrimary: g.isPrimary || false,
+              })),
+        },
+        currentLevel: currentLiftLevel || undefined,
+        trendPercentage: trendImprovement ?? undefined,
+        volumeTrendPercentage: volumeTrend ?? undefined,
+    };
     
-    if (result.success && result.data) {
-        setLatestProgressionAnalysis(prev => ({
-            ...prev,
-            [selectedLiftKey]: { result: result.data!, generatedDate: new Date() }
-        }));
-        toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
-    } else {
-        toast({ title: "Analysis Failed", description: result.error || "An unknown error occurred.", variant: "destructive" });
-    }
-
-    setIsProgressionLoading(false);
+    analyzeProgressionMutation.mutate(analysisInput);
   };
 
   const focusBadgeProps = (focus: ImbalanceFocus): { variant: 'secondary' | 'default' | 'destructive', text: string } => {
@@ -1218,8 +1202,8 @@ useEffect(() => {
                             )}
                         </SelectContent>
                     </Select>
-                     <Button onClick={handleAnalyzeProgression} disabled={!selectedLift || isProgressionLoading} className="w-full sm:w-auto">
-                        {isProgressionLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                     <Button onClick={handleAnalyzeProgression} disabled={!selectedLift || analyzeProgressionMutation.isPending} className="w-full sm:w-auto">
+                        {analyzeProgressionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
                         {showProgressionReanalyze ? "Re-analyze" : "Get AI Progression Analysis"}
                     </Button>
                 </div>
@@ -1280,7 +1264,7 @@ useEffect(() => {
                 )}
 
                  <div className="pt-4 border-t">
-                    {isProgressionLoading ? (
+                    {analyzeProgressionMutation.isPending ? (
                         <div className="flex items-center justify-center text-muted-foreground p-4 text-sm">
                             <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
                         </div>
@@ -1308,5 +1292,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
