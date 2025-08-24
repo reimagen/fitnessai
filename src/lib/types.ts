@@ -43,6 +43,34 @@ export interface StoredStrengthAnalysis {
   generatedDate: Date;
 }
 
+export interface AnalyzeLiftProgressionInput {
+  exerciseName: string;
+  exerciseHistory: {
+    date: string;
+    weight: number;
+    sets: number;
+    reps: number;
+  }[];
+  userProfile: {
+    age?: number;
+    gender?: string;
+    heightValue?: number;
+    heightUnit?: 'cm' | 'ft/in';
+    weightValue?: number;
+    weightUnit?: 'kg' | 'lbs';
+    skeletalMuscleMassValue?: number;
+    skeletalMuscleMassUnit?: 'kg' | 'lbs';
+    fitnessGoals?: {
+      description: string;
+      isPrimary?: boolean;
+    }[];
+  };
+  currentLevel?: StrengthLevel;
+  trendPercentage?: number;
+  volumeTrendPercentage?: number;
+}
+
+
 export interface AnalyzeLiftProgressionOutput {
   insight: string;
   recommendation: string;
