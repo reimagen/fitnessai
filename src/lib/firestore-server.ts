@@ -12,9 +12,9 @@ import { cache } from 'react';
 // and our application's data format (e.g., JavaScript Date objects).
 
 const workoutLogConverter = {
-  toFirestore: (log: Omit<WorkoutLog, 'id'>) => {
+  toFirestore: (log: Omit<WorkoutLog, 'id' | 'userId'>) => {
     // The userId is part of the path, so it doesn't need to be in the document data.
-    const { userId, ...rest } = log;
+    const { ...rest } = log;
     return {
       ...rest,
       date: Timestamp.fromDate(log.date),
@@ -195,7 +195,7 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 // --- Firestore Service Functions ---
 
 export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<WorkoutLog[]> => {
-  const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
+  const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
   const baseQuery = workoutLogsCollection;
@@ -231,7 +231,7 @@ export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<W
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
     const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
-    const docRef = await workoutLogsCollection.add(log as Omit<WorkoutLog, 'id'>);
+    const docRef = await workoutLogsCollection.add(log);
     return { id: docRef.id };
 };
 
