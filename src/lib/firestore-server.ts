@@ -252,7 +252,7 @@ export const deleteWorkoutLog = async (userId: string, id: string): Promise<void
 
 // Personal Records
 export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
-  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
+  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
   const q = personalRecordsCollection.orderBy('exerciseName', 'asc');
   const snapshot = await q.get();
   // Using the converter ensures that the id and userId are correctly populated.
