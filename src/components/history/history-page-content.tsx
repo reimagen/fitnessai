@@ -24,6 +24,7 @@ import { ErrorState } from "../shared/ErrorState";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
+import { getNormalizedExerciseName } from "@/lib/strength-standards";
 
 
 const CATEGORY_OPTIONS: ExerciseCategory[] = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'];
@@ -137,7 +138,7 @@ export function HistoryPageContent() {
     const parsedExercises: Exercise[] = parsedData.exercises.map(ex => {
         const exercise: Exercise = {
             id: Math.random().toString(36).substring(2, 9),
-            name: ex.name,
+            name: getNormalizedExerciseName(ex.name),
             sets: ex.sets ?? 0,
             reps: ex.reps ?? 0,
             weight: ex.weight ?? 0,
