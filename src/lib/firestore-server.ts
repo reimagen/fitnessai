@@ -112,10 +112,12 @@ const userProfileConverter = {
             const convertedAnalyses: { [key: string]: any } = {};
             for (const key in profile.liftProgressionAnalysis) {
                 const analysis = profile.liftProgressionAnalysis[key];
-                convertedAnalyses[key] = {
-                    ...analysis,
-                    generatedDate: Timestamp.fromDate(analysis.generatedDate),
-                };
+                if (analysis && analysis.generatedDate) {
+                    convertedAnalyses[key] = {
+                        ...analysis,
+                        generatedDate: Timestamp.fromDate(analysis.generatedDate),
+                    };
+                }
             }
             dataToStore.liftProgressionAnalysis = convertedAnalyses;
         }
@@ -253,6 +255,7 @@ export const getPersonalRecords = cache(async (userId: string): Promise<Personal
   const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
   const q = personalRecordsCollection.orderBy('exerciseName', 'asc');
   const snapshot = await q.get();
+  // Using the converter ensures that the id and userId are correctly populated.
   return snapshot.docs.map(doc => doc.data());
 });
 
@@ -410,14 +413,3 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 };
-
-    
-
-    
-
-
-
-
-
-
-
