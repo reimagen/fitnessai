@@ -34,6 +34,7 @@ import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } fr
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 
 const IMBALANCE_TYPES = [
@@ -1273,5 +1274,3 @@ useEffect(() => {
     </div>
   );
 }
-
-    
