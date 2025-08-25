@@ -1,25 +1,43 @@
 
 name: Deploy to Firebase Hosting on merge to main
-'on':
+
+on:
   pull_request:
-    types:
-      - closed
-    branches:
-      - main
+    types: [closed]
+    branches: [main]
+  push:
+    branches: [main]
+
 jobs:
   build_and_deploy:
-    if: github.event.pull_request.merged == true
+    if: (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || (github.event_name == 'push')
     runs-on: ubuntu-latest
     permissions:
       checks: write
       contents: read
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - run: npm install
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
       - name: Create .env.production.local file
-        run: echo "${{ secrets.ENV_PRODUCTION }}" > .env.production.local
-      - run: npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+        run: printf "%s" "${{ secrets.ENV_PRODUCTION }}" > .env.production.local
+
+      - name: Build application
+        run: npm run build
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_FITNESSAI_PROD }}'
