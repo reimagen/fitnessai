@@ -45,4 +45,3 @@ jobs:
           projectId: fitnessai-prod
         env:
           FIREBASE_CLI_EXPERIMENTS: webframeworks
-
