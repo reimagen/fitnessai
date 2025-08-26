@@ -5,7 +5,7 @@ import { getAuth } from "firebase/auth";
 
 // This configuration is for the PRODUCTION environment.
 // It will be used when the app is deployed to Firebase Hosting.
-// The environment variables are set directly on the Firebase environment.
+// The environment variables are loaded from .env.production.local during the build process.
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -16,7 +16,7 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 // This configuration is for the DEVELOPMENT environment.
-// It is loaded from the .env.local file and is NOT committed to version control.
+// It is loaded from the .env.development.local file.
 const firebaseConfigDev: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY_DEV,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN_DEV,
