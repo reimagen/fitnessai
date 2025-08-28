@@ -22,14 +22,14 @@ export default function PendingAccessPage() {
             </header>
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Access Pending</CardTitle>
+                    <CardTitle className="font-headline text-2xl">Access Restricted</CardTitle>
                     <CardDescription>
-                        Thank you for your interest! Access to this application is currently limited to whitelisted users.
+                        Thank you for your interest! Access to this application is currently limited to approved users.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <p className="text-sm text-muted-foreground">
-                        If you believe you should have access or would like to request it, please fill out our access request form. Your account <span className="font-semibold text-primary">{user?.email}</span> is ready and will be enabled upon approval.
+                        To request access, please fill out the form below. If your request is approved, your account for <span className="font-semibold text-primary">{user?.email}</span> will be enabled.
                     </p>
                     <div className="space-y-6">
                         <Link href={ACCESS_REQUEST_FORM_URL} target="_blank" passHref>
@@ -38,9 +38,6 @@ export default function PendingAccessPage() {
                                 Request Access
                             </Button>
                         </Link>
-                        <Button variant="outline" className="w-full" onClick={signOut}>
-                            <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                        </Button>
                     </div>
                 </CardContent>
             </Card>
