@@ -17,7 +17,7 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
 
   try {
     const whitelistCollection = adminDb.collection('whitelist');
-    const docRef = whitelistCollection.doc(email.toLowerCase()); // Use lowercase email as document ID for consistency
+    const docRef = whitelistCollection.doc(email); // Use the exact email as the document ID
     const docSnap = await docRef.get();
 
     return docSnap.exists;
