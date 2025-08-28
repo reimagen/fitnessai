@@ -3,7 +3,7 @@
 
 import { auth } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
-import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 // Define the shape of the context value
@@ -13,6 +13,7 @@ interface AuthContextType {
   signUpWithEmail: (email:string, password:string) => Promise<void>;
   signInWithEmail: (email:string, password:string) => Promise<void>;
   signOut: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
 }
 
 // Create the context with a default value of null
@@ -44,8 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = async () => {
       await signOut(auth);
   }
+  
+  const sendPasswordReset = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
+  };
 
-  const value: AuthContextType = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser };
+  const value: AuthContextType = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser, sendPasswordReset };
 
   return (
     <AuthContext.Provider value={value}>

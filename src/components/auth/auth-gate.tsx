@@ -1,36 +1,80 @@
+
 "use client";
 
 import { useAuth } from "@/lib/auth.service";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
+import { isEmailWhitelisted } from "@/lib/whitelist-server";
 
 const PUBLIC_ROUTES = ["/signin"];
+const PENDING_ROUTE = "/pending";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
+  const [isCheckingWhitelist, setIsCheckingWhitelist] = useState(false);
 
   useEffect(() => {
-    // If loading is finished, check authentication status
-    if (!isLoading) {
-      const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+    // If auth is finished loading and there is a user
+    if (!isLoading && user?.email) {
+      // Avoid re-checking if we already have the status
+      if (isWhitelisted === null) {
+        setIsCheckingWhitelist(true);
+        isEmailWhitelisted(user.email).then(status => {
+          setIsWhitelisted(status);
+          setIsCheckingWhitelist(false);
+        });
+      }
+    } else if (!isLoading && !user) {
+      // Clear whitelist status on sign-out
+      setIsWhitelisted(null);
+    }
 
-      // If there's no user and the current route is not public, redirect to sign-in
-      if (!user && !isPublicRoute) {
+  }, [user, isLoading, isWhitelisted]);
+
+  useEffect(() => {
+    // Don't perform redirects until all loading is complete
+    if (isLoading || isCheckingWhitelist) {
+      return;
+    }
+
+    const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+    const isPendingRoute = pathname === PENDING_ROUTE;
+
+    // --- Redirection Logic ---
+
+    // 1. No User Logic
+    if (!user) {
+      if (!isPublicRoute) {
         router.push("/signin");
       }
-
-      // If there is a user and they are on a public route (like sign-in), redirect to home
-      if (user && isPublicRoute) {
-        router.push("/");
-      }
+      return;
     }
-  }, [user, isLoading, router, pathname]);
+    
+    // --- User is Authenticated from here on ---
 
-  // While loading authentication state, show a full-page loader
-  if (isLoading) {
+    // 2. User is on a public route (e.g., /signin), redirect away.
+    if (isPublicRoute) {
+      router.push("/");
+      return;
+    }
+
+    // 3. Whitelist Check
+    if (isWhitelisted === false && !isPendingRoute) {
+      // If user is not whitelisted and not on the pending page, redirect them.
+      router.push(PENDING_ROUTE);
+    } else if (isWhitelisted === true && isPendingRoute) {
+      // If a whitelisted user somehow lands on the pending page, move them home.
+      router.push("/");
+    }
+
+  }, [user, isLoading, isWhitelisted, isCheckingWhitelist, router, pathname]);
+
+  // While loading authentication state or whitelist status, show a full-page loader
+  if (isLoading || isCheckingWhitelist) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -38,15 +82,31 @@ export function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
-  // If there's a user or the route is public, render the children
-  if (user || PUBLIC_ROUTES.includes(pathname)) {
+  // --- Render Logic ---
+
+  // Allow public routes to render immediately if auth is done.
+  if (PUBLIC_ROUTES.includes(pathname)) {
     return <>{children}</>;
   }
+  
+  // If user is logged in, but not whitelisted, only allow the pending page to render
+  if (user && !isWhitelisted) {
+      return pathname === PENDING_ROUTE ? <>{children}</> : (
+          <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
+  
+  // If user is logged in and whitelisted, render any protected page
+  if (user && isWhitelisted) {
+      return <>{children}</>;
+  }
 
-  // If no user on a protected route, show a loader while redirecting
+  // Fallback loader during redirects
   return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+    <div className="flex h-screen w-full items-center justify-center bg-background">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
+  );
 }
