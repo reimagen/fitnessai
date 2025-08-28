@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth.service";
-import { Send, LogOut } from "lucide-react";
+import { Send, LogIn } from "lucide-react";
 import Link from "next/link";
 
 // Form for non-whitelist attempted signups
@@ -36,8 +36,8 @@ export default function PendingAccessPage() {
                             </Button>
                         </Link>
                         <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                            <LogOut className="mr-2" />
-                            Sign Out
+                            <LogIn className="mr-2" />
+                            Back to Sign In
                         </Button>
                     </div>
                 </CardContent>
