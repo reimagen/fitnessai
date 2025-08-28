@@ -8,7 +8,7 @@ import { LogOut, Send } from "lucide-react";
 import Link from "next/link";
 
 // IMPORTANT: Replace this with the actual URL of your Google Form or Typeform.
-const ACCESS_REQUEST_FORM_URL = "https://forms.gle/your-form-id-here";
+const ACCESS_REQUEST_FORM_URL = "https://forms.gle/Xk89AEvt1qCC2wCEA";
 
 export default function PendingAccessPage() {
   const { signOut, user } = useAuth();
