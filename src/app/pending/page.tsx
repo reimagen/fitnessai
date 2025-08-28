@@ -7,8 +7,8 @@ import { useAuth } from "@/lib/auth.service";
 import { LogOut, Send } from "lucide-react";
 import Link from "next/link";
 
-// IMPORTANT: Replace this with the actual URL of your Google Form or Typeform.
-const ACCESS_REQUEST_FORM_URL = "https://forms.gle/Xk89AEvt1qCC2wCEA";
+// Form for non-whitelist attempted signups
+const ACCESS_REQUEST_FORM_URL = "https://forms.fillout.com/t/3TWB1xQnJLus";
 
 export default function PendingAccessPage() {
   const { signOut, user } = useAuth();
@@ -31,15 +31,17 @@ export default function PendingAccessPage() {
                     <p className="text-sm text-muted-foreground">
                         If you believe you should have access or would like to request it, please fill out our access request form. Your account <span className="font-semibold text-primary">{user?.email}</span> is ready and will be enabled upon approval.
                     </p>
-                    <Link href={ACCESS_REQUEST_FORM_URL} target="_blank" passHref>
-                        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                            <Send className="mr-2" />
-                            Request Access
+                    <div className="space-y-6">
+                        <Link href={ACCESS_REQUEST_FORM_URL} target="_blank" passHref>
+                            <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                                <Send className="mr-2" />
+                                Request Access
+                            </Button>
+                        </Link>
+                        <Button variant="outline" className="w-full" onClick={signOut}>
+                            <LogOut className="mr-2 h-4 w-4" /> Sign Out
                         </Button>
-                    </Link>
-                     <Button variant="outline" className="w-full" onClick={signOut}>
-                        <LogOut className="mr-2 h-4 w-4" /> Sign Out
-                    </Button>
+                    </div>
                 </CardContent>
             </Card>
         </div>
