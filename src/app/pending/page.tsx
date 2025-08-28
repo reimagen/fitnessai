@@ -4,14 +4,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth.service";
-import { Send } from "lucide-react";
+import { Send, LogOut } from "lucide-react";
 import Link from "next/link";
 
 // Form for non-whitelist attempted signups
 const ACCESS_REQUEST_FORM_URL = "https://forms.fillout.com/t/3TWB1xQnJLus";
 
 export default function PendingAccessPage() {
-  const { user } = useAuth();
+  const { signOut: handleSignOut } = useAuth();
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
@@ -28,12 +28,18 @@ export default function PendingAccessPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Link href={ACCESS_REQUEST_FORM_URL} target="_blank" passHref>
-                        <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-                            <Send className="mr-2" />
-                            Request Access
+                    <div className="space-y-4">
+                        <Link href={ACCESS_REQUEST_FORM_URL} target="_blank" passHref>
+                            <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                                <Send className="mr-2" />
+                                Request Access
+                            </Button>
+                        </Link>
+                        <Button variant="outline" className="w-full" onClick={handleSignOut}>
+                            <LogOut className="mr-2" />
+                            Sign Out
                         </Button>
-                    </Link>
+                    </div>
                 </CardContent>
             </Card>
         </div>
