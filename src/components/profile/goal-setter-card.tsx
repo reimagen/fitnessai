@@ -447,7 +447,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
           {analysisToRender && (
              <Card className="mt-6 bg-secondary/30">
                 <CardHeader>
-                  <CardTitle className="font-headline text-lg">AI Feedback</CardTitle>
                   <CardDescription>
                     Generated on: {formatDate(analysisGeneratedDate!, "MMMM d, yyyy")}
                   </CardDescription>
