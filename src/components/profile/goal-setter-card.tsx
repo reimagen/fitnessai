@@ -196,6 +196,11 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
   const showReanalyze = analysisGeneratedDate && differenceInDays(new Date(), analysisGeneratedDate) < 14;
 
+  const primaryGoalDescription = useMemo(() => {
+    const primaryGoal = activeGoalsForAnalysis.find(g => g.isPrimary);
+    return primaryGoal?.description;
+  }, [activeGoalsForAnalysis]);
+
 
   return (
     <Card className="shadow-lg">
@@ -411,9 +416,14 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                 <CardContent className="space-y-4">
                     <p className="text-sm italic text-muted-foreground">{analysisToRender.overallSummary}</p>
                     <div className="space-y-4">
-                        {analysisToRender.goalInsights.map((insight, index) => (
+                        {analysisToRender.goalInsights.map((insight, index) => {
+                          const isPrimary = insight.originalGoalDescription === primaryGoalDescription;
+                          return (
                             <div key={index} className="p-3 border rounded-md bg-background/50">
-                                <p className="text-sm font-semibold text-muted-foreground">Original Goal: "{insight.originalGoalDescription}"</p>
+                                <p className="text-sm font-semibold text-muted-foreground">
+                                  {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
+                                  Original Goal: "{insight.originalGoalDescription}"
+                                </p>
                                 <div className="mt-3 space-y-3">
                                     {insight.isConflicting && (
                                         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -428,7 +438,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
                             </div>
-                        ))}
+                          );
+                        })}
                     </div>
                 </CardContent>
              </Card>
