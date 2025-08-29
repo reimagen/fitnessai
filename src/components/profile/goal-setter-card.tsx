@@ -16,9 +16,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, ChevronDown } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle } from "lucide-react";
 import type { FitnessGoal } from "@/lib/types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { format as formatDate, isValid } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -81,6 +81,8 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 
 export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
     defaultValues: createFormValues(initialGoals), 
@@ -123,6 +125,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         }
     });
     onGoalsChange(updatedGoals);
+    setIsEditing(false);
   }
 
   const handleAddNewGoal = () => {
@@ -152,62 +155,71 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     }
   };
 
+  const handleCancel = () => {
+    form.reset(createFormValues(initialGoals));
+    setIsEditing(false);
+  };
+
   const activeFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => !field.achieved);
   const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-            <Target className="h-6 w-6 text-primary"/>
-            Your Fitness Goals
-        </CardTitle>
-        <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between pb-4">
+        <div>
+            <CardTitle className="font-headline flex items-center gap-2">
+                <Target className="h-6 w-6 text-primary"/>
+                Your Fitness Goals
+            </CardTitle>
+            <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
+        </div>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={handleCancel} aria-label="Cancel edit">
+              <XCircle className="h-5 w-5" />
+            </Button>
+            <Button size="icon" onClick={form.handleSubmit(onSubmit)} aria-label="Save goals">
+              <Save className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} aria-label="Edit goals">
+            <Edit2 className="h-5 w-5" />
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* Active Goals */}
-            {activeFields.map(({ field, index }) => {
+            {activeFields.length > 0 ? activeFields.map(({ field, index }) => {
               const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
               const isAchieved = form.watch(`goals.${index}.achieved`);
               return (
                 <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`goals.${index}.description`}
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Goal Description</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`goals.${index}.targetDate`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {isAchieved && (
-                       <FormField
+                  {isEditing ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
                           control={form.control}
-                          name={`goals.${index}.dateAchieved`}
+                          name={`goals.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Goal Description</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`goals.${index}.targetDate`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Date Achieved</FormLabel>
+                              <FormLabel>Target Date</FormLabel>
                               <FormControl>
                                 <Input type="date" {...field} />
                               </FormControl>
@@ -215,50 +227,75 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                             </FormItem>
                           )}
                         />
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
-                    <div className="flex items-center gap-4">
-                       <Button
-                          type="button"
-                          variant={isCurrentGoalPrimary ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSetPrimary(index)}
-                          disabled={isCurrentGoalPrimary}
-                          className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
-                      >
-                          {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
-                      </Button>
-                      <FormField
-                        control={form.control}
-                        name={`goals.${index}.achieved`}
-                        render={({ field: checkboxField }) => ( 
-                            <FormItem className="flex flex-row items-center space-x-2">
-                            <FormControl>
-                                <Checkbox
-                                checked={checkboxField.value}
-                                onCheckedChange={checkboxField.onChange}
-                                />
-                            </FormControl>
-                            <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
-                            </FormItem>
+                        {isAchieved && (
+                           <FormField
+                              control={form.control}
+                              name={`goals.${index}.dateAchieved`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Date Achieved</FormLabel>
+                                  <FormControl>
+                                    <Input type="date" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                         )}
-                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
+                        <div className="flex items-center gap-4">
+                           <Button
+                              type="button"
+                              variant={isCurrentGoalPrimary ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleSetPrimary(index)}
+                              disabled={isCurrentGoalPrimary}
+                              className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
+                          >
+                              {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
+                          </Button>
+                          <FormField
+                            control={form.control}
+                            name={`goals.${index}.achieved`}
+                            render={({ field: checkboxField }) => ( 
+                                <FormItem className="flex flex-row items-center space-x-2">
+                                <FormControl>
+                                    <Checkbox
+                                    checked={checkboxField.value}
+                                    onCheckedChange={checkboxField.onChange}
+                                    />
+                                </FormControl>
+                                <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
+                                </FormItem>
+                            )}
+                            />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm">
+                      <div className="flex justify-between items-start">
+                         <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
+                      </div>
+                      <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
-                    </Button>
-                  </div>
+                  )}
                 </Card>
               );
-            })}
+            }) : (
+                 <p className="text-sm text-center text-muted-foreground py-4">No active goals set. Add a new goal to get started!</p>
+            )}
 
             {/* Achieved Goals Accordion */}
             {achievedFields.length > 0 && (
@@ -272,7 +309,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                   </AccordionTrigger>
                   <AccordionContent className="pt-2">
                     <div className="space-y-3">
-                    {achievedFields.map(({ field, index }) => (
+                    {achievedFields.map(({ field }) => (
                       <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
                         <div className="flex flex-col">
                           <p className="font-medium text-foreground">{field.description}</p>
@@ -290,16 +327,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 </AccordionItem>
               </Accordion>
             )}
-
-            <div className="flex justify-between items-center pt-4">
-                <Button
+            
+            <div className="pt-4 flex justify-between items-center">
+              <Button
                 type="button"
                 variant="outline"
                 onClick={handleAddNewGoal}
-                >
+              >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
-                </Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90">Save Goals</Button>
+              </Button>
+              {isEditing && (
+                 <Button type="submit" className="bg-primary hover:bg-primary/90">Save Goals</Button>
+              )}
             </div>
           </form>
         </Form>
