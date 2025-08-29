@@ -1555,8 +1555,10 @@ useEffect(() => {
                 {cardioAnalysisData.totalCalories > 0 ? (
                   <div className="space-y-4">
                     <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start pt-2">
-                        <div className="flex flex-col justify-start items-start space-y-3 md:pt-10">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                        <div>
+                          <h4 className="font-headline text-lg mb-4 text-center md:text-left">Activity Summary</h4>
+                          <div className="flex flex-col justify-start items-start space-y-3">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
                             const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
                             const formattedDuration = formatCardioDuration(stats.totalDurationMin);
@@ -1584,6 +1586,7 @@ useEffect(() => {
                                 </div>
                             );
                             })}
+                          </div>
                         </div>
                         <Tabs defaultValue="types" className="w-full">
                           <TabsList className="grid w-full grid-cols-2">
@@ -1617,7 +1620,7 @@ useEffect(() => {
                                         return (
                                           <div className="flex justify-center">
                                             <div
-                                              className="grid gap-x-4 gap-y-1 text-xs mt-2"
+                                              className="grid gap-x-2 gap-y-1 text-xs mt-2"
                                               style={{
                                                 gridTemplateColumns: `repeat(${useTwoRows ? Math.ceil(numItems / 2) : numItems}, auto)`,
                                               }}
@@ -1650,10 +1653,10 @@ useEffect(() => {
                                         <Legend content={({payload}) => {
                                             if (!payload) return null;
                                             const numItems = payload.length;
-                                            const columns = Math.ceil(numItems / 2);
+                                            const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
                                             return (
                                                 <div className="flex justify-center">
-                                                    <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
+                                                    <div className="grid gap-x-2 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
                                                         {payload.map((entry:any, index:number) => (
                                                             <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                                                                 <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
