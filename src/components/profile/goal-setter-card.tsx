@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays } from "date-fns";
@@ -342,7 +342,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                 <AccordionItem value="achieved-goals" className="border rounded-md px-4 bg-secondary/30">
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-2">
-                       <Star className="h-5 w-5 text-yellow-500 fill-yellow-400" />
+                       <CheckCircle className="h-5 w-5 text-green-600" />
                        <span className="font-semibold">View {achievedFields.length} Completed Goal{achievedFields.length > 1 ? 's' : ''}</span>
                     </div>
                   </AccordionTrigger>
