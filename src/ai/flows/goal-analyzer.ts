@@ -111,7 +111,7 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
                 *   **Example for a Female User (Intermediate)**: 'suggestedGoal': "Gain 2-3 lbs of lean mass over the next 3 months." 'analysis': "For an intermediate female lifter, a sustainable rate of muscle gain is about 0.5-1 lb per month. This target of 2-3 lbs over 3 months is an excellent, evidence-based goal that prioritizes lean growth."
         6.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
         7.  **Calculate Timeline in Days**: If your 'suggestedGoal' includes a time frame (e.g., "in 8 weeks", "over 3 months"), you **MUST** calculate the total number of days for that timeline and put it in the 'suggestedTimelineInDays' field. Use the conversion: 1 week = 7 days, 1 month = 30 days. For example, "8 weeks" is 56 days. "3 months" is 90 days. "10 weeks" is 70 days. If your goal has no timeline, you must omit this field.
-        8.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level (if provided). Beginners make faster progress. Advanced lifters have slower, more incremental goals.
+        8.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level (if provided). Beginners make faster progress. Advanced lifters have slower, more incremental goals. 
 
         **Your Response Fields:**
         1.  **overallSummary**: A brief (2-3 sentence) high-level summary. Start with encouragement, acknowledge the primary goal, then mention if there are conflicts.
