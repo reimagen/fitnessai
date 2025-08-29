@@ -49,9 +49,6 @@ export const metadata: Metadata = {
     },
     description: APP_DESCRIPTION,
   },
-  icons: {
-    icon: '/favicon.ico',
-  },
 };
 
 export const viewport: Viewport = {
