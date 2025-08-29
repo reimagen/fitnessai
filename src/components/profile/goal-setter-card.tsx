@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
-import { format as formatDate, isValid, differenceInDays } from "date-fns";
+import { format as formatDate, isValid, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -199,14 +199,20 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     });
   };
 
-  const handleAcceptSuggestion = (originalDescription: string, suggestedGoal: string) => {
+  const handleAcceptSuggestion = (originalDescription: string, suggestedGoal: string, timelineInDays?: number) => {
     const updatedGoals: FitnessGoal[] = initialGoals.map(goal => {
       if (goal.description === originalDescription) {
-        return { ...goal, description: suggestedGoal };
+        const newGoal = { ...goal, description: suggestedGoal };
+        if (timelineInDays && timelineInDays > 0) {
+          newGoal.targetDate = addDays(new Date(), timelineInDays);
+        }
+        return newGoal;
       }
       return goal;
     });
+
     onGoalsChange(updatedGoals);
+
     toast({
       title: "Goal Updated!",
       description: "Your goal has been updated with the AI's suggestion.",
@@ -461,7 +467,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                       size="sm" 
                                       variant="outline"
                                       className="h-auto px-2 py-1 text-xs"
-                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal)}
+                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
                                     >
                                       <Check className="mr-1.5 h-3 w-3"/>
                                       Use AI Suggestion

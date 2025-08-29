@@ -65,6 +65,7 @@ export interface AnalyzeFitnessGoalsOutput {
         isVague: boolean;
         suggestedGoal: string;
         analysis: string;
+        suggestedTimelineInDays?: number;
     }[];
 }
 
@@ -218,5 +219,3 @@ export interface AggregatedWorkoutDaySummary {
   totalReps: number;
   categories: Record<string, number>;
 }
-
-    
