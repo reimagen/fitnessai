@@ -30,7 +30,7 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Rowing, Mountain } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
@@ -1442,7 +1442,7 @@ useEffect(() => {
                            let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
                            if (name === 'Running') icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
                            if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
-                           if (name === 'Rowing') icon = <Rowing className="h-5 w-5 text-accent flex-shrink-0" />;
+                           if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
                            if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
 
                            return (
