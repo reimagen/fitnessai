@@ -454,8 +454,20 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                           const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
 
                           return (
-                            <div key={index} className="p-3 border rounded-md bg-background/50">
-                                <p className="text-sm font-semibold text-muted-foreground">
+                            <div key={index} className="p-3 border rounded-md bg-background/50 relative">
+                                {originalGoalIsVague && (
+                                  <div className="absolute top-3 right-3">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal)}
+                                    >
+                                      <Check className="mr-2 h-4 w-4"/>
+                                      Use AI Suggestion
+                                    </Button>
+                                  </div>
+                                )}
+                                <p className="text-sm font-semibold text-muted-foreground pr-32">
                                   {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
                                   Original Goal: "{insight.originalGoalDescription}"
                                 </p>
@@ -472,18 +484,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
-                                {originalGoalIsVague && (
-                                  <div className="flex justify-end mt-3">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal)}
-                                    >
-                                      <Check className="mr-2 h-4 w-4"/>
-                                      Accept Suggestion
-                                    </Button>
-                                  </div>
-                                )}
                             </div>
                           );
                         })}
