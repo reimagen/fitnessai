@@ -917,8 +917,11 @@ const cardioAnalysisData = useMemo(() => {
     if (weeklyGoal && weeklyGoal > 0) {
         const difference = weeklyAverage - weeklyGoal;
         const percentage = (difference / weeklyGoal) * 100;
-        const status = difference >= 0 ? 'beating' : 'missing';
-        calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${status} your goal by ${Math.abs(Math.round(difference))} calories (${Math.abs(Math.round(percentage))}%).`;
+        if (difference >= 0) {
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are beating your goal by ${Math.round(difference)} calories (${Math.round(percentage)}%).`;
+        } else {
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+        }
     }
     
     // --- Cardio Amount Bar Chart Data ---
@@ -1555,7 +1558,7 @@ useEffect(() => {
                   <div className="space-y-4">
                     <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                        <div className="flex flex-col justify-start">
+                        <div className="flex flex-col">
                           <h4 className="font-bold mb-4 text-center md:text-left">Activity Summary</h4>
                           <div className="flex flex-col justify-start items-start space-y-3">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
@@ -1696,4 +1699,6 @@ useEffect(() => {
 
 
     
+
+
 
