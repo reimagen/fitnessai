@@ -17,13 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
-import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput } from "@/lib/types";
+import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
-import { format as formatDate, isValid, differenceInDays, addDays } from "date-fns";
+import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useAnalyzeGoals } from "@/lib/firestore.service";
+import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
@@ -81,12 +81,106 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
   };
 };
 
+// --- Helper functions for generating performance context ---
+const GOAL_TO_PR_MAP: Record<string, string[]> = {
+  'pull-up': ['lat pulldown'],
+  'bench press': ['bench press', 'chest press'],
+  'squat': ['squat', 'leg press'],
+  'deadlift': ['deadlift'],
+  'overhead press': ['overhead press', 'shoulder press'],
+  'leg press': ['leg press', 'squat'],
+};
+
+const findBestPrForGoal = (goalDesc: string, records: PersonalRecord[]): string | null => {
+  const lowerGoal = goalDesc.toLowerCase();
+  for (const keyword in GOAL_TO_PR_MAP) {
+    if (lowerGoal.includes(keyword)) {
+      const relevantPrs = records.filter(pr => GOAL_TO_PR_MAP[keyword].includes(pr.exerciseName.toLowerCase()));
+      if (relevantPrs.length > 0) {
+        const bestPr = relevantPrs.reduce((best, current) => {
+          const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
+          const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
+          return currentWeightKg > bestWeightKg ? current : best;
+        });
+        return `User has a relevant PR for ${bestPr.exerciseName} of ${bestPr.weight} ${bestPr.weightUnit}.`;
+      }
+    }
+  }
+  return null;
+};
+
+const summarizeWorkoutHistoryForGoal = (goalDesc: string, logs: WorkoutLog[]): string | null => {
+  const lowerGoal = goalDesc.toLowerCase();
+  const fourWeeksAgo = subWeeks(new Date(), 4);
+  const recentLogs = logs.filter(log => log.date > fourWeeksAgo);
+
+  if (lowerGoal.includes('run') || lowerGoal.includes('running')) {
+    const runs = recentLogs.flatMap(log => log.exercises.filter(ex => ex.category === 'Cardio' && ex.name.toLowerCase().includes('run')));
+    if (runs.length > 0) {
+      const totalDistance = runs.reduce((sum, run) => {
+        let distMi = run.distance || 0;
+        if (run.distanceUnit === 'km') distMi *= 0.621371;
+        else if (run.distanceUnit === 'ft') distMi *= 0.000189394;
+        return sum + distMi;
+      }, 0);
+      const avgDistance = totalDistance / runs.length;
+      const maxDistance = Math.max(...runs.map(run => {
+         let distMi = run.distance || 0;
+         if (run.distanceUnit === 'km') distMi *= 0.621371;
+         else if (run.distanceUnit === 'ft') distMi *= 0.000189394;
+         return distMi;
+      }));
+      return `Recent Running Summary (last 4 weeks): ${runs.length} sessions, average distance ${avgDistance.toFixed(1)} miles, max distance ${maxDistance.toFixed(1)} miles.`;
+    }
+  }
+  // Add more summaries for other activities like 'cycling', etc. here if needed.
+  return null;
+};
+
+
+const constructUserProfileContext = (
+    userProfile: UserProfile, 
+    workoutLogs: WorkoutLog[],
+    personalRecords: PersonalRecord[]
+): string => {
+    let context = "User Profile Context for AI Goal Analysis:\n";
+    context += `Age: ${userProfile.age || 'Not Provided'}\n`;
+    context += `Gender: ${userProfile.gender || 'Not Provided'}\n`;
+    context += `Weight: ${userProfile.weightValue || 'Not Provided'} ${userProfile.weightUnit || ''}\n`.trim() + '\n';
+    context += `Experience Level: ${userProfile.experienceLevel || 'Not Provided'}\n`;
+    if (userProfile.bodyFatPercentage) {
+        context += `Body Fat: ${userProfile.bodyFatPercentage.toFixed(1)}%\n`;
+    }
+
+    context += "\n--- User's Goals & Performance Data ---\n";
+    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
+    if (activeGoals.length > 0) {
+      activeGoals.forEach(goal => {
+        context += `Goal: ${goal.isPrimary ? '**Primary** ' : ''}${goal.description}\n`;
+        const relevantPr = findBestPrForGoal(goal.description, personalRecords);
+        if (relevantPr) {
+          context += `  - Performance Context: ${relevantPr}\n`;
+        }
+        const historySummary = summarizeWorkoutHistoryForGoal(goal.description, workoutLogs);
+        if (historySummary) {
+          context += `  - Performance Context: ${historySummary}\n`;
+        }
+      });
+    } else {
+      context += "- No active goals listed.\n";
+    }
+
+    return context;
+};
+
 
 export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const analyzeGoalsMutation = useAnalyzeGoals();
+  const { data: personalRecords } = usePersonalRecords();
+  const { data: workoutLogs } = useWorkouts();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
@@ -180,16 +274,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     
     setAnalysisError(null); // Clear previous errors
     
+    const contextString = constructUserProfileContext(userProfile, workoutLogs || [], personalRecords || []);
+    
     const analysisInput: AnalyzeFitnessGoalsInput = {
-      userProfile: {
-        age: userProfile.age,
-        gender: userProfile.gender as 'Male' | 'Female' | undefined,
-        weightValue: userProfile.weightValue,
-        weightUnit: userProfile.weightUnit,
-        bodyFatPercentage: userProfile.bodyFatPercentage,
-        experienceLevel: userProfile.experienceLevel,
-        fitnessGoals: activeGoalsForAnalysis.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
-      }
+      userProfileContext: contextString,
     };
 
     analyzeGoalsMutation.mutate(analysisInput, {
