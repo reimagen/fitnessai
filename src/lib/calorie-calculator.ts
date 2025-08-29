@@ -81,12 +81,13 @@ function getMetForPace(paceMinPerMile: number, metTable: { [speed: number]: numb
     return metTable[closestSpeed];
 }
 
-const getDistanceInMiles = (distance: number, unit: Exercise['distanceUnit']): number => {
+const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']): number => {
+    if (!distance) return 0;
     switch (unit) {
         case 'mi': return distance;
         case 'km': return distance * 0.621371;
         case 'ft': return distance * 0.000189394;
-        case 'm': return distance * 0.000621371; // Correct conversion for meters to miles
+        case 'm': return distance * 0.000621371;
         default: return distance; // Fallback to assuming miles if unit is undefined
     }
 };
@@ -126,6 +127,7 @@ export function calculateExerciseCalories(
 
     let metValue: number | null = null;
     let durationInHours: number | null = null;
+    let distanceInMiles: number | null = null;
 
     if (duration && duration > 0) {
         let durationInMinutes = 0;
@@ -136,14 +138,17 @@ export function calculateExerciseCalories(
         }
         durationInHours = durationInMinutes / 60;
     }
+    
+    if (distance && distance > 0) {
+        distanceInMiles = getDistanceInMiles(distance, distanceUnit);
+    }
 
     const exerciseName = name.toLowerCase();
 
     // --- Determine MET value and duration in hours ---
     if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk') || exerciseName.includes('elliptical')) {
-        if (!distance || distance <= 0) return 0; // Running/walking needs distance
+        if (!distanceInMiles) return 0; // Running/walking needs distance
 
-        let distanceInMiles = getDistanceInMiles(distance, distanceUnit);
         let paceMinPerMile: number;
 
         if (durationInHours !== null) {
@@ -161,21 +166,20 @@ export function calculateExerciseCalories(
     
     } else if (exerciseName.includes('rowing')) {
         metValue = ROWING_MET_VALUE;
-        if (!durationInHours && distance && distance > 0) {
-            const distanceInMeters = getDistanceInMiles(distance, distanceUnit) * 1609.34;
+        if (!durationInHours && distanceInMiles) {
+            const distanceInMeters = distanceInMiles * 1609.34;
             const estimatedDurationSeconds = (distanceInMeters / 500) * DEFAULT_ROWING_PACE_SEC_PER_500M;
             durationInHours = estimatedDurationSeconds / 3600;
         }
     } else if (exerciseName.includes('cycle') || exerciseName.includes('bike')) {
         metValue = CYCLING_MET_VALUE;
-        if (!durationInHours && distance && distance > 0) {
-            const distanceInMiles = getDistanceInMiles(distance, distanceUnit);
+        if (!durationInHours && distanceInMiles) {
             durationInHours = distanceInMiles / DEFAULT_CYCLING_SPEED_MPH;
         }
     } else if (exerciseName.includes('swim')) {
         metValue = SWIMMING_MET_VALUE;
-        if (!durationInHours && distance && distance > 0) {
-            const distanceInMeters = getDistanceInMiles(distance, distanceUnit) * 1609.34;
+        if (!durationInHours && distanceInMiles) {
+            const distanceInMeters = distanceInMiles * 1609.34;
             const estimatedDurationSeconds = (distanceInMeters / 100) * DEFAULT_SWIMMING_PACE_SEC_PER_100M;
             durationInHours = estimatedDurationSeconds / 3600;
         }
