@@ -40,9 +40,12 @@ const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
 const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
 const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
 const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
-const DEFAULT_CLIMBMILL_MIN_PER_100_FT = 1.5; // 1.5 minutes per 100 feet climbed
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
+  if (!workoutLogs || workoutLogs.length === 0) {
+      return activity === 'run' ? DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE : DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE;
+  }
+  
   const exercises: { distance: number; duration: number }[] = [];
 
   const activityKeywords = activity === 'run' ? ['run', 'treadmill'] : ['walk'];
@@ -128,7 +131,9 @@ export function calculateExerciseCalories(
 
     let metValue: number | null = null;
     let durationInHours: number | null = null;
-    let distanceInMiles: number | null = null;
+    
+    // Always calculate distance in miles if distance is provided, for use in estimations.
+    const distanceInMiles = getDistanceInMiles(distance, distanceUnit);
 
     if (duration && duration > 0) {
         let durationInMinutes = 0;
@@ -139,16 +144,12 @@ export function calculateExerciseCalories(
         }
         durationInHours = durationInMinutes / 60;
     }
-    
-    if (distance && distance > 0) {
-        distanceInMiles = getDistanceInMiles(distance, distanceUnit);
-    }
 
     const exerciseName = name.toLowerCase();
 
     // --- Determine MET value and duration in hours ---
     if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk') || exerciseName.includes('elliptical')) {
-        if (!distanceInMiles) return 0; // Running/walking needs distance
+        if (distanceInMiles <= 0) return 0; // Running/walking needs distance
 
         let paceMinPerMile: number;
 
@@ -167,30 +168,26 @@ export function calculateExerciseCalories(
     
     } else if (exerciseName.includes('rowing')) {
         metValue = ROWING_MET_VALUE;
-        if (!durationInHours && distanceInMiles) {
+        if (!durationInHours && distanceInMiles > 0) {
             const distanceInMeters = distanceInMiles * 1609.34;
             const estimatedDurationSeconds = (distanceInMeters / 500) * DEFAULT_ROWING_PACE_SEC_PER_500M;
             durationInHours = estimatedDurationSeconds / 3600;
         }
     } else if (exerciseName.includes('cycle') || exerciseName.includes('bike')) {
         metValue = CYCLING_MET_VALUE;
-        if (!durationInHours && distanceInMiles) {
+        if (!durationInHours && distanceInMiles > 0) {
             durationInHours = distanceInMiles / DEFAULT_CYCLING_SPEED_MPH;
         }
     } else if (exerciseName.includes('swim')) {
         metValue = SWIMMING_MET_VALUE;
-        if (!durationInHours && distanceInMiles) {
+        if (!durationInHours && distanceInMiles > 0) {
             const distanceInMeters = distanceInMiles * 1609.34;
             const estimatedDurationSeconds = (distanceInMeters / 100) * DEFAULT_SWIMMING_PACE_SEC_PER_100M;
             durationInHours = estimatedDurationSeconds / 3600;
         }
     } else if (exerciseName.includes('climbmill') || exerciseName.includes('stairmaster')) {
         metValue = CLIMBMILL_MET_VALUE;
-        if (!durationInHours && distanceInMiles) {
-            const distanceInFeet = distanceInMiles * 5280;
-            const estimatedDurationMinutes = (distanceInFeet / 100) * DEFAULT_CLIMBMILL_MIN_PER_100_FT;
-            durationInHours = estimatedDurationMinutes / 60;
-        }
+        // For climbmill, we ONLY rely on duration. Distance is ignored for calorie calculation.
     }
 
     if (!metValue) return 0;
