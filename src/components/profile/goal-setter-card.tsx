@@ -459,24 +459,26 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                           const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
 
                           return (
-                            <div key={index} className="p-3 border rounded-md bg-background/50 relative">
-                                {originalGoalIsVague && (
-                                  <div className="absolute top-3 right-3">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline"
-                                      className="h-auto px-2 py-1 text-xs"
-                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
-                                    >
-                                      <Check className="mr-1.5 h-3 w-3"/>
-                                      Use AI Suggestion
-                                    </Button>
-                                  </div>
-                                )}
-                                <p className="text-sm font-semibold text-muted-foreground pr-36">
-                                  {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
-                                  Original Goal: "{insight.originalGoalDescription}"
-                                </p>
+                            <div key={index} className="p-3 border rounded-md bg-background/50">
+                                <div className="relative">
+                                  <p className="text-sm font-semibold text-muted-foreground md:pr-36">
+                                    {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
+                                    Original Goal: "{insight.originalGoalDescription}"
+                                  </p>
+                                  {originalGoalIsVague && (
+                                    <div className="mt-2 md:absolute md:top-0 md:right-0 md:mt-0">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="h-auto w-full px-2 py-1 text-xs md:w-auto"
+                                        onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                      >
+                                        <Check className="mr-1.5 h-3 w-3"/>
+                                        Use AI Suggestion
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
                                 <div className="mt-3 space-y-3">
                                     {insight.isConflicting && (
                                         <div className="flex items-start gap-2 text-sm text-destructive">
