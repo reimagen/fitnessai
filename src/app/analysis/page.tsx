@@ -888,9 +888,9 @@ const cardioAnalysisData = useMemo(() => {
         const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
         calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else if (timeRange === 'yearly') {
-        const numMonths = differenceInMonths(endOfYear(new Date()), startOfYear(new Date())) + 1;
-        const avgPerMonth = numMonths > 0 ? totalCalories / numMonths : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerMonth)}/month.`;
+        const numWeeksInYear = differenceInWeeks(endOfYear(new Date()), startOfYear(new Date()));
+        const avgPerWeek = numWeeksInYear > 0 ? totalCalories / numWeeksInYear : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else { // all-time
         const firstLogDate = workoutLogs?.[workoutLogs.length - 1]?.date;
         const numYears = firstLogDate ? differenceInYears(new Date(), firstLogDate) + 1 : 1;
@@ -1498,9 +1498,9 @@ useEffect(() => {
                                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
                                 <Legend content={({ payload }) => {
                                     return (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 items-center justify-center gap-x-4 gap-y-1 text-xs mt-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 items-center justify-center gap-x-2 gap-y-1 text-xs mt-2">
                                         {payload?.map((entry: any, index: number) => (
-                                        <div key={`item-${index}`} className="flex items-center gap-1.5 justify-center sm:justify-start">
+                                        <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                                             <span
                                             className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                                             style={{ backgroundColor: entry.color }}
@@ -1528,6 +1528,7 @@ useEffect(() => {
     </div>
   );
 }
+
 
 
 
