@@ -934,9 +934,8 @@ const cardioAnalysisData = useMemo(() => {
             const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
 
             weeks.forEach(weekStart => {
-                // Ensure the week is fully within the month
                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
-                if (weekStart.getMonth() === monthStart.getMonth() && weekEnd.getMonth() === monthStart.getMonth()) {
+                if (weekStart.getMonth() === monthStart.getMonth() || weekEnd.getMonth() === monthStart.getMonth()) {
                      const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
                      weeklyData.set(format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData });
                 }
@@ -963,7 +962,6 @@ const cardioAnalysisData = useMemo(() => {
                 monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
             });
             cardioAmountChartData = Array.from(monthlyData.values()).sort((a,b) => {
-                // A bit of a hack to sort by month name correctly
                 const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                 return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
             });
@@ -1108,7 +1106,7 @@ useEffect(() => {
   const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 15;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const displayValue = unit === 'kcal' ? Math.round(value) : value;
@@ -1535,7 +1533,7 @@ useEffect(() => {
                 {cardioAnalysisData.totalCalories > 0 ? (
                   <div className="space-y-4">
                     <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start pt-2">
                         <div className="space-y-3">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
                             const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
@@ -1591,8 +1589,9 @@ useEffect(() => {
                                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
                                     <Legend content={({ payload }) => {
                                         if (!payload) return null;
-                                        const columns = payload.length % 2 === 0 ? 2 : 3;
-                                        const gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
+                                        const numItems = payload.length;
+                                        const columns = Math.ceil(numItems / 2);
+                                        const gridTemplateColumns = `repeat(${columns}, auto)`;
                                         return (
                                             <div className="flex justify-center">
                                                 <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns }}>
@@ -1623,7 +1622,8 @@ useEffect(() => {
                                         <Tooltip content={<ChartTooltipContent />} />
                                         <Legend content={({payload}) => {
                                             if (!payload) return null;
-                                            const columns = payload.length <= 3 ? payload.length : 3;
+                                            const numItems = payload.length;
+                                            const columns = Math.ceil(numItems / 2);
                                             return (
                                                 <div className="flex justify-center">
                                                     <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
