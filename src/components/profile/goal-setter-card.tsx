@@ -331,7 +331,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
               </Accordion>
             )}
             
-            <div className="pt-4 flex justify-between items-center">
+            <div className="pt-4 flex justify-start items-center">
               <Button
                 type="button"
                 variant="outline"
@@ -339,9 +339,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
               >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
               </Button>
-              {isEditing && (
-                 <Button type="submit" className="bg-primary hover:bg-primary/90">Save Goals</Button>
-              )}
             </div>
           </form>
         </Form>
