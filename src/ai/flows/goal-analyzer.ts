@@ -94,7 +94,7 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
         Your output MUST be a JSON object. For each goal, provide a detailed analysis.
 
         **CRITICAL INSTRUCTIONS FOR YOUR ANALYSIS:**
-        1.  **Handle Missing Data Gracefully**: If some user stats are "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more stats (like gender or experience level) will yield even more personalized advice.
+        1.  **Handle Missing Data Gracefully**: Core fields like 'Gender' and 'Experience' should be present. However, if an optional field like 'Body Fat' is "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more optional stats will yield even more personalized advice.
         2.  **Acknowledge Primary Goal**: In the 'overallSummary', you MUST start by acknowledging the user's primary goal.
         3.  **Determine Goal Relationships**: For each goal, determine its relationship to the primary goal.
             *   For the primary goal itself, set 'relationshipToPrimary' to "Primary".
@@ -131,3 +131,5 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
