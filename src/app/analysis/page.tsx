@@ -882,27 +882,44 @@ const cardioAnalysisData = useMemo(() => {
     }, {} as Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>);
 
     const pieChartData = Object.entries(statsByActivity).map(([name, stats], index) => ({
-        name,
+        name: `${name} `, // Add padding
         value: Math.round(stats.totalCalories),
         fill: `var(--color-${name})`
     }));
-
+    
     let calorieSummary = "";
+    const weeklyGoal = userProfile?.weeklyCardioCalorieGoal;
+    let weeklyAverage = 0;
+
     if (timeRange === 'weekly') {
+        weeklyAverage = totalCalories;
         calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} cardio calories.`;
     } else if (timeRange === 'monthly') {
-        const numWeeks = differenceInWeeks(endOfMonth(new Date()), startOfMonth(new Date())) + 1;
-        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
+        const start = startOfMonth(new Date());
+        const end = endOfMonth(new Date());
+        // Calculate weeks from the start of the month to today (or end of month if past)
+        const daysSoFar = differenceInDays(Math.min(today, end), start) + 1;
+        const weeksSoFar = Math.max(1, daysSoFar / 7);
+        weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
     } else if (timeRange === 'yearly') {
-        const numWeeks = differenceInWeeks(endOfYear(today), startOfYear(today));
-        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
+        const start = startOfYear(today);
+        const daysSoFar = differenceInDays(today, start) + 1;
+        const weeksSoFar = Math.max(1, daysSoFar / 7);
+        weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
     } else { // all-time
-        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs[workoutLogs.length - 1].date : new Date();
+        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
         const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
-        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerWeek)}/week.`;
+        weeklyAverage = numWeeks > 0 ? totalCalories / numWeeks : 0;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(weeklyAverage)}/week.`;
+    }
+    
+    if (weeklyGoal && weeklyGoal > 0) {
+        const difference = weeklyAverage - weeklyGoal;
+        const percentage = (difference / weeklyGoal) * 100;
+        const status = difference >= 0 ? 'beating' : 'missing';
+        calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${status} your goal by ${Math.abs(Math.round(difference))} calories (${Math.abs(Math.round(percentage))}%).`;
     }
     
     // --- Cardio Amount Bar Chart Data ---
@@ -931,10 +948,12 @@ const cardioAnalysisData = useMemo(() => {
             const monthEnd = endOfMonth(today);
             const weeklyData = new Map<string, any>();
             
+            // Get all weeks that have at least one day in the current month
             const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
 
             weeks.forEach(weekStart => {
                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+                 // Ensure we only create labels for weeks that are part of the month
                 if (weekStart.getMonth() === monthStart.getMonth() || weekEnd.getMonth() === monthStart.getMonth()) {
                      const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
                      weeklyData.set(format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData });
@@ -961,9 +980,12 @@ const cardioAnalysisData = useMemo(() => {
                 const monthData = monthlyData.get(monthKey);
                 monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
             });
-            cardioAmountChartData = Array.from(monthlyData.values()).sort((a,b) => {
-                const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-                return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
+             // Only show months that have data
+            cardioAmountChartData = Array.from(monthlyData.values())
+                .filter(month => Object.values(month).some(val => typeof val === 'number' && val > 0))
+                .sort((a,b) => {
+                    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
             });
             break;
         }
@@ -1111,7 +1133,7 @@ useEffect(() => {
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const displayValue = unit === 'kcal' ? Math.round(value) : value;
     const unitString = unit ? ` ${unit}` : '';
-    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
+    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name}(${displayValue}${unitString})`}</text>;
   };
 
   const formatCardioDuration = (totalMinutes: number): string => {
@@ -1534,7 +1556,7 @@ useEffect(() => {
                   <div className="space-y-4">
                     <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start pt-2">
-                        <div className="space-y-3">
+                        <div className="flex flex-col justify-start items-start space-y-3 md:pt-10">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
                             const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
                             const formattedDuration = formatCardioDuration(stats.totalDurationMin);
@@ -1590,24 +1612,29 @@ useEffect(() => {
                                     <Legend content={({ payload }) => {
                                         if (!payload) return null;
                                         const numItems = payload.length;
-                                        const columns = Math.ceil(numItems / 2);
-                                        const gridTemplateColumns = `repeat(${columns}, auto)`;
+                                        const useTwoRows = numItems > 3;
+
                                         return (
-                                            <div className="flex justify-center">
-                                                <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns }}>
-                                                    {payload?.map((entry: any, index: number) => (
-                                                    <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
-                                                        <span
-                                                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                                                        style={{ backgroundColor: entry.color }}
-                                                        />
-                                                        <span className="text-muted-foreground">{entry.payload?.name}</span>
-                                                    </div>
-                                                    ))}
+                                          <div className="flex justify-center">
+                                            <div
+                                              className="grid gap-x-4 gap-y-1 text-xs mt-2"
+                                              style={{
+                                                gridTemplateColumns: `repeat(${useTwoRows ? Math.ceil(numItems / 2) : numItems}, auto)`,
+                                              }}
+                                            >
+                                              {payload?.map((entry: any, index: number) => (
+                                                <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                  <span
+                                                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                                    style={{ backgroundColor: entry.color }}
+                                                  />
+                                                  <span className="text-muted-foreground">{entry.payload?.name}</span>
                                                 </div>
+                                              ))}
                                             </div>
+                                          </div>
                                         );
-                                    }} />
+                                      }} />
                                 </PieChart>
                                 </ResponsiveContainer>
                             </ChartContainer>
