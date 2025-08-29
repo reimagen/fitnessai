@@ -40,7 +40,6 @@ const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
 const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
 const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
 const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
-const DEFAULT_CLIMBMILL_PACE_MIN_PER_100FT = 1.5; // 1.5 minutes per 100 vertical feet
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
   if (!workoutLogs || workoutLogs.length === 0) {
@@ -94,7 +93,7 @@ const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']):
         case 'km': return distance * 0.621371;
         case 'ft': return distance * 0.000189394;
         case 'm': return distance * 0.000621371;
-        default: return 0; // Return 0 if unit is undefined or not recognized
+        default: return 0;
     }
 };
 
@@ -140,6 +139,7 @@ export function calculateExerciseCalories(
 
     const exerciseName = name.toLowerCase();
 
+    // Refactored logic to handle all cardio types in one block
     if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk') || exerciseName.includes('elliptical')) {
         if (distanceInMiles <= 0) return 0; 
         let paceMinPerMile: number;
@@ -178,6 +178,7 @@ export function calculateExerciseCalories(
         metValue = CLIMBMILL_MET_VALUE;
         // No duration estimation from distance for climbmill. Requires duration input.
     }
+
 
     if (!metValue || !durationInHours || durationInHours <= 0) {
         return 0;
