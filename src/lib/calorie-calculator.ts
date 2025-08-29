@@ -40,6 +40,7 @@ const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
 const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
 const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
 const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
+const DEFAULT_CLIMBMILL_MIN_PER_100_FT = 1.5; // 1.5 minutes per 100 feet climbed
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
   const exercises: { distance: number; duration: number }[] = [];
@@ -185,6 +186,11 @@ export function calculateExerciseCalories(
         }
     } else if (exerciseName.includes('climbmill') || exerciseName.includes('stairmaster')) {
         metValue = CLIMBMILL_MET_VALUE;
+        if (!durationInHours && distanceInMiles) {
+            const distanceInFeet = distanceInMiles * 5280;
+            const estimatedDurationMinutes = (distanceInFeet / 100) * DEFAULT_CLIMBMILL_MIN_PER_100_FT;
+            durationInHours = estimatedDurationMinutes / 60;
+        }
     }
 
     if (!metValue) return 0;
