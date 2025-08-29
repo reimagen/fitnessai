@@ -1480,7 +1480,7 @@ useEffect(() => {
                                 ))}
                                 </Pie>
                                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                                <Legend content={<ChartLegendContent />} />
+                                <Legend content={<ChartLegendContent nameKey="name" />} />
                             </PieChart>
                             </ResponsiveContainer>
                         </ChartContainer>
