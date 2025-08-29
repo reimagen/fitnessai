@@ -245,24 +245,24 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
           </>
         ) : (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
-              <div>
-                <span className="font-medium text-muted-foreground">Workouts/Week: </span>
-                <span>{preferences.workoutsPerWeek !== undefined ? preferences.workoutsPerWeek : "Not set"}</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div className="space-y-3">
+                 <div>
+                    <span className="font-medium text-muted-foreground">Workouts/Week: </span>
+                    <span>{preferences.workoutsPerWeek !== undefined ? preferences.workoutsPerWeek : "Not set"}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Session Time: </span>
+                    <span>{formatSessionTime(preferences.sessionTimeMinutes)}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Experience: </span>
+                    <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
+                  </div>
               </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Session Time: </span>
-                <span>{formatSessionTime(preferences.sessionTimeMinutes)}</span>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Experience: </span>
-                <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2 text-sm pt-2">
+              <div className="space-y-2">
                 <h4 className="font-medium text-muted-foreground">Weekly Cardio Calories</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+                 <div className="space-y-3 pl-2">
                     <div>
                         <span className="font-normal text-muted-foreground">Base Target: </span>
                         <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
@@ -272,6 +272,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                         <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
                     </div>
                 </div>
+              </div>
             </div>
 
             {preferences.aiPreferencesNotes && (
