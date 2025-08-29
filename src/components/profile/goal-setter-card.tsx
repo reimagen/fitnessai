@@ -228,7 +228,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   return (
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-start justify-between pb-4">
-        <div>
+        <div className="space-y-1.5">
             <CardTitle className="font-headline flex items-center gap-2">
                 <Target className="h-6 w-6 text-primary"/>
                 Your Fitness Goals
@@ -497,5 +497,3 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     </Card>
   );
 }
-
-    
