@@ -238,16 +238,21 @@ const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
 
-    // Add a dummy entry for the trendline if it exists on the chart
-    const finalPayload = [
-        ...payload,
-        { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
+    // Filter out the 'trend' data key from the legend items that come from Recharts
+    const filteredPayload = payload.filter((entry: any) => entry.dataKey !== 'trend');
+    
+    // Manually define the legend order and details
+    const legendItems = [
+      { dataKey: 'volume', color: 'hsl(var(--chart-2))' },
+      { dataKey: 'e1RM', color: 'hsl(var(--primary))' },
+      { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
+      { dataKey: 'actualPR', color: 'hsl(var(--accent))' },
     ];
 
 
     return (
         <div className="flex items-center justify-center gap-4 text-xs mt-2">
-            {finalPayload.map((entry: any, index: number) => {
+            {legendItems.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
                 const isLine = entry.dataKey === 'e1RM';
@@ -1521,6 +1526,9 @@ useEffect(() => {
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </ChartContainer>
+                        <p className="text-xs text-muted-foreground text-center mt-2 px-4">
+                           e1RM is calculated from your workout history. The weight you can lift for 10 reps is about 75% of your true 1-rep max.
+                        </p>
                     </div>
                 )}
 
@@ -1699,6 +1707,7 @@ useEffect(() => {
 
 
     
+
 
 
 
