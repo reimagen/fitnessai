@@ -224,12 +224,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const analysisToRender = userProfile?.goalAnalysis?.result;
   const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
   
-  const primaryGoalDescription = useMemo(() => {
-    const primaryGoal = activeGoalsForAnalysis.find(g => g.isPrimary);
-    return primaryGoal?.description;
-  }, [activeGoalsForAnalysis]);
-
-
   return (
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-start justify-between pb-4">
@@ -454,7 +448,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                     <p className="text-sm italic text-muted-foreground">{analysisToRender.overallSummary}</p>
                     <div className="space-y-4">
                         {analysisToRender.goalInsights.map((insight, index) => {
-                          const isPrimary = insight.originalGoalDescription === primaryGoalDescription;
+                          const isPrimary = insight.relationshipToPrimary === 'Primary';
                           const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
 
                           return (

@@ -94,11 +94,11 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
         Your output MUST be a JSON object. For each goal, provide a detailed analysis.
 
         **CRITICAL INSTRUCTIONS FOR YOUR ANALYSIS:**
-        1.  **Handle Missing Data Gracefully**: Core fields like 'Gender' and 'Experience' should be present. However, if an optional field like 'Body Fat' is "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more optional stats will yield even more personalized advice.
+        1.  **Handle Missing Data Gracefully**: If an optional field like 'Body Fat' is "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more optional stats will yield even more personalized advice.
         2.  **Acknowledge Primary Goal**: In the 'overallSummary', you MUST start by acknowledging the user's primary goal.
-        3.  **Determine Goal Relationships**: For each goal, determine its relationship to the primary goal.
-            *   For the primary goal itself, set 'relationshipToPrimary' to "Primary".
-            *   For other goals, you MUST set 'relationshipToPrimary' to "Supports", "Neutral", or "Conflicts". For example, "increase bench press" *Supports* a primary goal of "build muscle". "Improve flexibility" is likely *Neutral* to a primary goal of "lose 10 lbs".
+        3.  **Determine Goal Relationships**: For each goal, you MUST determine its relationship to the primary goal.
+            *   For the primary goal itself, you **MUST** set 'relationshipToPrimary' to "Primary".
+            *   For other goals, you **MUST** set 'relationshipToPrimary' to "Supports", "Neutral", or "Conflicts". For example, "increase bench press" *Supports* a primary goal of "build muscle". "Improve flexibility" is likely *Neutral* to a primary goal of "lose 10 lbs".
         4.  **Provide Expanded Explanations**: In the 'analysis' for each suggestion, you MUST provide the "why" behind your numbers by referencing industry or science-backed data. Crucially, your analysis MUST explicitly incorporate the user's gender and/or experience level (if they are provided) to make it personal.
             *   **For "Lose Body Fat"**: If the user has provided a body fat percentage, use it. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' MUST then explain this by explicitly mentioning their gender (if available). Example for a Female user: "For women, a healthy body fat range is typically 25-31%. A 3% drop over 3 months is a safe, sustainable rate of fat loss, which is why aiming for 25% is an excellent and achievable first step for you." Example for a Male user: "For men, a healthy body fat range is 18-24%. Reducing your body fat by 3% over 3 months is a sustainable rate of fat loss that aligns with your intermediate level."
             *   **For "Build Muscle" - CRITICAL**: You MUST tailor your suggestion and analysis based on the user's gender and experience level (if provided).
