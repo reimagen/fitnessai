@@ -1043,10 +1043,10 @@ useEffect(() => {
               <CardContent>
                 <Tabs defaultValue="prs" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="prs">
+                    <TabsTrigger value="prs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       <Trophy className="mr-2 h-4 w-4" /> PRs
                     </TabsTrigger>
-                    <TabsTrigger value="goals">
+                    <TabsTrigger value="goals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                       <Flag className="mr-2 h-4 w-4" /> Goals
                     </TabsTrigger>
                   </TabsList>
