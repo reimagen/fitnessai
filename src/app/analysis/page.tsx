@@ -30,7 +30,7 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves, HeartPulse, Kayak } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
@@ -237,9 +237,6 @@ const ProgressionTooltip = (props: any) => {
 const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
-
-    // Filter out the 'trend' data key from the legend items that come from Recharts
-    const filteredPayload = payload.filter((entry: any) => entry.dataKey !== 'trend');
     
     // Manually define the legend order and details
     const legendItems = [
@@ -1527,7 +1524,7 @@ useEffect(() => {
                             </ResponsiveContainer>
                         </ChartContainer>
                         <p className="text-xs text-muted-foreground text-center mt-2 px-4">
-                           e1RM is calculated from your workout history. The weight you can lift for 10 reps is about 75% of your true 1-rep max.
+                           e1RM is calculated from your workout history. The weight you can lift for 10 reps is about 75% of your true 1-rep max
                         </p>
                     </div>
                 )}
@@ -1574,9 +1571,9 @@ useEffect(() => {
                             const formattedDuration = formatCardioDuration(stats.totalDurationMin);
                             
                             let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Running') icon = <TrendingUp className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Running') icon = <HeartPulse className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Rowing') icon = <Kayak className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Swimming') icon = <Waves className="h-5 w-5 text-accent flex-shrink-0" />;
 
@@ -1707,6 +1704,7 @@ useEffect(() => {
 
 
     
+
 
 
 
