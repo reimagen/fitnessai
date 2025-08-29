@@ -460,14 +460,15 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     <Button 
                                       size="sm" 
                                       variant="outline"
+                                      className="h-auto px-2 py-1 text-xs"
                                       onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal)}
                                     >
-                                      <Check className="mr-2 h-4 w-4"/>
+                                      <Check className="mr-1.5 h-3 w-3"/>
                                       Use AI Suggestion
                                     </Button>
                                   </div>
                                 )}
-                                <p className="text-sm font-semibold text-muted-foreground pr-32">
+                                <p className="text-sm font-semibold text-muted-foreground pr-36">
                                   {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
                                   Original Goal: "{insight.originalGoalDescription}"
                                 </p>
@@ -496,3 +497,5 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     </Card>
   );
 }
+
+    
