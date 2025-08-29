@@ -874,20 +874,20 @@ const cardioAnalysisData = useMemo(() => {
 
     let calorieSummary = "";
     if (timeRange === 'weekly') {
-        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} calories from cardio.`;
+        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} cardio calories.`;
     } else if (timeRange === 'monthly') {
         const numWeeks = differenceInWeeks(endOfMonth(new Date()), startOfMonth(new Date())) + 1;
         const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `This month you've burned ${Math.round(totalCalories)} calories, averaging ${Math.round(avgPerWeek)}/week.`;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else if (timeRange === 'yearly') {
         const numMonths = differenceInMonths(endOfYear(new Date()), startOfYear(new Date())) + 1;
         const avgPerMonth = numMonths > 0 ? totalCalories / numMonths : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} calories, averaging ${Math.round(avgPerMonth)}/month.`;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerMonth)}/month.`;
     } else { // all-time
         const firstLogDate = workoutLogs?.[workoutLogs.length - 1]?.date;
         const numYears = firstLogDate ? differenceInYears(new Date(), firstLogDate) + 1 : 1;
         const avgPerYear = numYears > 0 ? totalCalories / numYears : 0;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} calories in total, averaging ${Math.round(avgPerYear)}/year.`;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerYear)}/year.`;
     }
 
     return { totalCalories, statsByActivity, pieChartData, calorieSummary };
@@ -1431,60 +1431,60 @@ useEffect(() => {
               </CardHeader>
               <CardContent>
                 {cardioAnalysisData.totalCalories > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                    <div className="space-y-4">
-                       <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
-                       <div className="space-y-3">
-                         {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
-                           const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
-                           const formattedDuration = formatCardioDuration(Math.round(stats.totalDurationMin));
-                           
-                           let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
-                           if (name === 'Running') icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
-                           if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
-                           if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
-                           if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
+                  <div className="space-y-4">
+                    <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center pt-2">
+                        <div className="space-y-3">
+                            {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
+                            const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
+                            const formattedDuration = formatCardioDuration(Math.round(stats.totalDurationMin));
+                            
+                            let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Running') icon = <TrendingUp className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
 
-                           return (
-                             <div key={name} className="flex items-start gap-3">
-                               {icon}
-                               <div>
-                                 <p className="font-bold">{name}</p>
-                                 <p className="text-xs text-muted-foreground">
-                                   You completed {stats.count} session{stats.count > 1 ? 's' : ''}
-                                   {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
-                                   {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
-                                   , burning {Math.round(stats.totalCalories)} kcal.
-                                   {avgDistance && ` Your average distance was ${avgDistance} mi.`}
-                                 </p>
-                               </div>
-                             </div>
-                           );
-                         })}
-                       </div>
+                            return (
+                                <div key={name} className="flex items-start gap-3">
+                                {icon}
+                                <div>
+                                    <p className="font-bold">{name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                    You completed {stats.count} session{stats.count > 1 ? 's' : ''}
+                                    {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
+                                    {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
+                                    , burning {Math.round(stats.totalCalories)} kcal.
+                                    {avgDistance && ` Your average distance was ${avgDistance} mi.`}
+                                    </p>
+                                </div>
+                                </div>
+                            );
+                            })}
+                        </div>
+                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                            <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                data={cardioAnalysisData.pieChartData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                outerRadius={80}
+                                labelLine={false}
+                                label={(props) => renderPieLabel(props, 'kcal')}
+                                >
+                                {cardioAnalysisData.pieChartData.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                                </Pie>
+                                <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                                <Legend content={<ChartLegendContent />} />
+                            </PieChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
                     </div>
-                     <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                        <ResponsiveContainer>
-                          <PieChart>
-                            <Pie
-                              data={cardioAnalysisData.pieChartData}
-                              dataKey="value"
-                              nameKey="name"
-                              cx="50%"
-                              cy="50%"
-                              outerRadius={80}
-                              labelLine={false}
-                              label={(props) => renderPieLabel(props, 'kcal')}
-                            >
-                              {cardioAnalysisData.pieChartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                              ))}
-                            </Pie>
-                            <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                            <Legend content={<ChartLegendContent />} />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </ChartContainer>
                   </div>
                 ) : (
                   <div className="h-[250px] flex items-center justify-center text-muted-foreground text-center">
@@ -1498,3 +1498,4 @@ useEffect(() => {
     </div>
   );
 }
+
