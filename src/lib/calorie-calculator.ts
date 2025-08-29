@@ -86,8 +86,8 @@ const getDistanceInMiles = (distance: number, unit: Exercise['distanceUnit']): n
         case 'mi': return distance;
         case 'km': return distance * 0.621371;
         case 'ft': return distance * 0.000189394;
-        case 'm': return distance * 0.000621371;
-        default: return 0;
+        case 'm': return distance * 0.000621371; // Correct conversion for meters to miles
+        default: return distance; // Fallback to assuming miles if unit is undefined
     }
 };
 
