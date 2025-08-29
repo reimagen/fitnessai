@@ -448,7 +448,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
              <Card className="mt-6 bg-secondary/30">
                 <CardHeader>
                   <CardDescription>
-                    Generated on: {formatDate(analysisGeneratedDate!, "MMMM d, yyyy")}
+                    {analysisGeneratedDate ? `Generated on: ${formatDate(analysisGeneratedDate, "MMMM d, yyyy")}` : ''}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -461,16 +461,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                           return (
                             <div key={index} className="p-3 border rounded-md bg-background/50">
                                 <div className="relative">
-                                  <p className="text-sm font-semibold text-muted-foreground md:pr-36">
-                                    {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
-                                    Original Goal: "{insight.originalGoalDescription}"
-                                  </p>
+                                  <div className="md:pr-36">
+                                     <p className="text-sm font-semibold text-muted-foreground">
+                                        {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
+                                        Original Goal: "{insight.originalGoalDescription}"
+                                    </p>
+                                  </div>
                                   {originalGoalIsVague && (
-                                    <div className="mt-2 md:absolute md:top-0 md:right-0 md:mt-0">
+                                    <div className="absolute top-0 right-0 hidden md:block">
                                       <Button 
                                         size="sm" 
                                         variant="outline"
-                                        className="h-auto w-full px-2 py-1 text-xs md:w-auto"
+                                        className="h-auto px-2 py-1 text-xs"
                                         onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
                                       >
                                         <Check className="mr-1.5 h-3 w-3"/>
@@ -479,6 +481,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
                                   )}
                                 </div>
+
                                 <div className="mt-3 space-y-3">
                                     {insight.isConflicting && (
                                         <div className="flex items-start gap-2 text-sm text-destructive">
@@ -492,6 +495,20 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
+
+                                {originalGoalIsVague && (
+                                    <div className="mt-4 md:hidden">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                        >
+                                            <Check className="mr-2 h-4 w-4"/>
+                                            Use AI Suggestion
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                           );
                         })}
