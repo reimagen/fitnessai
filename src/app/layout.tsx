@@ -49,6 +49,9 @@ export const metadata: Metadata = {
     },
     description: APP_DESCRIPTION,
   },
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export const viewport: Viewport = {
@@ -62,9 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-      </head>
+      <head />
       <body className={`${inter.variable} font-body antialiased`}>
         <QueryProvider>
           <AuthProvider>
