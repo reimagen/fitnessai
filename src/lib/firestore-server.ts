@@ -2,7 +2,7 @@
 
 import { adminDb } from './firebase-admin';
 import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis } from './types';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 import { cache } from 'react';
@@ -108,6 +108,12 @@ const userProfileConverter = {
                 generatedDate: Timestamp.fromDate(profile.strengthAnalysis.generatedDate),
             };
         }
+        if (profile.goalAnalysis) {
+            dataToStore.goalAnalysis = {
+                ...profile.goalAnalysis,
+                generatedDate: Timestamp.fromDate(profile.goalAnalysis.generatedDate),
+            };
+        }
         if (profile.liftProgressionAnalysis) {
             const convertedAnalyses: { [key: string]: any } = {};
             for (const key in profile.liftProgressionAnalysis) {
@@ -145,6 +151,11 @@ const userProfileConverter = {
             ...data.strengthAnalysis,
             generatedDate: data.strengthAnalysis.generatedDate.toDate(),
         } : undefined;
+
+        const goalAnalysis: StoredGoalAnalysis | undefined = data.goalAnalysis && data.goalAnalysis.generatedDate instanceof Timestamp ? {
+            ...data.goalAnalysis,
+            generatedDate: data.goalAnalysis.generatedDate.toDate(),
+        } : undefined;
         
         const liftProgressionAnalysis: { [key: string]: StoredLiftProgressionAnalysis } = {};
         if (data.liftProgressionAnalysis) {
@@ -171,6 +182,7 @@ const userProfileConverter = {
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,
             strengthAnalysis: strengthAnalysis,
+            goalAnalysis: goalAnalysis,
             liftProgressionAnalysis: liftProgressionAnalysis,
             weeklyPlan: weeklyPlan,
             age: data.age,
@@ -372,6 +384,12 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         dataToUpdate.strengthAnalysis = {
             ...profileData.strengthAnalysis,
             generatedDate: Timestamp.fromDate(profileData.strengthAnalysis.generatedDate),
+        };
+    }
+    if (profileData.goalAnalysis) {
+        dataToUpdate.goalAnalysis = {
+            ...profileData.goalAnalysis,
+            generatedDate: Timestamp.fromDate(profileData.goalAnalysis.generatedDate),
         };
     }
     if (profileData.weeklyPlan) {
