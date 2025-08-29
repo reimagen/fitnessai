@@ -153,6 +153,9 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       // Otherwise, just append to the end.
       append(newGoal);
     }
+
+    // Automatically switch to edit mode
+    setIsEditing(true);
   };
 
   const handleCancel = () => {
