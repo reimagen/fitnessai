@@ -41,6 +41,7 @@ const GoalInsightSchema = z.object({
   isVague: z.boolean().describe("Set to true if the goal lacks specific, measurable targets (e.g., 'tone up', 'get fit')."),
   suggestedGoal: z.string().describe("A more specific, measurable, achievable, relevant, and time-bound (SMART) version of the original goal. This is your key output."),
   analysis: z.string().describe("A concise (2-3 sentences) explanation of why the suggestion is better, tailored to the user's stats. You MUST explain the reasoning behind the numbers you suggest by referencing industry/science-backed comparisons."),
+  suggestedTimelineInDays: z.number().optional().describe("If your 'suggestedGoal' includes a timeline (e.g., 'in 8 weeks', 'over 3 months'), you MUST calculate the total number of days and provide it here. Assume 1 month = 30 days and 1 week = 7 days. If no timeline is mentioned, omit this field."),
 });
 
 const AnalyzeFitnessGoalsOutputSchema = z.object({
@@ -102,7 +103,8 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
             *   **For "Build Muscle"**: This is often tied to weight gain and experience. Your 'suggestedGoal' should be "Gain 5-6 lbs of lean mass over the next 3 months." Your 'analysis' MUST justify this, for example: "As an intermediate lifter, gaining 0.5 lbs per week is a realistic rate for lean muscle growth without excessive fat gain. This target of 5-6 lbs over 12 weeks aligns perfectly with that evidence-based approach."
             *   **For "Tone Up"**: Frame this as body recomposition. 'suggestedGoal': "Decrease body fat by 2% and increase squat strength by 15 lbs in 10 weeks." 'analysis': "This combines fat loss and muscle gain. Focusing on compound lift progression (like squats) while maintaining a slight caloric deficit is an effective strategy for achieving a more 'toned' physique."
         4.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
-        5.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level. Beginners make faster progress. Advanced lifters have slower, more incremental goals.
+        5.  **Calculate Timeline in Days**: If your 'suggestedGoal' includes a time frame (e.g., "in 8 weeks", "over 3 months"), you **MUST** calculate the total number of days for that timeline and put it in the 'suggestedTimelineInDays' field. Use the conversion: 1 week = 7 days, 1 month = 30 days. For example, "8 weeks" is 56 days. "3 months" is 90 days. "10 weeks" is 70 days. If your goal has no timeline, you must omit this field.
+        6.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level. Beginners make faster progress. Advanced lifters have slower, more incremental goals.
 
         **Your Response Fields:**
         1.  **overallSummary**: A brief (2-3 sentence) high-level summary. Start with encouragement, acknowledge the primary goal, then mention if there are conflicts.
@@ -113,6 +115,7 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
             *   **isVague**: boolean
             *   **suggestedGoal**: Your SMART version of the goal.
             *   **analysis**: Your 2-3 sentence rationale for the suggestion, including scientific/industry context.
+            *   **suggestedTimelineInDays**: (Optional) number.
         `,
     });
 
@@ -125,5 +128,3 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
     return output;
   }
 );
-
-    
