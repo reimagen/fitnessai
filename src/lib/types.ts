@@ -42,6 +42,39 @@ export interface StoredStrengthAnalysis {
   generatedDate: Date;
 }
 
+export interface AnalyzeFitnessGoalsInput {
+  userProfile: {
+      age?: number;
+      gender?: 'Male' | 'Female';
+      weightValue?: number;
+      weightUnit?: 'kg' | 'lbs';
+      bodyFatPercentage?: number;
+      experienceLevel?: 'beginner' | 'intermediate' | 'advanced';
+      fitnessGoals: {
+          description: string;
+          isPrimary?: boolean;
+      }[];
+  };
+}
+
+export interface AnalyzeFitnessGoalsOutput {
+    overallSummary: string;
+    goalInsights: {
+        originalGoalDescription: string;
+        isConflicting: boolean;
+        isVague: boolean;
+        suggestedGoal: string;
+        analysis: string;
+        suggestedTimelineInDays?: number;
+    }[];
+}
+
+export interface StoredGoalAnalysis {
+  result: AnalyzeFitnessGoalsOutput;
+  generatedDate: Date;
+}
+
+
 export interface StrengthImbalanceInput {
   clientSideFindings: {
       imbalanceType: string;
@@ -139,6 +172,7 @@ export interface UserProfile {
   experienceLevel?: ExperienceLevel;
   aiPreferencesNotes?: string; 
   strengthAnalysis?: StoredStrengthAnalysis;
+  goalAnalysis?: StoredGoalAnalysis;
   liftProgressionAnalysis?: {
     [exerciseName: string]: StoredLiftProgressionAnalysis;
   };
@@ -185,5 +219,3 @@ export interface AggregatedWorkoutDaySummary {
   totalReps: number;
   categories: Record<string, number>;
 }
-
-    

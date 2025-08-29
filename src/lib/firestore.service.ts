@@ -18,9 +18,10 @@ import {
     getUserProfile,
     updateUserProfile,
     analyzeLiftProgressionAction,
+    analyzeGoalsAction,
 } from '@/app/profile/actions';
 import { analyzeStrengthAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -217,4 +218,26 @@ export function useAnalyzeStrength() {
     });
 }
 
+export function useAnalyzeGoals() {
+    const queryClient = useQueryClient();
+    const { user } = useAuth();
+    const { toast } = useToast();
+
+    return useMutation<void, Error, AnalyzeFitnessGoalsInput>({
+        mutationFn: (values: AnalyzeFitnessGoalsInput) =>
+            analyzeGoalsAction(user!.uid, values).then(result => {
+                if (!result.success) {
+                    throw new Error(result.error || "An unknown error occurred during goal analysis.");
+                }
+                return;
+            }),
+        onSuccess: () => {
+            toast({ title: "Goal Analysis Complete!", description: "Your AI-powered feedback is ready." });
+            queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+        },
+        onError: (error) => {
+            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+        },
+    });
+}
     

@@ -16,13 +16,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, ChevronDown } from "lucide-react";
-import type { FitnessGoal } from "@/lib/types";
-import { useEffect } from "react";
-import { format as formatDate, isValid } from "date-fns";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
+import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
+import { format as formatDate, isValid, differenceInDays, addDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAnalyzeGoals } from "@/lib/firestore.service";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const goalSchema = z.object({
@@ -41,6 +43,7 @@ const goalsFormSchema = z.object({
 type GoalSetterCardProps = {
   initialGoals: FitnessGoal[];
   onGoalsChange: (updatedGoals: FitnessGoal[]) => void;
+  userProfile: UserProfile;
 };
 
 // Helper to create initial form values from initialGoals prop
@@ -79,8 +82,12 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 };
 
 
-export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
+export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
+  const [isEditing, setIsEditing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const analyzeGoalsMutation = useAnalyzeGoals();
+  
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
     defaultValues: createFormValues(initialGoals), 
@@ -94,6 +101,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     control: form.control,
     name: "goals",
   });
+  
+  const activeGoalsForAnalysis = useMemo(() => {
+    return (userProfile.fitnessGoals || []).filter(g => !g.achieved);
+  }, [userProfile.fitnessGoals]);
 
   const handleSetPrimary = (selectedIndex: number) => {
     const currentGoals = form.getValues("goals");
@@ -123,6 +134,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
         }
     });
     onGoalsChange(updatedGoals);
+    setIsEditing(false);
   }
 
   const handleAddNewGoal = () => {
@@ -150,64 +162,125 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
       // Otherwise, just append to the end.
       append(newGoal);
     }
+
+    // Automatically switch to edit mode
+    setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    form.reset(createFormValues(initialGoals));
+    setIsEditing(false);
+  };
+
+  const handleAnalyzeGoals = () => {
+    if (activeGoalsForAnalysis.length === 0) {
+      toast({ title: "No Active Goals", description: "Add at least one goal to get an analysis.", variant: "default" });
+      return;
+    }
+    
+    setAnalysisError(null); // Clear previous errors
+    
+    const analysisInput: AnalyzeFitnessGoalsInput = {
+      userProfile: {
+        age: userProfile.age,
+        gender: userProfile.gender as 'Male' | 'Female' | undefined,
+        weightValue: userProfile.weightValue,
+        weightUnit: userProfile.weightUnit,
+        bodyFatPercentage: userProfile.bodyFatPercentage,
+        experienceLevel: userProfile.experienceLevel,
+        fitnessGoals: activeGoalsForAnalysis.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
+      }
+    };
+
+    analyzeGoalsMutation.mutate(analysisInput, {
+      onError: (error) => {
+        setAnalysisError(error.message);
+      }
+    });
+  };
+
+  const handleAcceptSuggestion = (originalDescription: string, suggestedGoal: string, timelineInDays?: number) => {
+    const updatedGoals: FitnessGoal[] = initialGoals.map(goal => {
+      if (goal.description === originalDescription) {
+        const newGoal = { ...goal, description: suggestedGoal };
+        if (timelineInDays && timelineInDays > 0) {
+          newGoal.targetDate = addDays(new Date(), timelineInDays);
+        }
+        return newGoal;
+      }
+      return goal;
+    });
+
+    onGoalsChange(updatedGoals);
+
+    toast({
+      title: "Goal Updated!",
+      description: "Your goal has been updated with the AI's suggestion.",
+    });
   };
 
   const activeFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => !field.achieved);
   const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
-
+  const analysisToRender = userProfile?.goalAnalysis?.result;
+  const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
+  
   return (
     <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-            <Target className="h-6 w-6 text-primary"/>
-            Your Fitness Goals
-        </CardTitle>
-        <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between pb-4">
+        <div className="space-y-1.5">
+            <CardTitle className="font-headline flex items-center gap-2">
+                <Target className="h-6 w-6 text-primary"/>
+                Your Fitness Goals
+            </CardTitle>
+            <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
+        </div>
+        {isEditing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" onClick={handleCancel} aria-label="Cancel edit">
+              <XCircle className="h-5 w-5" />
+            </Button>
+            <Button size="icon" onClick={form.handleSubmit(onSubmit)} aria-label="Save goals">
+              <Save className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} aria-label="Edit goals">
+            <Edit2 className="h-5 w-5" />
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
             {/* Active Goals */}
-            {activeFields.map(({ field, index }) => {
+            {activeFields.length > 0 ? activeFields.map(({ field, index }) => {
               const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
               const isAchieved = form.watch(`goals.${index}.achieved`);
               return (
                 <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`goals.${index}.description`}
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Goal Description</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`goals.${index}.targetDate`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Target Date</FormLabel>
-                          <FormControl>
-                            <Input type="date" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    {isAchieved && (
-                       <FormField
+                  {isEditing ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
                           control={form.control}
-                          name={`goals.${index}.dateAchieved`}
+                          name={`goals.${index}.description`}
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormLabel>Goal Description</FormLabel>
+                              <FormControl>
+                                <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`goals.${index}.targetDate`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Date Achieved</FormLabel>
+                              <FormLabel>Target Date</FormLabel>
                               <FormControl>
                                 <Input type="date" {...field} />
                               </FormControl>
@@ -215,50 +288,75 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                             </FormItem>
                           )}
                         />
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
-                    <div className="flex items-center gap-4">
-                       <Button
-                          type="button"
-                          variant={isCurrentGoalPrimary ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleSetPrimary(index)}
-                          disabled={isCurrentGoalPrimary}
-                          className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
-                      >
-                          {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
-                      </Button>
-                      <FormField
-                        control={form.control}
-                        name={`goals.${index}.achieved`}
-                        render={({ field: checkboxField }) => ( 
-                            <FormItem className="flex flex-row items-center space-x-2">
-                            <FormControl>
-                                <Checkbox
-                                checked={checkboxField.value}
-                                onCheckedChange={checkboxField.onChange}
-                                />
-                            </FormControl>
-                            <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
-                            </FormItem>
+                        {isAchieved && (
+                           <FormField
+                              control={form.control}
+                              name={`goals.${index}.dateAchieved`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Date Achieved</FormLabel>
+                                  <FormControl>
+                                    <Input type="date" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
                         )}
-                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
+                        <div className="flex items-center gap-4">
+                           <Button
+                              type="button"
+                              variant={isCurrentGoalPrimary ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => handleSetPrimary(index)}
+                              disabled={isCurrentGoalPrimary}
+                              className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
+                          >
+                              {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
+                          </Button>
+                          <FormField
+                            control={form.control}
+                            name={`goals.${index}.achieved`}
+                            render={({ field: checkboxField }) => ( 
+                                <FormItem className="flex flex-row items-center space-x-2">
+                                <FormControl>
+                                    <Checkbox
+                                    checked={checkboxField.value}
+                                    onCheckedChange={checkboxField.onChange}
+                                    />
+                                </FormControl>
+                                <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
+                                </FormItem>
+                            )}
+                            />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm">
+                      <div className="flex justify-between items-start">
+                         <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
+                      </div>
+                      <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
                     </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => remove(index)}
-                      className="text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
-                    </Button>
-                  </div>
+                  )}
                 </Card>
               );
-            })}
+            }) : (
+                 <p className="text-sm text-center text-muted-foreground py-4">No active goals set. Add a new goal to get started!</p>
+            )}
 
             {/* Achieved Goals Accordion */}
             {achievedFields.length > 0 && (
@@ -266,13 +364,13 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 <AccordionItem value="achieved-goals" className="border rounded-md px-4 bg-secondary/30">
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-2">
-                       <Star className="h-5 w-5 text-yellow-500 fill-yellow-400" />
+                       <CheckCircle className="h-5 w-5 text-green-600" />
                        <span className="font-semibold">View {achievedFields.length} Completed Goal{achievedFields.length > 1 ? 's' : ''}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2">
                     <div className="space-y-3">
-                    {achievedFields.map(({ field, index }) => (
+                    {achievedFields.map(({ field }) => (
                       <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
                         <div className="flex flex-col">
                           <p className="font-medium text-foreground">{field.description}</p>
@@ -290,19 +388,128 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
                 </AccordionItem>
               </Accordion>
             )}
-
-            <div className="flex justify-between items-center pt-4">
-                <Button
+            
+            <div className="pt-4 flex justify-start items-center">
+              <Button
                 type="button"
                 variant="outline"
                 onClick={handleAddNewGoal}
-                >
+              >
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
-                </Button>
-                <Button type="submit" className="bg-primary hover:bg-primary/90">Save Goals</Button>
+              </Button>
             </div>
           </form>
         </Form>
+        <div className="pt-6 mt-6 border-t">
+          <h4 className="font-headline flex items-center gap-2 text-lg mb-2 text-primary">
+            <Zap className="h-5 w-5" />
+            AI Goal Analysis
+          </h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Get AI-powered feedback on your goals to make them more specific, realistic, and achievable based on your personal stats.
+          </p>
+          
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <div className="inline-block"> 
+                  <Button onClick={handleAnalyzeGoals} disabled={analyzeGoalsMutation.isPending || activeGoalsForAnalysis.length === 0} className="w-full sm:w-auto">
+                    {analyzeGoalsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                    Analyze My Goals
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {activeGoalsForAnalysis.length === 0 && (
+                <TooltipContent>
+                  <p>Please add at least one active goal before analyzing.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+
+          {analysisError && (
+             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5 mt-0.5"/>
+              <div>
+                 <p className="font-semibold">Analysis Error</p>
+                 <p className="text-sm">{analysisError}</p>
+              </div>
+            </div>
+          )}
+
+          {analysisToRender && (
+             <Card className="mt-6 bg-secondary/30">
+                <CardHeader>
+                  <CardDescription>
+                    {analysisGeneratedDate ? `Generated on: ${formatDate(analysisGeneratedDate, "MMMM d, yyyy")}` : ''}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-sm italic text-muted-foreground">{analysisToRender.overallSummary}</p>
+                    <div className="space-y-4">
+                        {analysisToRender.goalInsights.map((insight, index) => {
+                          const isPrimary = insight.relationshipToPrimary === 'Primary';
+                          const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+
+                          return (
+                            <div key={index} className="p-3 border rounded-md bg-background/50">
+                                <div className="relative">
+                                  <div className="md:pr-36">
+                                     <p className="text-sm font-semibold text-muted-foreground">
+                                        {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
+                                        Original Goal: "{insight.originalGoalDescription}"
+                                    </p>
+                                  </div>
+                                  {originalGoalIsVague && (
+                                    <div className="absolute top-0 right-0 hidden md:block">
+                                      <Button 
+                                        size="sm" 
+                                        variant="outline"
+                                        className="h-auto px-2 py-1 text-xs"
+                                        onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                      >
+                                        <Check className="mr-1.5 h-3 w-3"/>
+                                        Use AI Suggestion
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="mt-3 space-y-3">
+                                    {insight.isConflicting && (
+                                        <div className="flex items-start gap-2 text-sm text-destructive">
+                                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0"/>
+                                            <p><span className="font-semibold">Conflict:</span> This goal may conflict with others.</p>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start gap-2 text-sm text-primary">
+                                        <Lightbulb className="h-4 w-4 mt-0.5 flex-shrink-0"/>
+                                        <p><span className="font-semibold">Suggestion:</span> {insight.suggestedGoal}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
+                                </div>
+
+                                {originalGoalIsVague && (
+                                    <div className="mt-4 md:hidden">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                        >
+                                            <Check className="mr-2 h-4 w-4"/>
+                                            Use AI Suggestion
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                </CardContent>
+             </Card>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
