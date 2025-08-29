@@ -27,10 +27,10 @@ import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
 import type { Interval } from 'date-fns';
 import { subWeeks } from 'date-fns/subWeeks';
 import { isAfter } from 'date-fns/isAfter';
-import { differenceInDays } from 'date-fns/differenceInDays';
+import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Rowing, Mountain } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
@@ -810,6 +810,90 @@ export default function AnalysisPage() {
     return { chartData, trendlineData };
 }, [selectedLift, selectedLiftKey, workoutLogs, personalRecords]);
 
+const cardioAnalysisData = useMemo(() => {
+    const { logsForPeriod } = filteredData;
+
+    const cardioExercises = logsForPeriod.flatMap(log => 
+        log.exercises
+            .filter(ex => ex.category === 'Cardio')
+            .map(ex => {
+                let name = toTitleCase(ex.name);
+                if (ex.name.toLowerCase().includes('treadmill')) {
+                    const distanceMi = (ex.distanceUnit === 'km' ? ex.distance! * 0.621371 : ex.distance) || 0;
+                    const durationHr = (ex.durationUnit === 'min' ? ex.duration! / 60 : ex.duration) || 0;
+                    if (durationHr > 0) {
+                        const speedMph = distanceMi / durationHr;
+                        name = speedMph > 4.0 ? 'Running' : 'Walking';
+                    } else {
+                        name = 'Walking';
+                    }
+                } else if (ex.name.toLowerCase().includes('run')) name = 'Running';
+                else if (ex.name.toLowerCase().includes('walk')) name = 'Walking';
+                else if (ex.name.toLowerCase().includes('cycle') || ex.name.toLowerCase().includes('bike')) name = 'Cycling';
+                else if (ex.name.toLowerCase().includes('climbmill') || ex.name.toLowerCase().includes('stairmaster')) name = 'Climbmill';
+                else if (ex.name.toLowerCase().includes('rowing')) name = 'Rowing';
+                
+                return { ...ex, name };
+            })
+    );
+
+    const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+
+    const statsByActivity = cardioExercises.reduce((acc, ex) => {
+        if (!acc[ex.name]) {
+            acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0 };
+        }
+        const stats = acc[ex.name];
+        stats.count++;
+        stats.totalCalories += ex.calories || 0;
+
+        let distanceMi = 0;
+        if (ex.distance) {
+            if (ex.distanceUnit === 'km') distanceMi = ex.distance * 0.621371;
+            else if (ex.distanceUnit === 'ft') distanceMi = ex.distance * 0.000189394;
+            else if (ex.distanceUnit === 'mi') distanceMi = ex.distance;
+        }
+        stats.totalDistanceMi += distanceMi;
+
+        let durationMin = 0;
+        if (ex.duration) {
+            if (ex.durationUnit === 'hr') durationMin = ex.duration * 60;
+            else if (ex.durationUnit === 'sec') durationMin = ex.duration / 60;
+            else if (ex.durationUnit === 'min') durationMin = ex.duration;
+        }
+        stats.totalDurationMin += durationMin;
+        
+        return acc;
+    }, {} as Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>);
+
+    const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
+        name,
+        value: Math.round(stats.totalCalories),
+        fill: `hsl(var(--chart-${Object.keys(statsByActivity).indexOf(name) + 1}))`
+    }));
+
+    let calorieSummary = "";
+    if (timeRange === 'weekly') {
+        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} calories from cardio.`;
+    } else if (timeRange === 'monthly') {
+        const numWeeks = differenceInWeeks(endOfMonth(new Date()), startOfMonth(new Date())) + 1;
+        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories)} calories, averaging ${Math.round(avgPerWeek)}/week.`;
+    } else if (timeRange === 'yearly') {
+        const numMonths = differenceInMonths(endOfYear(new Date()), startOfYear(new Date())) + 1;
+        const avgPerMonth = numMonths > 0 ? totalCalories / numMonths : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} calories, averaging ${Math.round(avgPerMonth)}/month.`;
+    } else { // all-time
+        const firstLogDate = workoutLogs?.[workoutLogs.length - 1]?.date;
+        const numYears = firstLogDate ? differenceInYears(new Date(), firstLogDate) + 1 : 1;
+        const avgPerYear = numYears > 0 ? totalCalories / numYears : 0;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} calories in total, averaging ${Math.round(avgPerYear)}/year.`;
+    }
+
+    return { totalCalories, statsByActivity, pieChartData, calorieSummary };
+}, [filteredData, workoutLogs, timeRange]);
+
+
 useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
         setCurrentLiftLevel(null);
@@ -1338,6 +1422,75 @@ useEffect(() => {
                     ) : null}
                  </div>
 
+              </CardContent>
+            </Card>
+             <Card className="shadow-lg lg:col-span-6">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" />Cardio Analysis</CardTitle>
+                <CardDescription>A summary of your cardio performance for {timeRangeDisplayNames[timeRange]}.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {cardioAnalysisData.totalCalories > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="space-y-4">
+                       <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
+                       <div className="space-y-3">
+                         {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
+                           const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
+                           const formattedDuration = formatCardioDuration(Math.round(stats.totalDurationMin));
+                           
+                           let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
+                           if (name === 'Running') icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
+                           if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
+                           if (name === 'Rowing') icon = <Rowing className="h-5 w-5 text-accent flex-shrink-0" />;
+                           if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
+
+                           return (
+                             <div key={name} className="flex items-start gap-3">
+                               {icon}
+                               <div>
+                                 <p className="font-bold">{name}</p>
+                                 <p className="text-xs text-muted-foreground">
+                                   You completed {stats.count} session{stats.count > 1 ? 's' : ''}
+                                   {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
+                                   {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
+                                   , burning {Math.round(stats.totalCalories)} kcal.
+                                   {avgDistance && ` Your average distance was ${avgDistance} mi.`}
+                                 </p>
+                               </div>
+                             </div>
+                           );
+                         })}
+                       </div>
+                    </div>
+                     <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                        <ResponsiveContainer>
+                          <PieChart>
+                            <Pie
+                              data={cardioAnalysisData.pieChartData}
+                              dataKey="value"
+                              nameKey="name"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              labelLine={false}
+                              label={(props) => renderPieLabel(props, 'kcal')}
+                            >
+                              {cardioAnalysisData.pieChartData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                            <Legend content={<ChartLegendContent />} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </ChartContainer>
+                  </div>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-center">
+                    <p>No cardio data logged for this period.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
         </>)}
