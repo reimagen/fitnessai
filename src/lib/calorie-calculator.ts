@@ -94,7 +94,7 @@ const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']):
         case 'km': return distance * 0.621371;
         case 'ft': return distance * 0.000189394;
         case 'm': return distance * 0.000621371;
-        default: return distance;
+        default: return 0; // Return 0 if unit is undefined or not recognized
     }
 };
 
@@ -129,6 +129,7 @@ export function calculateExerciseCalories(
     let metValue: number | null = null;
     let durationInHours: number | null = null;
     
+    // Standardize distance to miles first.
     const distanceInMiles = getDistanceInMiles(distance, distanceUnit);
 
     if (duration && duration > 0) {
@@ -179,6 +180,7 @@ export function calculateExerciseCalories(
         }
     } else if (exerciseName.includes('climbmill') || exerciseName.includes('stairmaster')) {
         metValue = CLIMBMILL_MET_VALUE;
+        // No duration estimation from distance for climbmill. Requires duration input.
     }
 
     if (!metValue || !durationInHours || durationInHours <= 0) {
