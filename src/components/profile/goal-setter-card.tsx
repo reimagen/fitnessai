@@ -18,12 +18,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput } from "@/lib/types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAnalyzeGoals } from "@/lib/firestore.service";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
 const goalSchema = z.object({
@@ -99,6 +100,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     control: form.control,
     name: "goals",
   });
+  
+  const activeGoalsForAnalysis = useMemo(() => {
+    return (userProfile.fitnessGoals || []).filter(g => !g.achieved);
+  }, [userProfile.fitnessGoals]);
 
   const handleSetPrimary = (selectedIndex: number) => {
     const currentGoals = form.getValues("goals");
@@ -167,8 +172,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   };
 
   const handleAnalyzeGoals = () => {
-    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
-    if (activeGoals.length === 0) {
+    if (activeGoalsForAnalysis.length === 0) {
       toast({ title: "No Active Goals", description: "Add at least one goal to get an analysis.", variant: "default" });
       return;
     }
@@ -181,7 +185,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
         weightUnit: userProfile.weightUnit,
         bodyFatPercentage: userProfile.bodyFatPercentage,
         experienceLevel: userProfile.experienceLevel,
-        fitnessGoals: activeGoals.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
+        fitnessGoals: activeGoalsForAnalysis.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
       }
     });
   };
@@ -377,10 +381,24 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
           <p className="text-sm text-muted-foreground mb-4">
             Get AI-powered feedback on your goals to make them more specific, realistic, and achievable based on your personal stats.
           </p>
-          <Button onClick={handleAnalyzeGoals} disabled={analyzeGoalsMutation.isPending} className="w-full sm:w-auto">
-            {analyzeGoalsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-            {showReanalyze ? "Re-analyze Goals" : "Analyze My Goals"}
-          </Button>
+          
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <div className="inline-block"> 
+                  <Button onClick={handleAnalyzeGoals} disabled={analyzeGoalsMutation.isPending || activeGoalsForAnalysis.length === 0} className="w-full sm:w-auto">
+                    {analyzeGoalsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+                    {showReanalyze ? "Re-analyze Goals" : "Analyze My Goals"}
+                  </Button>
+                </div>
+              </TooltipTrigger>
+              {activeGoalsForAnalysis.length === 0 && (
+                <TooltipContent>
+                  <p>Please add at least one active goal before analyzing.</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
 
           {analysisToRender && (
              <Card className="mt-6 bg-secondary/30">
