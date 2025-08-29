@@ -153,7 +153,8 @@ export default function ProfilePage() {
           />
           <GoalSetterCard 
             initialGoals={userProfile.fitnessGoals} 
-            onGoalsChange={handleGoalsUpdate} 
+            onGoalsChange={handleGoalsUpdate}
+            userProfile={userProfile}
           />
         </>
       ) : (

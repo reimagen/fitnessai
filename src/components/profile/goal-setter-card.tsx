@@ -16,13 +16,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle } from "lucide-react";
-import type { FitnessGoal } from "@/lib/types";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle } from "lucide-react";
+import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput } from "@/lib/types";
 import { useEffect, useState } from "react";
-import { format as formatDate, isValid } from "date-fns";
+import { format as formatDate, isValid, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useAnalyzeGoals } from "@/lib/firestore.service";
 
 
 const goalSchema = z.object({
@@ -41,6 +42,7 @@ const goalsFormSchema = z.object({
 type GoalSetterCardProps = {
   initialGoals: FitnessGoal[];
   onGoalsChange: (updatedGoals: FitnessGoal[]) => void;
+  userProfile: UserProfile;
 };
 
 // Helper to create initial form values from initialGoals prop
@@ -79,9 +81,10 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 };
 
 
-export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardProps) {
+export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const analyzeGoalsMutation = useAnalyzeGoals();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
@@ -163,8 +166,32 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
     setIsEditing(false);
   };
 
+  const handleAnalyzeGoals = () => {
+    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
+    if (activeGoals.length === 0) {
+      toast({ title: "No Active Goals", description: "Add at least one goal to get an analysis.", variant: "default" });
+      return;
+    }
+    
+    analyzeGoalsMutation.mutate({
+      userProfile: {
+        age: userProfile.age,
+        gender: userProfile.gender as 'Male' | 'Female' | undefined,
+        weightValue: userProfile.weightValue,
+        weightUnit: userProfile.weightUnit,
+        bodyFatPercentage: userProfile.bodyFatPercentage,
+        experienceLevel: userProfile.experienceLevel,
+        fitnessGoals: activeGoals.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
+      }
+    });
+  };
+
   const activeFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => !field.achieved);
   const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
+  const analysisToRender = userProfile?.goalAnalysis?.result;
+  const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
+  const showReanalyze = analysisGeneratedDate && differenceInDays(new Date(), analysisGeneratedDate) < 14;
+
 
   return (
     <Card className="shadow-lg">
@@ -342,6 +369,53 @@ export function GoalSetterCard({ initialGoals, onGoalsChange }: GoalSetterCardPr
             </div>
           </form>
         </Form>
+        <div className="pt-6 mt-6 border-t">
+          <h4 className="font-headline flex items-center gap-2 text-lg mb-2 text-primary">
+            <Zap className="h-5 w-5" />
+            AI Goal Analysis
+          </h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Get AI-powered feedback on your goals to make them more specific, realistic, and achievable based on your personal stats.
+          </p>
+          <Button onClick={handleAnalyzeGoals} disabled={analyzeGoalsMutation.isPending} className="w-full sm:w-auto">
+            {analyzeGoalsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
+            {showReanalyze ? "Re-analyze Goals" : "Analyze My Goals"}
+          </Button>
+
+          {analysisToRender && (
+             <Card className="mt-6 bg-secondary/30">
+                <CardHeader>
+                  <CardTitle className="font-headline text-lg">AI Feedback</CardTitle>
+                  <CardDescription>
+                    Generated on: {formatDate(analysisGeneratedDate!, "MMMM d, yyyy")}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p className="text-sm italic text-muted-foreground">{analysisToRender.overallSummary}</p>
+                    <div className="space-y-4">
+                        {analysisToRender.goalInsights.map((insight, index) => (
+                            <div key={index} className="p-3 border rounded-md bg-background/50">
+                                <p className="text-sm font-semibold text-muted-foreground">Original Goal: "{insight.originalGoalDescription}"</p>
+                                <div className="mt-3 space-y-3">
+                                    {insight.isConflicting && (
+                                        <div className="flex items-start gap-2 text-sm text-destructive">
+                                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0"/>
+                                            <p><span className="font-semibold">Conflict:</span> This goal may conflict with others.</p>
+                                        </div>
+                                    )}
+                                    <div className="flex items-start gap-2 text-sm text-primary">
+                                        <Lightbulb className="h-4 w-4 mt-0.5 flex-shrink-0"/>
+                                        <p><span className="font-semibold">Suggestion:</span> {insight.suggestedGoal}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+             </Card>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

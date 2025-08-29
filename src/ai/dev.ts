@@ -6,3 +6,4 @@ import '@/ai/flows/weekly-workout-planner.ts';
 import '@/ai/flows/personal-record-parser.ts';
 import '@/ai/flows/strength-imbalance-analyzer.ts';
 import '@/ai/flows/lift-progression-analyzer.ts';
+import '@/ai/flows/goal-analyzer.ts';
