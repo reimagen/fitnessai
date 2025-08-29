@@ -40,6 +40,7 @@ const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
 const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
 const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
 const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
+const DEFAULT_CLIMBMILL_PACE_MIN_PER_100_FT = 2.0; // 2 minutes per 100 vertical feet
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
   if (!workoutLogs || workoutLogs.length === 0) {
@@ -73,7 +74,7 @@ function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): nu
   const totalMinutes = exercises.reduce((sum, ex) => sum + ex.duration, 0);
   const totalMiles = exercises.reduce((sum, ex) => sum + ex.distance, 0);
   
-  return totalMinutes / totalMiles;
+  return totalMinutes > 0 ? totalMiles / totalMinutes : (activity === 'run' ? DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE : DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE);
 }
 
 function getMetForPace(paceMinPerMile: number, metTable: { [speed: number]: number }): number {
