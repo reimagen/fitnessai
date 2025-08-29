@@ -895,14 +895,14 @@ const cardioAnalysisData = useMemo(() => {
         const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
         calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else if (timeRange === 'yearly') {
-        const numMonths = differenceInMonths(endOfYear(today), startOfYear(today)) + 1;
-        const avgPerMonth = numMonths > 0 ? totalCalories / numMonths : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerMonth)}/month.`;
+        const numWeeks = differenceInWeeks(endOfYear(today), startOfYear(today));
+        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else { // all-time
         const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs[workoutLogs.length - 1].date : new Date();
-        const numYears = differenceInYears(new Date(), firstLogDate) || 1;
-        const avgPerYear = totalCalories / numYears;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerYear)}/year.`;
+        const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
+        const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerWeek)}/week.`;
     }
     
     // --- Cardio Amount Bar Chart Data ---
@@ -928,12 +928,19 @@ const cardioAnalysisData = useMemo(() => {
         }
         case 'monthly': {
             const monthStart = startOfMonth(today);
-            const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: endOfMonth(today) }, { weekStartsOn: 0 });
-            const weeklyData = new Map<string, any>(weeksInMonth.map((weekStart, i) => {
-                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
-                 const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
-                 return [format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData }];
-            }));
+            const monthEnd = endOfMonth(today);
+            const weeklyData = new Map<string, any>();
+            
+            const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
+
+            weeks.forEach(weekStart => {
+                // Ensure the week is fully within the month
+                const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+                if (weekStart.getMonth() === monthStart.getMonth() && weekEnd.getMonth() === monthStart.getMonth()) {
+                     const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
+                     weeklyData.set(format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData });
+                }
+            });
 
             cardioExercises.forEach(ex => {
                 const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
@@ -946,21 +953,20 @@ const cardioAnalysisData = useMemo(() => {
             break;
         }
         case 'yearly': {
-            const yearStart = startOfYear(today);
             const monthlyData = new Map<string, any>();
-            for (let i = 0; i < 12; i++) {
-                const month = new Date(today.getFullYear(), i, 1);
-                const monthKey = format(month, 'yyyy-MM');
-                monthlyData.set(monthKey, { dateLabel: format(month, 'MMM'), ...initialActivityData });
-            }
             cardioExercises.forEach(ex => {
                 const monthKey = format(ex.date, 'yyyy-MM');
-                const monthData = monthlyData.get(monthKey);
-                if (monthData) {
-                    monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
+                if (!monthlyData.has(monthKey)) {
+                    monthlyData.set(monthKey, { dateLabel: format(ex.date, 'MMM'), ...initialActivityData });
                 }
+                const monthData = monthlyData.get(monthKey);
+                monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
             });
-            cardioAmountChartData = Array.from(monthlyData.values());
+            cardioAmountChartData = Array.from(monthlyData.values()).sort((a,b) => {
+                // A bit of a hack to sort by month name correctly
+                const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
+            });
             break;
         }
         case 'all-time': {
@@ -1584,9 +1590,12 @@ useEffect(() => {
                                     </Pie>
                                     <Tooltip content={<ChartTooltipContent hideIndicator />} />
                                     <Legend content={({ payload }) => {
+                                        if (!payload) return null;
+                                        const columns = payload.length % 2 === 0 ? 2 : 3;
+                                        const gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`;
                                         return (
-                                            <div className="flex w-full items-center justify-center">
-                                                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs mt-2">
+                                            <div className="flex justify-center">
+                                                <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns }}>
                                                     {payload?.map((entry: any, index: number) => (
                                                     <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                                                         <span
@@ -1612,7 +1621,22 @@ useEffect(() => {
                                         <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
                                         <YAxis allowDecimals={false} />
                                         <Tooltip content={<ChartTooltipContent />} />
-                                        <Legend content={<ChartLegendContent />} />
+                                        <Legend content={({payload}) => {
+                                            if (!payload) return null;
+                                            const columns = payload.length <= 3 ? payload.length : 3;
+                                            return (
+                                                <div className="flex justify-center">
+                                                    <div className="grid gap-x-4 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
+                                                        {payload.map((entry:any, index:number) => (
+                                                            <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                                <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
+                                                                <span className="text-muted-foreground">{entry.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        }} />
                                         {Object.keys(cardioAnalysisData.statsByActivity).map(activity => (
                                             <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />} />
                                         ))}
