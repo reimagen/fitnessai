@@ -76,12 +76,12 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
         output: { schema: AnalyzeFitnessGoalsOutputSchema },
         prompt: `You are an expert fitness and nutrition coach. Your task is to analyze a user's fitness goals based on their personal statistics. You must make their goals more specific, measurable, achievable, relevant, and time-bound (SMART).
 
-        **User's Stats:**
-        - Gender: {{{userProfile.gender}}}
-        - Age: {{{userProfile.age}}}
-        - Weight: {{{userProfile.weightValue}}} {{{userProfile.weightUnit}}}
-        - Body Fat: {{{userProfile.bodyFatPercentage}}}%
-        - Experience: {{{userProfile.experienceLevel}}}
+        **User's Stats (only use the data provided):**
+        {{#if userProfile.gender}}- Gender: {{{userProfile.gender}}}{{/if}}
+        {{#if userProfile.age}}- Age: {{{userProfile.age}}}{{/if}}
+        {{#if userProfile.weightValue}}- Weight: {{{userProfile.weightValue}}} {{{userProfile.weightUnit}}}{{/if}}
+        {{#if userProfile.bodyFatPercentage}}- Body Fat: {{{userProfile.bodyFatPercentage}}}%{{/if}}
+        {{#if userProfile.experienceLevel}}- Experience: {{{userProfile.experienceLevel}}}{{/if}}
         
         **User's Goals:**
         {{#each userProfile.fitnessGoals}}
@@ -93,9 +93,9 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
 
         **CRITICAL INSTRUCTIONS FOR YOUR ANALYSIS:**
         1.  **Identify Conflicts**: First, check if any goals are in direct conflict. The most common conflict is aggressive fat loss simultaneously with significant muscle gain. If you find a conflict, set 'isConflicting' to true for the relevant goals and explain in the 'analysis' why they conflict and suggest prioritizing one.
-        2.  **Make Vague Goals Specific**: Many goals will be vague (e.g., "build muscle", "lose body fat", "tone up"). You MUST make them specific using the user's stats.
-            *   **For "Lose Body Fat"**: Use the provided body fat percentage. Suggest a realistic target. For a female with 28% body fat, a good initial goal is to aim for 24-25%. A male at 20% might aim for 15-16%. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' must explain *why* this is a healthy and sustainable target.
-            *   **For "Build Muscle"**: This is often tied to weight gain. Suggest a realistic rate of weight gain. For a beginner, suggest gaining 0.5-1.0 lbs per week. Your 'suggestedGoal' should be "Gain 5-6 lbs of lean mass over the next 3 months by increasing weight to approximately [current weight + 5] lbs."
+        2.  **Make Vague Goals Specific**: Many goals will be vague (e.g., "build muscle", "lose body fat", "tone up"). You MUST make them specific using the user's stats, if available.
+            *   **For "Lose Body Fat"**: If the user has provided a body fat percentage, use it. Suggest a realistic target. For a female with 28% body fat, a good initial goal is to aim for 24-25%. A male at 20% might aim for 15-16%. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' must explain *why* this is a healthy and sustainable target. If body fat is not provided, suggest a goal based on weight loss, like "Lose 8-10 lbs of body fat over the next 3 months by focusing on consistent training and a slight caloric deficit."
+            *   **For "Build Muscle"**: This is often tied to weight gain. Suggest a realistic rate of weight gain. For a beginner, suggest gaining 0.5-1.0 lbs per week. Your 'suggestedGoal' should be "Gain 5-6 lbs of lean mass over the next 3 months." If the user provided their weight, you can make it more specific: "...by increasing weight to approximately [current weight + 5] lbs."
             *   **For "Tone Up"**: This is usually a combination of fat loss and slight muscle gain (body recomposition). Frame the 'suggestedGoal' around metrics, like "Decrease body fat by 2% and increase squat strength by 15 lbs in 10 weeks."
         3.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
         4.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level. Beginners make faster progress. Advanced lifters have slower, more incremental goals.
