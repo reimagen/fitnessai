@@ -37,13 +37,14 @@ export type AnalyzeFitnessGoalsInput = z.infer<typeof AnalyzeFitnessGoalsInputSc
 const GoalInsightSchema = z.object({
   originalGoalDescription: z.string().describe("The exact description of the original goal this insight pertains to."),
   isConflicting: z.boolean().describe("Set to true if this goal directly conflicts with another goal (e.g., aggressive weight loss and significant muscle gain)."),
+  relationshipToPrimary: z.enum(['Primary', 'Supports', 'Neutral', 'Conflicts']).optional().describe("How this goal relates to the primary goal. Set to 'Primary' for the main goal. For other goals, specify if they support, conflict with, or are neutral to the primary goal."),
   isVague: z.boolean().describe("Set to true if the goal lacks specific, measurable targets (e.g., 'tone up', 'get fit')."),
   suggestedGoal: z.string().describe("A more specific, measurable, achievable, relevant, and time-bound (SMART) version of the original goal. This is your key output."),
-  analysis: z.string().describe("A concise (1-2 sentences) explanation of why the suggestion is better, tailored to the user's stats. Explain the reasoning behind the numbers you suggest."),
+  analysis: z.string().describe("A concise (2-3 sentences) explanation of why the suggestion is better, tailored to the user's stats. You MUST explain the reasoning behind the numbers you suggest by referencing industry/science-backed comparisons."),
 });
 
 const AnalyzeFitnessGoalsOutputSchema = z.object({
-    overallSummary: z.string().describe("A brief, encouraging, high-level summary (2-3 sentences) of the user's goals. Mention if there are any major conflicts or areas for improvement."),
+    overallSummary: z.string().describe("A brief, encouraging, high-level summary (2-3 sentences) of the user's goals. You MUST acknowledge their primary goal. Mention if there are any major conflicts or areas for improvement."),
     goalInsights: z.array(GoalInsightSchema).describe("A list of specific insights, one for each of the user's original goals."),
 });
 export type AnalyzeFitnessGoalsOutput = z.infer<typeof AnalyzeFitnessGoalsOutputSchema>;
@@ -92,23 +93,26 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
         Your output MUST be a JSON object. For each goal, provide a detailed analysis.
 
         **CRITICAL INSTRUCTIONS FOR YOUR ANALYSIS:**
-        1.  **Identify Conflicts**: First, check if any goals are in direct conflict. The most common conflict is aggressive fat loss simultaneously with significant muscle gain. If you find a conflict, set 'isConflicting' to true for the relevant goals and explain in the 'analysis' why they conflict and suggest prioritizing one.
-        2.  **Make Vague Goals Specific**: Many goals will be vague (e.g., "build muscle", "lose body fat", "tone up"). You MUST make them specific using the user's stats, if available.
-            *   **For "Lose Body Fat"**: If the user has provided a body fat percentage, use it. Suggest a realistic target. For a female with 28% body fat, a good initial goal is to aim for 24-25%. A male at 20% might aim for 15-16%. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' must explain *why* this is a healthy and sustainable target. If body fat is not provided, suggest a goal based on weight loss, like "Lose 8-10 lbs of body fat over the next 3 months by focusing on consistent training and a slight caloric deficit."
-            *   **For "Build Muscle"**: This is often tied to weight gain. Suggest a realistic rate of weight gain. For a beginner, suggest gaining 0.5-1.0 lbs per week. Your 'suggestedGoal' should be "Gain 5-6 lbs of lean mass over the next 3 months." If the user provided their weight, you can make it more specific: "...by increasing weight to approximately [current weight + 5] lbs."
-            *   **For "Tone Up"**: This is usually a combination of fat loss and slight muscle gain (body recomposition). Frame the 'suggestedGoal' around metrics, like "Decrease body fat by 2% and increase squat strength by 15 lbs in 10 weeks."
-        3.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
-        4.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level. Beginners make faster progress. Advanced lifters have slower, more incremental goals.
-        5.  **Be Realistic**: Ensure the suggested goals are achievable. Do not suggest dangerously rapid weight loss or unrealistic strength gains.
+        1.  **Acknowledge Primary Goal**: In the 'overallSummary', you MUST start by acknowledging the user's primary goal.
+        2.  **Determine Goal Relationships**: For each goal, determine its relationship to the primary goal.
+            *   For the primary goal itself, set 'relationshipToPrimary' to "Primary".
+            *   For other goals, you MUST set 'relationshipToPrimary' to "Supports", "Neutral", or "Conflicts". For example, "increase bench press" *Supports* a primary goal of "build muscle". "Improve flexibility" is likely *Neutral* to a primary goal of "lose 10 lbs".
+        3.  **Provide Expanded Explanations**: In the 'analysis' for each suggestion, you MUST provide the "why" behind your numbers by referencing industry or science-backed data. Do not just state a number; explain why it's a good target for this specific user.
+            *   **For "Lose Body Fat"**: If the user has provided a body fat percentage, use it. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' MUST then explain this, for example: "For women, a healthy body fat range is typically 25-31%, while 21-24% is considered the 'fitness' range. A 3% drop over 3 months is a safe, sustainable rate of fat loss, which is why aiming for 25% is an excellent and achievable first step."
+            *   **For "Build Muscle"**: This is often tied to weight gain and experience. Your 'suggestedGoal' should be "Gain 5-6 lbs of lean mass over the next 3 months." Your 'analysis' MUST justify this, for example: "As an intermediate lifter, gaining 0.5 lbs per week is a realistic rate for lean muscle growth without excessive fat gain. This target of 5-6 lbs over 12 weeks aligns perfectly with that evidence-based approach."
+            *   **For "Tone Up"**: Frame this as body recomposition. 'suggestedGoal': "Decrease body fat by 2% and increase squat strength by 15 lbs in 10 weeks." 'analysis': "This combines fat loss and muscle gain. Focusing on compound lift progression (like squats) while maintaining a slight caloric deficit is an effective strategy for achieving a more 'toned' physique."
+        4.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
+        5.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level. Beginners make faster progress. Advanced lifters have slower, more incremental goals.
 
         **Your Response Fields:**
-        1.  **overallSummary**: A brief (2-3 sentence) high-level summary. Start with encouragement, then mention if there are conflicts or if goals could be more specific.
+        1.  **overallSummary**: A brief (2-3 sentence) high-level summary. Start with encouragement, acknowledge the primary goal, then mention if there are conflicts.
         2.  **goalInsights (Array)**: One object for EACH of the user's original goals.
             *   **originalGoalDescription**: The user's exact goal description.
             *   **isConflicting**: boolean
+            *   **relationshipToPrimary**: 'Primary', 'Supports', 'Neutral', or 'Conflicts'.
             *   **isVague**: boolean
             *   **suggestedGoal**: Your SMART version of the goal.
-            *   **analysis**: Your 1-2 sentence rationale for the suggestion.
+            *   **analysis**: Your 2-3 sentence rationale for the suggestion, including scientific/industry context.
         `,
     });
 
@@ -121,3 +125,5 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
     return output;
   }
 );
+
+    
