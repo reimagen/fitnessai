@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
 import { isWithinInterval } from 'date-fns/isWithinInterval';
@@ -29,7 +30,7 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays } from 'date-fns/differenceInDays';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
@@ -492,17 +493,21 @@ export default function AnalysisPage() {
     const today = new Date();
     let logsForPeriod = workoutLogs || [];
     let prsForPeriod = personalRecords || [];
-    
+    let goalsForPeriod = (userProfile?.fitnessGoals || []).filter(g => g.achieved && g.dateAchieved);
+
     if (timeRange !== 'all-time') {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
       else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
       else interval = { start: startOfYear(today), end: endOfYear(today) };
+      
       logsForPeriod = (workoutLogs || []).filter(log => isWithinInterval(log.date, interval));
       prsForPeriod = (personalRecords || []).filter(pr => isWithinInterval(pr.date, interval));
+      goalsForPeriod = goalsForPeriod.filter(g => isWithinInterval(g.dateAchieved!, interval));
     }
-    return { logsForPeriod, prsForPeriod };
-  }, [timeRange, workoutLogs, personalRecords]);
+
+    return { logsForPeriod, prsForPeriod, goalsForPeriod };
+  }, [timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals]);
 
   const chartData = useMemo(() => {
     const { logsForPeriod } = filteredData;
@@ -677,7 +682,14 @@ export default function AnalysisPage() {
         totalCaloriesBurned: Math.round(totalCalories),
         periodLabel: periodLabel
     };
-    return { workoutFrequencyData, newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, periodSummary };
+    return { 
+        workoutFrequencyData, 
+        newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()),
+        achievedGoalsData: filteredData.goalsForPeriod.sort((a,b) => b.dateAchieved!.getTime() - a.dateAchieved!.getTime()),
+        categoryRepData, 
+        categoryCalorieData, 
+        periodSummary 
+    };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
   const frequentlyLoggedLifts = useMemo(() => {
@@ -1021,7 +1033,66 @@ useEffect(() => {
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : !isError && (<>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2">
+                  <Award className="h-6 w-6 text-accent" /> New Milestones
+                </CardTitle>
+                <CardDescription>Achievements {timeRangeDisplayNames[timeRange]}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="prs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="prs">
+                      <Trophy className="mr-2 h-4 w-4" /> PRs
+                    </TabsTrigger>
+                    <TabsTrigger value="goals">
+                      <Flag className="mr-2 h-4 w-4" /> Goals
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="prs">
+                    {chartData.newPrsData.length > 0 ? (
+                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
+                        {chartData.newPrsData.map(pr => (
+                          <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                            <div className="flex flex-col">
+                              <p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p>
+                              <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
+                            </div>
+                            <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
+                        <Trophy className="h-12 w-12 text-primary/30 mb-4" />
+                        <p className="text-muted-foreground">No new PRs for this period.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="goals">
+                    {chartData.achievedGoalsData.length > 0 ? (
+                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
+                        {chartData.achievedGoalsData.map(goal => (
+                          <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                            <div className="flex flex-col">
+                              <p className="font-semibold text-primary">{goal.description}</p>
+                              {goal.dateAchieved && <p className="text-xs text-muted-foreground">Achieved on: {format(goal.dateAchieved, "MMMM d, yyyy")}</p>}
+                            </div>
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
+                        <Flag className="h-12 w-12 text-primary/30 mb-4" />
+                        <p className="text-muted-foreground">No goals achieved this period.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
