@@ -40,6 +40,7 @@ const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
 const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
 const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
 const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
+const DEFAULT_CLIMBMILL_PACE_MIN_PER_100FT = 1.5; // 1.5 minutes per 100 vertical feet
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
   if (!workoutLogs || workoutLogs.length === 0) {
@@ -93,7 +94,7 @@ const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']):
         case 'km': return distance * 0.621371;
         case 'ft': return distance * 0.000189394;
         case 'm': return distance * 0.000621371;
-        default: return distance; // Fallback to assuming miles if unit is undefined
+        default: return distance;
     }
 };
 
@@ -103,29 +104,24 @@ export function calculateExerciseCalories(
   userProfile: UserProfile,
   workoutLogs: WorkoutLog[] = []
 ): number {
-    // If calories are already provided and valid, return them.
     if (exercise.calories && exercise.calories > 0) {
         return exercise.calories;
     }
 
-    // Only calculate for Cardio exercises
     if (exercise.category !== 'Cardio') {
         return 0;
     }
 
-    // We need weight to calculate calories.
     if (!userProfile.weightValue || userProfile.weightValue <= 0) {
         return 0;
     }
 
     let { name, distance, distanceUnit, duration, durationUnit } = exercise;
 
-    // We need distance or duration to do anything.
     if ((!distance || distance <= 0) && (!duration || duration <= 0)) {
         return 0;
     }
 
-    // Convert weight to kg for the formula
     const weightInKg = userProfile.weightUnit === 'lbs' 
         ? (userProfile.weightValue || 0) * 0.453592 
         : (userProfile.weightValue || 0);
@@ -133,7 +129,6 @@ export function calculateExerciseCalories(
     let metValue: number | null = null;
     let durationInHours: number | null = null;
     
-    // Standardize distance to miles immediately for all subsequent calculations.
     const distanceInMiles = getDistanceInMiles(distance, distanceUnit);
 
     if (duration && duration > 0) {
@@ -141,29 +136,25 @@ export function calculateExerciseCalories(
         switch (durationUnit) {
             case 'hr': durationInMinutes = duration * 60; break;
             case 'sec': durationInMinutes = duration / 60; break;
-            default: durationInMinutes = duration; break; // Assumes 'min'
+            default: durationInMinutes = duration; break;
         }
         durationInHours = durationInMinutes / 60;
     }
 
     const exerciseName = name.toLowerCase();
 
-    // --- Determine MET value and duration in hours ---
     if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk') || exerciseName.includes('elliptical')) {
-        if (distanceInMiles <= 0) return 0; // Running/walking needs distance
-
+        if (distanceInMiles <= 0) return 0; 
         let paceMinPerMile: number;
-
-        if (durationInHours !== null) {
-            paceMinPerMile = (durationInHours * 60) / distanceInMiles;
-        } else {
+        if (!durationInHours) {
             const isRunning = exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('elliptical');
             const avgPace = getAveragePace(workoutLogs, isRunning ? 'run' : 'walk');
             const estimatedDurationMinutes = distanceInMiles * avgPace;
             durationInHours = estimatedDurationMinutes / 60;
             paceMinPerMile = avgPace;
+        } else {
+            paceMinPerMile = (durationInHours * 60) / distanceInMiles;
         }
-
         const metTable = (paceMinPerMile > 15) ? WALKING_METS : RUNNING_METS;
         metValue = getMetForPace(paceMinPerMile, metTable);
     
@@ -188,13 +179,12 @@ export function calculateExerciseCalories(
         }
     } else if (exerciseName.includes('climbmill') || exerciseName.includes('stairmaster')) {
         metValue = CLIMBMILL_MET_VALUE;
-        // For climbmill, we ONLY rely on duration. Distance is ignored for calorie calculation.
     }
 
-    if (!metValue) return 0;
-    if (durationInHours === null || durationInHours <= 0) return 0; // Can't calculate without duration
+    if (!metValue || !durationInHours || durationInHours <= 0) {
+        return 0;
+    }
 
-    // Calories burned = METs × Body Weight (kg) × Duration (hours)
     const caloriesBurned = metValue * weightInKg * durationInHours;
     
     return Math.round(caloriesBurned);
