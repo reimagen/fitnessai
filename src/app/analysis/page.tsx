@@ -892,10 +892,10 @@ const cardioAnalysisData = useMemo(() => {
         const avgPerWeek = numWeeksInYear > 0 ? totalCalories / numWeeksInYear : 0;
         calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else { // all-time
-        const firstLogDate = workoutLogs?.[workoutLogs.length - 1]?.date;
-        const numYears = firstLogDate ? differenceInYears(new Date(), firstLogDate) + 1 : 1;
-        const avgPerYear = numYears > 0 ? totalCalories / numYears : 0;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerYear)}/year.`;
+        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs[workoutLogs.length - 1].date : new Date();
+        const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
+        const avgPerWeek = totalCalories / numWeeks;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerWeek)}/week.`;
     }
 
     return { totalCalories, statsByActivity, pieChartData, calorieSummary };
@@ -1498,16 +1498,18 @@ useEffect(() => {
                                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
                                 <Legend content={({ payload }) => {
                                     return (
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 items-center justify-center gap-x-2 gap-y-1 text-xs mt-2">
-                                        {payload?.map((entry: any, index: number) => (
-                                        <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
-                                            <span
-                                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                                            style={{ backgroundColor: entry.color }}
-                                            />
-                                            <span className="text-muted-foreground">{entry.payload?.name}</span>
+                                    <div className="flex w-full items-center justify-center">
+                                        <div className="grid grid-cols-3 items-center justify-center gap-x-2 gap-y-1 text-xs mt-2">
+                                            {payload?.map((entry: any, index: number) => (
+                                            <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                <span
+                                                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                                style={{ backgroundColor: entry.color }}
+                                                />
+                                                <span className="text-muted-foreground">{entry.payload?.name}</span>
+                                            </div>
+                                            ))}
                                         </div>
-                                        ))}
                                     </div>
                                     );
                                 }} />
@@ -1528,6 +1530,7 @@ useEffect(() => {
     </div>
   );
 }
+
 
 
 
