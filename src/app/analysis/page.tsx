@@ -1480,7 +1480,21 @@ useEffect(() => {
                                 ))}
                                 </Pie>
                                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                                <Legend content={<ChartLegendContent nameKey="name" />} />
+                                <Legend content={({ payload }) => {
+                                    return (
+                                    <div className="flex items-center justify-center gap-4 text-xs mt-2">
+                                        {payload?.map((entry: any, index: number) => (
+                                        <div key={`item-${index}`} className="flex items-center gap-1.5">
+                                            <span
+                                            className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                            style={{ backgroundColor: entry.color }}
+                                            />
+                                            <span className="text-muted-foreground">{entry.payload?.name}</span>
+                                        </div>
+                                        ))}
+                                    </div>
+                                    );
+                                }} />
                             </PieChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -1498,4 +1512,5 @@ useEffect(() => {
     </div>
   );
 }
+
 
