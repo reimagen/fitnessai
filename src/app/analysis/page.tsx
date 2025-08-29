@@ -30,12 +30,13 @@ import { isAfter } from 'date-fns/isAfter';
 import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 
 
 const IMBALANCE_TYPES = [
@@ -811,6 +812,9 @@ export default function AnalysisPage() {
 }, [selectedLift, selectedLiftKey, workoutLogs, personalRecords]);
 
 const cardioAnalysisData = useMemo(() => {
+    if (!userProfile) {
+        return { totalCalories: 0, statsByActivity: {}, pieChartData: [], calorieSummary: "" };
+    }
     const { logsForPeriod } = filteredData;
 
     const cardioExercises = logsForPeriod.flatMap(log => 
@@ -818,7 +822,8 @@ const cardioAnalysisData = useMemo(() => {
             .filter(ex => ex.category === 'Cardio')
             .map(ex => {
                 let name = toTitleCase(ex.name);
-                if (ex.name.toLowerCase().includes('treadmill')) {
+                const exNameLower = ex.name.toLowerCase();
+                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical')) {
                     const distanceMi = (ex.distanceUnit === 'km' ? ex.distance! * 0.621371 : ex.distance) || 0;
                     const durationHr = (ex.durationUnit === 'min' ? ex.duration! / 60 : ex.duration) || 0;
                     if (durationHr > 0) {
@@ -827,13 +832,16 @@ const cardioAnalysisData = useMemo(() => {
                     } else {
                         name = 'Walking';
                     }
-                } else if (ex.name.toLowerCase().includes('run')) name = 'Running';
-                else if (ex.name.toLowerCase().includes('walk')) name = 'Walking';
-                else if (ex.name.toLowerCase().includes('cycle') || ex.name.toLowerCase().includes('bike')) name = 'Cycling';
-                else if (ex.name.toLowerCase().includes('climbmill') || ex.name.toLowerCase().includes('stairmaster')) name = 'Climbmill';
-                else if (ex.name.toLowerCase().includes('rowing')) name = 'Rowing';
+                } else if (exNameLower.includes('run')) name = 'Running';
+                else if (exNameLower.includes('walk')) name = 'Walking';
+                else if (exNameLower.includes('cycle') || exNameLower.includes('bike')) name = 'Cycling';
+                else if (exNameLower.includes('climbmill') || exNameLower.includes('stairmaster')) name = 'Climbmill';
+                else if (exNameLower.includes('rowing')) name = 'Rowing';
+                else if (exNameLower.includes('swim')) name = 'Swimming';
                 
-                return { ...ex, name };
+                const calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
+                
+                return { ...ex, name, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
             })
     );
 
@@ -866,10 +874,10 @@ const cardioAnalysisData = useMemo(() => {
         return acc;
     }, {} as Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>);
 
-    const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
+    const pieChartData = Object.entries(statsByActivity).map(([name, stats], index) => ({
         name,
         value: Math.round(stats.totalCalories),
-        fill: `hsl(var(--chart-${Object.keys(statsByActivity).indexOf(name) + 1}))`
+        fill: `hsl(var(--chart-${(index % 5) + 1}))`
     }));
 
     let calorieSummary = "";
@@ -891,7 +899,7 @@ const cardioAnalysisData = useMemo(() => {
     }
 
     return { totalCalories, statsByActivity, pieChartData, calorieSummary };
-}, [filteredData, workoutLogs, timeRange]);
+}, [filteredData, workoutLogs, timeRange, userProfile]);
 
 
 useEffect(() => {
@@ -1021,7 +1029,14 @@ useEffect(() => {
     return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
   };
 
-  const formatCardioDuration = (totalMinutes: number): string => `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+  const formatCardioDuration = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
   
   const CustomBarChartLegend = ({ payload }: any) => {
     if (!payload) return null;
@@ -1444,6 +1459,7 @@ useEffect(() => {
                             if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Swimming') icon = <Waves className="h-5 w-5 text-accent flex-shrink-0" />;
 
                             return (
                                 <div key={name} className="flex items-start gap-3">
@@ -1482,9 +1498,9 @@ useEffect(() => {
                                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
                                 <Legend content={({ payload }) => {
                                     return (
-                                    <div className="flex items-center justify-center gap-4 text-xs mt-2">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 items-center justify-center gap-x-4 gap-y-1 text-xs mt-2">
                                         {payload?.map((entry: any, index: number) => (
-                                        <div key={`item-${index}`} className="flex items-center gap-1.5">
+                                        <div key={`item-${index}`} className="flex items-center gap-1.5 justify-center sm:justify-start">
                                             <span
                                             className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                                             style={{ backgroundColor: entry.color }}
@@ -1512,5 +1528,6 @@ useEffect(() => {
     </div>
   );
 }
+
 
 
