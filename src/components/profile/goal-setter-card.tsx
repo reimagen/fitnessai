@@ -223,8 +223,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
   const analysisToRender = userProfile?.goalAnalysis?.result;
   const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
-  const showReanalyze = analysisGeneratedDate && differenceInDays(new Date(), analysisGeneratedDate) < 14;
-
+  
   const primaryGoalDescription = useMemo(() => {
     const primaryGoal = activeGoalsForAnalysis.find(g => g.isPrimary);
     return primaryGoal?.description;
@@ -422,7 +421,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                 <div className="inline-block"> 
                   <Button onClick={handleAnalyzeGoals} disabled={analyzeGoalsMutation.isPending || activeGoalsForAnalysis.length === 0} className="w-full sm:w-auto">
                     {analyzeGoalsMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                    {showReanalyze ? "Re-analyze Goals" : "Analyze My Goals"}
+                    Analyze My Goals
                   </Button>
                 </div>
               </TooltipTrigger>
