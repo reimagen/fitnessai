@@ -142,87 +142,94 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       <CardContent className="space-y-4">
         {isEditing ? (
           <>
-            <div>
-              <Label htmlFor="workouts-per-week-input" className="text-sm font-medium">
-                Workouts Per Week
-              </Label>
-              <Input
-                id="workouts-per-week-input"
-                type="number"
-                min="0"
-                max="7"
-                value={editedWorkoutsPerWeek}
-                onChange={(e) => setEditedWorkoutsPerWeek(e.target.value)}
-                placeholder="e.g., 3"
-                className="mt-1"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="workouts-per-week-input" className="text-sm font-medium">
+                  Workouts Per Week
+                </Label>
+                <Input
+                  id="workouts-per-week-input"
+                  type="number"
+                  min="0"
+                  max="7"
+                  value={editedWorkoutsPerWeek}
+                  onChange={(e) => setEditedWorkoutsPerWeek(e.target.value)}
+                  placeholder="e.g., 3"
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="session-time-select" className="text-sm font-medium">
+                  Time Per Session
+                </Label>
+                <Select
+                  value={editedSessionTime.toString()}
+                  onValueChange={(val) => setEditedSessionTime(parseInt(val, 10) as SessionTime)}
+                >
+                  <SelectTrigger id="session-time-select" className="mt-1">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SESSION_TIME_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value.toString()}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="experience-level-select" className="text-sm font-medium">
+                  Experience Level
+                </Label>
+                <Select
+                  value={editedExperienceLevel}
+                  onValueChange={(val) => setEditedExperienceLevel(val as ExperienceLevel)}
+                >
+                  <SelectTrigger id="experience-level-select" className="mt-1">
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EXPERIENCE_LEVEL_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="session-time-select" className="text-sm font-medium">
-                Time Commitment Per Session
-              </Label>
-              <Select
-                value={editedSessionTime.toString()}
-                onValueChange={(val) => setEditedSessionTime(parseInt(val, 10) as SessionTime)}
-              >
-                <SelectTrigger id="session-time-select" className="mt-1">
-                  <SelectValue placeholder="Select time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SESSION_TIME_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value.toString()}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="experience-level-select" className="text-sm font-medium">
-                Experience Level
-              </Label>
-              <Select
-                value={editedExperienceLevel}
-                onValueChange={(val) => setEditedExperienceLevel(val as ExperienceLevel)}
-              >
-                <SelectTrigger id="experience-level-select" className="mt-1">
-                  <SelectValue placeholder="Select level" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EXPERIENCE_LEVEL_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="cardio-goal-input" className="text-sm font-medium">Weekly Cardio Calories Target</Label>
-                    <Input
-                        id="cardio-goal-input"
-                        type="number"
-                        min="0"
-                        value={editedCardioGoal}
-                        onChange={(e) => setEditedCardioGoal(e.target.value)}
-                        placeholder="e.g., 1000"
-                        className="mt-1"
-                    />
+            
+            <div className="space-y-2 pt-2">
+                <Label className="text-sm font-medium">Weekly Cardio Calories</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="cardio-goal-input" className="text-xs font-normal text-muted-foreground">Base Target</Label>
+                        <Input
+                            id="cardio-goal-input"
+                            type="number"
+                            min="0"
+                            value={editedCardioGoal}
+                            onChange={(e) => setEditedCardioGoal(e.target.value)}
+                            placeholder="e.g., 1000 kcal"
+                            className="mt-1"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="cardio-stretch-goal-input" className="text-xs font-normal text-muted-foreground">Stretch Goal</Label>
+                        <Input
+                            id="cardio-stretch-goal-input"
+                            type="number"
+                            min="0"
+                            value={editedCardioStretchGoal}
+                            onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
+                            placeholder="e.g., 1200 kcal"
+                            className="mt-1"
+                        />
+                    </div>
                 </div>
-                <div>
-                    <Label htmlFor="cardio-stretch-goal-input" className="text-sm font-medium">Weekly Cardio Calories Stretch Target</Label>
-                    <Input
-                        id="cardio-stretch-goal-input"
-                        type="number"
-                        min="0"
-                        value={editedCardioStretchGoal}
-                        onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
-                        placeholder="e.g., 1200"
-                        className="mt-1"
-                    />
-                </div>
             </div>
+
             <div>
               <Label htmlFor="ai-preferences-notes" className="text-sm font-medium">
                 Additional Concerns or Preferences for AI
@@ -237,7 +244,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             </div>
           </>
         ) : (
-          <>
+          <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-3 text-sm">
               <div>
                 <span className="font-medium text-muted-foreground">Workouts/Week: </span>
@@ -251,22 +258,29 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 <span className="font-medium text-muted-foreground">Experience: </span>
                 <span>{formatExperienceLevel(preferences.experienceLevel)}</span>
               </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Weekly Cardio Calories Target: </span>
-                <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Weekly Cardio Calories Stretch Target: </span>
-                <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
-              </div>
             </div>
+
+            <div className="space-y-2 text-sm pt-2">
+                <h4 className="font-medium text-muted-foreground">Weekly Cardio Calories</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4 gap-y-2">
+                    <div>
+                        <span className="font-normal text-muted-foreground">Base Target: </span>
+                        <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
+                    </div>
+                    <div>
+                        <span className="font-normal text-muted-foreground">Stretch Goal: </span>
+                        <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
+                    </div>
+                </div>
+            </div>
+
             {preferences.aiPreferencesNotes && (
               <div className="pt-2">
                 <h4 className="font-semibold text-sm text-muted-foreground mt-2">Additional Preferences for AI:</h4>
                 <p className="text-sm whitespace-pre-wrap">{preferences.aiPreferencesNotes}</p>
               </div>
             )}
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
