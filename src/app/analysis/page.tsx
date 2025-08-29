@@ -93,6 +93,12 @@ const chartConfig = {
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
   actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
   trend: { label: "e1RM Trend", color: "hsl(var(--muted-foreground))" },
+  Running: { label: "Running", color: "hsl(var(--chart-1))" },
+  Walking: { label: "Walking", color: "hsl(var(--chart-2))" },
+  Cycling: { label: "Cycling", color: "hsl(var(--chart-3))" },
+  Climbmill: { label: "Climbmill", color: "hsl(var(--chart-4))" },
+  Rowing: { label: "Rowing", color: "hsl(var(--chart-5))" },
+  Swimming: { label: "Swimming", color: "hsl(var(--chart-6))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -813,9 +819,10 @@ export default function AnalysisPage() {
 
 const cardioAnalysisData = useMemo(() => {
     if (!userProfile) {
-        return { totalCalories: 0, statsByActivity: {}, pieChartData: [], calorieSummary: "" };
+        return { totalCalories: 0, statsByActivity: {}, pieChartData: [], calorieSummary: "", cardioAmountChartData: [] };
     }
     const { logsForPeriod } = filteredData;
+    const today = new Date();
 
     const cardioExercises = logsForPeriod.flatMap(log => 
         log.exercises
@@ -841,7 +848,7 @@ const cardioAnalysisData = useMemo(() => {
                 
                 const calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
                 
-                return { ...ex, name, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
+                return { ...ex, date: log.date, name, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
             })
     );
 
@@ -877,7 +884,7 @@ const cardioAnalysisData = useMemo(() => {
     const pieChartData = Object.entries(statsByActivity).map(([name, stats], index) => ({
         name,
         value: Math.round(stats.totalCalories),
-        fill: `hsl(var(--chart-${(index % 5) + 1}))`
+        fill: `var(--color-${name})`
     }));
 
     let calorieSummary = "";
@@ -888,17 +895,91 @@ const cardioAnalysisData = useMemo(() => {
         const avgPerWeek = numWeeks > 0 ? totalCalories / numWeeks : 0;
         calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
     } else if (timeRange === 'yearly') {
-        const numWeeksInYear = differenceInWeeks(endOfYear(new Date()), startOfYear(new Date()));
-        const avgPerWeek = numWeeksInYear > 0 ? totalCalories / numWeeksInYear : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerWeek)}/week.`;
+        const numMonths = differenceInMonths(endOfYear(today), startOfYear(today)) + 1;
+        const avgPerMonth = numMonths > 0 ? totalCalories / numMonths : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(avgPerMonth)}/month.`;
     } else { // all-time
         const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs[workoutLogs.length - 1].date : new Date();
-        const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
-        const avgPerWeek = totalCalories / numWeeks;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerWeek)}/week.`;
+        const numYears = differenceInYears(new Date(), firstLogDate) || 1;
+        const avgPerYear = totalCalories / numYears;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(avgPerYear)}/year.`;
+    }
+    
+    // --- Cardio Amount Bar Chart Data ---
+    let cardioAmountChartData: any[] = [];
+    const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
+    const initialActivityData = Object.fromEntries(activities.map(act => [act, 0]));
+
+    switch(timeRange) {
+        case 'weekly': {
+            const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+            const daysInWeek = eachDayOfInterval({ start: weekStart, end: endOfWeek(today, { weekStartsOn: 0 }) });
+            const dailyData = new Map<string, any>(daysInWeek.map(day => [format(day, 'yyyy-MM-dd'), { dateLabel: format(day, 'E'), ...initialActivityData }]));
+            
+            cardioExercises.forEach(ex => {
+                const dateKey = format(ex.date, 'yyyy-MM-dd');
+                const dayData = dailyData.get(dateKey);
+                if (dayData) {
+                    dayData[ex.name] = (dayData[ex.name] || 0) + (ex.calories || 0);
+                }
+            });
+            cardioAmountChartData = Array.from(dailyData.values());
+            break;
+        }
+        case 'monthly': {
+            const monthStart = startOfMonth(today);
+            const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: endOfMonth(today) }, { weekStartsOn: 0 });
+            const weeklyData = new Map<string, any>(weeksInMonth.map((weekStart, i) => {
+                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+                 const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
+                 return [format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData }];
+            }));
+
+            cardioExercises.forEach(ex => {
+                const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
+                const weekData = weeklyData.get(weekStartKey);
+                if (weekData) {
+                    weekData[ex.name] = (weekData[ex.name] || 0) + (ex.calories || 0);
+                }
+            });
+            cardioAmountChartData = Array.from(weeklyData.values());
+            break;
+        }
+        case 'yearly': {
+            const yearStart = startOfYear(today);
+            const monthlyData = new Map<string, any>();
+            for (let i = 0; i < 12; i++) {
+                const month = new Date(today.getFullYear(), i, 1);
+                const monthKey = format(month, 'yyyy-MM');
+                monthlyData.set(monthKey, { dateLabel: format(month, 'MMM'), ...initialActivityData });
+            }
+            cardioExercises.forEach(ex => {
+                const monthKey = format(ex.date, 'yyyy-MM');
+                const monthData = monthlyData.get(monthKey);
+                if (monthData) {
+                    monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
+                }
+            });
+            cardioAmountChartData = Array.from(monthlyData.values());
+            break;
+        }
+        case 'all-time': {
+            const yearlyData = new Map<string, any>();
+            cardioExercises.forEach(ex => {
+                const yearKey = format(ex.date, 'yyyy');
+                if (!yearlyData.has(yearKey)) {
+                    yearlyData.set(yearKey, { dateLabel: yearKey, ...initialActivityData });
+                }
+                const yearData = yearlyData.get(yearKey);
+                yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
+            });
+            cardioAmountChartData = Array.from(yearlyData.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, data]) => data);
+            break;
+        }
     }
 
-    return { totalCalories, statsByActivity, pieChartData, calorieSummary };
+
+    return { totalCalories, statsByActivity, pieChartData, calorieSummary, cardioAmountChartData };
 }, [filteredData, workoutLogs, timeRange, userProfile]);
 
 
@@ -1031,7 +1112,7 @@ useEffect(() => {
 
   const formatCardioDuration = (totalMinutes: number): string => {
     const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
+    const minutes = Math.round(totalMinutes % 60);
     if (hours > 0) {
         return `${hours}h ${minutes}m`;
     }
@@ -1452,7 +1533,7 @@ useEffect(() => {
                         <div className="space-y-3">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
                             const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
-                            const formattedDuration = formatCardioDuration(Math.round(stats.totalDurationMin));
+                            const formattedDuration = formatCardioDuration(stats.totalDurationMin);
                             
                             let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
                             if (name === 'Running') icon = <TrendingUp className="h-5 w-5 text-accent flex-shrink-0" />;
@@ -1478,44 +1559,68 @@ useEffect(() => {
                             );
                             })}
                         </div>
-                        <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                            <ResponsiveContainer>
-                            <PieChart>
-                                <Pie
-                                data={cardioAnalysisData.pieChartData}
-                                dataKey="value"
-                                nameKey="name"
-                                cx="50%"
-                                cy="50%"
-                                outerRadius={80}
-                                labelLine={false}
-                                label={(props) => renderPieLabel(props, 'kcal')}
-                                >
-                                {cardioAnalysisData.pieChartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                                ))}
-                                </Pie>
-                                <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                                <Legend content={({ payload }) => {
-                                    return (
-                                    <div className="flex w-full items-center justify-center">
-                                        <div className="grid grid-cols-3 items-center justify-center gap-x-2 gap-y-1 text-xs mt-2">
-                                            {payload?.map((entry: any, index: number) => (
-                                            <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
-                                                <span
-                                                className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                                                style={{ backgroundColor: entry.color }}
-                                                />
-                                                <span className="text-muted-foreground">{entry.payload?.name}</span>
+                        <Tabs defaultValue="types" className="w-full">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="types">Cardio Types</TabsTrigger>
+                            <TabsTrigger value="amount">Cardio Amount</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="types">
+                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                    data={cardioAnalysisData.pieChartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    labelLine={false}
+                                    label={(props) => renderPieLabel(props, 'kcal')}
+                                    >
+                                    {cardioAnalysisData.pieChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                    </Pie>
+                                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                                    <Legend content={({ payload }) => {
+                                        return (
+                                            <div className="flex w-full items-center justify-center">
+                                                <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs mt-2">
+                                                    {payload?.map((entry: any, index: number) => (
+                                                    <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                        <span
+                                                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                                        style={{ backgroundColor: entry.color }}
+                                                        />
+                                                        <span className="text-muted-foreground">{entry.payload?.name}</span>
+                                                    </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    );
-                                }} />
-                            </PieChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
+                                        );
+                                    }} />
+                                </PieChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                          </TabsContent>
+                          <TabsContent value="amount">
+                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <ResponsiveContainer>
+                                    <BarChart data={cardioAnalysisData.cardioAmountChartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                        <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
+                                        <YAxis allowDecimals={false} />
+                                        <Tooltip content={<ChartTooltipContent />} />
+                                        <Legend content={<ChartLegendContent />} />
+                                        {Object.keys(cardioAnalysisData.statsByActivity).map(activity => (
+                                            <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />} />
+                                        ))}
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                          </TabsContent>
+                        </Tabs>
                     </div>
                   </div>
                 ) : (
@@ -1535,3 +1640,6 @@ useEffect(() => {
 
 
 
+
+
+    
