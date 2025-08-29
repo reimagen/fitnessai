@@ -553,7 +553,7 @@ export default function AnalysisPage() {
                 const counts = getUniqueExerciseCounts(logsForDay);
                 return {
                     date: dateKey,
-                    dateLabel: format(day, 'MMM d'),
+                    dateLabel: format(day, 'E'),
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
