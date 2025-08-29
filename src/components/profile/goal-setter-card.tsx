@@ -16,8 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle } from "lucide-react";
-import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput } from "@/lib/types";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
+import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -85,6 +85,7 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
 export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   const analyzeGoalsMutation = useAnalyzeGoals();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
@@ -177,7 +178,9 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
       return;
     }
     
-    analyzeGoalsMutation.mutate({
+    setAnalysisError(null); // Clear previous errors
+    
+    const analysisInput: AnalyzeFitnessGoalsInput = {
       userProfile: {
         age: userProfile.age,
         gender: userProfile.gender as 'Male' | 'Female' | undefined,
@@ -187,6 +190,26 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
         experienceLevel: userProfile.experienceLevel,
         fitnessGoals: activeGoalsForAnalysis.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
       }
+    };
+
+    analyzeGoalsMutation.mutate(analysisInput, {
+      onError: (error) => {
+        setAnalysisError(error.message);
+      }
+    });
+  };
+
+  const handleAcceptSuggestion = (originalDescription: string, suggestedGoal: string) => {
+    const updatedGoals: FitnessGoal[] = initialGoals.map(goal => {
+      if (goal.description === originalDescription) {
+        return { ...goal, description: suggestedGoal };
+      }
+      return goal;
+    });
+    onGoalsChange(updatedGoals);
+    toast({
+      title: "Goal Updated!",
+      description: "Your goal has been updated with the AI's suggestion.",
     });
   };
 
@@ -405,6 +428,16 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
             </Tooltip>
           </TooltipProvider>
 
+          {analysisError && (
+             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5 mt-0.5"/>
+              <div>
+                 <p className="font-semibold">Analysis Error</p>
+                 <p className="text-sm">{analysisError}</p>
+              </div>
+            </div>
+          )}
+
           {analysisToRender && (
              <Card className="mt-6 bg-secondary/30">
                 <CardHeader>
@@ -418,6 +451,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                     <div className="space-y-4">
                         {analysisToRender.goalInsights.map((insight, index) => {
                           const isPrimary = insight.originalGoalDescription === primaryGoalDescription;
+                          const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+
                           return (
                             <div key={index} className="p-3 border rounded-md bg-background/50">
                                 <p className="text-sm font-semibold text-muted-foreground">
@@ -437,6 +472,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
+                                {originalGoalIsVague && (
+                                  <div className="flex justify-end mt-3">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal)}
+                                    >
+                                      <Check className="mr-2 h-4 w-4"/>
+                                      Accept Suggestion
+                                    </Button>
+                                  </div>
+                                )}
                             </div>
                           );
                         })}
