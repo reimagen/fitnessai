@@ -903,10 +903,9 @@ const cardioAnalysisData = useMemo(() => {
         weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
         calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
     } else if (timeRange === 'yearly') {
-        const start = startOfYear(today);
-        const daysSoFar = differenceInDays(today, start) + 1;
-        const weeksSoFar = Math.max(1, daysSoFar / 7);
-        weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
+        const uniqueMonthsWithData = new Set(cardioExercises.map(ex => format(ex.date, 'yyyy-MM'))).size;
+        const weeksWithData = uniqueMonthsWithData * 4.345; // Average weeks in a month
+        weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
         calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
     } else { // all-time
         const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
@@ -1556,8 +1555,8 @@ useEffect(() => {
                   <div className="space-y-4">
                     <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                        <div>
-                          <h4 className="font-headline text-lg mb-4 text-center md:text-left">Activity Summary</h4>
+                        <div className="flex flex-col justify-start">
+                          <h4 className="font-bold mb-4 text-center md:text-left">Activity Summary</h4>
                           <div className="flex flex-col justify-start items-start space-y-3">
                             {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
                             const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
@@ -1649,7 +1648,7 @@ useEffect(() => {
                                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
                                         <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
                                         <YAxis allowDecimals={false} />
-                                        <Tooltip content={<ChartTooltipContent />} />
+                                        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
                                         <Legend content={({payload}) => {
                                             if (!payload) return null;
                                             const numItems = payload.length;
@@ -1697,3 +1696,4 @@ useEffect(() => {
 
 
     
+
