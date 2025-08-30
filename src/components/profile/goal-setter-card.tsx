@@ -556,7 +556,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                       {wasSuggestionAccepted ? (
                                           <Button 
                                             size="sm" 
-                                            variant="secondary"
+                                            variant="outline"
                                             className="h-auto px-2 py-1 text-xs"
                                             onClick={handleAnalyzeGoals}
                                           >
@@ -595,7 +595,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     {wasSuggestionAccepted ? (
                                         <Button 
                                             size="sm" 
-                                            variant="secondary"
+                                            variant="outline"
                                             className="w-full"
                                             onClick={handleAnalyzeGoals}
                                         >
