@@ -900,7 +900,7 @@ const cardioAnalysisData = useMemo(() => {
         const start = startOfMonth(new Date());
         const end = endOfMonth(new Date());
         // Calculate weeks from the start of the month to today (or end of month if past)
-        const daysSoFar = differenceInDays(Math.min(today, end), start) + 1;
+        const daysSoFar = differenceInDays(new Date(Math.min(today.getTime(), end.getTime())), start) + 1;
         const weeksSoFar = Math.max(1, daysSoFar / 7);
         weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
         calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
@@ -1704,6 +1704,8 @@ useEffect(() => {
 
 
     
+
+
 
 
 
