@@ -21,6 +21,14 @@ type WorkoutListProps = {
 const FEET_IN_A_MILE = 5280;
 const METERS_IN_A_KILOMETER = 1000;
 
+const toTitleCase = (str: string) => {
+  if (!str) return "";
+  return str.replace(
+    /\w\S*/g,
+    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+  );
+};
+
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
 
@@ -171,7 +179,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Dumbbell className="h-4 w-4 text-accent shrink-0" />
-                        <span className="font-medium">{exercise.name}</span>
+                        <span className="font-medium">{toTitleCase(exercise.name)}</span>
                       </div>
                     </TableCell>
                     <TableCell className="text-left">{exercise.category || "-"}</TableCell>
