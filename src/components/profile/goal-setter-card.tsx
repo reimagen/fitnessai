@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
@@ -178,6 +178,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState<string[]>([]);
   const analyzeGoalsMutation = useAnalyzeGoals();
   const { data: personalRecords } = usePersonalRecords();
   const { data: workoutLogs } = useWorkouts();
@@ -273,6 +274,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     }
     
     setAnalysisError(null); // Clear previous errors
+    setAcceptedSuggestions([]); // Clear accepted suggestions on new analysis
     
     const contextString = constructUserProfileContext(userProfile, workoutLogs || [], personalRecords || []);
     
@@ -300,6 +302,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     });
 
     onGoalsChange(updatedGoals);
+    setAcceptedSuggestions(prev => [...prev, originalDescription]);
 
     toast({
       title: "Goal Updated!",
@@ -494,7 +497,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
             AI Goal Analysis
           </h4>
           <p className="text-sm text-muted-foreground mb-4">
-            Get AI-powered feedback on your goals to make them more specific, realistic, and achievable based on your personal stats.
+            Get AI-powered help refining your goals to make them specific and time-bound, based on your profile stats.
           </p>
           
           <TooltipProvider>
@@ -537,7 +540,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                     <div className="space-y-4">
                         {analysisToRender.goalInsights.map((insight, index) => {
                           const isPrimary = insight.relationshipToPrimary === 'Primary';
-                          const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+                          const canApplySuggestion = activeGoalsForAnalysis.some(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+                          const wasSuggestionAccepted = acceptedSuggestions.includes(insight.originalGoalDescription);
 
                           return (
                             <div key={index} className="p-3 border rounded-md bg-background/50">
@@ -548,19 +552,29 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                         Original Goal: "{insight.originalGoalDescription}"
                                     </p>
                                   </div>
-                                  {originalGoalIsVague && (
-                                    <div className="absolute top-0 right-0 hidden md:block">
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        className="h-auto px-2 py-1 text-xs"
-                                        onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
-                                      >
-                                        <Check className="mr-1.5 h-3 w-3"/>
-                                        Use AI Suggestion
-                                      </Button>
+                                  <div className="absolute top-0 right-0 hidden md:block">
+                                      {wasSuggestionAccepted ? (
+                                          <Button 
+                                            size="sm" 
+                                            variant="secondary"
+                                            className="h-auto px-2 py-1 text-xs"
+                                            onClick={handleAnalyzeGoals}
+                                          >
+                                            <RefreshCw className="mr-1.5 h-3 w-3"/>
+                                            Refresh Analysis
+                                          </Button>
+                                      ) : canApplySuggestion ? (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          className="h-auto px-2 py-1 text-xs"
+                                          onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                        >
+                                          <Check className="mr-1.5 h-3 w-3"/>
+                                          Use AI Suggestion
+                                        </Button>
+                                      ) : null}
                                     </div>
-                                  )}
                                 </div>
 
                                 <div className="mt-3 space-y-3">
@@ -577,8 +591,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
 
-                                {originalGoalIsVague && (
-                                    <div className="mt-4 md:hidden">
+                                <div className="mt-4 md:hidden">
+                                    {wasSuggestionAccepted ? (
+                                        <Button 
+                                            size="sm" 
+                                            variant="secondary"
+                                            className="w-full"
+                                            onClick={handleAnalyzeGoals}
+                                        >
+                                            <RefreshCw className="mr-2 h-4 w-4"/>
+                                            Refresh Analysis
+                                        </Button>
+                                    ) : canApplySuggestion ? (
                                         <Button 
                                             size="sm" 
                                             variant="outline"
@@ -588,8 +612,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                             <Check className="mr-2 h-4 w-4"/>
                                             Use AI Suggestion
                                         </Button>
-                                    </div>
-                                )}
+                                    ) : null}
+                                </div>
                             </div>
                           );
                         })}
