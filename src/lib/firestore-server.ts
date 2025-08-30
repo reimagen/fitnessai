@@ -180,6 +180,7 @@ const userProfileConverter = {
             id: snapshot.id,
             name: data.name || "",
             email: data.email || "",
+            avatarUrl: data.avatarUrl,
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,
             strengthAnalysis: strengthAnalysis,

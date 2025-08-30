@@ -6,11 +6,16 @@ import {
   addWorkoutLog as serverAddWorkoutLog,
   updateWorkoutLog as serverUpdateWorkoutLog,
   deleteWorkoutLog as serverDeleteWorkoutLog,
-  getWorkoutLogs as serverGetWorkoutLogs
+  getWorkoutLogs as serverGetWorkoutLogs,
+  getUserProfile,
+  updateUserProfile,
 } from "@/lib/firestore-server";
 import type { WorkoutLog } from "@/lib/types";
+import { format } from "date-fns";
+import { getAuth } from "firebase-admin/auth";
 
 export async function parseWorkoutScreenshotAction(
+  userId: string,
   values: ParseWorkoutScreenshotInput
 ): Promise<{ success: boolean; data?: ParseWorkoutScreenshotOutput; error?: string }> {
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
@@ -19,25 +24,56 @@ export async function parseWorkoutScreenshotAction(
     return { success: false, error: errorMessage };
   }
   
-  // Basic validation for data URI can be added here if needed,
-  // though the AI flow itself might handle malformed inputs.
+  if (!userId) {
+    return { success: false, error: "User not authenticated." };
+  }
+
   if (!values.photoDataUri || !values.photoDataUri.startsWith("data:image/")) {
     return { success: false, error: "Invalid image data provided." };
   }
 
+  // Bypass limit check in development environment
+  if (process.env.NODE_ENV !== 'development') {
+    const userProfile = await getUserProfile(userId);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const usage = userProfile?.aiUsage?.screenshotParses;
+
+    if (usage && usage.date === today && usage.count >= 5) {
+      return { success: false, error: "You have reached your daily limit of 5 screenshot parses." };
+    }
+  }
+
   try {
     const parsedData = await parseWorkoutScreenshot(values);
+
+    // Increment usage counter on success (only in production)
+    if (process.env.NODE_ENV !== 'development') {
+        const userProfile = await getUserProfile(userId);
+        const today = format(new Date(), 'yyyy-MM-dd');
+        const currentUsage = userProfile?.aiUsage?.screenshotParses;
+        const newCount = (currentUsage?.date === today) ? (currentUsage.count + 1) : 1;
+        
+        const updatedUsage = {
+            ...userProfile?.aiUsage,
+            screenshotParses: {
+                count: newCount,
+                date: today,
+            }
+        };
+        await updateUserProfile(userId, { aiUsage: updatedUsage });
+    }
+
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing workout screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing the screenshot.";
+    let userFriendlyError = "An unknown error occurred while parsing the screenshot. This attempt did not count against your daily limit.";
     if (error instanceof Error) {
         if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later.";
+            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
         } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments.";
+            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
         } else {
-            userFriendlyError = `Failed to parse screenshot: ${error.message}`;
+            userFriendlyError = `Failed to parse screenshot: ${error.message}. This attempt did not count against your daily limit.`;
         }
     }
     return { success: false, error: userFriendlyError };
