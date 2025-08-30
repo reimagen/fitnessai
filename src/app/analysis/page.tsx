@@ -833,8 +833,15 @@ const cardioAnalysisData = useMemo(() => {
                 let name = toTitleCase(ex.name);
                 const exNameLower = ex.name.toLowerCase();
                 if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical')) {
-                    const distanceMi = (ex.distanceUnit === 'km' ? ex.distance! * 0.621371 : ex.distance) || 0;
-                    const durationHr = (ex.durationUnit === 'min' ? ex.duration! / 60 : ex.duration) || 0;
+                    const distanceMi = (ex.distanceUnit === 'km' ? (ex.distance || 0) * 0.621371 : (ex.distance || 0));
+                    
+                    let durationHr = 0;
+                    if (ex.duration) {
+                        if (ex.durationUnit === 'min') durationHr = ex.duration / 60;
+                        else if (ex.durationUnit === 'sec') durationHr = ex.duration / 3600;
+                        else if (ex.durationUnit === 'hr') durationHr = ex.duration;
+                    }
+                    
                     if (durationHr > 0) {
                         const speedMph = distanceMi / durationHr;
                         name = speedMph > 4.0 ? 'Running' : 'Walking';
@@ -899,7 +906,6 @@ const cardioAnalysisData = useMemo(() => {
     } else if (timeRange === 'monthly') {
         const start = startOfMonth(new Date());
         const end = endOfMonth(new Date());
-        // Calculate weeks from the start of the month to today (or end of month if past)
         const daysSoFar = differenceInDays(new Date(Math.min(today.getTime(), end.getTime())), start) + 1;
         const weeksSoFar = Math.max(1, daysSoFar / 7);
         weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
@@ -1704,6 +1710,7 @@ useEffect(() => {
 
 
     
+
 
 
 
