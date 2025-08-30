@@ -1,5 +1,6 @@
 
 
+
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
@@ -185,7 +186,10 @@ export interface UserProfile {
       count: number;
       date: string; // YYYY-MM-DD
     };
-    // Future counters can be added here
+    screenshotParses?: {
+      count: number;
+      date: string; // YYYY-MM-DD
+    };
   };
 }
 
