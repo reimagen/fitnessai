@@ -28,14 +28,24 @@ const WALKING_METS: { [speedMph: number]: number } = {
   4.5: 7.0, // ~13.3 min/mile
 };
 
-// A simplified MET value for general, moderate intensity rowing.
-// A more complex implementation could vary this based on strokes per minute or power output.
-const ROWING_MET_VALUE = 7.0;
+// Simplified MET values for other activities
+const ROWING_MET_VALUE = 7.0; // General, moderate intensity
+const CYCLING_MET_VALUE = 8.0; // General, moderate intensity (approx 12-14 mph)
+const SWIMMING_MET_VALUE = 7.0; // General, freestyle, moderate effort
+const CLIMBMILL_MET_VALUE = 9.0; // Stairmaster / Climbmill
 
-const DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE = 10; // 10 min/mile as a fallback for running
-const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile as a fallback for walking
+// --- Fallback pace constants ---
+const DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE = 10; // 10 min/mile
+const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
+const DEFAULT_CYCLING_SPEED_MPH = 12.5; // Moderate cycling speed
+const DEFAULT_ROWING_PACE_SEC_PER_500M = 150; // 2:30 per 500m
+const DEFAULT_SWIMMING_PACE_SEC_PER_100M = 150; // 2:30 per 100m
 
 function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): number {
+  if (!workoutLogs || workoutLogs.length === 0) {
+      return activity === 'run' ? DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE : DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE;
+  }
+  
   const exercises: { distance: number; duration: number }[] = [];
 
   const activityKeywords = activity === 'run' ? ['run', 'treadmill'] : ['walk'];
@@ -63,7 +73,8 @@ function getAveragePace(workoutLogs: WorkoutLog[], activity: 'run' | 'walk'): nu
   const totalMinutes = exercises.reduce((sum, ex) => sum + ex.duration, 0);
   const totalMiles = exercises.reduce((sum, ex) => sum + ex.distance, 0);
   
-  return totalMinutes / totalMiles;
+  // Pace is minutes per mile
+  return totalMiles > 0 ? totalMinutes / totalMiles : (activity === 'run' ? DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE : DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE);
 }
 
 function getMetForPace(paceMinPerMile: number, metTable: { [speed: number]: number }): number {
@@ -75,116 +86,104 @@ function getMetForPace(paceMinPerMile: number, metTable: { [speed: number]: numb
     return metTable[closestSpeed];
 }
 
+const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']): number => {
+    if (!distance || distance <= 0) return 0;
+    switch (unit) {
+        case 'mi': return distance;
+        case 'km': return distance * 0.621371;
+        case 'ft': return distance * 0.000189394;
+        case 'm': return distance * 0.000621371;
+        default: return 0;
+    }
+};
+
 
 export function calculateExerciseCalories(
   exercise: Omit<Exercise, 'id'>,
   userProfile: UserProfile,
   workoutLogs: WorkoutLog[] = []
 ): number {
-    // If calories are already provided and valid, return them.
     if (exercise.calories && exercise.calories > 0) {
         return exercise.calories;
     }
 
-    // Only calculate for Cardio exercises
     if (exercise.category !== 'Cardio') {
         return 0;
     }
 
-    // We need weight to calculate calories.
     if (!userProfile.weightValue || userProfile.weightValue <= 0) {
         return 0;
     }
 
     let { name, distance, distanceUnit, duration, durationUnit } = exercise;
 
-    // We need distance or duration to do anything.
-    if ((!distance || distance <= 0) && (!duration || duration <= 0)) {
-        return 0;
-    }
-
-    // Convert weight to kg for the formula
     const weightInKg = userProfile.weightUnit === 'lbs' 
         ? (userProfile.weightValue || 0) * 0.453592 
         : (userProfile.weightValue || 0);
 
     let metValue: number | null = null;
-    let durationInHours: number;
+    let durationInHours: number | null = null;
+    
+    // Standardize distance to miles first.
+    const distanceInMiles = getDistanceInMiles(distance, distanceUnit);
+
+    if (duration && duration > 0) {
+        let durationInMinutes = 0;
+        switch (durationUnit) {
+            case 'hr': durationInMinutes = duration * 60; break;
+            case 'sec': durationInMinutes = duration / 60; break;
+            default: durationInMinutes = duration; break;
+        }
+        durationInHours = durationInMinutes / 60;
+    }
 
     const exerciseName = name.toLowerCase();
 
-    // --- Determine MET value and duration in hours ---
-    if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk')) {
-        if (!distance || distance <= 0) return 0; // Running/walking needs distance
-
-        let distanceInMiles = distance;
-        if (distanceUnit === 'km') distanceInMiles = distance * 0.621371;
-        else if (distanceUnit === 'ft') distanceInMiles = distance / 5280;
-
+    // Refactored logic to handle all cardio types in one block
+    if (exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('walk') || exerciseName.includes('elliptical')) {
+        if (distanceInMiles <= 0) return 0; 
         let paceMinPerMile: number;
-
-        if (duration && duration > 0 && durationUnit) {
-            let durationInMinutes = 0;
-            switch (durationUnit) {
-                case 'hr': durationInMinutes = duration * 60; break;
-                case 'sec': durationInMinutes = duration / 60; break;
-                default: durationInMinutes = duration; break; // Assumes 'min'
-            }
-            durationInHours = durationInMinutes / 60;
-            paceMinPerMile = durationInMinutes / distanceInMiles;
-        } else {
-            const isRunning = exerciseName.includes('run') || exerciseName.includes('treadmill');
+        if (!durationInHours) {
+            const isRunning = exerciseName.includes('run') || exerciseName.includes('treadmill') || exerciseName.includes('elliptical');
             const avgPace = getAveragePace(workoutLogs, isRunning ? 'run' : 'walk');
             const estimatedDurationMinutes = distanceInMiles * avgPace;
             durationInHours = estimatedDurationMinutes / 60;
             paceMinPerMile = avgPace;
-        }
-
-        const metTable = exerciseName.includes('walk') ? WALKING_METS : RUNNING_METS;
-        metValue = getMetForPace(paceMinPerMile, metTable);
-
-    } else if (exerciseName.includes('rowing')) {
-        // Rowing can be calculated from duration OR distance
-        if ((!duration || duration <= 0) && (!distance || distance <= 0)) {
-            return 0; // Need at least one metric
-        }
-
-        metValue = ROWING_MET_VALUE;
-
-        if (duration && duration > 0) {
-            // Use provided duration if available
-            let durationInMinutes = 0;
-            switch (durationUnit) {
-                case 'hr': durationInMinutes = duration * 60; break;
-                case 'sec': durationInMinutes = duration / 60; break;
-                default: durationInMinutes = duration; break; // Assumes 'min'
-            }
-            durationInHours = durationInMinutes / 60;
         } else {
-            // Estimate duration from distance
-            let distanceInKm = distance!; // We know distance exists from the check above
-            if (distanceUnit === 'mi') {
-                distanceInKm = distance! * 1.60934;
-            } else if (distanceUnit === 'm') {
-                distanceInKm = distance! / 1000;
-            } else if (distanceUnit === 'ft') {
-                distanceInKm = (distance! * 0.3048) / 1000;
-            }
-            
-            const AVG_ROWING_PACE_MIN_PER_KM = 5; // Assume 5 min/km pace
-            const estimatedDurationMinutes = distanceInKm * AVG_ROWING_PACE_MIN_PER_KM;
-            durationInHours = estimatedDurationMinutes / 60;
+            paceMinPerMile = (durationInHours * 60) / distanceInMiles;
         }
+        const metTable = (paceMinPerMile > 15) ? WALKING_METS : RUNNING_METS;
+        metValue = getMetForPace(paceMinPerMile, metTable);
+    
+    } else if (exerciseName.includes('rowing')) {
+        metValue = ROWING_MET_VALUE;
+        if (!durationInHours && distanceInMiles > 0) {
+            const distanceInMeters = distanceInMiles * 1609.34;
+            const estimatedDurationSeconds = (distanceInMeters / 500) * DEFAULT_ROWING_PACE_SEC_PER_500M;
+            durationInHours = estimatedDurationSeconds / 3600;
+        }
+    } else if (exerciseName.includes('cycle') || exerciseName.includes('bike')) {
+        metValue = CYCLING_MET_VALUE;
+        if (!durationInHours && distanceInMiles > 0) {
+            durationInHours = distanceInMiles / DEFAULT_CYCLING_SPEED_MPH;
+        }
+    } else if (exerciseName.includes('swim')) {
+        metValue = SWIMMING_MET_VALUE;
+        if (!durationInHours && distanceInMiles > 0) {
+            const distanceInMeters = distanceInMiles * 1609.34;
+            const estimatedDurationSeconds = (distanceInMeters / 100) * DEFAULT_SWIMMING_PACE_SEC_PER_100M;
+            durationInHours = estimatedDurationSeconds / 3600;
+        }
+    } else if (exerciseName.includes('climbmill') || exerciseName.includes('stairmaster')) {
+        metValue = CLIMBMILL_MET_VALUE;
+        // No duration estimation from distance for climbmill. Requires duration input.
+    }
 
-    } else {
-        // For other cardio like cycling, etc., we'd need more specific MET tables.
-        // For now, return 0 if it's not a supported auto-calculation type.
+
+    if (!metValue || !durationInHours || durationInHours <= 0) {
         return 0;
     }
 
-    if (!metValue) return 0;
-
-    // Calories burned = METs × Body Weight (kg) × Duration (hours)
     const caloriesBurned = metValue * weightInKg * durationInHours;
     
     return Math.round(caloriesBurned);

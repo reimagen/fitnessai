@@ -16,14 +16,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check } from "lucide-react";
-import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput } from "@/lib/types";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw } from "lucide-react";
+import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
-import { format as formatDate, isValid, differenceInDays, addDays } from "date-fns";
+import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useAnalyzeGoals } from "@/lib/firestore.service";
+import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 
@@ -81,12 +81,107 @@ const createFormValues = (goalsProp: FitnessGoal[] | undefined) => {
   };
 };
 
+// --- Helper functions for generating performance context ---
+const GOAL_TO_PR_MAP: Record<string, string[]> = {
+  'pull-up': ['lat pulldown'],
+  'bench press': ['bench press', 'chest press'],
+  'squat': ['squat', 'leg press'],
+  'deadlift': ['deadlift'],
+  'overhead press': ['overhead press', 'shoulder press'],
+  'leg press': ['leg press', 'squat'],
+};
+
+const findBestPrForGoal = (goalDesc: string, records: PersonalRecord[]): string | null => {
+  const lowerGoal = goalDesc.toLowerCase();
+  for (const keyword in GOAL_TO_PR_MAP) {
+    if (lowerGoal.includes(keyword)) {
+      const relevantPrs = records.filter(pr => GOAL_TO_PR_MAP[keyword].includes(pr.exerciseName.toLowerCase()));
+      if (relevantPrs.length > 0) {
+        const bestPr = relevantPrs.reduce((best, current) => {
+          const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
+          const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
+          return currentWeightKg > bestWeightKg ? current : best;
+        });
+        return `User has a relevant PR for ${bestPr.exerciseName} of ${bestPr.weight} ${bestPr.weightUnit}.`;
+      }
+    }
+  }
+  return null;
+};
+
+const summarizeWorkoutHistoryForGoal = (goalDesc: string, logs: WorkoutLog[]): string | null => {
+  const lowerGoal = goalDesc.toLowerCase();
+  const fourWeeksAgo = subWeeks(new Date(), 4);
+  const recentLogs = logs.filter(log => log.date > fourWeeksAgo);
+
+  if (lowerGoal.includes('run') || lowerGoal.includes('running')) {
+    const runs = recentLogs.flatMap(log => log.exercises.filter(ex => ex.category === 'Cardio' && ex.name.toLowerCase().includes('run')));
+    if (runs.length > 0) {
+      const totalDistance = runs.reduce((sum, run) => {
+        let distMi = run.distance || 0;
+        if (run.distanceUnit === 'km') distMi *= 0.621371;
+        else if (run.distanceUnit === 'ft') distMi *= 0.000189394;
+        return sum + distMi;
+      }, 0);
+      const avgDistance = totalDistance / runs.length;
+      const maxDistance = Math.max(...runs.map(run => {
+         let distMi = run.distance || 0;
+         if (run.distanceUnit === 'km') distMi *= 0.621371;
+         else if (run.distanceUnit === 'ft') distMi *= 0.000189394;
+         return distMi;
+      }));
+      return `Recent Running Summary (last 4 weeks): ${runs.length} sessions, average distance ${avgDistance.toFixed(1)} miles, max distance ${maxDistance.toFixed(1)} miles.`;
+    }
+  }
+  // Add more summaries for other activities like 'cycling', etc. here if needed.
+  return null;
+};
+
+
+const constructUserProfileContext = (
+    userProfile: UserProfile, 
+    workoutLogs: WorkoutLog[],
+    personalRecords: PersonalRecord[]
+): string => {
+    let context = "User Profile Context for AI Goal Analysis:\n";
+    context += `Age: ${userProfile.age || 'Not Provided'}\n`;
+    context += `Gender: ${userProfile.gender || 'Not Provided'}\n`;
+    context += `Weight: ${userProfile.weightValue || 'Not Provided'} ${userProfile.weightUnit || ''}\n`.trim() + '\n';
+    context += `Experience Level: ${userProfile.experienceLevel || 'Not Provided'}\n`;
+    if (userProfile.bodyFatPercentage) {
+        context += `Body Fat: ${userProfile.bodyFatPercentage.toFixed(1)}%\n`;
+    }
+
+    context += "\n--- User's Goals & Performance Data ---\n";
+    const activeGoals = (userProfile.fitnessGoals || []).filter(g => !g.achieved);
+    if (activeGoals.length > 0) {
+      activeGoals.forEach(goal => {
+        context += `Goal: ${goal.isPrimary ? '**Primary** ' : ''}${goal.description}\n`;
+        const relevantPr = findBestPrForGoal(goal.description, personalRecords);
+        if (relevantPr) {
+          context += `  - Performance Context: ${relevantPr}\n`;
+        }
+        const historySummary = summarizeWorkoutHistoryForGoal(goal.description, workoutLogs);
+        if (historySummary) {
+          context += `  - Performance Context: ${historySummary}\n`;
+        }
+      });
+    } else {
+      context += "- No active goals listed.\n";
+    }
+
+    return context;
+};
+
 
 export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState<string[]>([]);
   const analyzeGoalsMutation = useAnalyzeGoals();
+  const { data: personalRecords } = usePersonalRecords();
+  const { data: workoutLogs } = useWorkouts();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
@@ -179,17 +274,12 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     }
     
     setAnalysisError(null); // Clear previous errors
+    setAcceptedSuggestions([]); // Clear accepted suggestions on new analysis
+    
+    const contextString = constructUserProfileContext(userProfile, workoutLogs || [], personalRecords || []);
     
     const analysisInput: AnalyzeFitnessGoalsInput = {
-      userProfile: {
-        age: userProfile.age,
-        gender: userProfile.gender as 'Male' | 'Female' | undefined,
-        weightValue: userProfile.weightValue,
-        weightUnit: userProfile.weightUnit,
-        bodyFatPercentage: userProfile.bodyFatPercentage,
-        experienceLevel: userProfile.experienceLevel,
-        fitnessGoals: activeGoalsForAnalysis.map(g => ({ description: g.description, isPrimary: g.isPrimary })),
-      }
+      userProfileContext: contextString,
     };
 
     analyzeGoalsMutation.mutate(analysisInput, {
@@ -212,6 +302,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     });
 
     onGoalsChange(updatedGoals);
+    setAcceptedSuggestions(prev => [...prev, originalDescription]);
 
     toast({
       title: "Goal Updated!",
@@ -406,7 +497,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
             AI Goal Analysis
           </h4>
           <p className="text-sm text-muted-foreground mb-4">
-            Get AI-powered feedback on your goals to make them more specific, realistic, and achievable based on your personal stats.
+            Get AI-powered help refining your goals to make them specific and time-bound, based on your profile stats.
           </p>
           
           <TooltipProvider>
@@ -449,7 +540,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                     <div className="space-y-4">
                         {analysisToRender.goalInsights.map((insight, index) => {
                           const isPrimary = insight.relationshipToPrimary === 'Primary';
-                          const originalGoalIsVague = activeGoalsForAnalysis.find(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+                          const canApplySuggestion = activeGoalsForAnalysis.some(g => g.description === insight.originalGoalDescription && g.description !== insight.suggestedGoal);
+                          const wasSuggestionAccepted = acceptedSuggestions.includes(insight.originalGoalDescription);
 
                           return (
                             <div key={index} className="p-3 border rounded-md bg-background/50">
@@ -460,19 +552,29 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                         Original Goal: "{insight.originalGoalDescription}"
                                     </p>
                                   </div>
-                                  {originalGoalIsVague && (
-                                    <div className="absolute top-0 right-0 hidden md:block">
-                                      <Button 
-                                        size="sm" 
-                                        variant="outline"
-                                        className="h-auto px-2 py-1 text-xs"
-                                        onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
-                                      >
-                                        <Check className="mr-1.5 h-3 w-3"/>
-                                        Use AI Suggestion
-                                      </Button>
+                                  <div className="absolute top-0 right-0 hidden md:block">
+                                      {wasSuggestionAccepted ? (
+                                          <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="h-auto px-2 py-1 text-xs"
+                                            onClick={handleAnalyzeGoals}
+                                          >
+                                            <RefreshCw className="mr-1.5 h-3 w-3"/>
+                                            Refresh Analysis
+                                          </Button>
+                                      ) : canApplySuggestion ? (
+                                        <Button 
+                                          size="sm" 
+                                          variant="outline"
+                                          className="h-auto px-2 py-1 text-xs"
+                                          onClick={() => handleAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)}
+                                        >
+                                          <Check className="mr-1.5 h-3 w-3"/>
+                                          Use AI Suggestion
+                                        </Button>
+                                      ) : null}
                                     </div>
-                                  )}
                                 </div>
 
                                 <div className="mt-3 space-y-3">
@@ -489,8 +591,18 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     <p className="text-xs text-muted-foreground pl-6">{insight.analysis}</p>
                                 </div>
 
-                                {originalGoalIsVague && (
-                                    <div className="mt-4 md:hidden">
+                                <div className="mt-4 md:hidden">
+                                    {wasSuggestionAccepted ? (
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline"
+                                            className="w-full"
+                                            onClick={handleAnalyzeGoals}
+                                        >
+                                            <RefreshCw className="mr-2 h-4 w-4"/>
+                                            Refresh Analysis
+                                        </Button>
+                                    ) : canApplySuggestion ? (
                                         <Button 
                                             size="sm" 
                                             variant="outline"
@@ -500,8 +612,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                             <Check className="mr-2 h-4 w-4"/>
                                             Use AI Suggestion
                                         </Button>
-                                    </div>
-                                )}
+                                    ) : null}
+                                </div>
                             </div>
                           );
                         })}
