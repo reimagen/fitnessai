@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
 import { isWithinInterval } from 'date-fns/isWithinInterval';
@@ -26,15 +27,16 @@ import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
 import type { Interval } from 'date-fns';
 import { subWeeks } from 'date-fns/subWeeks';
 import { isAfter } from 'date-fns/isAfter';
-import { differenceInDays } from 'date-fns/differenceInDays';
+import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus } from 'lucide-react';
+import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves, HeartPulse } from 'lucide-react';
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 
 
 const IMBALANCE_TYPES = [
@@ -91,6 +93,12 @@ const chartConfig = {
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
   actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
   trend: { label: "e1RM Trend", color: "hsl(var(--muted-foreground))" },
+  Running: { label: "Running", color: "hsl(var(--chart-1))" },
+  Walking: { label: "Walking", color: "hsl(var(--chart-2))" },
+  Cycling: { label: "Cycling", color: "hsl(var(--chart-3))" },
+  Climbmill: { label: "Climbmill", color: "hsl(var(--chart-4))" },
+  Rowing: { label: "Rowing", color: "hsl(var(--chart-5))" },
+  Swimming: { label: "Swimming", color: "hsl(var(--chart-6))" },
 } satisfies ChartConfig;
 
 type ChartDataKey = keyof typeof chartConfig;
@@ -229,17 +237,19 @@ const ProgressionTooltip = (props: any) => {
 const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
     if (!payload) return null;
-
-    // Add a dummy entry for the trendline if it exists on the chart
-    const finalPayload = [
-        ...payload,
-        { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
+    
+    // Manually define the legend order and details
+    const legendItems = [
+      { dataKey: 'volume', color: 'hsl(var(--chart-2))' },
+      { dataKey: 'e1RM', color: 'hsl(var(--primary))' },
+      { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
+      { dataKey: 'actualPR', color: 'hsl(var(--accent))' },
     ];
 
 
     return (
         <div className="flex items-center justify-center gap-4 text-xs mt-2">
-            {finalPayload.map((entry: any, index: number) => {
+            {legendItems.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
                 const isLine = entry.dataKey === 'e1RM';
@@ -492,17 +502,21 @@ export default function AnalysisPage() {
     const today = new Date();
     let logsForPeriod = workoutLogs || [];
     let prsForPeriod = personalRecords || [];
-    
+    let goalsForPeriod = (userProfile?.fitnessGoals || []).filter(g => g.achieved && g.dateAchieved);
+
     if (timeRange !== 'all-time') {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
       else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
       else interval = { start: startOfYear(today), end: endOfYear(today) };
+      
       logsForPeriod = (workoutLogs || []).filter(log => isWithinInterval(log.date, interval));
       prsForPeriod = (personalRecords || []).filter(pr => isWithinInterval(pr.date, interval));
+      goalsForPeriod = goalsForPeriod.filter(g => isWithinInterval(g.dateAchieved!, interval));
     }
-    return { logsForPeriod, prsForPeriod };
-  }, [timeRange, workoutLogs, personalRecords]);
+
+    return { logsForPeriod, prsForPeriod, goalsForPeriod };
+  }, [timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals]);
 
   const chartData = useMemo(() => {
     const { logsForPeriod } = filteredData;
@@ -548,7 +562,7 @@ export default function AnalysisPage() {
                 const counts = getUniqueExerciseCounts(logsForDay);
                 return {
                     date: dateKey,
-                    dateLabel: format(day, 'MMM d'),
+                    dateLabel: format(day, 'E'),
                     upperBody: counts.upperBody || 0,
                     lowerBody: counts.lowerBody || 0,
                     cardio: counts.cardio || 0,
@@ -677,7 +691,14 @@ export default function AnalysisPage() {
         totalCaloriesBurned: Math.round(totalCalories),
         periodLabel: periodLabel
     };
-    return { workoutFrequencyData, newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()), categoryRepData, categoryCalorieData, periodSummary };
+    return { 
+        workoutFrequencyData, 
+        newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()),
+        achievedGoalsData: filteredData.goalsForPeriod.sort((a,b) => b.dateAchieved!.getTime() - a.dateAchieved!.getTime()),
+        categoryRepData, 
+        categoryCalorieData, 
+        periodSummary 
+    };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
   const frequentlyLoggedLifts = useMemo(() => {
@@ -798,6 +819,200 @@ export default function AnalysisPage() {
     return { chartData, trendlineData };
 }, [selectedLift, selectedLiftKey, workoutLogs, personalRecords]);
 
+const cardioAnalysisData = useMemo(() => {
+    if (!userProfile) {
+        return { totalCalories: 0, statsByActivity: {}, pieChartData: [], calorieSummary: "", cardioAmountChartData: [] };
+    }
+    const { logsForPeriod } = filteredData;
+    const today = new Date();
+
+    const cardioExercises = logsForPeriod.flatMap(log => 
+        log.exercises
+            .filter(ex => ex.category === 'Cardio')
+            .map(ex => {
+                let name = toTitleCase(ex.name);
+                const exNameLower = ex.name.toLowerCase();
+                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical')) {
+                    const distanceMi = (ex.distanceUnit === 'km' ? ex.distance! * 0.621371 : ex.distance) || 0;
+                    const durationHr = (ex.durationUnit === 'min' ? ex.duration! / 60 : ex.duration) || 0;
+                    if (durationHr > 0) {
+                        const speedMph = distanceMi / durationHr;
+                        name = speedMph > 4.0 ? 'Running' : 'Walking';
+                    } else {
+                        name = 'Walking';
+                    }
+                } else if (exNameLower.includes('run')) name = 'Running';
+                else if (exNameLower.includes('walk')) name = 'Walking';
+                else if (exNameLower.includes('cycle') || exNameLower.includes('bike')) name = 'Cycling';
+                else if (exNameLower.includes('climbmill') || exNameLower.includes('stairmaster')) name = 'Climbmill';
+                else if (exNameLower.includes('rowing')) name = 'Rowing';
+                else if (exNameLower.includes('swim')) name = 'Swimming';
+                
+                const calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
+                
+                return { ...ex, date: log.date, name, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
+            })
+    );
+
+    const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+
+    const statsByActivity = cardioExercises.reduce((acc, ex) => {
+        if (!acc[ex.name]) {
+            acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0 };
+        }
+        const stats = acc[ex.name];
+        stats.count++;
+        stats.totalCalories += ex.calories || 0;
+
+        let distanceMi = 0;
+        if (ex.distance) {
+            if (ex.distanceUnit === 'km') distanceMi = ex.distance * 0.621371;
+            else if (ex.distanceUnit === 'ft') distanceMi = ex.distance * 0.000189394;
+            else if (ex.distanceUnit === 'mi') distanceMi = ex.distance;
+        }
+        stats.totalDistanceMi += distanceMi;
+
+        let durationMin = 0;
+        if (ex.duration) {
+            if (ex.durationUnit === 'hr') durationMin = ex.duration * 60;
+            else if (ex.durationUnit === 'sec') durationMin = ex.duration / 60;
+            else if (ex.durationUnit === 'min') durationMin = ex.duration;
+        }
+        stats.totalDurationMin += durationMin;
+        
+        return acc;
+    }, {} as Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>);
+
+    const pieChartData = Object.entries(statsByActivity).map(([name, stats], index) => ({
+        name: `${name} `, // Add padding
+        value: Math.round(stats.totalCalories),
+        fill: `var(--color-${name})`
+    }));
+    
+    let calorieSummary = "";
+    const weeklyGoal = userProfile?.weeklyCardioCalorieGoal;
+    let weeklyAverage = 0;
+
+    if (timeRange === 'weekly') {
+        weeklyAverage = totalCalories;
+        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} cardio calories.`;
+    } else if (timeRange === 'monthly') {
+        const start = startOfMonth(new Date());
+        const end = endOfMonth(new Date());
+        // Calculate weeks from the start of the month to today (or end of month if past)
+        const daysSoFar = differenceInDays(new Date(Math.min(today.getTime(), end.getTime())), start) + 1;
+        const weeksSoFar = Math.max(1, daysSoFar / 7);
+        weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+    } else if (timeRange === 'yearly') {
+        const uniqueMonthsWithData = new Set(cardioExercises.map(ex => format(ex.date, 'yyyy-MM'))).size;
+        const weeksWithData = uniqueMonthsWithData * 4.345; // Average weeks in a month
+        weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+    } else { // all-time
+        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
+        const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
+        weeklyAverage = numWeeks > 0 ? totalCalories / numWeeks : 0;
+        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(weeklyAverage)}/week.`;
+    }
+    
+    if (weeklyGoal && weeklyGoal > 0) {
+        const difference = weeklyAverage - weeklyGoal;
+        const percentage = (difference / weeklyGoal) * 100;
+        if (difference >= 0) {
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are beating your goal by ${Math.round(difference)} calories (${Math.round(percentage)}%).`;
+        } else {
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+        }
+    }
+    
+    // --- Cardio Amount Bar Chart Data ---
+    let cardioAmountChartData: any[] = [];
+    const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
+    const initialActivityData = Object.fromEntries(activities.map(act => [act, 0]));
+
+    switch(timeRange) {
+        case 'weekly': {
+            const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+            const daysInWeek = eachDayOfInterval({ start: weekStart, end: endOfWeek(today, { weekStartsOn: 0 }) });
+            const dailyData = new Map<string, any>(daysInWeek.map(day => [format(day, 'yyyy-MM-dd'), { dateLabel: format(day, 'E'), ...initialActivityData }]));
+            
+            cardioExercises.forEach(ex => {
+                const dateKey = format(ex.date, 'yyyy-MM-dd');
+                const dayData = dailyData.get(dateKey);
+                if (dayData) {
+                    dayData[ex.name] = (dayData[ex.name] || 0) + (ex.calories || 0);
+                }
+            });
+            cardioAmountChartData = Array.from(dailyData.values());
+            break;
+        }
+        case 'monthly': {
+            const monthStart = startOfMonth(today);
+            const monthEnd = endOfMonth(today);
+            const weeklyData = new Map<string, any>();
+            
+            // Get all weeks that have at least one day in the current month
+            const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
+
+            weeks.forEach(weekStart => {
+                const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+                 // Ensure we only create labels for weeks that are part of the month
+                if (weekStart.getMonth() === monthStart.getMonth() || weekEnd.getMonth() === monthStart.getMonth()) {
+                     const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
+                     weeklyData.set(format(weekStart, 'yyyy-MM-dd'), { dateLabel, ...initialActivityData });
+                }
+            });
+
+            cardioExercises.forEach(ex => {
+                const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
+                const weekData = weeklyData.get(weekStartKey);
+                if (weekData) {
+                    weekData[ex.name] = (weekData[ex.name] || 0) + (ex.calories || 0);
+                }
+            });
+            cardioAmountChartData = Array.from(weeklyData.values());
+            break;
+        }
+        case 'yearly': {
+            const monthlyData = new Map<string, any>();
+            cardioExercises.forEach(ex => {
+                const monthKey = format(ex.date, 'yyyy-MM');
+                if (!monthlyData.has(monthKey)) {
+                    monthlyData.set(monthKey, { dateLabel: format(ex.date, 'MMM'), ...initialActivityData });
+                }
+                const monthData = monthlyData.get(monthKey);
+                monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
+            });
+             // Only show months that have data
+            cardioAmountChartData = Array.from(monthlyData.values())
+                .filter(month => Object.values(month).some(val => typeof val === 'number' && val > 0))
+                .sort((a,b) => {
+                    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
+            });
+            break;
+        }
+        case 'all-time': {
+            const yearlyData = new Map<string, any>();
+            cardioExercises.forEach(ex => {
+                const yearKey = format(ex.date, 'yyyy');
+                if (!yearlyData.has(yearKey)) {
+                    yearlyData.set(yearKey, { dateLabel: yearKey, ...initialActivityData });
+                }
+                const yearData = yearlyData.get(yearKey);
+                yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
+            });
+            cardioAmountChartData = Array.from(yearlyData.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, data]) => data);
+            break;
+        }
+    }
+
+
+    return { totalCalories, statsByActivity, pieChartData, calorieSummary, cardioAmountChartData };
+}, [filteredData, workoutLogs, timeRange, userProfile]);
+
+
 useEffect(() => {
     if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
         setCurrentLiftLevel(null);
@@ -917,15 +1132,22 @@ useEffect(() => {
   const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 15;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const displayValue = unit === 'kcal' ? Math.round(value) : value;
     const unitString = unit ? ` ${unit}` : '';
-    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
+    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name}(${displayValue}${unitString})`}</text>;
   };
 
-  const formatCardioDuration = (totalMinutes: number): string => `${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`;
+  const formatCardioDuration = (totalMinutes: number): string => {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
   
   const CustomBarChartLegend = ({ payload }: any) => {
     if (!payload) return null;
@@ -1021,7 +1243,66 @@ useEffect(() => {
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : !isError && (<>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Award className="h-6 w-6 text-accent" /> New Personal Records</CardTitle><CardDescription>Achievements in {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.newPrsData.length > 0 ? <div className="h-[300px] w-full overflow-y-auto pr-2 space-y-3">{chartData.newPrsData.map(pr => <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50"><div className="flex flex-col"><p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p><p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p></div><p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p></div>)}</div> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No new PRs for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2">
+                  <Award className="h-6 w-6 text-accent" /> New Milestones
+                </CardTitle>
+                <CardDescription>Achievements {timeRangeDisplayNames[timeRange]}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="prs" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="prs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                      <Trophy className="mr-2 h-4 w-4" /> PRs
+                    </TabsTrigger>
+                    <TabsTrigger value="goals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                      <Flag className="mr-2 h-4 w-4" /> Goals
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="prs">
+                    {chartData.newPrsData.length > 0 ? (
+                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
+                        {chartData.newPrsData.map(pr => (
+                          <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                            <div className="flex flex-col">
+                              <p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p>
+                              <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
+                            </div>
+                            <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
+                        <Trophy className="h-12 w-12 text-primary/30 mb-4" />
+                        <p className="text-muted-foreground">No new PRs for this period.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="goals">
+                    {chartData.achievedGoalsData.length > 0 ? (
+                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
+                        {chartData.achievedGoalsData.map(goal => (
+                          <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                            <div className="flex flex-col">
+                              <p className="font-semibold text-primary">{goal.description}</p>
+                              {goal.dateAchieved && <p className="text-xs text-muted-foreground">Achieved on: {format(goal.dateAchieved, "MMMM d, yyyy")}</p>}
+                            </div>
+                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
+                        <Flag className="h-12 w-12 text-primary/30 mb-4" />
+                        <p className="text-muted-foreground">No goals achieved this period.</p>
+                      </div>
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
@@ -1210,7 +1491,7 @@ useEffect(() => {
                                     )}
                                     {volumeTrend !== null && (
                                         <span>
-                                            Volume: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
+                                            Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
                                                 {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
                                             </Badge>
                                         </span>
@@ -1242,6 +1523,9 @@ useEffect(() => {
                                 </ComposedChart>
                             </ResponsiveContainer>
                         </ChartContainer>
+                        <p className="text-xs text-muted-foreground text-center mt-2 px-4">
+                           e1RM is calculated from your workout history. The weight you can lift for 10 reps is about 75% of your true 1-rep max
+                        </p>
                     </div>
                 )}
 
@@ -1269,8 +1553,162 @@ useEffect(() => {
 
               </CardContent>
             </Card>
+             <Card className="shadow-lg lg:col-span-6">
+              <CardHeader>
+                <CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" />Cardio Analysis</CardTitle>
+                <CardDescription>A summary of your cardio performance for {timeRangeDisplayNames[timeRange]}.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {cardioAnalysisData.totalCalories > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                        <div className="flex flex-col">
+                          <h4 className="font-bold mb-4 text-center md:text-left">Activity Summary</h4>
+                          <div className="flex flex-col justify-start items-start space-y-3">
+                            {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
+                            const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
+                            const formattedDuration = formatCardioDuration(stats.totalDurationMin);
+                            
+                            let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Running') icon = <HeartPulse className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
+                            if (name === 'Swimming') icon = <Waves className="h-5 w-5 text-accent flex-shrink-0" />;
+
+                            return (
+                                <div key={name} className="flex items-start gap-3">
+                                {icon}
+                                <div>
+                                    <p className="font-bold">{name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                    You completed {stats.count} session{stats.count > 1 ? 's' : ''}
+                                    {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
+                                    {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
+                                    , burning {Math.round(stats.totalCalories)} kcal.
+                                    {avgDistance && ` Your average distance was ${avgDistance} mi.`}
+                                    </p>
+                                </div>
+                                </div>
+                            );
+                            })}
+                          </div>
+                        </div>
+                        <Tabs defaultValue="types" className="w-full">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="types">Cardio Types</TabsTrigger>
+                            <TabsTrigger value="amount">Cardio Amount</TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="types">
+                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <ResponsiveContainer>
+                                <PieChart>
+                                    <Pie
+                                    data={cardioAnalysisData.pieChartData}
+                                    dataKey="value"
+                                    nameKey="name"
+                                    cx="50%"
+                                    cy="50%"
+                                    outerRadius={80}
+                                    labelLine={false}
+                                    label={(props) => renderPieLabel(props, 'kcal')}
+                                    >
+                                    {cardioAnalysisData.pieChartData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                                    ))}
+                                    </Pie>
+                                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
+                                    <Legend content={({ payload }) => {
+                                        if (!payload) return null;
+                                        const numItems = payload.length;
+                                        const useTwoRows = numItems > 3;
+
+                                        return (
+                                          <div className="flex justify-center">
+                                            <div
+                                              className="grid gap-x-2 gap-y-1 text-xs mt-2"
+                                              style={{
+                                                gridTemplateColumns: `repeat(${useTwoRows ? Math.ceil(numItems / 2) : numItems}, auto)`,
+                                              }}
+                                            >
+                                              {payload?.map((entry: any, index: number) => (
+                                                <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                  <span
+                                                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                                                    style={{ backgroundColor: entry.color }}
+                                                  />
+                                                  <span className="text-muted-foreground">{entry.payload?.name}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        );
+                                      }} />
+                                </PieChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                          </TabsContent>
+                          <TabsContent value="amount">
+                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
+                                <ResponsiveContainer>
+                                    <BarChart data={cardioAnalysisData.cardioAmountChartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" vertical={false}/>
+                                        <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
+                                        <YAxis allowDecimals={false} />
+                                        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
+                                        <Legend content={({payload}) => {
+                                            if (!payload) return null;
+                                            const numItems = payload.length;
+                                            const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
+                                            return (
+                                                <div className="flex justify-center">
+                                                    <div className="grid gap-x-2 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
+                                                        {payload.map((entry:any, index:number) => (
+                                                            <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
+                                                                <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
+                                                                <span className="text-muted-foreground">{entry.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )
+                                        }} />
+                                        {Object.keys(cardioAnalysisData.statsByActivity).map(activity => (
+                                            <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />} />
+                                        ))}
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                          </TabsContent>
+                        </Tabs>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-center">
+                    <p>No cardio data logged for this period.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
         </>)}
       </div>
     </div>
   );
 }
+
+
+
+
+
+
+
+    
+
+
+
+
+
+
+
+
