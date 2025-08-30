@@ -1,3 +1,4 @@
+
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
@@ -200,6 +201,7 @@ const userProfileConverter = {
 aiPreferencesNotes: data.aiPreferencesNotes,
             weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
             weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
+            aiUsage: data.aiUsage,
         };
     }
 };
