@@ -1491,7 +1491,7 @@ useEffect(() => {
                                     )}
                                     {volumeTrend !== null && (
                                         <span>
-                                            Volume: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
+                                            Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
                                                 {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
                                             </Badge>
                                         </span>
