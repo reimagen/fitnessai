@@ -181,6 +181,7 @@ const userProfileConverter = {
             screenshotParses: data.aiUsage.screenshotParses,
             planGenerations: data.aiUsage.planGenerations,
             prParses: data.aiUsage.prParses,
+            strengthAnalyses: data.aiUsage.strengthAnalyses,
         } : undefined;
 
         return {
