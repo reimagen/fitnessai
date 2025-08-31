@@ -135,7 +135,7 @@ const constructUserProfileContext = (
           const weekEndDate = endOfWeek(subWeeks(today, i + weekOffset), { weekStartsOn: 0 });
           const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
 
-          const logsThisWeek = workoutLogs.filter(log => 
+          const logsThisWeek = recentLogs.filter(log => 
             isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
           );
           
