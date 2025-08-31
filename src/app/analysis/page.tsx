@@ -1164,7 +1164,7 @@ useEffect(() => {
   
   const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
   const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
-  const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
+  const showProgressionReanalyze = !!progressionAnalysisToRender;
 
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
     if (!level) return 'outline';
@@ -1719,3 +1719,6 @@ useEffect(() => {
 
 
 
+
+
+    
