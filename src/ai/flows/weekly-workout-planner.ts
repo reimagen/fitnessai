@@ -41,9 +41,11 @@ The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{w
 
 **REQUIREMENT: Introductory Analysis**
 Before generating the daily breakdown, you MUST start the plan with a brief, motivating introductory paragraph (2-4 sentences). This paragraph MUST:
-1.  **Analyze Past Performance & Goal Proximity**: Briefly comment on the user's recent activity ('Workout History Summary') and analyze how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
-2.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals and correct any issues from the 'Strength Balance Analysis'. For instance, explain *why* certain exercises are included.
-3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
+1.  **Analyze Consistency First**: Your primary analytical task is to look at the 'Frequency per Exercise' in the user's 'Workout History Summary'. Compare this frequency to their 'Fitness Goals' to evaluate their training consistency. For example, if a primary goal is "Build Muscle", you should check if they are training major compound lifts (like squats, presses) at least 8 times over the last 4 weeks (which indicates a consistent 2x/week frequency).
+2.  **Comment on Consistency**: In your introduction, you MUST comment on this analysis. If their frequency is aligned with their goals, provide encouragement. If it's too low, gently highlight this and explain how this new plan will help them achieve the necessary consistency.
+3.  **Analyze Goal Proximity**: Briefly comment on how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
+4.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals, correct any issues from the 'Strength Balance Analysis', and improve the consistency you analyzed.
+5.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
 
 **CRITICAL INSTRUCTIONS FOR PLAN DESIGN:**
 Your primary directive is to create a plan that intelligently addresses the user's specific needs based on their **Strength Balance Analysis** and **Personal Record Strength Levels**.
