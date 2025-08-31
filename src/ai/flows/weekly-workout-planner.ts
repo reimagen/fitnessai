@@ -59,8 +59,13 @@ Your primary directive is to create a plan that intelligently addresses the user
     *   For lifts at the **'Beginner'** level, prescribe moderate weights and emphasize mastering proper form.
     *   For lifts at the **'Intermediate'** level, incorporate principles of progressive overload. Suggest specific, small increases in weight or reps (e.g., "This week, aim to add 5 lbs to your squat").
     *   For lifts at the **'Advanced'** or **'Elite'** level, you can maintain current strength or introduce more complex training variations if it aligns with the user's goals.
+    
+3.  **Calculate Working Weights from PRs - CRITICAL SAFETY INSTRUCTION**:
+    *   For any exercise that has a Personal Record (PR) listed in the user's context, you **MUST NOT** use the PR weight as the recommended working weight. This is unsafe.
+    *   Instead, you **MUST** calculate the suggested working weight as exactly **75% of the user's PR weight** for that exercise.
+    *   For exercises that do not have a PR, you should estimate an appropriate starting weight based on the user's overall profile, especially their experience level.
 
-3.  **Holistically Address ALL User Goals**: Your plan MUST be structured to make progress on **all** of the user's fitness goals, not just the primary one. The weekly schedule must provide sufficient training volume and frequency to make tangible progress on every goal listed in the context. For example:
+4.  **Holistically Address ALL User Goals**: Your plan MUST be structured to make progress on **all** of the user's fitness goals, not just the primary one. The weekly schedule must provide sufficient training volume and frequency to make tangible progress on every goal listed in the context. For example:
     *   If a goal is "run 5 miles per week," the plan must include enough running sessions (e.g., 2-3 times a week) to logically reach that mileage.
     *   If a goal is "increase flexibility," the cool-down sections should be more extensive, or a dedicated mobility day should be included.
     *   You must balance the recommendations from the strength analysis with the requirements of these other goals.
@@ -80,7 +85,8 @@ After analyzing and designing the plan based on the above, generate the full wee
     *   **Main Workout Section**: Must begin with **Main Workout:**. List exercises, sets/reps, and rest periods on separate lines.
     *   **Cool-down Section**: Must begin with **Cool-down:**
 5.  **Clarity and Actionability**: The plan should be easy to understand. Use clear, concise language.
-6.  **Safety**: Optionally, include a brief, general safety reminder at the very end of the entire weekly plan.
+6.  **Safety Reminder**: Include a brief, general safety reminder at the very end of the entire weekly plan.
+7.  **Disclaimer on Weights - MANDATORY**: After the safety reminder, you MUST add a final section. It must start with the heading **A Note on Weights:** and be followed by this exact text: "Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations."
 
 Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
 `,
