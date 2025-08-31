@@ -138,10 +138,12 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     if (editedHeightUnit === 'cm') {
       const cmVal = parseFloat(editedHeightCm);
       if (editedHeightCm !== "") {
-        if (isNaN(cmVal) || cmVal <= 0) {
+        if (isNaN(cmVal) || cmVal < 0) {
           toast({ title: "Invalid Height", description: "Please enter a valid height in cm.", variant: "destructive" }); return;
         }
-        finalHeightCmValue = cmVal;
+        if (cmVal > 0) {
+            finalHeightCmValue = cmVal;
+        }
       }
     } else { 
       const ftVal = parseFloat(editedHeightFt);
@@ -156,7 +158,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
       if (ftIsEmpty && inIsEmpty) { finalHeightCmValue = undefined; }
       else {
         const totalInches = (ftIsEmpty ? 0 : ftVal) * FT_TO_INCHES + (inIsEmpty ? 0 : inVal);
-        if (totalInches <= 0 && (!ftIsEmpty || !inIsEmpty)) {
+        if (totalInches < 0) {
              toast({ title: "Invalid Height", description: "Height must be a positive value.", variant: "destructive" }); return;
         }
         finalHeightCmValue = totalInches > 0 ? totalInches * INCH_TO_CM : undefined;

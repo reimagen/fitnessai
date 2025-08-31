@@ -37,6 +37,8 @@ import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 
 const IMBALANCE_TYPES = [
@@ -50,8 +52,8 @@ type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
 type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['bench press', 'chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Horizontal Push vs. Pull': { lift1Options: ['chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Vertical Push vs. Pull': { lift1Options: ['shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
     'Hamstring vs. Quad': { lift1Options: ['leg curl'], lift2Options: ['leg extension'], ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
 };
@@ -222,11 +224,11 @@ const ProgressionTooltip = (props: any) => {
                 {data.isActualPR && (
                      <p className="font-bold text-yellow-500 flex items-center gap-1">
                         <Trophy className="h-4 w-4" />
-                        Personal Record: {data.actualPR} lbs
+                        Personal Record: {data.actualPR.toLocaleString()} lbs
                     </p>
                 )}
-                {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM} lbs</p>}
-                {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume} lbs</p>}
+                {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM.toLocaleString()} lbs</p>}
+                {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume.toLocaleString()} lbs</p>}
             </div>
         );
     }
@@ -278,6 +280,7 @@ const ProgressionChartLegend = (props: any) => {
 export default function AnalysisPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = useState('weekly');
   
   const [selectedLift, setSelectedLift] = useState<string>('');
@@ -718,6 +721,14 @@ export default function AnalysisPage() {
       .map(([name]) => name);
   }, [workoutLogs]);
 
+  useEffect(() => {
+    // When the list of frequently logged lifts is available,
+    // and no lift is currently selected, select the first one.
+    if (frequentlyLoggedLifts.length > 0 && !selectedLift) {
+      setSelectedLift(frequentlyLoggedLifts[0]);
+    }
+  }, [frequentlyLoggedLifts, selectedLift]);
+
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) {
         return { chartData: [], trendlineData: null };
@@ -902,33 +913,33 @@ const cardioAnalysisData = useMemo(() => {
 
     if (timeRange === 'weekly') {
         weeklyAverage = totalCalories;
-        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} cardio calories.`;
+        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories).toLocaleString()} cardio calories.`;
     } else if (timeRange === 'monthly') {
         const start = startOfMonth(new Date());
         const end = endOfMonth(new Date());
         const daysSoFar = differenceInDays(new Date(Math.min(today.getTime(), end.getTime())), start) + 1;
         const weeksSoFar = Math.max(1, daysSoFar / 7);
         weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
-        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else if (timeRange === 'yearly') {
         const uniqueMonthsWithData = new Set(cardioExercises.map(ex => format(ex.date, 'yyyy-MM'))).size;
         const weeksWithData = uniqueMonthsWithData * 4.345; // Average weeks in a month
         weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else { // all-time
         const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
         const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
         weeklyAverage = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `You've burned ${Math.round(totalCalories).toLocaleString()} cardio calories in total, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     }
     
     if (weeklyGoal && weeklyGoal > 0) {
         const difference = weeklyAverage - weeklyGoal;
         const percentage = (difference / weeklyGoal) * 100;
         if (difference >= 0) {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are beating your goal by ${Math.round(difference)} calories (${Math.round(percentage)}%).`;
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are beating your goal by ${Math.round(difference).toLocaleString()} calories (${Math.round(percentage)}%).`;
         } else {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
         }
     }
     
@@ -1141,9 +1152,9 @@ useEffect(() => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const displayValue = unit === 'kcal' ? Math.round(value) : value;
+    const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
     const unitString = unit ? ` ${unit}` : '';
-    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name}(${displayValue}${unitString})`}</text>;
+    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
   };
 
   const formatCardioDuration = (totalMinutes: number): string => {
@@ -1164,7 +1175,7 @@ useEffect(() => {
   
   const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
   const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
-  const showProgressionReanalyze = progressionAnalysisToRender && differenceInDays(new Date(), progressionAnalysisToRender.generatedDate) < 14;
+  const showProgressionReanalyze = !!progressionAnalysisToRender;
 
   const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
     if (!level) return 'outline';
@@ -1233,7 +1244,19 @@ useEffect(() => {
         <h1 className="font-headline text-3xl font-bold text-primary">Your Progress</h1>
         <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
       </header>
-      <div className="mb-6"><Select value={timeRange} onValueChange={setTimeRange}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select time range" /></SelectTrigger><SelectContent><SelectItem value="weekly">This Week</SelectItem><SelectItem value="monthly">This Month</SelectItem><SelectItem value="yearly">This Year</SelectItem><SelectItem value="all-time">All Time</SelectItem></SelectContent></Select></div>
+      <div className="mb-6">
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger className="w-[180px] bg-card shadow">
+            <SelectValue placeholder="Select time range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="weekly">This Week</SelectItem>
+            <SelectItem value="monthly">This Month</SelectItem>
+            <SelectItem value="yearly">This Year</SelectItem>
+            <SelectItem value="all-time">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
       {isError && (
           <div className="mb-6">
@@ -1243,12 +1266,12 @@ useEffect(() => {
       
       {isLoading ? <Card className="shadow-lg mb-6 h-40 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>
       : !isError && chartData.periodSummary && (
-        <Card className="shadow-lg mb-6 bg-card"><CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><TrendingUp className="h-6 w-6 text-primary" />{chartData.periodSummary.periodLabel}</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">{Object.entries({"Workout Days": chartData.periodSummary.workoutDays, "Weight Lifted (lbs)": chartData.periodSummary.totalWeightLiftedLbs.toLocaleString(), "Distance (mi)": chartData.periodSummary.totalDistanceMi, "Cardio Duration": formatCardioDuration(chartData.periodSummary.totalCardioDurationMin), "Calories Burned": chartData.periodSummary.totalCaloriesBurned.toLocaleString()}).map(([label, value]) => <div key={label}><p className="text-3xl font-bold text-accent">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}</CardContent></Card>
+        <Card className="shadow-lg mb-6 bg-card"><CardHeader><CardTitle className="font-headline flex items-center gap-2 text-xl"><TrendingUp className="h-6 w-6 text-primary" />{chartData.periodSummary.periodLabel}</CardTitle></CardHeader><CardContent className="grid grid-cols-2 gap-y-6 gap-x-3 md:grid-cols-5 text-center py-6">{Object.entries({"Workout Days": chartData.periodSummary.workoutDays, "Weight Lifted (lbs)": chartData.periodSummary.totalWeightLiftedLbs.toLocaleString(), "Distance (mi)": chartData.periodSummary.totalDistanceMi.toLocaleString(), "Cardio Duration": formatCardioDuration(chartData.periodSummary.totalCardioDurationMin), "Calories Burned": chartData.periodSummary.totalCaloriesBurned.toLocaleString()}).map(([label, value]) => <div key={label}><p className="text-3xl font-bold text-accent">{value}</p><p className="text-sm text-muted-foreground mt-1">{label}</p></div>)}</CardContent></Card>
       )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : !isError && (<>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category for {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
             <Card className="shadow-lg lg:col-span-3">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2">
@@ -1309,8 +1332,8 @@ useEffect(() => {
                 </Tabs>
               </CardContent>
             </Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props)}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category for {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'reps')}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
@@ -1562,7 +1585,7 @@ useEffect(() => {
              <Card className="shadow-lg lg:col-span-6">
               <CardHeader>
                 <CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" />Cardio Analysis</CardTitle>
-                <CardDescription>A summary of your cardio performance for {timeRangeDisplayNames[timeRange]}.</CardDescription>
+                <CardDescription>A summary of your cardio performance {timeRangeDisplayNames[timeRange]}.</CardDescription>
               </CardHeader>
               <CardContent>
                 {cardioAnalysisData.totalCalories > 0 ? (
@@ -1592,7 +1615,7 @@ useEffect(() => {
                                     You completed {stats.count} session{stats.count > 1 ? 's' : ''}
                                     {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
                                     {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
-                                    , burning {Math.round(stats.totalCalories)} kcal.
+                                    , burning {Math.round(stats.totalCalories).toLocaleString()} kcal.
                                     {avgDistance && ` Your average distance was ${avgDistance} mi.`}
                                     </p>
                                 </div>
@@ -1609,14 +1632,14 @@ useEffect(() => {
                           <TabsContent value="types">
                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
                                 <ResponsiveContainer>
-                                <PieChart>
+                                <PieChart margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}>
                                     <Pie
                                     data={cardioAnalysisData.pieChartData}
                                     dataKey="value"
                                     nameKey="name"
                                     cx="50%"
                                     cy="50%"
-                                    outerRadius={80}
+                                    outerRadius={isMobile ? 60 : 80}
                                     labelLine={false}
                                     label={(props) => renderPieLabel(props, 'kcal')}
                                     >
@@ -1660,7 +1683,15 @@ useEffect(() => {
                                 <ResponsiveContainer>
                                     <BarChart data={cardioAnalysisData.cardioAmountChartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                        <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
+                                        <XAxis 
+                                          dataKey="dateLabel" 
+                                          tick={{fontSize: 12}} 
+                                          interval={0} 
+                                          angle={isMobile ? -45 : 0}
+                                          textAnchor={isMobile ? 'end' : 'middle'}
+                                          height={isMobile ? 50 : 30}
+                                          minTickGap={-5}
+                                        />
                                         <YAxis allowDecimals={false} />
                                         <Tooltip content={<ChartTooltipContent nameKey="name" />} />
                                         <Legend content={({payload}) => {
@@ -1668,8 +1699,8 @@ useEffect(() => {
                                             const numItems = payload.length;
                                             const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
                                             return (
-                                                <div className="flex justify-center">
-                                                    <div className="grid gap-x-2 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
+                                                <div className="flex justify-center mt-4">
+                                                    <div className="grid gap-x-2 gap-y-1 text-xs" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
                                                         {payload.map((entry:any, index:number) => (
                                                             <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                                                                 <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
@@ -1713,6 +1744,17 @@ useEffect(() => {
 
 
 
+
+
+
+
+
+
+
+
+    
+
+    
 
 
 

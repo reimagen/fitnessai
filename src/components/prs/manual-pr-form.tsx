@@ -17,9 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
-import { startOfDay } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { classifiedExercises, getExerciseCategory, getNormalizedExerciseName } from "@/lib/strength-standards";
 import { StepperInput } from "../ui/stepper-input";
+import { useToast } from "@/hooks/use-toast";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -33,6 +34,7 @@ type ManualPrFormData = z.infer<typeof manualPrSchema>;
 type ManualPrFormProps = {
   onAdd: (data: Omit<PersonalRecord, 'id' | 'userId'>) => void;
   isSubmitting?: boolean;
+  allRecords: PersonalRecord[];
 };
 
 const toTitleCase = (str: string) => {
@@ -48,7 +50,8 @@ const exercisesForDropdown = classifiedExercises.filter(
   (exercise) => !exercisesToHide.includes(exercise)
 );
 
-export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
+export function ManualPrForm({ onAdd, isSubmitting, allRecords }: ManualPrFormProps) {
+  const { toast } = useToast();
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
     defaultValues: { 
@@ -60,15 +63,33 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   });
 
   function onSubmit(values: ManualPrFormData) {
-    const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
     const category = getExerciseCategory(values.exerciseName);
-    const canonicalName = getNormalizedExerciseName(values.exerciseName);
+    
+    // The `values.exerciseName` is the canonical name from the dropdown.
+    const canonicalName = values.exerciseName;
+    const selectedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
+
+    // --- Duplicate Check ---
+    const recordExists = allRecords.some(record => 
+      getNormalizedExerciseName(record.exerciseName) === getNormalizedExerciseName(canonicalName) &&
+      startOfDay(record.date).getTime() === selectedDate.getTime()
+    );
+
+    if (recordExists) {
+      toast({
+        title: "Duplicate Record",
+        description: "A record for this exercise on this date already exists. Please edit the existing record or choose a different date.",
+        variant: "destructive",
+      });
+      return; // Stop the submission
+    }
+    // --- End Duplicate Check ---
 
     onAdd({
       exerciseName: canonicalName,
       weight: values.weight,
       weightUnit: values.weightUnit,
-      date: normalizedDate,
+      date: selectedDate,
       category: category || 'Other',
     });
     form.reset();
