@@ -110,28 +110,28 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       const caloriesToStretch = Math.round(maxGoal - totalWeeklyCalories);
       const milesToStretch = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToStretch / caloriesPerMile).toFixed(1) : null;
       if (milesToStretch) {
-        return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch} calories, only a ${milesToStretch} mi run.`;
+        return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch.toLocaleString()} calories, only a ${milesToStretch} mi run.`;
       }
-      return `Congrats on hitting your minimum goal! You only need another ${caloriesToStretch} calories to hit your stretch goal.`;
+      return `Congrats on hitting your minimum goal! You only need another ${caloriesToStretch.toLocaleString()} calories to hit your stretch goal.`;
     }
 
     if (totalWeeklyCalories >= minGoal * 0.5) {
       const caloriesToMin = Math.round(minGoal - totalWeeklyCalories);
       const milesToMin = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToMin / caloriesPerMile).toFixed(1) : null;
       if (milesToMin) {
-        return `You're only ${caloriesToMin} calories away from your minimum goal. Run ${milesToMin} more miles to achieve this goal.`;
+        return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Run ${milesToMin} more miles to achieve this goal.`;
       }
-       return `You're only ${caloriesToMin} calories away from your minimum goal. Keep pushing!`;
+       return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Keep pushing!`;
     }
     
     const caloriesRemaining = minGoal - totalWeeklyCalories;
     const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (caloriesRemaining / caloriesPerMile).toFixed(1) : null;
     
     if (milesForMinGoal && parseFloat(milesForMinGoal) > 0) {
-      return `Your minimum goal is to burn ${minGoal} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
+      return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
     }
     
-    return `Your minimum goal is to burn ${minGoal} calories. Get started to make progress!`;
+    return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Get started to make progress!`;
   };
 
 
@@ -140,15 +140,15 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          {userProfile ? `To support your cardio health, your weekly target is to burn ${minGoal}-${maxGoal} calories.` : "Set your profile goals to track your weekly cardio."}
+          {userProfile ? `To support your cardio health, your weekly target is to burn ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.` : "Set your profile goals to track your weekly cardio."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {userProfile ? (
           <div className="space-y-4">
             <div className="flex justify-between items-baseline mb-1">
-              <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories)} kcal</span>
-              <span className="text-sm text-muted-foreground">/ {maxGoal} kcal</span>
+              <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories).toLocaleString()} kcal</span>
+              <span className="text-sm text-muted-foreground">/ {maxGoal.toLocaleString()} kcal</span>
             </div>
             <div className="relative h-4 w-full">
               <Progress value={progressPercentage} className="h-full" />
