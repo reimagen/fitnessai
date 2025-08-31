@@ -8,11 +8,10 @@ import {
   deleteWorkoutLog as serverDeleteWorkoutLog,
   getWorkoutLogs as serverGetWorkoutLogs,
   getUserProfile,
-  updateUserProfile,
+  incrementUsageCounter,
 } from "@/lib/firestore-server";
 import type { WorkoutLog } from "@/lib/types";
 import { format } from "date-fns";
-import { getAuth } from "firebase-admin/auth";
 
 export async function parseWorkoutScreenshotAction(
   userId: string,
@@ -48,19 +47,7 @@ export async function parseWorkoutScreenshotAction(
 
     // Increment usage counter on success (only in production)
     if (process.env.NODE_ENV !== 'development') {
-        const userProfile = await getUserProfile(userId);
-        const today = format(new Date(), 'yyyy-MM-dd');
-        const currentUsage = userProfile?.aiUsage?.screenshotParses;
-        const newCount = (currentUsage?.date === today) ? (currentUsage.count + 1) : 1;
-        
-        const updatedUsage = {
-            ...userProfile?.aiUsage,
-            screenshotParses: {
-                count: newCount,
-                date: today,
-            }
-        };
-        await updateUserProfile(userId, { aiUsage: updatedUsage });
+        await incrementUsageCounter(userId, 'screenshotParses');
     }
 
     return { success: true, data: parsedData };
