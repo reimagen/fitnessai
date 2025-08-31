@@ -17,6 +17,7 @@ import { getStrengthLevel } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -43,7 +44,7 @@ const constructUserProfileContext = (
         context += `Height: ${feet} ft ${inches} in\n`;
       }
     } else {
-      context += `Height: Not specified\n`;
+      context += `Height: Not specified'}\n`;
     }
 
     if (userProfile.weightValue && userProfile.weightUnit) {
@@ -230,8 +231,10 @@ export default function PlanPage() {
           }
       });
     } else {
+      const isLimitError = result.error?.toLowerCase().includes('limit');
+      const toastTitle = isLimitError ? "Daily Limit Reached" : "Generation Failed";
       setError(result.error || "Failed to generate workout plan. The AI might be busy or an unexpected error occurred.");
-      toast({ title: "Generation Failed", description: result.error || "Could not generate plan.", variant: "destructive" });
+      toast({ title: toastTitle, description: result.error || "Could not generate plan.", variant: "destructive" });
     }
     setApiIsLoading(false);
   };
@@ -240,6 +243,7 @@ export default function PlanPage() {
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
+  const FEEDBACK_CHAR_LIMIT = 300;
 
   if (isLoadingProfile) {
     return (
@@ -290,7 +294,7 @@ export default function PlanPage() {
             Generate New Weekly Plan
           </CardTitle>
           <CardDescription>
-            {currentWeekStartDate ? `This will generate a plan for the week starting Sunday, ${format(new Date(currentWeekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}.` : "Calculating week start date..."}
+            {currentWeekStartDate ? `This will generate a plan for the week starting Sunday, ${format(new Date(currentWeekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}. ` : "Calculating week start date..."}
             Your plan is tailored based on your profile, goals, and recent activity.
           </CardDescription>
         </CardHeader>
@@ -319,7 +323,14 @@ export default function PlanPage() {
                     onChange={(e) => setRegenerationFeedback(e.target.value)}
                     className="min-h-[80px]"
                     disabled={apiIsLoading || updateUserMutation.isPending}
+                    maxLength={FEEDBACK_CHAR_LIMIT}
                   />
+                  <p className={cn(
+                    "text-xs text-right",
+                    regenerationFeedback.length > FEEDBACK_CHAR_LIMIT ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {regenerationFeedback.length} / {FEEDBACK_CHAR_LIMIT}
+                  </p>
                 </div>
               )}
               <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading || updateUserMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
@@ -332,12 +343,12 @@ export default function PlanPage() {
             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
               <AlertTriangle className="h-5 w-5 mt-0.5"/>
               <div>
-                 <p className="font-semibold">Generation Error</p>
+                 <p className="font-semibold">{error.toLowerCase().includes('limit') ? "Daily Limit Reached" : "Generation Error"}</p>
                  <p className="text-sm">{error}</p>
               </div>
             </div>
           )}
-           {userProfileContextString && (
+           {userProfileContextString && process.env.NODE_ENV === 'development' && (
             <details className="mt-6 text-xs text-muted-foreground">
                 <summary className="cursor-pointer hover:text-foreground">View context used for AI plan generation</summary>
                 <pre className="mt-2 p-2 border bg-secondary/50 rounded-md whitespace-pre-wrap break-all max-h-60 overflow-y-auto">

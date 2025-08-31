@@ -2,9 +2,9 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
-import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase-admin/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis } from './types';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
+import { startOfMonth, endOfMonth, format } from 'date-fns';
 import { getStrengthLevel } from './strength-standards';
 import { cache } from 'react';
 
@@ -175,11 +175,21 @@ const userProfileConverter = {
             ...data.weeklyPlan,
             generatedDate: data.weeklyPlan.generatedDate.toDate(),
         } : undefined;
+        
+        const aiUsage: AIUsageStats | undefined = data.aiUsage ? {
+            goalAnalyses: data.aiUsage.goalAnalyses,
+            screenshotParses: data.aiUsage.screenshotParses,
+            planGenerations: data.aiUsage.planGenerations,
+            prParses: data.aiUsage.prParses,
+            strengthAnalyses: data.aiUsage.strengthAnalyses,
+            liftProgressionAnalyses: data.aiUsage.liftProgressionAnalyses,
+        } : undefined;
 
         return {
             id: snapshot.id,
             name: data.name || "",
             email: data.email || "",
+            avatarUrl: data.avatarUrl,
             joinedDate: joinedDate,
             fitnessGoals: fitnessGoals,
             strengthAnalysis: strengthAnalysis,
@@ -201,7 +211,7 @@ const userProfileConverter = {
 aiPreferencesNotes: data.aiPreferencesNotes,
             weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
             weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
-            aiUsage: data.aiUsage,
+            aiUsage: aiUsage,
         };
     }
 };
@@ -434,3 +444,35 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
         }
     }
 };
+
+/**
+ * Atomically increments an AI usage counter for a specific user and feature.
+ * This is safe against race conditions.
+ * @param userId The ID of the user.
+ * @param feature The key of the feature to increment (e.g., 'goalAnalyses').
+ */
+export async function incrementUsageCounter(userId: string, feature: keyof AIUsageStats): Promise<void> {
+  const profileDocRef = adminDb.collection('users').doc(userId);
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const userProfile = await getUserProfile(userId);
+  const currentUsage = userProfile?.aiUsage?.[feature];
+  
+  if (currentUsage && currentUsage.date === today) {
+      // If the date is today, atomically increment the count.
+      await profileDocRef.update({
+          [`aiUsage.${feature}.count`]: FieldValue.increment(1)
+      });
+  } else {
+      // If it's a new day or the field doesn't exist, reset it using dot notation.
+      // This ensures we only update the specific feature's counter without overwriting others.
+      await profileDocRef.set({
+          aiUsage: {
+              [feature]: {
+                  count: 1,
+                  date: today
+              }
+          }
+      }, { merge: true });
+  }
+}

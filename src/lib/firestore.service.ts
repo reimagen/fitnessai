@@ -190,7 +190,12 @@ export function useAnalyzeLiftProgression() {
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
         },
         onError: (error) => {
-            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+            const isLimitError = error.message.toLowerCase().includes('limit');
+            toast({ 
+                title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
+                description: error.message, 
+                variant: "destructive" 
+            });
         }
     });
 }
@@ -213,7 +218,12 @@ export function useAnalyzeStrength() {
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
         },
         onError: (error) => {
-            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+            const isLimitError = error.message.toLowerCase().includes('limit');
+            toast({ 
+                title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
+                description: error.message, 
+                variant: "destructive" 
+            });
         },
     });
 }
@@ -236,8 +246,12 @@ export function useAnalyzeGoals() {
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
         },
         onError: (error) => {
-            toast({ title: "Analysis Failed", description: error.message, variant: "destructive" });
+            const isLimitError = error.message.toLowerCase().includes('limit');
+            toast({ 
+                title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
+                description: error.message, 
+                variant: "destructive" 
+            });
         },
     });
 }
-    

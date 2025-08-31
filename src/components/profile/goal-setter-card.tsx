@@ -284,7 +284,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
 
     analyzeGoalsMutation.mutate(analysisInput, {
       onError: (error) => {
-        setAnalysisError(error.message);
+        // The toast is handled by the useAnalyzeGoals hook.
+        // We set the state here only if we need to display it in the card.
+        // Per user request, we are removing the in-card display.
+        // setAnalysisError(error.message);
       }
     });
   };
@@ -517,16 +520,6 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
               )}
             </Tooltip>
           </TooltipProvider>
-
-          {analysisError && (
-             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-5 w-5 mt-0.5"/>
-              <div>
-                 <p className="font-semibold">Analysis Error</p>
-                 <p className="text-sm">{analysisError}</p>
-              </div>
-            </div>
-          )}
 
           {analysisToRender && (
              <Card className="mt-6 bg-secondary/30">
