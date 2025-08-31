@@ -313,8 +313,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     });
   };
 
-  const activeFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => !field.achieved);
-  const achievedFields = fields.map((field, index) => ({ field, index })).filter(({ field }) => field.achieved);
+  const allFields = fields.map((field, index) => ({ field, index }));
   const analysisToRender = userProfile?.goalAnalysis?.result;
   const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
   
@@ -347,124 +346,132 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
-            {/* Active Goals */}
-            {activeFields.length > 0 ? activeFields.map(({ field, index }) => {
-              const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
-              const isAchieved = form.watch(`goals.${index}.achieved`);
-              return (
-                <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
-                  {isEditing ? (
-                    <>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name={`goals.${index}.description`}
-                          render={({ field }) => (
-                            <FormItem className="md:col-span-2">
-                              <FormLabel>Goal Description</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`goals.${index}.targetDate`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Target Date</FormLabel>
-                              <FormControl>
-                                <Input type="date" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        {isAchieved && (
-                           <FormField
-                              control={form.control}
-                              name={`goals.${index}.dateAchieved`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Date Achieved</FormLabel>
-                                  <FormControl>
-                                    <Input type="date" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                        )}
-                      </div>
+            {allFields.length > 0 ? (
+                allFields.map(({ field, index }) => {
+                    const isCurrentGoalPrimary = form.watch(`goals.${index}.isPrimary`);
+                    const isAchieved = form.watch(`goals.${index}.achieved`);
 
-                      <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
-                        <div className="flex items-center gap-4">
-                           <Button
-                              type="button"
-                              variant={isCurrentGoalPrimary ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => handleSetPrimary(index)}
-                              disabled={isCurrentGoalPrimary}
-                              className={cn( "whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100" )}
-                          >
-                              {isCurrentGoalPrimary ? ( <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> ) : ( "Set as Primary" )}
-                          </Button>
-                          <FormField
-                            control={form.control}
-                            name={`goals.${index}.achieved`}
-                            render={({ field: checkboxField }) => ( 
-                                <FormItem className="flex flex-row items-center space-x-2">
-                                <FormControl>
-                                    <Checkbox
-                                    checked={checkboxField.value}
-                                    onCheckedChange={checkboxField.onChange}
+                    if (isEditing) {
+                        return (
+                            <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30 relative">
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <FormField
+                                    control={form.control}
+                                    name={`goals.${index}.description`}
+                                    render={({ field }) => (
+                                        <FormItem className="md:col-span-2">
+                                        <FormLabel>Goal Description</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="e.g., Build muscle, Lose 5 lbs, Run 5km" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
                                     />
-                                </FormControl>
-                                <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
-                                </FormItem>
-                            )}
-                            />
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => remove(index)}
-                          className="text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-sm">
-                      <div className="flex justify-between items-start">
-                         <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
-                      </div>
-                      <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
-                    </div>
-                  )}
-                </Card>
-              );
-            }) : (
-                 <p className="text-sm text-center text-muted-foreground py-4">No active goals set. Add a new goal to get started!</p>
-            )}
+                                    <FormField
+                                    control={form.control}
+                                    name={`goals.${index}.targetDate`}
+                                    render={({ field }) => (
+                                        <FormItem>
+                                        <FormLabel>Target Date</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                        </FormItem>
+                                    )}
+                                    />
+                                    {isAchieved && (
+                                    <FormField
+                                        control={form.control}
+                                        name={`goals.${index}.dateAchieved`}
+                                        render={({ field }) => (
+                                            <FormItem>
+                                            <FormLabel>Date Achieved</FormLabel>
+                                            <FormControl>
+                                                <Input type="date" {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                        />
+                                    )}
+                                </div>
 
+                                <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
+                                    <div className="flex items-center gap-4">
+                                    <Button
+                                        type="button"
+                                        variant={isCurrentGoalPrimary ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleSetPrimary(index)}
+                                        disabled={isCurrentGoalPrimary}
+                                        className={cn("whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100")}
+                                    >
+                                        {isCurrentGoalPrimary ? <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> : "Set as Primary"}
+                                    </Button>
+                                    <FormField
+                                        control={form.control}
+                                        name={`goals.${index}.achieved`}
+                                        render={({ field: checkboxField }) => (
+                                        <FormItem className="flex flex-row items-center space-x-2">
+                                            <FormControl>
+                                            <Checkbox
+                                                checked={checkboxField.value}
+                                                onCheckedChange={checkboxField.onChange}
+                                            />
+                                            </FormControl>
+                                            <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
+                                        </FormItem>
+                                        )}
+                                    />
+                                    </div>
+                                    <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => remove(index)}
+                                    className="text-destructive hover:bg-destructive/10"
+                                    >
+                                    <Trash2 className="mr-1 h-4 w-4" /> Remove Goal
+                                    </Button>
+                                </div>
+                            </Card>
+                        );
+                    }
+                    
+                    // Display mode
+                    if (!field.achieved) {
+                         return (
+                            <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
+                                <div className="text-sm">
+                                    <div className="flex justify-between items-start">
+                                        <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
+                                    </div>
+                                    <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
+                                </div>
+                            </Card>
+                         )
+                    }
+                    return null; // Don't render achieved goals in display mode, they are in the accordion
+                })
+            ) : (
+                <p className="text-sm text-center text-muted-foreground py-4">No active goals set. Add a new goal to get started!</p>
+            )}
+            
             {/* Achieved Goals Accordion */}
-            {achievedFields.length > 0 && (
+            {fields.filter(f => f.achieved).length > 0 && (
               <Accordion type="single" collapsible className="w-full">
                 <AccordionItem value="achieved-goals" className="border rounded-md px-4 bg-secondary/30">
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-2">
                        <CheckCircle className="h-5 w-5 text-green-600" />
-                       <span className="font-semibold">View {achievedFields.length} Completed Goal{achievedFields.length > 1 ? 's' : ''}</span>
+                       <span className="font-semibold">View {fields.filter(f => f.achieved).length} Completed Goal{fields.filter(f => f.achieved).length > 1 ? 's' : ''}</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-2">
                     <div className="space-y-3">
-                    {achievedFields.map(({ field }) => (
+                    {fields.filter(f => f.achieved).map((field) => (
                       <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
                         <div className="flex flex-col">
                           <p className="font-medium text-foreground">{field.description}</p>
