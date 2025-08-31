@@ -718,6 +718,14 @@ export default function AnalysisPage() {
       .map(([name]) => name);
   }, [workoutLogs]);
 
+  useEffect(() => {
+    // When the list of frequently logged lifts is available,
+    // and no lift is currently selected, select the first one.
+    if (frequentlyLoggedLifts.length > 0 && !selectedLift) {
+      setSelectedLift(frequentlyLoggedLifts[0]);
+    }
+  }, [frequentlyLoggedLifts, selectedLift]);
+
   const progressionChartData = useMemo(() => {
     if (!selectedLift || !workoutLogs) {
         return { chartData: [], trendlineData: null };
