@@ -172,6 +172,10 @@ export interface AIUsageStats {
         count: number;
         date: string; // YYYY-MM-DD
     };
+    liftProgressionAnalyses?: {
+        count: number;
+        date: string; // YYYY-MM-DD
+    };
 }
 
 export interface UserProfile {
