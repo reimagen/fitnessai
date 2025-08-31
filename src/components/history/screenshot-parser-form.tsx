@@ -67,7 +67,12 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
         setNeedsDateConfirmation(true);
       }
     } else {
-      toast({ title: "Parsing Error", description: result.error, variant: "destructive" });
+      const isLimitError = result.error?.toLowerCase().includes('limit');
+      toast({ 
+        title: isLimitError ? "Daily Limit Reached" : "Parsing Error", 
+        description: result.error, 
+        variant: "destructive" 
+      });
     }
     setIsLoading(false);
   };

@@ -104,10 +104,7 @@ export async function analyzeGoalsAction(
       generatedDate: new Date(),
     };
     
-    // Increment usage counter on success (only in production)
-    if (process.env.NODE_ENV !== 'development') {
-        await incrementUsageCounter(userId, 'goalAnalyses');
-    }
+    await incrementUsageCounter(userId, 'goalAnalyses');
 
     // Save the analysis result to the user's profile
     await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });

@@ -43,7 +43,7 @@ const constructUserProfileContext = (
         context += `Height: ${feet} ft ${inches} in\n`;
       }
     } else {
-      context += `Height: Not specified\n`;
+      context += `Height: Not specified'}\n`;
     }
 
     if (userProfile.weightValue && userProfile.weightUnit) {
@@ -230,8 +230,10 @@ export default function PlanPage() {
           }
       });
     } else {
+      const isLimitError = result.error?.toLowerCase().includes('limit');
+      const toastTitle = isLimitError ? "Daily Limit Reached" : "Generation Failed";
       setError(result.error || "Failed to generate workout plan. The AI might be busy or an unexpected error occurred.");
-      toast({ title: "Generation Failed", description: result.error || "Could not generate plan.", variant: "destructive" });
+      toast({ title: toastTitle, description: result.error || "Could not generate plan.", variant: "destructive" });
     }
     setApiIsLoading(false);
   };
@@ -332,7 +334,7 @@ export default function PlanPage() {
             <div className="mt-4 flex items-start gap-2 p-3 rounded-md border border-destructive bg-destructive/10 text-destructive">
               <AlertTriangle className="h-5 w-5 mt-0.5"/>
               <div>
-                 <p className="font-semibold">Generation Error</p>
+                 <p className="font-semibold">{error.toLowerCase().includes('limit') ? "Daily Limit Reached" : "Generation Error"}</p>
                  <p className="text-sm">{error}</p>
               </div>
             </div>
