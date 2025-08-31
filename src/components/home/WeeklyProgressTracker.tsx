@@ -20,16 +20,17 @@ type WeeklyProgressTrackerProps = {
 
 export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgressTrackerProps) {
   const workoutGoal = userProfile?.workoutsPerWeek || 3;
-  const completedWorkouts = workoutLogs.map(log => log.date);
   
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
   const weekEnd = endOfWeek(today, { weekStartsOn: 0 }); // Saturday
   const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  
+  const completedWorkouts = workoutLogs.filter(log => 
+    log.date >= weekStart && log.date <= weekEnd
+  );
 
-  const completedThisWeek = daysOfWeek.filter(day => 
-    completedWorkouts.some(completedDay => isSameDay(day, completedDay))
-  ).length;
+  const completedThisWeek = new Set(completedWorkouts.map(log => format(log.date, 'yyyy-MM-dd'))).size;
 
   const getFooterMessage = () => {
     if (!userProfile) {
@@ -47,7 +48,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
       return "Goal achieved! Great job this week!";
     }
     
-    // New logic: Check if the goal is still achievable
+    // Check if the goal is still achievable
     if (workoutsLeft > daysRemaining) {
       return "Missed the workout goal this week, try again next week!";
     }
@@ -69,7 +70,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
       </CardHeader>
       <CardContent className="flex justify-around items-center">
         {daysOfWeek.map((day, index) => {
-          const isCompleted = completedWorkouts.some(completedDay => isSameDay(day, completedDay));
+          const isCompleted = completedWorkouts.some(log => isSameDay(day, log.date));
           const isCurrentDay = isToday(day);
 
           return (
