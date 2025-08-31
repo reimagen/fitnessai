@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer} from "@/lib/firestore-server";
+import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
@@ -85,6 +85,7 @@ export async function analyzeGoalsAction(
     return { success: false, error: "User not authenticated." };
   }
 
+  // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
     const userProfile = await getUserProfileFromServer(userId);
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -103,25 +104,13 @@ export async function analyzeGoalsAction(
       generatedDate: new Date(),
     };
     
-    // Increment usage counter on success
+    // Increment usage counter on success (only in production)
     if (process.env.NODE_ENV !== 'development') {
-      const userProfile = await getUserProfileFromServer(userId);
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const currentUsage = userProfile?.aiUsage?.goalAnalyses;
-      const newCount = (currentUsage?.date === today) ? (currentUsage.count + 1) : 1;
-      
-      const updatedUsage = {
-          ...userProfile?.aiUsage,
-          goalAnalyses: {
-              count: newCount,
-              date: today,
-          }
-      };
-
-      await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis, aiUsage: updatedUsage });
-    } else {
-        await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
+        await incrementUsageCounter(userId, 'goalAnalyses');
     }
+
+    // Save the analysis result to the user's profile
+    await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
 
 
     return { success: true, data: analysisData };
