@@ -37,6 +37,7 @@ import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const IMBALANCE_TYPES = [
@@ -278,6 +279,7 @@ const ProgressionChartLegend = (props: any) => {
 export default function AnalysisPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [timeRange, setTimeRange] = useState('weekly');
   
   const [selectedLift, setSelectedLift] = useState<string>('');
@@ -1668,7 +1670,15 @@ useEffect(() => {
                                 <ResponsiveContainer>
                                     <BarChart data={cardioAnalysisData.cardioAmountChartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                        <XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} />
+                                        <XAxis 
+                                          dataKey="dateLabel" 
+                                          tick={{fontSize: 12}} 
+                                          interval={0} 
+                                          angle={isMobile ? -45 : 0}
+                                          textAnchor={isMobile ? 'end' : 'middle'}
+                                          height={isMobile ? 50 : 30}
+                                          minTickGap={-5}
+                                        />
                                         <YAxis allowDecimals={false} />
                                         <Tooltip content={<ChartTooltipContent nameKey="name" />} />
                                         <Legend content={({payload}) => {
@@ -1728,5 +1738,7 @@ useEffect(() => {
 
 
 
+
+    
 
     
