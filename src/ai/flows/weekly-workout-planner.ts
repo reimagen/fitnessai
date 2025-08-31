@@ -84,9 +84,8 @@ After analyzing and designing the plan based on the above, generate the full wee
     *   **Warm-up Section**: Must begin with **Warm-up:**
     *   **Main Workout Section**: Must begin with **Main Workout:**. List exercises, sets/reps, and rest periods on separate lines.
     *   **Cool-down Section**: Must begin with **Cool-down:**
-5.  **Clarity and Actionability**: The plan should be easy to understand. Use clear, concise language.
-6.  **Safety Reminder**: Include a brief, general safety reminder at the very end of the entire weekly plan.
-7.  **Disclaimer on Weights - MANDATORY**: After the safety reminder, you MUST add a final section. It must start with the heading **A Note on Weights:** and be followed by this exact text: "Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations."
+5.  **Safety Reminder**: Include a brief, general safety reminder at the very end of the entire weekly plan. The heading MUST be bolded. For example: **A general safety reminder:**
+6.  **Disclaimer on Weights - MANDATORY**: After the safety reminder, you MUST add a final section. It must start with the heading **A Note on Weights:** (bolded) and be followed by this exact text: "Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations."
 
 Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
 `,
