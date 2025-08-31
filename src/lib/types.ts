@@ -1,6 +1,7 @@
 
 
 
+
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
@@ -153,6 +154,21 @@ export interface StoredWeeklyPlan {
   weekStartDate: string;
 }
 
+export interface AIUsageStats {
+    goalAnalyses?: {
+      count: number;
+      date: string; // YYYY-MM-DD
+    };
+    screenshotParses?: {
+      count: number;
+      date: string; // YYYY-MM-DD
+    };
+    planGenerations?: {
+        count: number;
+        date: string; // YYYY-MM-DD
+    }
+}
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -181,16 +197,7 @@ export interface UserProfile {
   weeklyPlan?: StoredWeeklyPlan;
   weeklyCardioCalorieGoal?: number;
   weeklyCardioStretchCalorieGoal?: number;
-  aiUsage?: {
-    goalAnalyses?: {
-      count: number;
-      date: string; // YYYY-MM-DD
-    };
-    screenshotParses?: {
-      count: number;
-      date: string; // YYYY-MM-DD
-    };
-  };
+  aiUsage?: AIUsageStats;
 }
 
 export interface PersonalRecord {

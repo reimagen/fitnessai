@@ -179,6 +179,7 @@ const userProfileConverter = {
         const aiUsage: AIUsageStats | undefined = data.aiUsage ? {
             goalAnalyses: data.aiUsage.goalAnalyses,
             screenshotParses: data.aiUsage.screenshotParses,
+            planGenerations: data.aiUsage.planGenerations,
         } : undefined;
 
         return {
