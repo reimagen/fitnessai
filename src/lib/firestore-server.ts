@@ -465,12 +465,11 @@ export async function incrementUsageCounter(userId: string, feature: keyof AIUsa
       });
   } else {
       // If it's a new day or the field doesn't exist, reset it.
+      // Using dot notation ensures we don't overwrite other usage stats.
       await profileDocRef.set({
-          aiUsage: {
-              [feature]: {
-                  count: 1,
-                  date: today
-              }
+          [`aiUsage.${feature}`]: {
+              count: 1,
+              date: today
           }
       }, { merge: true });
   }
