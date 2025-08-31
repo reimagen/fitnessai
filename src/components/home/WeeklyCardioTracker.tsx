@@ -92,10 +92,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
-    if (!userProfile) return null; // Guard clause to prevent crash
+    if (!userProfile) return null;
     const oneMileRun = { name: 'run', category: 'Cardio' as const, distance: 1, distanceUnit: 'mi' as const, sets: 0, reps: 0, weight: 0 };
-    return calculateExerciseCalories(oneMileRun, userProfile, workoutLogs);
-  }, [userProfile, workoutLogs]);
+    // Pass an empty array for workoutLogs to prevent iterating through history and use default pace.
+    return calculateExerciseCalories(oneMileRun, userProfile, []);
+  }, [userProfile]);
 
   const getMotivationalMessage = () => {
     if (!userProfile) { // Guard clause for when profile doesn't exist
