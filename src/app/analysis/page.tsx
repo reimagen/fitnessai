@@ -38,6 +38,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 
 const IMBALANCE_TYPES = [
@@ -1243,7 +1244,19 @@ useEffect(() => {
         <h1 className="font-headline text-3xl font-bold text-primary">Your Progress</h1>
         <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
       </header>
-      <div className="mb-6"><Select value={timeRange} onValueChange={setTimeRange}><SelectTrigger className="w-[180px]"><SelectValue placeholder="Select time range" /></SelectTrigger><SelectContent><SelectItem value="weekly">This Week</SelectItem><SelectItem value="monthly">This Month</SelectItem><SelectItem value="yearly">This Year</SelectItem><SelectItem value="all-time">All Time</SelectItem></SelectContent></Select></div>
+      <div className="mb-6">
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger className={cn("w-[180px] bg-card shadow-lg")}>
+            <SelectValue placeholder="Select time range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="weekly">This Week</SelectItem>
+            <SelectItem value="monthly">This Month</SelectItem>
+            <SelectItem value="yearly">This Year</SelectItem>
+            <SelectItem value="all-time">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       
       {isError && (
           <div className="mb-6">
@@ -1742,3 +1755,4 @@ useEffect(() => {
     
 
     
+
