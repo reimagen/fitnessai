@@ -2,6 +2,7 @@
 
 
 
+
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
@@ -166,7 +167,11 @@ export interface AIUsageStats {
     planGenerations?: {
         count: number;
         date: string; // YYYY-MM-DD
-    }
+    };
+    prParses?: {
+        count: number;
+        date: string; // YYYY-MM-DD
+    };
 }
 
 export interface UserProfile {

@@ -12,17 +12,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 import { format, parseISO } from 'date-fns';
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
+import { useAuth } from "@/lib/auth.service";
+import { useToast } from "@/hooks/use-toast";
 
 type PrUploaderFormProps = {
-  onParse: (data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
+  onParse: (userId: string, data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
   onParsedData: (data: ParsePersonalRecordsOutput) => void;
 };
 
 export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [parsedResult, setParsedResult] = useState<ParsePersonalRecordsOutput | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,7 +33,6 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       // Clear previous state before setting the new file
-      setError(null);
       setParsedResult(null);
 
       setFile(selectedFile);
@@ -43,15 +45,14 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
   };
 
   const handleSubmit = async () => {
-    if (!file || !previewUrl) {
-      setError("Please select a file to upload.");
+    if (!file || !previewUrl || !user) {
+      toast({ title: "Error", description: "Please select a file and ensure you are logged in.", variant: "destructive" });
       return;
     }
     setIsLoading(true);
-    setError(null);
     setParsedResult(null);
 
-    const result = await onParse({ photoDataUri: previewUrl });
+    const result = await onParse(user.uid, { photoDataUri: previewUrl });
 
     if (result.success && result.data) {
         // Normalize exercise names before passing them on
@@ -64,7 +65,7 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
         setParsedResult(normalizedData);
         onParsedData(normalizedData);
     } else {
-      setError(result.error || "Failed to parse screenshot.");
+      toast({ title: "Parsing Error", description: result.error, variant: "destructive" });
     }
     setIsLoading(false);
   };
@@ -72,7 +73,6 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
   const handleClear = () => {
     setFile(null);
     setPreviewUrl(null);
-    setError(null);
     setParsedResult(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -129,23 +129,11 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
         Parse PRs
       </Button>
 
-      {(file || parsedResult || error) && (
+      {(file || parsedResult) && (
          <Button onClick={handleClear} variant="outline" className="w-full mt-2">
             <RotateCcw className="mr-2 h-4 w-4" />
             Clear and Reset
         </Button>
-      )}
-
-      {error && (
-        <Card className="mt-4 border-destructive bg-destructive/10">
-          <CardHeader className="flex flex-row items-center gap-2 !pb-2">
-            <XCircle className="h-5 w-5 text-destructive" />
-            <CardTitle className="text-destructive !text-base">Parsing Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive text-sm">{error}</p>
-          </CardContent>
-        </Card>
       )}
 
       {parsedResult && (

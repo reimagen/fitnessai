@@ -180,6 +180,7 @@ const userProfileConverter = {
             goalAnalyses: data.aiUsage.goalAnalyses,
             screenshotParses: data.aiUsage.screenshotParses,
             planGenerations: data.aiUsage.planGenerations,
+            prParses: data.aiUsage.prParses,
         } : undefined;
 
         return {
