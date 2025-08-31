@@ -9,7 +9,7 @@ import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, differenceInWeeks, nextSunday as getNextSunday } from 'date-fns';
+import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -83,14 +83,20 @@ const constructUserProfileContext = (
     context += `- Workouts Per Week: ${userProfile.workoutsPerWeek || 'Not specified'}\n`;
     context += `- Preferred Session Time: ${userProfile.sessionTimeMinutes ? `${userProfile.sessionTimeMinutes} minutes` : 'Not specified'}\n`;
     context += `- Experience Level: ${userProfile.experienceLevel || 'Not specified'}\n`;
+    if (userProfile.weeklyCardioCalorieGoal) {
+      context += `- Weekly Cardio Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
+    }
     if (userProfile.aiPreferencesNotes) {
       context += `- Additional Notes for AI: ${userProfile.aiPreferencesNotes}\n`;
     }
 
     context += "\nWorkout History Summary:\n";
     if (workoutLogs.length > 0) {
-      const recentLogs = workoutLogs.filter(log => differenceInWeeks(new Date(), log.date) <= 4);
+      const today = new Date();
+      const fourWeeksAgo = subWeeks(today, 4);
+      const recentLogs = workoutLogs.filter(log => log.date >= fourWeeksAgo);
       context += `- Logged ${recentLogs.length} workouts in the last 4 weeks.\n`;
+      
       const exerciseCounts: Record<string, number> = {};
       recentLogs.forEach(log => {
         log.exercises.forEach(ex => {
@@ -107,6 +113,32 @@ const constructUserProfileContext = (
       } else {
         context += "- No specific exercises found in recent history.\n";
       }
+
+      // Cardio summary
+      if (userProfile.weeklyCardioCalorieGoal) {
+          context += `\nWeekly Cardio Summary (Last 4 Weeks):\n`;
+          context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
+
+          let weeklySummaries: string[] = [];
+          for (let i = 0; i < 4; i++) {
+              const weekEnd = subWeeks(today, i);
+              const weekStart = startOfWeek(weekEnd, { weekStartsOn: 0 });
+              
+              const logsThisWeek = recentLogs.filter(log => isWithinInterval(log.date, { start: weekStart, end: weekEnd }));
+              
+              const totalCalories = logsThisWeek.reduce((sum, log) => {
+                  return sum + log.exercises
+                      .filter(ex => ex.category === 'Cardio' && ex.calories)
+                      .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
+              }, 0);
+              
+              const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
+              weeklySummaries.push(`${weekLabel}: ${Math.round(totalCalories).toLocaleString()} kcal`);
+          }
+          context += weeklySummaries.join('\n');
+      }
+
+
     } else {
       context += "- No workout history logged.\n";
     }
@@ -378,7 +410,7 @@ export default function PlanPage() {
                 <strong className="font-semibold text-foreground">A General Safety Reminder:</strong> Always prioritize proper form over lifting heavy weights. If you experience any pain, stop the exercise and consult a healthcare professional.
               </p>
               <p>
-                <strong className="font-semibold text-foreground">A Note on Weights:</strong> Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations.
+                 <strong className="font-semibold text-foreground">A Note on Weights:</strong> Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations.
               </p>
             </div>
           </CardContent>
