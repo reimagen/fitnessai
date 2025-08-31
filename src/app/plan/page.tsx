@@ -143,6 +143,7 @@ const constructUserProfileContext = (
           if (weeklySummaries.length > 0) {
              context += weeklySummaries.join('\n');
           }
+          context += '\n'; // Add the blank line here
       }
 
 
@@ -427,4 +428,3 @@ export default function PlanPage() {
     </div>
   );
 }
-
