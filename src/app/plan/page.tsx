@@ -9,7 +9,7 @@ import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval } from 'date-fns';
+import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval, endOfWeek, eachWeekOfInterval } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -120,22 +120,29 @@ const constructUserProfileContext = (
           context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
 
           let weeklySummaries: string[] = [];
-          for (let i = 0; i < 4; i++) {
-              const weekEnd = subWeeks(today, i);
-              const weekStart = startOfWeek(weekEnd, { weekStartsOn: 0 });
-              
-              const logsThisWeek = recentLogs.filter(log => isWithinInterval(log.date, { start: weekStart, end: weekEnd }));
-              
-              const totalCalories = logsThisWeek.reduce((sum, log) => {
-                  return sum + log.exercises
-                      .filter(ex => ex.category === 'Cardio' && ex.calories)
-                      .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
-              }, 0);
-              
-              const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
-              weeklySummaries.push(`${weekLabel}: ${Math.round(totalCalories).toLocaleString()} kcal`);
+          const fourWeeksInterval = { start: startOfWeek(subWeeks(today, 3)), end: endOfWeek(today) };
+          const weeks = eachWeekOfInterval(fourWeeksInterval, { weekStartsOn: 0 }).reverse();
+          
+          weeks.forEach((weekStart, index) => {
+            const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+            
+            const logsThisWeek = workoutLogs.filter(log => 
+              isWithinInterval(log.date, { start: weekStart, end: weekEnd })
+            );
+
+            const totalCalories = logsThisWeek.reduce((sum, log) => {
+                return sum + log.exercises
+                    .filter(ex => ex.category === 'Cardio' && ex.calories)
+                    .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
+            }, 0);
+            
+            const weekLabel = index === 0 ? "Week 1 (most recent)" : `Week ${index + 1}`;
+            weeklySummaries.push(`${weekLabel}: ${Math.round(totalCalories).toLocaleString()} kcal`);
+          });
+
+          if (weeklySummaries.length > 0) {
+             context += weeklySummaries.join('\n');
           }
-          context += weeklySummaries.join('\n');
       }
 
 
