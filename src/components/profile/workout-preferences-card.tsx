@@ -265,11 +265,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                  <div className="space-y-3">
                     <div>
                         <span className="font-medium text-muted-foreground">Base Target: </span>
-                        <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal} kcal` : "Not set"}</span>
+                        <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal.toLocaleString()} kcal` : "Not set"}</span>
                     </div>
                     <div>
                         <span className="font-medium text-muted-foreground">Stretch Goal: </span>
-                        <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal} kcal` : "Not set"}</span>
+                        <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal.toLocaleString()} kcal` : "Not set"}</span>
                     </div>
                 </div>
               </div>
