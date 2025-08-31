@@ -17,9 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
-import { startOfDay } from 'date-fns';
+import { startOfDay, format, isSameDay } from 'date-fns';
 import { classifiedExercises, getExerciseCategory, getNormalizedExerciseName } from "@/lib/strength-standards";
 import { StepperInput } from "../ui/stepper-input";
+import { useToast } from "@/hooks/use-toast";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -33,6 +34,7 @@ type ManualPrFormData = z.infer<typeof manualPrSchema>;
 type ManualPrFormProps = {
   onAdd: (data: Omit<PersonalRecord, 'id' | 'userId'>) => void;
   isSubmitting?: boolean;
+  allRecords: PersonalRecord[];
 };
 
 const toTitleCase = (str: string) => {
@@ -48,7 +50,8 @@ const exercisesForDropdown = classifiedExercises.filter(
   (exercise) => !exercisesToHide.includes(exercise)
 );
 
-export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
+export function ManualPrForm({ onAdd, isSubmitting, allRecords }: ManualPrFormProps) {
+  const { toast } = useToast();
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
     defaultValues: { 
@@ -61,6 +64,28 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
 
   function onSubmit(values: ManualPrFormData) {
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
+    
+    // Check for duplicates
+    const normalizedExerciseName = getNormalizedExerciseName(values.exerciseName);
+    const duplicateExists = allRecords.some(
+      (record) =>
+        getNormalizedExerciseName(record.exerciseName) === normalizedExerciseName &&
+        isSameDay(record.date, normalizedDate)
+    );
+
+    if (duplicateExists) {
+      toast({
+        title: "Duplicate Record",
+        description: "A personal record for this exercise on this date already exists.",
+        variant: "destructive",
+      });
+      form.setError("exerciseName", {
+        type: "manual",
+        message: "A record for this date already exists.",
+      });
+      return;
+    }
+    
     const category = getExerciseCategory(values.exerciseName);
     
     // The `values.exerciseName` is the canonical name from the dropdown.
