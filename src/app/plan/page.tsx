@@ -290,7 +290,7 @@ export default function PlanPage() {
             Generate New Weekly Plan
           </CardTitle>
           <CardDescription>
-            {currentWeekStartDate ? `This will generate a plan for the week starting Sunday, ${format(new Date(currentWeekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}.` : "Calculating week start date..."}
+            {currentWeekStartDate ? `This will generate a plan for the week starting Sunday, ${format(new Date(currentWeekStartDate.replace(/-/g, '/')), 'MMMM d, yyyy')}. ` : "Calculating week start date..."}
             Your plan is tailored based on your profile, goals, and recent activity.
           </CardDescription>
         </CardHeader>
