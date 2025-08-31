@@ -13,7 +13,7 @@ import { format, differenceInWeeks, nextSunday as getNextSunday } from 'date-fns
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { getStrengthLevel } from "@/lib/strength-standards";
+import { getStrengthLevel, getNormalizedExerciseName } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
@@ -91,19 +91,21 @@ const constructUserProfileContext = (
     if (workoutLogs.length > 0) {
       const recentLogs = workoutLogs.filter(log => differenceInWeeks(new Date(), log.date) <= 4);
       context += `- Logged ${recentLogs.length} workouts in the last 4 weeks.\n`;
-      const categoryCounts: Record<string, number> = {};
+      const exerciseCounts: Record<string, number> = {};
       recentLogs.forEach(log => {
         log.exercises.forEach(ex => {
-          if (ex.category) {
-            categoryCounts[ex.category] = (categoryCounts[ex.category] || 0) + 1;
+          const normalizedName = getNormalizedExerciseName(ex.name);
+          if (normalizedName) {
+            exerciseCounts[normalizedName] = (exerciseCounts[normalizedName] || 0) + 1;
           }
         });
       });
-      const topCategories = Object.entries(categoryCounts).sort((a,b) => b[1] - a[1]).slice(0,3);
-      if (topCategories.length > 0) {
-        context += `- Common exercise categories: ${topCategories.map(([cat, count]) => `${cat} (${count}x)`).join(', ')}\n`;
+      const sortedExercises = Object.entries(exerciseCounts).sort((a, b) => b[1] - a[1]);
+      if (sortedExercises.length > 0) {
+        const toTitleCase = (str: string) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        context += `- Frequency per Exercise: ${sortedExercises.map(([name, count]) => `${toTitleCase(name)} (${count}x)`).join(', ')}\n`;
       } else {
-        context += "- No specific exercise categories found in recent history.\n";
+        context += "- No specific exercises found in recent history.\n";
       }
     } else {
       context += "- No workout history logged.\n";
