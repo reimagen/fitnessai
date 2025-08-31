@@ -4,12 +4,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Zap, AlertTriangle, Info, UserPlus } from "lucide-react";
+import { Loader2, Zap, AlertTriangle, Info, UserPlus, RefreshCw } from "lucide-react";
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval, endOfWeek, eachWeekOfInterval, getDay } from 'date-fns';
+import { format, subWeeks, nextSunday as getNextSunday, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -120,40 +120,41 @@ const constructUserProfileContext = (
 
     // Cardio summary
     if (userProfile.weeklyCardioCalorieGoal) {
-        context += `\nWeekly Cardio Summary (Last 4 Weeks):\n`;
+        context += `\nWeekly Cardio Summary (Last 4 Fully Completed Weeks):\n`;
         context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
 
         let weeklySummaries: { label: string; calories: number }[] = [];
         let totalCaloriesOver4Weeks = 0;
         
-        const dayOfWeek = getDay(today); // Sunday = 0, Friday = 5, Saturday = 6
+        // Find the start of the current week (Sunday)
+        const startOfThisWeek = startOfWeek(today, { weekStartsOn: 0 });
+        // The most recent fully completed week is the one that ended before the start of this week.
+        const endOfLastCompletedWeek = subWeeks(startOfThisWeek, 1);
         
-        // If it's Fri/Sat, start from the current week. If Sun-Thurs, start from the previous week.
-        const weekOffset = dayOfWeek >= 5 ? 0 : 1; 
-
         for (let i = 0; i < 4; i++) {
-          const weekEndDate = endOfWeek(subWeeks(today, i + weekOffset), { weekStartsOn: 0 });
-          const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
+            // Go back i weeks from the end of the last completed week.
+            const weekEndDate = subWeeks(endOfLastCompletedWeek, i);
+            const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
 
-          const logsThisWeek = recentLogs.filter(log => 
-            isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
-          );
-          
-          const weeklyTotalCalories = logsThisWeek.reduce((sum, log) => {
-              return sum + log.exercises
-                  .filter(ex => ex.category === 'Cardio' && ex.calories)
-                  .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
-          }, 0);
-          
-          totalCaloriesOver4Weeks += weeklyTotalCalories;
-          const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
-          weeklySummaries.push({ label: weekLabel, calories: weeklyTotalCalories });
+            const logsThisWeek = workoutLogs.filter(log => 
+                isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
+            );
+            
+            const weeklyTotalCalories = logsThisWeek.reduce((sum, log) => {
+                return sum + log.exercises
+                    .filter(ex => ex.category === 'Cardio' && ex.calories)
+                    .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
+            }, 0);
+            
+            totalCaloriesOver4Weeks += weeklyTotalCalories;
+            const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
+            weeklySummaries.push({ label: weekLabel, calories: weeklyTotalCalories });
         }
 
         if (totalCaloriesOver4Weeks > 0) {
            context += weeklySummaries.map(s => `${s.label}: ${Math.round(s.calories).toLocaleString()} kcal`).join('\n');
         } else {
-           context += "No cardio logged in the last 4 weeks.";
+           context += "No cardio logged in the last 4 completed weeks.";
         }
         context += '\n\n'; // Add the blank line here
     }
@@ -329,6 +330,13 @@ export default function PlanPage() {
       </div>
     );
   }
+  
+  const hasFeedback = regenerationFeedback.trim().length > 0;
+  let buttonText = "Generate My Weekly Plan";
+  if (generatedPlan) {
+    buttonText = hasFeedback ? "Regenerate with Feedback" : "Regenerate Plan";
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -385,7 +393,7 @@ export default function PlanPage() {
               )}
               <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading || updateUserMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                 {apiIsLoading || updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
+                {buttonText}
               </Button>
             </div>
           )}
