@@ -7,10 +7,14 @@ import {
   addPersonalRecords as serverAddPersonalRecords,
   updatePersonalRecord as serverUpdatePersonalRecord,
   clearAllPersonalRecords as serverClearAllPersonalRecords,
+  getUserProfile,
+  incrementUsageCounter,
 } from "@/lib/firestore-server";
 import type { PersonalRecord } from "@/lib/types";
+import { format } from "date-fns";
 
 export async function parsePersonalRecordsAction(
+  userId: string,
   values: ParsePersonalRecordsInput
 ): Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }> {
   if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
@@ -18,24 +22,40 @@ export async function parsePersonalRecordsAction(
     console.error("Missing API Key:", errorMessage);
     return { success: false, error: errorMessage };
   }
+  
+  if (!userId) {
+    return { success: false, error: "User not authenticated." };
+  }
 
   if (!values.photoDataUri || !values.photoDataUri.startsWith("data:image/")) {
     return { success: false, error: "Invalid image data provided." };
   }
+  
+  // Bypass limit check in development environment
+  if (process.env.NODE_ENV !== 'development') {
+    const userProfile = await getUserProfile(userId);
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const usage = userProfile?.aiUsage?.prParses;
+
+    if (usage && usage.date === today && usage.count >= 10) {
+      return { success: false, error: "You have reached your daily limit of 10 parses." };
+    }
+  }
 
   try {
     const parsedData = await parsePersonalRecords(values);
+    await incrementUsageCounter(userId, 'prParses');
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing personal records screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing the screenshot.";
+    let userFriendlyError = "An unknown error occurred while parsing the screenshot. This attempt did not count against your daily limit.";
     if (error instanceof Error) {
         if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later.";
+            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
         } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments.";
+            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
         } else {
-            userFriendlyError = `Failed to parse screenshot: ${error.message}`;
+            userFriendlyError = `Failed to parse screenshot: ${error.message}. This attempt did not count against your daily limit.`;
         }
     }
     return { success: false, error: userFriendlyError };
