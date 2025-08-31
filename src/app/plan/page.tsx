@@ -17,6 +17,7 @@ import { getStrengthLevel } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const constructUserProfileContext = (
     userProfile: UserProfile | null, 
@@ -242,6 +243,7 @@ export default function PlanPage() {
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
   const generatedPlan = userProfile?.weeklyPlan;
+  const FEEDBACK_CHAR_LIMIT = 300;
 
   if (isLoadingProfile) {
     return (
@@ -321,7 +323,14 @@ export default function PlanPage() {
                     onChange={(e) => setRegenerationFeedback(e.target.value)}
                     className="min-h-[80px]"
                     disabled={apiIsLoading || updateUserMutation.isPending}
+                    maxLength={FEEDBACK_CHAR_LIMIT}
                   />
+                  <p className={cn(
+                    "text-xs text-right",
+                    regenerationFeedback.length > FEEDBACK_CHAR_LIMIT ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {regenerationFeedback.length} / {FEEDBACK_CHAR_LIMIT}
+                  </p>
                 </div>
               )}
               <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading || updateUserMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
