@@ -182,6 +182,7 @@ const userProfileConverter = {
             planGenerations: data.aiUsage.planGenerations,
             prParses: data.aiUsage.prParses,
             strengthAnalyses: data.aiUsage.strengthAnalyses,
+            liftProgressionAnalyses: data.aiUsage.liftProgressionAnalyses,
         } : undefined;
 
         return {
