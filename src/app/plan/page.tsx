@@ -339,7 +339,7 @@ export default function PlanPage() {
               </div>
             </div>
           )}
-           {userProfileContextString && (
+           {userProfileContextString && process.env.NODE_ENV === 'development' && (
             <details className="mt-6 text-xs text-muted-foreground">
                 <summary className="cursor-pointer hover:text-foreground">View context used for AI plan generation</summary>
                 <pre className="mt-2 p-2 border bg-secondary/50 rounded-md whitespace-pre-wrap break-all max-h-60 overflow-y-auto">
