@@ -224,11 +224,11 @@ const ProgressionTooltip = (props: any) => {
                 {data.isActualPR && (
                      <p className="font-bold text-yellow-500 flex items-center gap-1">
                         <Trophy className="h-4 w-4" />
-                        Personal Record: {data.actualPR} lbs
+                        Personal Record: {data.actualPR.toLocaleString()} lbs
                     </p>
                 )}
-                {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM} lbs</p>}
-                {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume} lbs</p>}
+                {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM.toLocaleString()} lbs</p>}
+                {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume.toLocaleString()} lbs</p>}
             </div>
         );
     }
@@ -913,33 +913,33 @@ const cardioAnalysisData = useMemo(() => {
 
     if (timeRange === 'weekly') {
         weeklyAverage = totalCalories;
-        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories)} cardio calories.`;
+        calorieSummary = `This week you've burned a total of ${Math.round(totalCalories).toLocaleString()} cardio calories.`;
     } else if (timeRange === 'monthly') {
         const start = startOfMonth(new Date());
         const end = endOfMonth(new Date());
         const daysSoFar = differenceInDays(new Date(Math.min(today.getTime(), end.getTime())), start) + 1;
         const weeksSoFar = Math.max(1, daysSoFar / 7);
         weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
-        calorieSummary = `This month you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `This month you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else if (timeRange === 'yearly') {
         const uniqueMonthsWithData = new Set(cardioExercises.map(ex => format(ex.date, 'yyyy-MM'))).size;
         const weeksWithData = uniqueMonthsWithData * 4.345; // Average weeks in a month
         weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
-        calorieSummary = `This year you've burned ${Math.round(totalCalories)} cardio calories, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `This year you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else { // all-time
         const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
         const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
         weeklyAverage = numWeeks > 0 ? totalCalories / numWeeks : 0;
-        calorieSummary = `You've burned ${Math.round(totalCalories)} cardio calories in total, averaging ${Math.round(weeklyAverage)}/week.`;
+        calorieSummary = `You've burned ${Math.round(totalCalories).toLocaleString()} cardio calories in total, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     }
     
     if (weeklyGoal && weeklyGoal > 0) {
         const difference = weeklyAverage - weeklyGoal;
         const percentage = (difference / weeklyGoal) * 100;
         if (difference >= 0) {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are beating your goal by ${Math.round(difference)} calories (${Math.round(percentage)}%).`;
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are beating your goal by ${Math.round(difference).toLocaleString()} calories (${Math.round(percentage)}%).`;
         } else {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
         }
     }
     
@@ -1152,9 +1152,9 @@ useEffect(() => {
     const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const displayValue = unit === 'kcal' ? Math.round(value) : value;
+    const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
     const unitString = unit ? ` ${unit}` : '';
-    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
+    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name}(${displayValue}${unitString})`}</text>;
   };
 
   const formatCardioDuration = (totalMinutes: number): string => {
@@ -1246,7 +1246,7 @@ useEffect(() => {
       </header>
       <div className="mb-6">
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className={cn("w-[180px] bg-card shadow-lg")}>
+          <SelectTrigger className="w-[180px] bg-card shadow">
             <SelectValue placeholder="Select time range" />
           </SelectTrigger>
           <SelectContent>
@@ -1615,7 +1615,7 @@ useEffect(() => {
                                     You completed {stats.count} session{stats.count > 1 ? 's' : ''}
                                     {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
                                     {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
-                                    , burning {Math.round(stats.totalCalories)} kcal.
+                                    , burning {Math.round(stats.totalCalories).toLocaleString()} kcal.
                                     {avgDistance && ` Your average distance was ${avgDistance} mi.`}
                                     </p>
                                 </div>
@@ -1755,5 +1755,6 @@ useEffect(() => {
     
 
     
+
 
 
