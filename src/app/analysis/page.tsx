@@ -1686,8 +1686,8 @@ useEffect(() => {
                                             const numItems = payload.length;
                                             const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
                                             return (
-                                                <div className="flex justify-center">
-                                                    <div className="grid gap-x-2 gap-y-1 text-xs mt-2" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
+                                                <div className="flex justify-center mt-4">
+                                                    <div className="grid gap-x-2 gap-y-1 text-xs" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
                                                         {payload.map((entry:any, index:number) => (
                                                             <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                                                                 <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
