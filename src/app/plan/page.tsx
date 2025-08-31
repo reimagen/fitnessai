@@ -373,7 +373,7 @@ export default function PlanPage() {
             </div>
              <div className="mt-6 pt-6 border-t text-sm text-muted-foreground space-y-4">
               <p>
-                <strong className="font-semibold text-foreground">A general safety reminder:</strong> Always prioritize proper form over lifting heavy weights. If you experience any pain, stop the exercise and consult a healthcare professional.
+                <strong className="font-semibold text-foreground">A General Safety Reminder:</strong> Always prioritize proper form over lifting heavy weights. If you experience any pain, stop the exercise and consult a healthcare professional.
               </p>
               <p>
                 <strong className="font-semibold text-foreground">A Note on Weights:</strong> Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations.
