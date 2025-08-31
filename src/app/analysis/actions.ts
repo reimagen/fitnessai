@@ -27,7 +27,7 @@ export async function analyzeStrengthAction(
     const usage = userProfile?.aiUsage?.strengthAnalyses;
 
     if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 strength analyses." };
+      return { success: false, error: "You have reached your daily limit of 5 analyses." };
     }
   }
 
