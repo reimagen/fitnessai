@@ -91,10 +91,11 @@ const constructUserProfileContext = (
     }
 
     context += "\nWorkout History Summary:\n";
-    if (workoutLogs.length > 0) {
-      const today = new Date();
-      const fourWeeksAgo = subWeeks(today, 4);
-      const recentLogs = workoutLogs.filter(log => log.date >= fourWeeksAgo);
+    const today = new Date();
+    const fourWeeksAgo = subWeeks(today, 4);
+    const recentLogs = workoutLogs.filter(log => log.date >= fourWeeksAgo);
+    
+    if (recentLogs.length > 0) {
       context += `- Logged ${recentLogs.length} workouts in the last 4 weeks.\n`;
       
       const exerciseCounts: Record<string, number> = {};
@@ -113,48 +114,50 @@ const constructUserProfileContext = (
       } else {
         context += "- No specific exercises found in recent history.\n";
       }
-
-      // Cardio summary
-      if (userProfile.weeklyCardioCalorieGoal) {
-          context += `\nWeekly Cardio Summary (Last 4 Weeks):\n`;
-          context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
-
-          let weeklySummaries: string[] = [];
-          
-          const dayOfWeek = getDay(today); // Sunday = 0, Friday = 5, Saturday = 6
-          
-          // If it's Sun-Thurs, start from the previous week. If Fri/Sat, start from the current week.
-          const weekOffset = dayOfWeek >= 5 ? 0 : 1; 
-
-          // Iterate backwards for 4 full weeks from our starting point
-          for (let i = 0; i < 4; i++) {
-            const weekEndDate = endOfWeek(subWeeks(today, i + weekOffset), { weekStartsOn: 0 });
-            const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
-
-            const logsThisWeek = workoutLogs.filter(log => 
-              isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
-            );
-            
-            const totalCalories = logsThisWeek.reduce((sum, log) => {
-                return sum + log.exercises
-                    .filter(ex => ex.category === 'Cardio' && ex.calories)
-                    .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
-            }, 0);
-            
-            const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
-            weeklySummaries.push(`${weekLabel}: ${Math.round(totalCalories).toLocaleString()} kcal`);
-          }
-
-          if (weeklySummaries.length > 0) {
-             context += weeklySummaries.join('\n');
-          }
-          context += '\n\n'; // Add the blank line here
-      }
-
-
     } else {
-      context += "- No workout history logged.\n";
+      context += "- No workout history logged in the last 4 weeks.\n";
     }
+
+    // Cardio summary
+    if (userProfile.weeklyCardioCalorieGoal) {
+        context += `\nWeekly Cardio Summary (Last 4 Weeks):\n`;
+        context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
+
+        let weeklySummaries: { label: string; calories: number }[] = [];
+        let totalCaloriesOver4Weeks = 0;
+        
+        const dayOfWeek = getDay(today); // Sunday = 0, Friday = 5, Saturday = 6
+        
+        // If it's Fri/Sat, start from the current week. If Sun-Thurs, start from the previous week.
+        const weekOffset = dayOfWeek >= 5 ? 0 : 1; 
+
+        for (let i = 0; i < 4; i++) {
+          const weekEndDate = endOfWeek(subWeeks(today, i + weekOffset), { weekStartsOn: 0 });
+          const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
+
+          const logsThisWeek = workoutLogs.filter(log => 
+            isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
+          );
+          
+          const weeklyTotalCalories = logsThisWeek.reduce((sum, log) => {
+              return sum + log.exercises
+                  .filter(ex => ex.category === 'Cardio' && ex.calories)
+                  .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
+          }, 0);
+          
+          totalCaloriesOver4Weeks += weeklyTotalCalories;
+          const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
+          weeklySummaries.push({ label: weekLabel, calories: weeklyTotalCalories });
+        }
+
+        if (totalCaloriesOver4Weeks > 0) {
+           context += weeklySummaries.map(s => `${s.label}: ${Math.round(s.calories).toLocaleString()} kcal`).join('\n');
+        } else {
+           context += "No cardio logged in the last 4 weeks.";
+        }
+        context += '\n\n'; // Add the blank line here
+    }
+
 
     context += "Strength Balance Analysis Summary:\n";
     if (strengthAnalysis) {
