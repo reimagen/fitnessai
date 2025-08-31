@@ -44,12 +44,7 @@ export async function parseWorkoutScreenshotAction(
 
   try {
     const parsedData = await parseWorkoutScreenshot(values);
-
-    // Increment usage counter on success (only in production)
-    if (process.env.NODE_ENV !== 'development') {
-        await incrementUsageCounter(userId, 'screenshotParses');
-    }
-
+    await incrementUsageCounter(userId, 'screenshotParses');
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing workout screenshot:", error);

@@ -46,10 +46,8 @@ export async function generateWeeklyWorkoutPlanAction(
   try {
     const planOutput = await generateWeeklyWorkoutPlan(validatedFields.data);
     
-    // Increment usage counter on success (only in production)
-    if (process.env.NODE_ENV !== 'development') {
-        await incrementUsageCounter(userId, 'planGenerations');
-    }
+    // Increment usage counter on success
+    await incrementUsageCounter(userId, 'planGenerations');
 
     return { success: true, data: planOutput };
   } catch (error) {

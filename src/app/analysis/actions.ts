@@ -42,10 +42,8 @@ export async function analyzeStrengthAction(
     // After getting analysis, save it to the user's profile in Firestore
     await updateUserProfile(userId, { strengthAnalysis: storedAnalysis });
 
-    // Increment usage counter on success (only in production)
-    if (process.env.NODE_ENV !== 'development') {
-        await incrementUsageCounter(userId, 'strengthAnalyses');
-    }
+    // Increment usage counter on success
+    await incrementUsageCounter(userId, 'strengthAnalyses');
 
     return { success: true, data: analysisData };
   } catch (error) {

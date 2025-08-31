@@ -44,12 +44,7 @@ export async function parsePersonalRecordsAction(
 
   try {
     const parsedData = await parsePersonalRecords(values);
-    
-    // Increment usage counter on success (only in production)
-    if (process.env.NODE_ENV !== 'development') {
-        await incrementUsageCounter(userId, 'prParses');
-    }
-
+    await incrementUsageCounter(userId, 'prParses');
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error parsing personal records screenshot:", error);
