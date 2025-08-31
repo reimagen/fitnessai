@@ -53,7 +53,7 @@ type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
 
 const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
     'Horizontal Push vs. Pull': { lift1Options: ['chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Vertical Push vs. Pull': { lift1Options: ['overhead press', 'shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
+    'Vertical Push vs. Pull': { lift1Options: ['shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
     'Hamstring vs. Quad': { lift1Options: ['leg curl'], lift2Options: ['leg extension'], ratioCalculation: (l1, l2) => l1/l2 },
     'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
 };
@@ -1755,6 +1755,7 @@ useEffect(() => {
     
 
     
+
 
 
 
