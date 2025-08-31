@@ -92,7 +92,7 @@ export async function analyzeGoalsAction(
     const usage = userProfile?.aiUsage?.goalAnalyses;
 
     if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 goal analyses." };
+      return { success: false, error: "You have reached your daily limit of 5 goal refinements." };
     }
   }
 

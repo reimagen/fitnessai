@@ -38,7 +38,7 @@ export async function parsePersonalRecordsAction(
     const usage = userProfile?.aiUsage?.prParses;
 
     if (usage && usage.date === today && usage.count >= 10) {
-      return { success: false, error: "You have reached your daily limit of 10 PR screenshot parses." };
+      return { success: false, error: "You have reached your daily limit of 10 parses." };
     }
   }
 

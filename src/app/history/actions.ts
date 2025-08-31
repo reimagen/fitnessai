@@ -38,7 +38,7 @@ export async function parseWorkoutScreenshotAction(
     const usage = userProfile?.aiUsage?.screenshotParses;
 
     if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 screenshot parses." };
+      return { success: false, error: "You have reached your daily limit of 5 parses." };
     }
   }
 

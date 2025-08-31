@@ -39,7 +39,7 @@ export async function generateWeeklyWorkoutPlanAction(
     const usage = userProfile?.aiUsage?.planGenerations;
 
     if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 plan generations." };
+      return { success: false, error: "You have reached your daily limit of 5 plans generated." };
     }
   }
 
