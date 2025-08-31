@@ -4,16 +4,16 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Zap, AlertTriangle, Info, UserPlus } from "lucide-react";
+import { Loader2, Zap, AlertTriangle, Info, UserPlus, RefreshCw } from "lucide-react";
 import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, differenceInWeeks, nextSunday as getNextSunday } from 'date-fns';
+import { format, subWeeks, nextSunday as getNextSunday, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { getStrengthLevel } from "@/lib/strength-standards";
+import { getStrengthLevel, getNormalizedExerciseName } from "@/lib/strength-standards";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
@@ -83,33 +83,84 @@ const constructUserProfileContext = (
     context += `- Workouts Per Week: ${userProfile.workoutsPerWeek || 'Not specified'}\n`;
     context += `- Preferred Session Time: ${userProfile.sessionTimeMinutes ? `${userProfile.sessionTimeMinutes} minutes` : 'Not specified'}\n`;
     context += `- Experience Level: ${userProfile.experienceLevel || 'Not specified'}\n`;
+    if (userProfile.weeklyCardioCalorieGoal) {
+      context += `- Weekly Cardio Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
+    }
     if (userProfile.aiPreferencesNotes) {
       context += `- Additional Notes for AI: ${userProfile.aiPreferencesNotes}\n`;
     }
 
     context += "\nWorkout History Summary:\n";
-    if (workoutLogs.length > 0) {
-      const recentLogs = workoutLogs.filter(log => differenceInWeeks(new Date(), log.date) <= 4);
+    const today = new Date();
+    const fourWeeksAgo = subWeeks(today, 4);
+    const recentLogs = workoutLogs.filter(log => log.date >= fourWeeksAgo);
+    
+    if (recentLogs.length > 0) {
       context += `- Logged ${recentLogs.length} workouts in the last 4 weeks.\n`;
-      const categoryCounts: Record<string, number> = {};
+      
+      const exerciseCounts: Record<string, number> = {};
       recentLogs.forEach(log => {
         log.exercises.forEach(ex => {
-          if (ex.category) {
-            categoryCounts[ex.category] = (categoryCounts[ex.category] || 0) + 1;
+          const normalizedName = getNormalizedExerciseName(ex.name);
+          if (normalizedName) {
+            exerciseCounts[normalizedName] = (exerciseCounts[normalizedName] || 0) + 1;
           }
         });
       });
-      const topCategories = Object.entries(categoryCounts).sort((a,b) => b[1] - a[1]).slice(0,3);
-      if (topCategories.length > 0) {
-        context += `- Common exercise categories: ${topCategories.map(([cat, count]) => `${cat} (${count}x)`).join(', ')}\n`;
+      const sortedExercises = Object.entries(exerciseCounts).sort((a, b) => b[1] - a[1]);
+      if (sortedExercises.length > 0) {
+        const toTitleCase = (str: string) => str.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+        context += `- Frequency per Exercise: ${sortedExercises.map(([name, count]) => `${toTitleCase(name)} (${count}x)`).join(', ')}\n`;
       } else {
-        context += "- No specific exercise categories found in recent history.\n";
+        context += "- No specific exercises found in recent history.\n";
       }
     } else {
-      context += "- No workout history logged.\n";
+      context += "- No workout history logged in the last 4 weeks.\n";
     }
 
-    context += "\nStrength Balance Analysis Summary:\n";
+    // Cardio summary
+    if (userProfile.weeklyCardioCalorieGoal) {
+        context += `\nWeekly Cardio Summary (Last 4 Fully Completed Weeks):\n`;
+        context += `- Weekly Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal\n`;
+
+        let weeklySummaries: { label: string; calories: number }[] = [];
+        let totalCaloriesOver4Weeks = 0;
+        
+        // Find the start of the current week (Sunday)
+        const startOfThisWeek = startOfWeek(today, { weekStartsOn: 0 });
+        // The most recent fully completed week is the one that ended before the start of this week.
+        const endOfLastCompletedWeek = subWeeks(startOfThisWeek, 1);
+        
+        for (let i = 0; i < 4; i++) {
+            // Go back i weeks from the end of the last completed week.
+            const weekEndDate = subWeeks(endOfLastCompletedWeek, i);
+            const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
+
+            const logsThisWeek = workoutLogs.filter(log => 
+                isWithinInterval(log.date, { start: weekStartDate, end: weekEndDate })
+            );
+            
+            const weeklyTotalCalories = logsThisWeek.reduce((sum, log) => {
+                return sum + log.exercises
+                    .filter(ex => ex.category === 'Cardio' && ex.calories)
+                    .reduce((exSum, ex) => exSum + (ex.calories || 0), 0);
+            }, 0);
+            
+            totalCaloriesOver4Weeks += weeklyTotalCalories;
+            const weekLabel = i === 0 ? "Week 1 (most recent)" : `Week ${i + 1}`;
+            weeklySummaries.push({ label: weekLabel, calories: weeklyTotalCalories });
+        }
+
+        if (totalCaloriesOver4Weeks > 0) {
+           context += weeklySummaries.map(s => `${s.label}: ${Math.round(s.calories).toLocaleString()} kcal`).join('\n');
+        } else {
+           context += "No cardio logged in the last 4 completed weeks.";
+        }
+        context += '\n\n'; // Add the blank line here
+    }
+
+
+    context += "Strength Balance Analysis Summary:\n";
     if (strengthAnalysis) {
         context += `- Overall Summary: ${strengthAnalysis.summary}\n`;
         if (strengthAnalysis.findings.length > 0) {
@@ -279,6 +330,13 @@ export default function PlanPage() {
       </div>
     );
   }
+  
+  const hasFeedback = regenerationFeedback.trim().length > 0;
+  let buttonText = "Generate My Weekly Plan";
+  if (generatedPlan) {
+    buttonText = hasFeedback ? "Regenerate with Feedback" : "Regenerate Plan";
+  }
+
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -335,7 +393,7 @@ export default function PlanPage() {
               )}
               <Button onClick={handleGeneratePlan} disabled={apiIsLoading || isLoading || updateUserMutation.isPending} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                 {apiIsLoading || updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {generatedPlan ? "Regenerate Plan for This Week" : "Generate My Weekly Plan"}
+                {buttonText}
               </Button>
             </div>
           )}
@@ -370,6 +428,14 @@ export default function PlanPage() {
           <CardContent>
             <div className="prose prose-sm max-w-none dark:prose-invert">
               <MarkdownRenderer text={generatedPlan.plan} />
+            </div>
+             <div className="mt-6 pt-6 border-t text-sm text-muted-foreground space-y-4">
+              <p>
+                <strong className="font-semibold text-foreground">A General Safety Reminder:</strong> Always prioritize proper form over lifting heavy weights. If you experience any pain, stop the exercise and consult a healthcare professional.
+              </p>
+              <p>
+                 <strong className="font-semibold text-foreground">A Note on Weights:</strong> Suggested weights for exercises with a logged Personal Record (PR) are calculated at 75% of your PR. For other exercises, weights are estimated based on your general profile. Keep your PRs updated for the most accurate recommendations.
+              </p>
             </div>
           </CardContent>
         </Card>

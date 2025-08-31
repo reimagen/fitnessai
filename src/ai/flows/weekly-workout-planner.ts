@@ -41,12 +41,16 @@ The plan should start on Sunday{{#if weekStartDate}} (for the week beginning {{w
 
 **REQUIREMENT: Introductory Analysis**
 Before generating the daily breakdown, you MUST start the plan with a brief, motivating introductory paragraph (2-4 sentences). This paragraph MUST:
-1.  **Analyze Past Performance & Goal Proximity**: Briefly comment on the user's recent activity ('Workout History Summary') and analyze how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
-2.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals and correct any issues from the 'Strength Balance Analysis'. For instance, explain *why* certain exercises are included.
-3.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
+1.  **Analyze Consistency First**: Your primary analytical task is to look at the 'Frequency per Exercise' and 'Weekly Cardio Summary' in the user's 'Workout History Summary'. Compare these frequencies and calorie burns to their 'Fitness Goals' and 'Weekly Cardio Goal' to evaluate their training consistency.
+    *   For strength goals like "Build Muscle", check if they are training major compound lifts at least 8 times over the last 4 weeks (indicating a consistent 2x/week frequency).
+    *   For cardio goals, check if their weekly calorie burn from the 'Weekly Cardio Summary' is consistently meeting or missing their 'Weekly Cardio Goal'.
+2.  **Comment on Consistency**: In your introduction, you MUST comment on this analysis. If their frequency/cardio burn is aligned with their goals, provide encouragement. If it's too low, gently highlight this and explain how this new plan will help them achieve the necessary consistency.
+3.  **Analyze Goal Proximity**: Briefly comment on how their current performance ('Personal Records & Strength Levels') positions them relative to their 'Fitness Goals'. Instead of restating the goal, comment on their progress towards it. For example, if a goal is to "Bench Press 200 lbs" and their PR is 185 lbs, you might say "You're very close to your bench press goal."
+4.  **State This Week's Strategic Purpose**: Explain how this specific week's plan is strategically designed to bridge the gap towards their goals, correct any issues from the 'Strength Balance Analysis', and improve the consistency you analyzed.
+5.  **Formatting**: After this introductory paragraph, you MUST insert one single empty blank line before the first day's heading (e.g., before **Sunday: Focus**).
 
 **CRITICAL INSTRUCTIONS FOR PLAN DESIGN:**
-Your primary directive is to create a plan that intelligently addresses the user's specific needs based on their **Strength Balance Analysis** and **Personal Record Strength Levels**.
+Your primary directive is to create a plan that intelligently addresses the user's specific needs based on their **Strength Balance Analysis**, **Personal Record Strength Levels**, and **Workout History**.
 
 1.  **Address Imbalances First**:
     *   If the "Strength Balance Analysis Summary" shows any findings (e.g., "Ratio Imbalance" or "Level Imbalance"), your plan **MUST** prioritize correcting these issues.
@@ -59,9 +63,14 @@ Your primary directive is to create a plan that intelligently addresses the user
     *   For lifts at the **'Beginner'** level, prescribe moderate weights and emphasize mastering proper form.
     *   For lifts at the **'Intermediate'** level, incorporate principles of progressive overload. Suggest specific, small increases in weight or reps (e.g., "This week, aim to add 5 lbs to your squat").
     *   For lifts at the **'Advanced'** or **'Elite'** level, you can maintain current strength or introduce more complex training variations if it aligns with the user's goals.
+    
+3.  **Calculate Working Weights from PRs - CRITICAL SAFETY INSTRUCTION**:
+    *   For any exercise that has a Personal Record (PR) listed in the user's context, you **MUST NOT** use the PR weight as the recommended working weight. This is unsafe.
+    *   Instead, you **MUST** calculate the suggested working weight as exactly **75% of the user's PR weight** for that exercise.
+    *   For exercises that do not have a PR, you must estimate an appropriate starting weight based on the user's overall profile, especially their experience level.
 
-3.  **Holistically Address ALL User Goals**: Your plan MUST be structured to make progress on **all** of the user's fitness goals, not just the primary one. The weekly schedule must provide sufficient training volume and frequency to make tangible progress on every goal listed in the context. For example:
-    *   If a goal is "run 5 miles per week," the plan must include enough running sessions (e.g., 2-3 times a week) to logically reach that mileage.
+4.  **Holistically Address ALL User Goals**: Your plan MUST be structured to make progress on **all** of the user's fitness goals, not just the primary one. The weekly schedule must provide sufficient training volume and frequency to make tangible progress on every goal listed in the context. For example:
+    *   **Cardio Progression**: Analyze the 'Weekly Cardio Summary'. If the user has been consistently missing their goal, create a plan that gradually increases their cardio to meet it. If they have been consistently exceeding it, the plan can maintain or slightly increase the intensity to push towards their stretch goal.
     *   If a goal is "increase flexibility," the cool-down sections should be more extensive, or a dedicated mobility day should be included.
     *   You must balance the recommendations from the strength analysis with the requirements of these other goals.
 
@@ -79,8 +88,6 @@ After analyzing and designing the plan based on the above, generate the full wee
     *   **Warm-up Section**: Must begin with **Warm-up:**
     *   **Main Workout Section**: Must begin with **Main Workout:**. List exercises, sets/reps, and rest periods on separate lines.
     *   **Cool-down Section**: Must begin with **Cool-down:**
-5.  **Clarity and Actionability**: The plan should be easy to understand. Use clear, concise language.
-6.  **Safety**: Optionally, include a brief, general safety reminder at the very end of the entire weekly plan.
 
 Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
 `,
