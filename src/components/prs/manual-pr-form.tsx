@@ -62,7 +62,10 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   function onSubmit(values: ManualPrFormData) {
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
     const category = getExerciseCategory(values.exerciseName);
-    const canonicalName = getNormalizedExerciseName(values.exerciseName);
+    
+    // The `values.exerciseName` is the canonical name from the dropdown.
+    // We pass it directly without normalization.
+    const canonicalName = values.exerciseName;
 
     onAdd({
       exerciseName: canonicalName,
