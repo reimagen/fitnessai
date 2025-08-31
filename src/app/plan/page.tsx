@@ -9,7 +9,7 @@ import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval, endOfWeek, eachWeekOfInterval } from 'date-fns';
+import { format, differenceInWeeks, nextSunday as getNextSunday, subWeeks, startOfWeek, isWithinInterval, endOfWeek, eachWeekOfInterval, getDay } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -121,9 +121,14 @@ const constructUserProfileContext = (
 
           let weeklySummaries: string[] = [];
           
-          // Iterate backwards from the current week
+          const dayOfWeek = getDay(today); // Sunday = 0, Friday = 5, Saturday = 6
+          
+          // If it's Sun-Thurs, start from the previous week. If Fri/Sat, start from the current week.
+          const weekOffset = dayOfWeek >= 5 ? 0 : 1; 
+
+          // Iterate backwards for 4 full weeks from our starting point
           for (let i = 0; i < 4; i++) {
-            const weekEndDate = endOfWeek(subWeeks(today, i), { weekStartsOn: 0 });
+            const weekEndDate = endOfWeek(subWeeks(today, i + weekOffset), { weekStartsOn: 0 });
             const weekStartDate = startOfWeek(weekEndDate, { weekStartsOn: 0 });
 
             const logsThisWeek = workoutLogs.filter(log => 
@@ -143,7 +148,7 @@ const constructUserProfileContext = (
           if (weeklySummaries.length > 0) {
              context += weeklySummaries.join('\n');
           }
-          context += '\n'; // Add the blank line here
+          context += '\n\n'; // Add the blank line here
       }
 
 
@@ -151,7 +156,7 @@ const constructUserProfileContext = (
       context += "- No workout history logged.\n";
     }
 
-    context += "\nStrength Balance Analysis Summary:\n";
+    context += "Strength Balance Analysis Summary:\n";
     if (strengthAnalysis) {
         context += `- Overall Summary: ${strengthAnalysis.summary}\n`;
         if (strengthAnalysis.findings.length > 0) {
