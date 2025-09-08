@@ -238,6 +238,7 @@ const ProgressionTooltip = (props: any) => {
 // Custom Legend for the progression chart
 const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
+    const isMobile = useIsMobile();
     if (!payload) return null;
     
     // Manually define the legend order and details
@@ -250,7 +251,10 @@ const ProgressionChartLegend = (props: any) => {
 
 
     return (
-        <div className="flex items-center justify-center gap-4 text-xs mt-2">
+        <div className={cn(
+            "flex items-center justify-center gap-x-4 gap-y-2 text-xs mt-2",
+            isMobile && "flex-wrap"
+        )}>
             {legendItems.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
@@ -1755,6 +1759,7 @@ useEffect(() => {
     
 
     
+
 
 
 
