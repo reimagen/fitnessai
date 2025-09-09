@@ -864,12 +864,17 @@ const cardioAnalysisData = useMemo(() => {
     }
     
     if (weeklyGoal && weeklyGoal > 0) {
-        const difference = weeklyAverage - weeklyGoal;
-        const percentage = (difference / weeklyGoal) * 100;
-        if (difference >= 0) {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are beating your goal by ${Math.round(difference).toLocaleString()} calories (${Math.round(percentage)}%).`;
+        const percentageAchieved = (weeklyAverage / weeklyGoal) * 100;
+        calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}.`;
+
+        if (percentageAchieved >= 100) {
+            const surplus = weeklyAverage - weeklyGoal;
+            calorieSummary += ` You are beating your goal by ${Math.round(surplus).toLocaleString()} calories (${Math.round(percentageAchieved - 100)}% over).`;
+        } else if (percentageAchieved >= 50) {
+            const percentageRemaining = 100 - percentageAchieved;
+            calorieSummary += ` You are only ${Math.round(percentageRemaining)}% away from your goal.`;
         } else {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+            calorieSummary += ` You are at ${Math.round(percentageAchieved)}% of your goal, keep going!`;
         }
     }
     
@@ -1079,10 +1084,17 @@ useEffect(() => {
   const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
+    
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    
+    // Use a slightly larger radius for the label line, but keep it proportional
+    const availableRadius = Math.min(cx, cy) - 10; // 10px padding
+    const labelRadius = innerRadius + (availableRadius - innerRadius) * 0.7;
 
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    const x = cx + labelRadius * cos;
+    const y = cy + labelRadius * sin;
+    
     const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
     const unitString = unit ? ` ${unit}` : '';
 
@@ -1091,7 +1103,7 @@ useEffect(() => {
         x={x} 
         y={y} 
         fill="hsl(var(--foreground))" 
-        textAnchor={x > cx ? 'start' : 'end'} 
+        textAnchor={cos >= 0 ? 'start' : 'end'} 
         dominantBaseline="central" 
         className="text-xs"
       >
@@ -1715,3 +1727,5 @@ useEffect(() => {
     
 
     
+
+
