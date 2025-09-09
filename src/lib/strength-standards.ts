@@ -193,6 +193,100 @@ const strengthStandards: Record<string, ExerciseStandardData> = {
   },
 };
 
+// --- START: New Strength Ratio Data ---
+
+type StrengthRatioStandards = {
+  targetRatio: number;
+  lowerBound: number;
+  upperBound: number;
+};
+
+type StrengthLevelKey = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
+
+const strengthRatios: Record<string, Record<'Male' | 'Female', Partial<Record<StrengthLevelKey, StrengthRatioStandards>>>> = {
+  'Vertical Push vs. Pull': {
+    'Female': {
+      'Beginner':     { targetRatio: 0.50, lowerBound: 0.50, upperBound: 0.60 },
+      'Intermediate': { targetRatio: 0.60, lowerBound: 0.60, upperBound: 0.65 },
+      'Advanced':     { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.70 },
+      'Elite':        { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.70 },
+    },
+    'Male': {
+      'Beginner':     { targetRatio: 0.55, lowerBound: 0.55, upperBound: 0.65 },
+      'Intermediate': { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.75 },
+      'Advanced':     { targetRatio: 0.70, lowerBound: 0.70, upperBound: 0.80 },
+      'Elite':        { targetRatio: 0.70, lowerBound: 0.70, upperBound: 0.80 },
+    },
+  },
+  'Horizontal Push vs. Pull': {
+    'Female': {
+      'Beginner':     { targetRatio: 0.50, lowerBound: 0.50, upperBound: 0.60 },
+      'Intermediate': { targetRatio: 0.60, lowerBound: 0.60, upperBound: 0.65 },
+      'Advanced':     { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.70 },
+      'Elite':        { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.70 },
+    },
+    'Male': {
+      'Beginner':     { targetRatio: 0.55, lowerBound: 0.55, upperBound: 0.65 },
+      'Intermediate': { targetRatio: 0.65, lowerBound: 0.65, upperBound: 0.75 },
+      'Advanced':     { targetRatio: 0.70, lowerBound: 0.70, upperBound: 0.80 },
+      'Elite':        { targetRatio: 0.70, lowerBound: 0.70, upperBound: 0.80 },
+    },
+  },
+  'Hamstring vs. Quad': {
+    'Female': {
+      'Beginner':     { targetRatio: 0.63, lowerBound: 0.56, upperBound: 0.63 },
+      'Intermediate': { targetRatio: 0.67, lowerBound: 0.59, upperBound: 0.67 },
+      'Advanced':     { targetRatio: 0.71, lowerBound: 0.63, upperBound: 0.71 },
+      'Elite':        { targetRatio: 0.71, lowerBound: 0.63, upperBound: 0.71 },
+    },
+    'Male': {
+      'Beginner':     { targetRatio: 0.59, lowerBound: 0.53, upperBound: 0.59 },
+      'Intermediate': { targetRatio: 0.63, lowerBound: 0.56, upperBound: 0.63 },
+      'Advanced':     { targetRatio: 0.67, lowerBound: 0.59, upperBound: 0.67 },
+      'Elite':        { targetRatio: 0.67, lowerBound: 0.59, upperBound: 0.67 },
+    },
+  },
+  'Adductor vs. Abductor': {
+    'Female': {
+      'Beginner':     { targetRatio: 0.83, lowerBound: 0.75, upperBound: 1.00 },
+      'Intermediate': { targetRatio: 0.95, lowerBound: 0.85, upperBound: 1.05 },
+      'Advanced':     { targetRatio: 1.00, lowerBound: 0.90, upperBound: 1.10 },
+      'Elite':        { targetRatio: 1.00, lowerBound: 0.90, upperBound: 1.10 },
+    },
+    'Male': {
+      'Beginner':     { targetRatio: 0.90, lowerBound: 0.85, upperBound: 1.10 },
+      'Intermediate': { targetRatio: 0.95, lowerBound: 0.90, upperBound: 1.05 },
+      'Advanced':     { targetRatio: 1.00, lowerBound: 0.95, upperBound: 1.10 },
+      'Elite':        { targetRatio: 1.00, lowerBound: 0.95, upperBound: 1.10 },
+    },
+  },
+};
+
+/**
+ * Retrieves the target ratio and acceptable bounds for a given strength imbalance.
+ * @param imbalanceType The type of imbalance (e.g., 'Vertical Push vs. Pull').
+ * @param gender The user's gender.
+ * @param level The user's guiding strength level for the pair.
+ * @returns An object with targetRatio, lowerBound, and upperBound, or null if not found.
+ */
+export function getStrengthRatioStandards(
+  imbalanceType: string,
+  gender: 'Male' | 'Female',
+  level: StrengthLevel
+): StrengthRatioStandards | null {
+  if (level === 'N/A') return null;
+  const standardsForType = strengthRatios[imbalanceType];
+  if (!standardsForType) return null;
+
+  const standardsForGender = standardsForType[gender];
+  if (!standardsForGender) return null;
+
+  const standardsForLevel = standardsForGender[level];
+  return standardsForLevel || null;
+}
+// --- END: New Strength Ratio Data ---
+
+
 /**
  * A map of common exercise name variations to their canonical names.
  */
