@@ -391,6 +391,11 @@ export default function AnalysisPage() {
   }, [personalRecords, userProfile]);
 
   const handleAnalyzeStrength = () => {
+    // TypeScript guard: ensure userProfile is not null before proceeding
+    if (!userProfile) {
+        toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
+        return;
+    }
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
@@ -1705,6 +1710,7 @@ useEffect(() => {
     
 
     
+
 
 
 
