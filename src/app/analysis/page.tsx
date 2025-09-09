@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line, Label } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -238,6 +238,7 @@ const ProgressionTooltip = (props: any) => {
 // Custom Legend for the progression chart
 const ProgressionChartLegend = (props: any) => {
     const { payload } = props;
+    const isMobile = useIsMobile();
     if (!payload) return null;
     
     // Manually define the legend order and details
@@ -250,7 +251,10 @@ const ProgressionChartLegend = (props: any) => {
 
 
     return (
-        <div className="flex items-center justify-center gap-4 text-xs mt-2">
+        <div className={cn(
+            "flex items-center justify-center gap-x-4 gap-y-2 text-xs mt-2",
+            isMobile && "flex-wrap"
+        )}>
             {legendItems.map((entry: any, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
@@ -1149,7 +1153,11 @@ useEffect(() => {
   const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
+    
+    // Responsive radius calculation
+    const radiusOffset = isMobile ? 5 : 20;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + radiusOffset;
+    
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
@@ -1530,11 +1538,15 @@ useEffect(() => {
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
-                                <ComposedChart data={progressionChartData.chartData} margin={{ top: 5, right: 0, left: -20, bottom: 5 }}>
+                                <ComposedChart data={progressionChartData.chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                     <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                                    <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }} />
-                                    <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }} />
+                                    <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }}>
+                                        <Label value="e1RM (lbs)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: '12px' }} />
+                                    </YAxis>
+                                    <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }}>
+                                        <Label value="Total Volume (lbs)" angle={90} position="insideRight" style={{ textAnchor: 'middle', fontSize: '12px' }} />
+                                    </YAxis>
                                     <Tooltip content={<ProgressionTooltip />} />
                                     <Legend content={<ProgressionChartLegend />} />
                                     <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
@@ -1761,3 +1773,8 @@ useEffect(() => {
 
 
 
+
+
+
+
+    

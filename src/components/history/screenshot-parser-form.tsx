@@ -133,7 +133,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
           </span>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload an image of your workout log (e.g., from another app or a notepad).
+          Upload a screenshot of your workout log. Try to get the date in view. For screenshots without a date, you will be asked to confirm a date. 
         </p>
       </div>
 
