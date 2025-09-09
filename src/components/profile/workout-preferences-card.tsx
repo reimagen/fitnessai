@@ -127,7 +127,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
           </CardTitle>
           <CardDescription>Tell us how you like to train and any notes for the AI.</CardDescription>
         </div>
-        <div className="absolute top-4 right-4 flex gap-2">
+        <div className="flex gap-2">
             {isEditing && !isMobile ? (
               <>
                 <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
