@@ -185,7 +185,7 @@ type StrengthFinding = {
     lift2Unit: "kg" | "lbs";
     lift2Level: StrengthLevel;
     userRatio: string;
-    targetRatio: string;
+    balancedRange: string;
     imbalanceFocus: ImbalanceFocus;
 };
 
@@ -350,7 +350,9 @@ export default function AnalysisPage() {
         
         const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
         
-        const targetRatioDisplay = ratioStandards?.targetRatio ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
+        const balancedRangeDisplay = ratioStandards
+            ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
+            : 'N/A';
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
@@ -374,7 +376,7 @@ export default function AnalysisPage() {
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
-            targetRatio: targetRatioDisplay,
+            balancedRange: balancedRangeDisplay,
             imbalanceFocus: imbalanceFocus,
             lift1Level,
             lift2Level,
@@ -384,30 +386,11 @@ export default function AnalysisPage() {
     return findings;
   }, [personalRecords, userProfile]);
 
-  const handleAnalyzeStrength = async () => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
-        return;
-    }
-    if (!personalRecords || personalRecords.length === 0) {
-      toast({
-        title: "Not Enough Data",
-        description: "Log some personal records before running an analysis.",
-        variant: "default",
-      });
-      return;
-    }
-    if (!userProfile) {
-        toast({
-            title: "Profile Not Loaded",
-            description: "Please wait for your profile to load before running analysis.",
-            variant: "default",
-        });
-        return;
-    }
-    
+  const handleAnalyzeStrength = () => {
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
+
+    if (!userProfile) return;
 
     const analysisInput: StrengthImbalanceInput = {
         clientSideFindings: validFindings,
@@ -1020,17 +1003,10 @@ useEffect(() => {
 
 }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
-  const handleAnalyzeProgression = async () => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
-        return;
-    }
-    if (!userProfile || !workoutLogs || !selectedLift) {
-        toast({ title: "Missing Data", description: "Cannot run analysis without user profile, logs, and a selected lift.", variant: "destructive" });
-        return;
-    }
-
+  const handleAnalyzeProgression = () => {
     const sixWeeksAgo = subWeeks(new Date(), 6);
+    if (!workoutLogs || !userProfile) return;
+
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
       .flatMap(log => 
@@ -1355,7 +1331,7 @@ useEffect(() => {
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
+                                                <p>Balanced Range: <span className="font-bold text-foreground">{dataFinding.balancedRange}</span></p>
                                             </div>
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
@@ -1727,5 +1703,9 @@ useEffect(() => {
     
 
     
+
+
+
+
 
 
