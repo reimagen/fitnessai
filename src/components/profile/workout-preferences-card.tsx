@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import type { ExperienceLevel, SessionTime, UserProfile } from "@/lib/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, XCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 type WorkoutPreferences = Pick<UserProfile, 
   'workoutsPerWeek' | 
@@ -42,6 +44,7 @@ const EXPERIENCE_LEVEL_OPTIONS: { label: string; value: ExperienceLevel }[] = [
 export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPreferencesCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const isMobile = useIsMobile();
 
   const [editedWorkoutsPerWeek, setEditedWorkoutsPerWeek] = useState(preferences.workoutsPerWeek?.toString() || "3");
   const [editedSessionTime, setEditedSessionTime] = useState<SessionTime>(preferences.sessionTimeMinutes || 45);
@@ -124,20 +127,22 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
           </CardTitle>
           <CardDescription>Tell us how you like to train and any notes for the AI.</CardDescription>
         </div>
-        {isEditing ? (
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
-              <XCircle className="h-5 w-5" />
-            </Button>
-            <Button size="icon" onClick={handleSaveClick} aria-label="Save preferences">
-              <Save className="h-5 w-5" />
-            </Button>
-          </div>
-        ) : (
-          <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit workout preferences">
-            <Edit2 className="h-5 w-5" />
-          </Button>
-        )}
+        <div className="absolute top-4 right-4 flex gap-2">
+            {isEditing && !isMobile ? (
+              <>
+                <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
+                  <XCircle className="h-5 w-5" />
+                </Button>
+                <Button size="icon" onClick={handleSaveClick} aria-label="Save preferences">
+                  <Save className="h-5 w-5" />
+                </Button>
+              </>
+            ) : !isEditing ? (
+              <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit workout preferences">
+                <Edit2 className="h-5 w-5" />
+              </Button>
+            ) : null}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isEditing ? (
@@ -284,6 +289,18 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
           </div>
         )}
       </CardContent>
+       {isEditing && isMobile && (
+        <CardFooter className="sticky bottom-0 bg-background/95 p-4 border-t backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex w-full gap-2">
+            <Button variant="outline" onClick={handleCancelClick} className="w-full">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveClick} className="w-full">
+              Save
+            </Button>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }
