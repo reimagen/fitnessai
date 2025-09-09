@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const goalSchema = z.object({
@@ -182,6 +183,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const analyzeGoalsMutation = useAnalyzeGoals();
   const { data: personalRecords } = usePersonalRecords();
   const { data: workoutLogs } = useWorkouts();
+  const isMobile = useIsMobile();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
     resolver: zodResolver(goalsFormSchema),
@@ -327,7 +329,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
             </CardTitle>
             <CardDescription>Define what you want to achieve: set up to 3 active goals.</CardDescription>
         </div>
-        {isEditing ? (
+        {isEditing && !isMobile ? (
           <div className="flex gap-2">
             <Button variant="outline" size="icon" onClick={handleCancel} aria-label="Cancel edit">
               <XCircle className="h-5 w-5" />
@@ -336,11 +338,11 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
               <Save className="h-5 w-5" />
             </Button>
           </div>
-        ) : (
+        ) : !isEditing ? (
           <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} aria-label="Edit goals">
             <Edit2 className="h-5 w-5" />
           </Button>
-        )}
+        ) : null}
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -499,6 +501,19 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                 <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
               </Button>
             </div>
+            
+            {isEditing && isMobile && (
+              <div className="pt-6">
+                <div className="flex w-full gap-2">
+                  <Button variant="outline" onClick={handleCancel} className="w-full">
+                    Cancel
+                  </Button>
+                  <Button onClick={form.handleSubmit(onSubmit)} className="w-full">
+                    Save
+                  </Button>
+                </div>
+              </div>
+            )}
           </form>
         </Form>
         <div className="pt-6 mt-6 border-t">
@@ -626,3 +641,4 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     </Card>
   );
 }
+
