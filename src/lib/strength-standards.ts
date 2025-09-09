@@ -240,10 +240,10 @@ const strengthRatios: Record<string, Record<'Male' | 'Female', Partial<Record<St
       'Elite':        { targetRatio: 0.71, lowerBound: 0.63, upperBound: 0.71 },
     },
     'Male': {
-      'Beginner':     { targetRatio: 0.59, lowerBound: 0.53, upperBound: 0.59 },
-      'Intermediate': { targetRatio: 0.63, lowerBound: 0.56, upperBound: 0.63 },
-      'Advanced':     { targetRatio: 0.67, lowerBound: 0.59, upperBound: 0.67 },
-      'Elite':        { targetRatio: 0.67, lowerBound: 0.59, upperBound: 0.67 },
+      'Beginner':     { targetRatio: 0.60, lowerBound: 0.55, upperBound: 0.65 },
+      'Intermediate': { targetRatio: 0.65, lowerBound: 0.60, upperBound: 0.70 },
+      'Advanced':     { targetRatio: 0.71, lowerBound: 0.67, upperBound: 0.75 },
+      'Elite':        { targetRatio: 0.71, lowerBound: 0.67, upperBound: 0.75 },
     },
   },
   'Adductor vs. Abductor': {
@@ -254,10 +254,10 @@ const strengthRatios: Record<string, Record<'Male' | 'Female', Partial<Record<St
       'Elite':        { targetRatio: 1.00, lowerBound: 0.90, upperBound: 1.10 },
     },
     'Male': {
-      'Beginner':     { targetRatio: 0.90, lowerBound: 0.85, upperBound: 1.10 },
-      'Intermediate': { targetRatio: 0.95, lowerBound: 0.90, upperBound: 1.05 },
-      'Advanced':     { targetRatio: 1.00, lowerBound: 0.95, upperBound: 1.10 },
-      'Elite':        { targetRatio: 1.00, lowerBound: 0.95, upperBound: 1.10 },
+      'Beginner':     { targetRatio: 0.75, lowerBound: 0.65, upperBound: 0.85 },
+      'Intermediate': { targetRatio: 0.82, lowerBound: 0.75, upperBound: 0.90 },
+      'Advanced':     { targetRatio: 0.87, lowerBound: 0.80, upperBound: 0.95 },
+      'Elite':        { targetRatio: 0.87, lowerBound: 0.80, upperBound: 0.95 },
     },
   },
 };
