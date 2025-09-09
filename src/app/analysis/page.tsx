@@ -1153,7 +1153,11 @@ useEffect(() => {
   const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + 20; // Increased padding
+    
+    // Responsive radius calculation
+    const radiusOffset = isMobile ? 5 : 20;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + radiusOffset;
+    
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
@@ -1771,3 +1775,6 @@ useEffect(() => {
 
 
 
+
+
+    
