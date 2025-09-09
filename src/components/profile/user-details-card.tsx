@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import type { UserProfile } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Edit2, Save, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 type UserDetailsCardProps = {
   user: UserProfile;
@@ -39,6 +41,7 @@ const formatDateForInput = (date: Date | undefined): string => {
 export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const isMobile = useIsMobile();
 
   const [editedName, setEditedName] = useState(user.name || "");
   const [editedJoinedDate, setEditedJoinedDate] = useState(formatDateForInput(user.joinedDate));
@@ -230,7 +233,7 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
     <Card className="shadow-lg">
       <CardHeader className="pb-4 relative">
         <div className="absolute top-4 right-4 flex gap-2">
-            {isEditing ? (
+            {isEditing && !isMobile ? (
               <>
                 <Button variant="outline" size="icon" onClick={handleCancelClick} aria-label="Cancel edit">
                   <XCircle className="h-5 w-5" />
@@ -239,11 +242,11 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
                   <Save className="h-5 w-5" />
                 </Button>
               </>
-            ) : (
+            ) : !isEditing ? (
               <Button variant="ghost" size="icon" onClick={handleEditClick} aria-label="Edit profile details">
                 <Edit2 className="h-5 w-5" />
               </Button>
-            )}
+            ) : null}
         </div>
 
         <div>
@@ -369,6 +372,18 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
           )}
         </div>
       </CardContent>
+       {isEditing && isMobile && (
+        <CardFooter className="sticky bottom-0 bg-background/95 p-4 border-t backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex w-full gap-2">
+            <Button variant="outline" onClick={handleCancelClick} className="w-full">
+              Cancel
+            </Button>
+            <Button onClick={handleSaveClick} className="w-full">
+              Save
+            </Button>
+          </div>
+        </CardFooter>
+      )}
     </Card>
   );
 }

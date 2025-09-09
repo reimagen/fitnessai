@@ -373,10 +373,10 @@ export default function PlanPage() {
             <div className="space-y-4">
               {generatedPlan && (
                 <div className="space-y-2">
-                  <Label htmlFor="regeneration-feedback">Not quite right? Tell the AI what to change.</Label>
+                  <Label htmlFor="regeneration-feedback">Not quite right? Tell AI what to change for this week's plan. Note: long-term preferences should be stored in your profile.</Label>
                   <Textarea
                     id="regeneration-feedback"
-                    placeholder="e.g., 'Replace squats with lunges due to a knee issue' or 'Can you add more cardio?'"
+                    placeholder="e.g., 'Twisted my ankle last week, need to take it easy' or 'Can you add more cardio this week?'"
                     value={regenerationFeedback}
                     onChange={(e) => setRegenerationFeedback(e.target.value)}
                     className="min-h-[80px]"
