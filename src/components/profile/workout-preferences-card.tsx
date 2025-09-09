@@ -125,7 +125,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             <Zap className="h-5 w-5 text-primary" />
             Workout Preferences
           </CardTitle>
-          <CardDescription>Tell us how you like to train and any notes for the AI.</CardDescription>
+          <CardDescription>Specify your training preferences and any other considerations for AI.</CardDescription>
         </div>
         <div className="flex gap-2">
             {isEditing && !isMobile ? (

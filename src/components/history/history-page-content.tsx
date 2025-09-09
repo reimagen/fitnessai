@@ -428,7 +428,7 @@ export function HistoryPageContent() {
           <CardHeader>
             <CardTitle className="font-headline">Logged Workouts</CardTitle>
             <div className="flex justify-between items-center">
-              <CardDescription>Review your workout history for {format(currentMonth, 'MMMM yyyy')}.</CardDescription>
+              <CardDescription>Review your workout history by month.</CardDescription>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" onClick={goToPreviousMonth}>
                   <ChevronLeft className="h-4 w-4" />
