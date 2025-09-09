@@ -239,11 +239,7 @@ export default function PlanPage() {
   }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
-    if (!user) {
-      toast({ title: "Authentication Error", description: "You must be logged in to generate a plan.", variant: "destructive"});
-      return;
-    }
-    if (!userProfile || !userProfileContextString || !currentWeekStartDate) {
+    if (!userProfileContextString || !currentWeekStartDate) {
       toast({ title: "Missing Data", description: "User profile or workout history is not available yet. Please wait or complete your profile.", variant: "destructive"});
       return;
     }
