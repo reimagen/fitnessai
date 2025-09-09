@@ -350,7 +350,7 @@ export default function AnalysisPage() {
         
         const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
         
-        const targetRatioDisplay = ratioStandards
+        const balancedRangeDisplay = ratioStandards
             ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
             : 'N/A';
         
@@ -376,7 +376,7 @@ export default function AnalysisPage() {
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
-            targetRatio: targetRatioDisplay,
+            targetRatio: balancedRangeDisplay,
             imbalanceFocus: imbalanceFocus,
             lift1Level,
             lift2Level,
@@ -1331,7 +1331,7 @@ useEffect(() => {
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                                <p>Target Range: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
+                                                <p>Balanced Range: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
                                             </div>
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
@@ -1703,6 +1703,7 @@ useEffect(() => {
     
 
     
+
 
 
 
