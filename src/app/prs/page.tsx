@@ -73,7 +73,6 @@ export default function MilestonesPage() {
   const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
   
   const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
-    if (!user) return;
     let addedCount = 0;
     const newRecords: Omit<PersonalRecord, 'id' | 'userId'>[] = [];
 
@@ -96,7 +95,7 @@ export default function MilestonesPage() {
     });
 
     if (addedCount > 0) {
-        addPersonalRecordsMutation.mutate({ userId: user.uid, records: newRecords }, {
+        addPersonalRecordsMutation.mutate({ userId: user!.uid, records: newRecords }, {
             onSuccess: () => {
                 toast({
                     title: "Records Updated",
@@ -123,8 +122,7 @@ export default function MilestonesPage() {
   };
   
   const handleManualAdd = (newRecord: Omit<PersonalRecord, 'id' | 'userId'>) => {
-    if (!user) return;
-    addPersonalRecordsMutation.mutate({ userId: user.uid, records: [newRecord] }, {
+    addPersonalRecordsMutation.mutate({ userId: user!.uid, records: [newRecord] }, {
         onSuccess: () => {
             toast({
                 title: "PR Added!",
@@ -143,8 +141,8 @@ export default function MilestonesPage() {
   };
 
   const performClearRecords = async () => {
-    if (!allRecords || allRecords.length === 0 || !user) return;
-    clearAllRecordsMutation.mutate(user.uid, {
+    if (!allRecords || allRecords.length === 0) return;
+    clearAllRecordsMutation.mutate(user!.uid, {
         onSuccess: () => {
             toast({
                 title: "Records Cleared",
@@ -173,7 +171,6 @@ export default function MilestonesPage() {
   };
 
   const handleSaveEdit = (recordId: string) => {
-    if (!user) return;
     const weight = editedWeight;
     if (isNaN(weight) || weight <= 0) {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
@@ -191,7 +188,7 @@ export default function MilestonesPage() {
 
     // Pass the full, timezone-aware Date object to the server.
     updateRecordMutation.mutate(
-        { userId: user.uid, id: recordId, data: { weight, date: normalizedDate } },
+        { userId: user!.uid, id: recordId, data: { weight, date: normalizedDate } },
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });

@@ -385,27 +385,6 @@ export default function AnalysisPage() {
   }, [personalRecords, userProfile]);
 
   const handleAnalyzeStrength = async () => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
-        return;
-    }
-    if (!personalRecords || personalRecords.length === 0) {
-      toast({
-        title: "Not Enough Data",
-        description: "Log some personal records before running an analysis.",
-        variant: "default",
-      });
-      return;
-    }
-    if (!userProfile) {
-        toast({
-            title: "Profile Not Loaded",
-            description: "Please wait for your profile to load before running analysis.",
-            variant: "default",
-        });
-        return;
-    }
-    
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
@@ -1021,15 +1000,6 @@ useEffect(() => {
 }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = async () => {
-    if (!user) {
-        toast({ title: "Authentication Error", description: "You must be logged in to run analysis.", variant: "destructive" });
-        return;
-    }
-    if (!userProfile || !workoutLogs || !selectedLift) {
-        toast({ title: "Missing Data", description: "Cannot run analysis without user profile, logs, and a selected lift.", variant: "destructive" });
-        return;
-    }
-
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
@@ -1727,5 +1697,6 @@ useEffect(() => {
     
 
     
+
 
 
