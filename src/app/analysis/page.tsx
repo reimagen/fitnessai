@@ -31,7 +31,7 @@ import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonth
 import { isSameDay } from 'date-fns/isSameDay';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
 import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves, HeartPulse } from 'lucide-react';
-import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName } from '@/lib/strength-standards';
+import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName, getStrengthRatioStandards } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import Link from 'next/link';
@@ -311,7 +311,7 @@ export default function AnalysisPage() {
 
 
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
-    if (!personalRecords || !userProfile) {
+    if (!personalRecords || !userProfile || !userProfile.gender) {
       return [];
     }
     const findings: (StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[] = [];
@@ -342,95 +342,21 @@ export default function AnalysisPage() {
         }
 
         const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        let targetRatioValue: number | null = null;
-        let lowerBound: number | null = null;
-        let upperBound: number | null = null;
         
         const rank1 = strengthLevelRanks[lift1Level];
         const rank2 = strengthLevelRanks[lift2Level];
         const guidingLevelRank = (rank1 === -1 || rank2 === -1) ? -1 : Math.min(rank1, rank2);
+        const guidingLevel: StrengthLevel = Object.keys(strengthLevelRanks).find(key => strengthLevelRanks[key as StrengthLevel] === guidingLevelRank) as StrengthLevel || 'N/A';
         
-        if (type === 'Vertical Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
-            if (userProfile.gender === 'Female') {
-                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.50; lowerBound = 0.50; upperBound = 0.60;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.60; lowerBound = 0.60; upperBound = 0.65;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.70;
-                }
-            } else if (userProfile.gender === 'Male') {
-                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.55; lowerBound = 0.55; upperBound = 0.65;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.75;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
-                }
-            }
-        } else if (type === 'Horizontal Push vs. Pull' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
-             if (userProfile.gender === 'Female') {
-                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.50; lowerBound = 0.50; upperBound = 0.60;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.60; lowerBound = 0.60; upperBound = 0.65;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.70;
-                }
-            } else if (userProfile.gender === 'Male') {
-                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.55; lowerBound = 0.55; upperBound = 0.65;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.65; lowerBound = 0.65; upperBound = 0.75;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.70; lowerBound = 0.70; upperBound = 0.80;
-                }
-            }
-        } else if (type === 'Hamstring vs. Quad' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
-            if (userProfile.gender === 'Female') {
-                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.63; lowerBound = 0.56; upperBound = 0.63;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.67; lowerBound = 0.59; upperBound = 0.67;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.71; lowerBound = 0.63; upperBound = 0.71;
-                }
-            } else if (userProfile.gender === 'Male') {
-                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.59; lowerBound = 0.53; upperBound = 0.59;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.63; lowerBound = 0.56; upperBound = 0.63;
-                } else { // Advanced or Elite
-                    targetRatioValue = 0.67; lowerBound = 0.59; upperBound = 0.67;
-                }
-            }
-        } else if (type === 'Adductor vs. Abductor' && lift1Level !== 'N/A' && lift2Level !== 'N/A' && userProfile.gender) {
-             if (userProfile.gender === 'Female') {
-                if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.83; lowerBound = 0.75; upperBound = 1.00;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.95; lowerBound = 0.85; upperBound = 1.05;
-                } else { // Advanced or Elite
-                    targetRatioValue = 1.00; lowerBound = 0.90; upperBound = 1.10;
-                }
-            } else if (userProfile.gender === 'Male') {
-                 if (guidingLevelRank <= strengthLevelRanks['Beginner']) {
-                    targetRatioValue = 0.90; lowerBound = 0.85; upperBound = 1.10;
-                } else if (guidingLevelRank <= strengthLevelRanks['Intermediate']) {
-                    targetRatioValue = 0.95; lowerBound = 0.90; upperBound = 1.05;
-                } else { // Advanced or Elite
-                    targetRatioValue = 1.00; lowerBound = 0.95; upperBound = 1.10;
-                }
-            }
-        }
+        const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
         
-        const targetRatioDisplay = targetRatioValue ? `${targetRatioValue.toFixed(2)}:1` : 'N/A';
+        const targetRatioDisplay = ratioStandards?.targetRatio ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
 
-        if (lowerBound !== null && upperBound !== null) {
-            ratioIsUnbalanced = ratio < lowerBound || ratio > upperBound;
+        if (ratioStandards) {
+            ratioIsUnbalanced = ratio < ratioStandards.lowerBound || ratio > ratioStandards.upperBound;
         }
 
         if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
@@ -938,12 +864,17 @@ const cardioAnalysisData = useMemo(() => {
     }
     
     if (weeklyGoal && weeklyGoal > 0) {
-        const difference = weeklyAverage - weeklyGoal;
-        const percentage = (difference / weeklyGoal) * 100;
-        if (difference >= 0) {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are beating your goal by ${Math.round(difference).toLocaleString()} calories (${Math.round(percentage)}%).`;
+        const percentageAchieved = (weeklyAverage / weeklyGoal) * 100;
+        calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}.`;
+
+        if (percentageAchieved >= 100) {
+            const surplus = weeklyAverage - weeklyGoal;
+            calorieSummary += ` You are beating your goal by ${Math.round(surplus).toLocaleString()} calories (${Math.round(percentageAchieved - 100)}% over).`;
+        } else if (percentageAchieved >= 50) {
+            const percentageRemaining = 100 - percentageAchieved;
+            calorieSummary += ` You are only ${Math.round(percentageRemaining)}% away from your goal.`;
         } else {
-            calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}, you are ${Math.abs(Math.round(percentage))}% away from your goal.`;
+            calorieSummary += ` You are at ${Math.round(percentageAchieved)}% of your goal, keep going!`;
         }
     }
     
@@ -1154,15 +1085,31 @@ useEffect(() => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
     if (percent < 0.05) return null;
     
-    // Responsive radius calculation
-    const radiusOffset = isMobile ? 5 : 20;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5 + radiusOffset;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
     
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    // Use a slightly larger radius for the label line, but keep it proportional
+    const availableRadius = Math.min(cx, cy) - 10; // 10px padding
+    const labelRadius = innerRadius + (availableRadius - innerRadius) * 0.7;
+
+    const x = cx + labelRadius * cos;
+    const y = cy + labelRadius * sin;
+    
     const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
     const unitString = unit ? ` ${unit}` : '';
-    return <text x={x} y={y} fill="hsl(var(--foreground))" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" className="text-xs">{`${name} (${displayValue}${unitString})`}</text>;
+
+    return (
+      <text 
+        x={x} 
+        y={y} 
+        fill="hsl(var(--foreground))" 
+        textAnchor={cos >= 0 ? 'start' : 'end'} 
+        dominantBaseline="central" 
+        className="text-xs"
+      >
+        {`${name} (${displayValue}${unitString})`}
+      </text>
+    );
   };
 
   const formatCardioDuration = (totalMinutes: number): string => {
@@ -1778,3 +1725,7 @@ useEffect(() => {
 
 
     
+
+    
+
+
