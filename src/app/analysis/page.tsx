@@ -185,6 +185,7 @@ type StrengthFinding = {
     lift2Unit: "kg" | "lbs";
     lift2Level: StrengthLevel;
     userRatio: string;
+    targetRatio: string;
     balancedRange: string;
     imbalanceFocus: ImbalanceFocus;
 };
@@ -354,6 +355,8 @@ export default function AnalysisPage() {
             ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
             : 'N/A';
         
+        const targetRatioDisplay = ratioStandards ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
+        
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
 
@@ -376,6 +379,7 @@ export default function AnalysisPage() {
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
+            targetRatio: targetRatioDisplay,
             balancedRange: balancedRangeDisplay,
             imbalanceFocus: imbalanceFocus,
             lift1Level,
@@ -389,8 +393,6 @@ export default function AnalysisPage() {
   const handleAnalyzeStrength = () => {
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
-
-    if (!userProfile) return;
 
     const analysisInput: StrengthImbalanceInput = {
         clientSideFindings: validFindings,
@@ -1005,7 +1007,7 @@ useEffect(() => {
 
   const handleAnalyzeProgression = () => {
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    if (!workoutLogs || !userProfile) return;
+    if (!workoutLogs) return;
 
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
@@ -1703,6 +1705,7 @@ useEffect(() => {
     
 
     
+
 
 
 
