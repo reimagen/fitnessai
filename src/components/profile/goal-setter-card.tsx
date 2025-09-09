@@ -354,6 +354,10 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                     const isAchieved = form.watch(`goals.${index}.achieved`);
 
                     if (isEditing) {
+                        // Only render the card in edit mode if the goal is NOT achieved.
+                        if (isAchieved) {
+                            return null;
+                        }
                         return (
                             <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30 relative">
                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -641,4 +645,3 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     </Card>
   );
 }
-
