@@ -47,7 +47,7 @@ const ClientSideFindingSchema = z.object({
     lift2Unit: z.enum(['kg', 'lbs']),
     lift2Level: z.custom<StrengthLevel>(),
     userRatio: z.string(),
-    targetRatio: z.string(),
+    balancedRange: z.string(),
     imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES),
 });
 
@@ -67,7 +67,7 @@ const ImbalanceFindingSchema = z.object({
     lift2Weight: z.number().describe("The weight of the second exercise PR."),
     lift2Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the second exercise."),
     userRatio: z.string().describe("The user's calculated strength ratio, formatted as 'X : Y'."),
-    targetRatio: z.string().describe("The ideal or target strength ratio, formatted as 'X : Y'."),
+    balancedRange: z.string().describe("The ideal or target strength ratio, formatted as 'X-Y:1'."),
     imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The primary issue to focus on: a disparity in strength levels or an incorrect ratio between same-level lifts."),
     insight: z.string().describe("A concise, AI-generated explanation of what the imbalance means."),
     recommendation: z.string().describe("A simple, AI-generated, actionable recommendation to address the imbalance."),
@@ -94,6 +94,7 @@ export async function analyzeStrengthImbalances(input: StrengthImbalanceInput): 
 const ImbalanceDataForAISchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
     imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES),
+    proximity: z.enum(['Significant', 'Close', 'Balanced']).describe("How close the user's ratio is to the balanced range."),
     lift1Name: z.string(),
     lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
@@ -138,6 +139,7 @@ The following data has been calculated by our system. Use this as the absolute s
 {{#each imbalances}}
 - **Imbalance Type:** {{{this.imbalanceType}}}
   - **Focus Area:** {{{this.imbalanceFocus}}}
+  - **Proximity to Balance:** {{{this.proximity}}}
   - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
   - **System Insight Focus:** {{{this.insightFocus}}}
   - **System Recommendation Focus:** {{{this.recommendationFocus}}}
@@ -155,6 +157,10 @@ For **each** of the imbalances listed above, you will provide expert commentary.
 - **VARY YOUR ANALYSIS:** Provide unique and varied feedback for each imbalance. Do not use the same sentence structure. Be direct and creative.
 - **HEALTH-FOCUSED:** Prioritize long-term joint health and balanced development.
 - **COMPLETE JSON:** You MUST provide an analysis for every single imbalance in the input.
+- **TAILOR TONE TO PROXIMITY - CRITICAL**: You MUST adjust your tone based on the 'Proximity to Balance' field.
+    - If Proximity is **'Significant'**, your tone should be direct about the risks of the imbalance and the importance of addressing it. Example: "A significant imbalance like this can increase injury risk..."
+    - If Proximity is **'Close'**, your tone MUST be encouraging and motivational. Acknowledge their progress. Example: "You're very close to achieving a healthy balance! A small focus on..."
+    - If Proximity is **'Balanced'**, your tone should be positive and reinforcing. Congratulate the user. Example: "Excellent work maintaining this balance..."
 `,
 });
 
@@ -179,8 +185,33 @@ const strengthImbalanceFlow = ai.defineFlow(
     for (const finding of input.clientSideFindings) {
         let recommendationFocus = "";
         let insightFocus = "";
+        let proximity: 'Significant' | 'Close' | 'Balanced' = 'Balanced';
 
-        if (finding.imbalanceFocus === 'Level Imbalance') {
+        if (finding.imbalanceFocus === 'Ratio Imbalance') {
+             const userRatioNum = parseFloat(finding.userRatio.split(':')[0]);
+             const rangeParts = finding.balancedRange.replace(':1', '').split('-');
+             const lowerBound = parseFloat(rangeParts[0]);
+             const upperBound = parseFloat(rangeParts[1]);
+             
+             const distanceToLower = Math.abs(userRatioNum - lowerBound);
+             const distanceToUpper = Math.abs(userRatioNum - upperBound);
+             const minDistance = Math.min(distanceToLower, distanceToUpper);
+
+             if (userRatioNum < lowerBound || userRatioNum > upperBound) {
+                 proximity = minDistance <= 0.05 ? 'Close' : 'Significant';
+             }
+             
+             const weakerLiftByRatio = userRatioNum < lowerBound ? finding.lift1Name : finding.lift2Name;
+
+             if (proximity === 'Close') {
+                insightFocus = `The user is very close to a balanced ratio. Explain why achieving this final bit of balance is key for optimal performance and injury prevention.`;
+                recommendationFocus = `Adopt a motivational tone. Encourage the user that they are almost there. Suggest a small, focused increase on the proportionally weaker lift (${weakerLiftByRatio}) to close the final gap.`;
+             } else { // Significant
+                insightFocus = `The user has a significant ratio imbalance. Explain the potential risks (e.g., joint stress, performance plateaus) associated with this specific imbalance.`;
+                recommendationFocus = `Prioritize correcting the imbalance. Recommend focusing on strengthening the proportionally weaker lift (${weakerLiftByRatio}) to bring it into the balanced range.`;
+             }
+        } else if (finding.imbalanceFocus === 'Level Imbalance') {
+             proximity = 'Significant'; // Level imbalances are always considered significant
              const isLift1Weaker = strengthLevelRanks[finding.lift1Level] < strengthLevelRanks[finding.lift2Level];
              const weakerLiftName = isLift1Weaker ? finding.lift1Name : finding.lift2Name;
              const weakerLevel = isLift1Weaker ? finding.lift1Level : finding.lift2Level;
@@ -188,17 +219,9 @@ const strengthImbalanceFlow = ai.defineFlow(
              
              insightFocus = `Explain the risks of having a strength level disparity between these two lifts. Emphasize joint health.`;
              recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLiftName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
-        } else if (finding.imbalanceFocus === 'Ratio Imbalance') {
-             // A simple heuristic to determine the weaker lift based on the target ratio.
-             // This is imperfect but good enough for a text instruction.
-             const userRatioNum = parseFloat(finding.userRatio.split(':')[0]);
-             const targetRatioNum = parseFloat(finding.targetRatio.split(':')[0]);
-             const weakerLiftByRatio = userRatioNum < targetRatioNum ? finding.lift1Name : finding.lift2Name;
-             
-             insightFocus = `Both lifts are in the same tier, but their strength relationship is off. Explain why this specific ratio is important for performance and injury prevention.`;
-             recommendationFocus = `Concentrate on improving the proportionally weaker lift (${weakerLiftByRatio}) to establish a healthy ratio before pushing both to the next strength level.`;
         } else { // Balanced
             const currentLevel = finding.lift1Level;
+            proximity = 'Balanced';
             if (currentLevel === 'Elite') {
                 insightFocus = `These lifts are balanced at an Elite level. Explain the importance of maintaining this balance for peak performance and longevity.`;
                 recommendationFocus = `The goal is to maintain this high level of strength and balance through consistent training.`;
@@ -219,6 +242,7 @@ const strengthImbalanceFlow = ai.defineFlow(
         imbalancesForAI.push({
             imbalanceType: finding.imbalanceType,
             imbalanceFocus: finding.imbalanceFocus,
+            proximity: proximity,
             lift1Name: finding.lift1Name,
             lift1Level: finding.lift1Level,
             lift2Name: finding.lift2Name,
