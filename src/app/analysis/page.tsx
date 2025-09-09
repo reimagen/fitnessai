@@ -350,7 +350,9 @@ export default function AnalysisPage() {
         
         const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
         
-        const targetRatioDisplay = ratioStandards?.targetRatio ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
+        const targetRatioDisplay = ratioStandards
+            ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
+            : 'N/A';
         
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
@@ -384,9 +386,11 @@ export default function AnalysisPage() {
     return findings;
   }, [personalRecords, userProfile]);
 
-  const handleAnalyzeStrength = async () => {
+  const handleAnalyzeStrength = () => {
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
+
+    if (!userProfile) return;
 
     const analysisInput: StrengthImbalanceInput = {
         clientSideFindings: validFindings,
@@ -999,8 +1003,10 @@ useEffect(() => {
 
 }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
-  const handleAnalyzeProgression = async () => {
+  const handleAnalyzeProgression = () => {
     const sixWeeksAgo = subWeeks(new Date(), 6);
+    if (!workoutLogs || !userProfile) return;
+
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
       .flatMap(log => 
@@ -1325,7 +1331,7 @@ useEffect(() => {
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
                                                 <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
                                                 <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                                <p>Target Ratio: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
+                                                <p>Target Range: <span className="font-bold text-foreground">{dataFinding.targetRatio}</span></p>
                                             </div>
                                             
                                             <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
@@ -1697,6 +1703,7 @@ useEffect(() => {
     
 
     
+
 
 
 
