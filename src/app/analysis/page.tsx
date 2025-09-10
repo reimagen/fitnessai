@@ -400,7 +400,10 @@ export default function AnalysisPage() {
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
     const analysisInput: StrengthImbalanceInput = {
-        clientSideFindings: validFindings,
+        clientSideFindings: validFindings.map(f => ({
+            ...f,
+            targetRatio: f.targetRatio, // Ensure targetRatio is passed
+        })),
         userProfile: {
             age: userProfile.age,
             gender: userProfile.gender,
@@ -1011,6 +1014,10 @@ useEffect(() => {
 }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = () => {
+    if (!userProfile) {
+      toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
+      return;
+    }
     const sixWeeksAgo = subWeeks(new Date(), 6);
     if (!workoutLogs) return;
 
@@ -1710,6 +1717,7 @@ useEffect(() => {
     
 
     
+
 
 
 
