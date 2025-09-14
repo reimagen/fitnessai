@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, enabled: boolean = true) {
+export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | undefined, enabled: boolean = true) {
   const { user } = useAuth();
   
   let dateKey: string | undefined;
@@ -59,12 +59,13 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, en
   return useQuery<WorkoutLog[], Error>({ 
     queryKey, 
     queryFn: () => {
+      if (!user) return Promise.resolve([]); // Return empty array if no user
       if (forDateRange && forDateRange instanceof Date) {
-        return getWorkoutLogs(user!.uid, { forMonth: forDateRange });
+        return getWorkoutLogs(user.uid, { forMonth: forDateRange });
       } else if (forDateRange && 'start' in forDateRange) { 
-        return getWorkoutLogs(user!.uid, { since: forDateRange.start });
+        return getWorkoutLogs(user.uid, { since: forDateRange.start });
       }
-      return getWorkoutLogs(user!.uid);
+      return getWorkoutLogs(user.uid);
     },
     enabled: !!user && enabled,
     staleTime: staleTime,
@@ -91,12 +92,14 @@ type AddWorkoutPayload = {
 
 export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation({
         mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
-        onSuccess: () => {
-            // Invalidate all workout queries for this user to be safe
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        onSuccess: (data, variables) => {
+            const monthKey = format(variables.data.date, 'yyyy-MM');
+            // Invalidate the specific month
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
+            // Invalidate the "current week" query for the home page
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
         },
     });
 }
@@ -109,11 +112,31 @@ type UpdateWorkoutPayload = {
 
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
-    const { user } = useAuth();
     return useMutation<void, Error, UpdateWorkoutPayload>({
         mutationFn: ({ userId, id, data }) => updateWorkoutLog(userId, id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        onSuccess: (_, variables) => {
+             // To get the date, we have to look it up in the cache as it might not be in the payload
+            const allCachedWorkouts = queryClient.getQueriesData<WorkoutLog[]>({ queryKey: ['workouts', variables.userId] });
+            let logDate: Date | undefined;
+
+            for (const [_queryKey, cachedData] of allCachedWorkouts) {
+                if (cachedData) {
+                    const foundLog = cachedData.find(log => log.id === variables.id);
+                    if (foundLog) {
+                        logDate = foundLog.date;
+                        break;
+                    }
+                }
+            }
+
+            if (logDate) {
+                 const monthKey = format(logDate, 'yyyy-MM');
+                 queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
+            } else {
+                // Fallback to broader invalidation if we can't find the specific log
+                queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+            }
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
         },
     });
 }
@@ -125,11 +148,29 @@ type DeleteWorkoutPayload = {
 
 export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
-     const { user } = useAuth();
     return useMutation({
         mutationFn: ({ userId, logId }: DeleteWorkoutPayload) => deleteWorkoutLog(userId, logId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
+        onSuccess: (_, variables) => {
+            const allCachedWorkouts = queryClient.getQueriesData<WorkoutLog[]>({ queryKey: ['workouts', variables.userId] });
+            let logDate: Date | undefined;
+
+            for (const [_queryKey, cachedData] of allCachedWorkouts) {
+                if (cachedData) {
+                    const foundLog = cachedData.find(log => log.id === variables.logId);
+                    if (foundLog) {
+                        logDate = foundLog.date;
+                        break;
+                    }
+                }
+            }
+
+            if (logDate) {
+                 const monthKey = format(logDate, 'yyyy-MM');
+                 queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
+            } else {
+                queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+            }
+             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
         },
     });
 }
@@ -140,7 +181,7 @@ export function usePersonalRecords(enabled: boolean = true) {
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 }
 
@@ -193,14 +234,14 @@ export function useUserProfile() {
     return useQuery<{ data: UserProfile | null; notFound: boolean }, Error>({
       queryKey: ['profile', user?.uid], 
       queryFn: async () => {
-        const profile = await getUserProfile(user!.uid);
+        if (!user) return { data: null, notFound: true };
+        const profile = await getUserProfile(user.uid);
         if (profile === null) {
           return { data: null, notFound: true as const };
         }
         return { data: profile, notFound: false as const };
       },
       enabled: !!user,
-      // Custom logic to handle new user caching issue
       staleTime: 1000 * 60 * 60, // 1 hour for existing users
       refetchOnMount: (query) => {
         const data = query.state.data as { data: UserProfile | null; notFound: boolean } | undefined;
