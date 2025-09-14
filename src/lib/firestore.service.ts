@@ -29,39 +29,21 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(options?: { forMonth?: Date; forCurrentWeek?: boolean }, enabled: boolean = true) {
+export function useWorkouts(forMonth: Date, enabled: boolean = true) {
   const { user } = useAuth();
-  
-  let queryKeySuffix = 'all';
-  if (options?.forMonth) {
-    queryKeySuffix = format(options.forMonth, 'yyyy-MM');
-  } else if (options?.forCurrentWeek) {
-    queryKeySuffix = 'current-week';
-  }
+  const queryKey = ['workouts', user?.uid, format(forMonth, 'yyyy-MM')];
 
-  const queryKey = ['workouts', user?.uid, queryKeySuffix];
-
-  const isCurrentMonth = options?.forMonth ? isSameMonth(options.forMonth, new Date()) : false;
-  
-  // Determine staleTime based on the context
-  let staleTime = 0; // Default to stale immediately (stale-while-revalidate)
-  
-  if (options?.forCurrentWeek) {
-    // For the homepage, cache for 1 hour to prevent refetching on every navigation.
-    // Invalidation on change will handle immediate updates.
-    staleTime = 1000 * 60 * 60; // 1 hour
-  } else if (options?.forMonth && !isCurrentMonth) {
-    // For past months on the history page, cache "forever".
-    staleTime = Infinity;
-  }
+  // For past months, cache "forever". For the current month, refetch in the background.
+  const staleTime = isSameMonth(forMonth, new Date()) ? 0 : Infinity;
 
   return useQuery<WorkoutLog[], Error>({ 
-    queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(user!.uid, options),
+    queryKey, 
+    queryFn: () => getWorkoutLogs(user!.uid, { forMonth }),
     enabled: !!user && enabled,
     staleTime: staleTime,
   });
 }
+
 
 type AddWorkoutPayload = {
   userId: string;
@@ -119,7 +101,7 @@ export function usePersonalRecords(enabled: boolean = true) {
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: 1000 * 60 * 60, // 1 hour
   });
 }
 
@@ -180,7 +162,7 @@ export function useUserProfile() {
         return { data: profile, notFound: false as const };
       },
       enabled: !!user, // Only fetch profile if user is authenticated
-      staleTime: 1000 * 60 * 60 * 24, // 24 hours
+      staleTime: 1000 * 60 * 60, // 1 hour. A user's core profile data doesn't change that often.
       refetchOnWindowFocus: true,
       refetchOnMount: true,
     });
