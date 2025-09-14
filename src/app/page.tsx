@@ -18,13 +18,12 @@ export default function HomePage() {
   const profileNotFound = profileResult?.notFound === true;
   
   // Only fetch workouts if the profile has been found.
-  // This prevents errors for new users whose security rules may depend on a profile existing.
   const enableDataFetching = !loadingProfile && !profileNotFound;
   const {
     data: workoutLogs = [],
     isLoading: loadingWorkouts,
     isError: errorWorkouts,
-  } = useWorkouts(undefined, enableDataFetching);
+  } = useWorkouts({ forCurrentWeek: true }, enableDataFetching);
 
   const isLoading = loadingProfile || (enableDataFetching && loadingWorkouts);
 

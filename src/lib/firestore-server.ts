@@ -4,7 +4,7 @@
 import { adminDb } from './firebase-admin';
 import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
+import { startOfMonth, endOfMonth, format, startOfWeek, endOfWeek } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
 import { cache } from 'react';
 
@@ -221,20 +221,29 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 
 // --- Firestore Service Functions ---
 
-export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<WorkoutLog[]> => {
+export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean }): Promise<WorkoutLog[]> => {
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
   const baseQuery = workoutLogsCollection;
 
-  if (forMonth) {
-    const startDate = startOfMonth(forMonth);
-    const endDate = endOfMonth(forMonth);
+  if (options?.forMonth) {
+    const startDate = startOfMonth(options.forMonth);
+    const endDate = endOfMonth(options.forMonth);
+    q = baseQuery
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .orderBy('date', 'desc');
+  } else if (options?.forCurrentWeek) {
+    const today = new Date();
+    const startDate = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+    const endDate = endOfWeek(today, { weekStartsOn: 0 });   // Saturday
     q = baseQuery
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .orderBy('date', 'desc');
   } else {
+    // Default to fetching all logs if no specific range is given (e.g., for Analysis page full history)
     q = baseQuery.orderBy('date', 'desc');
   }
   
