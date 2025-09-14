@@ -43,12 +43,14 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, en
 
   const queryKey = ['workouts', user?.uid, dateKey || 'all'];
 
-  let staleTime: number | undefined = 1000 * 60 * 60; // 1 hour default
-  if (forDateRange && forDateRange instanceof Date && !isSameMonth(forDateRange, new Date())) {
-    staleTime = Infinity;
-  } else if (!forDateRange) {
-    // This is the "fetch all" case for Analysis/Profile pages
-    staleTime = 1000 * 60 * 5; // Cache all workouts for 5 minutes
+  // --- Caching Strategy ---
+  // - Past Months (History Page): Cache forever (`Infinity`). Data is historical and won't change.
+  // - Current Month (History Page): `staleTime: 0`. Always show cached data instantly, but trigger a background refetch to ensure it's up-to-date.
+  // - Current Week (Home Page): Handled by `useCurrentWeekWorkouts`.
+  // - All Workouts (Analysis/Profile Pages): Cache for 5 minutes. A reasonable balance for pages that need a full but not necessarily real-time overview.
+  let staleTime: number | undefined = 1000 * 60 * 5; // 5 minute default for "all"
+  if (forDateRange && forDateRange instanceof Date) {
+      staleTime = isSameMonth(forDateRange, new Date()) ? 0 : Infinity;
   }
 
   return useQuery<WorkoutLog[], Error>({ 
@@ -56,9 +58,9 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, en
     queryFn: () => {
       if (forDateRange && forDateRange instanceof Date) {
         return getWorkoutLogs(user!.uid, { forMonth: forDateRange });
+      } else if (forDateRange) { // This handles the { start, end } case for AI context
+        return getWorkoutLogs(user!.uid, { since: forDateRange.start });
       }
-      // This part is not yet implemented in the backend, but the structure allows it.
-      // For now, no date range means fetch all.
       return getWorkoutLogs(user!.uid);
     },
     enabled: !!user && enabled,
@@ -74,6 +76,8 @@ export function useCurrentWeekWorkouts(enabled: boolean = true) {
         queryKey,
         queryFn: () => getWorkoutLogs(user!.uid, { forCurrentWeek: true }),
         enabled: !!user && enabled,
+        // The home page doesn't need to be real-time. An hour is fine.
+        // It gets invalidated manually after logging a workout anyway.
         staleTime: 1000 * 60 * 60, // 1 hour cache
     });
 }
@@ -135,7 +139,7 @@ export function usePersonalRecords(enabled: boolean = true) {
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: 1000 * 60 * 60, // 1 hour
   });
 }
 
@@ -195,11 +199,11 @@ export function useUserProfile() {
         return { data: profile, notFound: false as const };
       },
       enabled: !!user,
-      staleTime: 1000 * 60 * 60, // 1 hour. A user's core profile data doesn't change that often.
       // Custom logic to handle new user caching issue
+      staleTime: 1000 * 60 * 60, // 1 hour for existing users
       refetchOnMount: (query) => {
         const data = query.state.data as { data: UserProfile | null; notFound: boolean } | undefined;
-        // If the last fetch resulted in "not found", always refetch on mount.
+        // If the last fetch resulted in "not found", always refetch on mount to avoid race condition.
         if (data?.notFound) {
             return true;
         }
