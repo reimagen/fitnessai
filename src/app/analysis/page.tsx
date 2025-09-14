@@ -1577,8 +1577,8 @@ useEffect(() => {
                         </div>
                         <Tabs defaultValue="types" className="w-full">
                           <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="types">Cardio Types</TabsTrigger>
-                            <TabsTrigger value="amount">Cardio Amount</TabsTrigger>
+                            <TabsTrigger value="types">Cardio By Activity</TabsTrigger>
+                            <TabsTrigger value="amount">Cardio Over Time</TabsTrigger>
                           </TabsList>
                           <TabsContent value="types">
                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
