@@ -26,7 +26,7 @@ type DailyCardioData = {
 
 const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
   const name = exerciseName.toLowerCase();
-  if (name.includes('run') || name.includes('treadmill')) return 'Run';
+  if (name.includes('run') || name.includes('treadmill') || name.includes('ascent trainer') || name.includes('elliptical')) return 'Run';
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
   if (name.includes('climbmill')) return 'Climbmill';
