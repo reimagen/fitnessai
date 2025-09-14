@@ -766,7 +766,9 @@ const cardioAnalysisData = useMemo(() => {
             .map(ex => {
                 let name = toTitleCase(ex.name);
                 const exNameLower = ex.name.toLowerCase();
-                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical')) {
+
+                // Speed-based categorization for treadmill, elliptical, and ascent trainer
+                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical') || exNameLower.includes('ascent trainer')) {
                     const distanceMi = (ex.distanceUnit === 'km' ? (ex.distance || 0) * 0.621371 : (ex.distance || 0));
                     
                     let durationHr = 0;
@@ -1717,6 +1719,7 @@ useEffect(() => {
     
 
     
+
 
 
 
