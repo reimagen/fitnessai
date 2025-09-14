@@ -4,7 +4,7 @@
 import { adminDb } from './firebase-admin';
 import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
-import { startOfMonth, endOfMonth, format, startOfWeek, endOfWeek } from 'date-fns';
+import { startOfMonth, endOfMonth, format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
 import { cache } from 'react';
 
@@ -221,7 +221,7 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 
 // --- Firestore Service Functions ---
 
-export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean }): Promise<WorkoutLog[]> => {
+export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean; since?: Date }): Promise<WorkoutLog[]> => {
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
@@ -242,8 +242,13 @@ export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .orderBy('date', 'desc');
-  } else {
-    // Default to fetching all logs if no specific range is given (e.g., for Analysis page full history)
+  } else if (options?.since) {
+    q = baseQuery
+      .where('date', '>=', options.since)
+      .orderBy('date', 'desc');
+  }
+  else {
+    // Default to fetching all logs if no specific range is given
     q = baseQuery.orderBy('date', 'desc');
   }
   

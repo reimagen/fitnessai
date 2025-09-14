@@ -29,20 +29,38 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
+export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, enabled: boolean = true) {
   const { user } = useAuth();
-  // If forMonth is provided, create a specific key for that month. Otherwise, a general key.
-  const queryKey = ['workouts', user?.uid, forMonth ? format(forMonth, 'yyyy-MM') : 'all'];
+  
+  let dateKey: string | undefined;
+  if (forDateRange) {
+    if (forDateRange instanceof Date) {
+      dateKey = format(forDateRange, 'yyyy-MM');
+    } else {
+      dateKey = `${format(forDateRange.start, 'yyyy-MM-dd')}-to-${format(forDateRange.end, 'yyyy-MM-dd')}`;
+    }
+  }
 
-  // For past months, cache "forever". For the current month, cache for 1 hour. For all data, cache for 1 hour.
-  let staleTime = 1000 * 60 * 60; // 1 hour default
-  if (forMonth && !isSameMonth(forMonth, new Date())) {
+  const queryKey = ['workouts', user?.uid, dateKey || 'all'];
+
+  let staleTime: number | undefined = 1000 * 60 * 60; // 1 hour default
+  if (forDateRange && forDateRange instanceof Date && !isSameMonth(forDateRange, new Date())) {
     staleTime = Infinity;
+  } else if (!forDateRange) {
+    // This is the "fetch all" case for Analysis/Profile pages
+    staleTime = 1000 * 60 * 5; // Cache all workouts for 5 minutes
   }
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey, 
-    queryFn: () => getWorkoutLogs(user!.uid, { forMonth }),
+    queryFn: () => {
+      if (forDateRange && forDateRange instanceof Date) {
+        return getWorkoutLogs(user!.uid, { forMonth: forDateRange });
+      }
+      // This part is not yet implemented in the backend, but the structure allows it.
+      // For now, no date range means fetch all.
+      return getWorkoutLogs(user!.uid);
+    },
     enabled: !!user && enabled,
     staleTime: staleTime,
   });
@@ -182,11 +200,11 @@ export function useUserProfile() {
       refetchOnMount: (query) => {
         const data = query.state.data as { data: UserProfile | null; notFound: boolean } | undefined;
         // If the last fetch resulted in "not found", always refetch on mount.
-        // Otherwise, respect the staleTime.
         if (data?.notFound) {
             return true;
         }
-        return 'always'; // default behavior
+        // Use default behavior for existing users (respect staleTime)
+        return 'always';
       }
     });
 }

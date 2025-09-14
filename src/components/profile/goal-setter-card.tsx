@@ -112,8 +112,8 @@ const findBestPrForGoal = (goalDesc: string, records: PersonalRecord[]): string 
 
 const summarizeWorkoutHistoryForGoal = (goalDesc: string, logs: WorkoutLog[]): string | null => {
   const lowerGoal = goalDesc.toLowerCase();
-  const fourWeeksAgo = subWeeks(new Date(), 4);
-  const recentLogs = logs.filter(log => log.date > fourWeeksAgo);
+  // The logs are already pre-filtered for the last 4 weeks.
+  const recentLogs = logs;
 
   if (lowerGoal.includes('run') || lowerGoal.includes('running')) {
     const runs = recentLogs.flatMap(log => log.exercises.filter(ex => ex.category === 'Cardio' && ex.name.toLowerCase().includes('run')));
@@ -141,7 +141,7 @@ const summarizeWorkoutHistoryForGoal = (goalDesc: string, logs: WorkoutLog[]): s
 
 const constructUserProfileContext = (
     userProfile: UserProfile, 
-    workoutLogs: WorkoutLog[],
+    recentWorkoutLogs: WorkoutLog[], // Now expects only recent logs
     personalRecords: PersonalRecord[]
 ): string => {
     let context = "User Profile Context for AI Goal Analysis:\n";
@@ -162,7 +162,7 @@ const constructUserProfileContext = (
         if (relevantPr) {
           context += `  - Performance Context: ${relevantPr}\n`;
         }
-        const historySummary = summarizeWorkoutHistoryForGoal(goal.description, workoutLogs);
+        const historySummary = summarizeWorkoutHistoryForGoal(goal.description, recentWorkoutLogs);
         if (historySummary) {
           context += `  - Performance Context: ${historySummary}\n`;
         }
@@ -182,7 +182,11 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const [acceptedSuggestions, setAcceptedSuggestions] = useState<string[]>([]);
   const analyzeGoalsMutation = useAnalyzeGoals();
   const { data: personalRecords } = usePersonalRecords();
-  const { data: workoutLogs } = useWorkouts();
+  
+  // Fetch only the last 4 weeks of workout logs for AI context
+  const fourWeeksAgo = useMemo(() => subWeeks(new Date(), 4), []);
+  const { data: recentWorkoutLogs } = useWorkouts(fourWeeksAgo, true);
+
   const isMobile = useIsMobile();
   
   const form = useForm<z.infer<typeof goalsFormSchema>>({
@@ -278,7 +282,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     setAnalysisError(null); // Clear previous errors
     setAcceptedSuggestions([]); // Clear accepted suggestions on new analysis
     
-    const contextString = constructUserProfileContext(userProfile, workoutLogs || [], personalRecords || []);
+    const contextString = constructUserProfileContext(userProfile, recentWorkoutLogs || [], personalRecords || []);
     
     const analysisInput: AnalyzeFitnessGoalsInput = {
       userProfileContext: contextString,
