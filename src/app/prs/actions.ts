@@ -44,13 +44,30 @@ export async function parsePersonalRecordsAction(
 
   try {
     const parsedData = await parsePersonalRecords(values);
+    
+    if (parsedData.records.length > 0) {
+      // If records were parsed, attempt to add them using the consolidation logic.
+      // The serverAddPersonalRecords function will handle duplicates and find the best record.
+      const recordsToAdd = parsedData.records.map(rec => ({
+          exerciseName: rec.exerciseName,
+          weight: rec.weight,
+          weightUnit: rec.weightUnit,
+          date: new Date(rec.dateString.replace(/-/g, '/')), // Ensure correct date parsing
+          category: rec.category,
+      }));
+      await serverAddPersonalRecords(userId, recordsToAdd);
+    }
+    
     await incrementUsageCounter(userId, 'prParses');
+    // Return the original parsed data so the UI can show what it found, even if some weren't new PRs.
     return { success: true, data: parsedData };
   } catch (error) {
-    console.error("Error parsing personal records screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing the screenshot. This attempt did not count against your daily limit.";
+    console.error("Error processing personal records screenshot:", error);
+    let userFriendlyError = "An unknown error occurred while parsing and saving the records. This attempt did not count against your daily limit.";
     if (error instanceof Error) {
-        if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
+        if (error.message.includes("not a new personal record")) {
+            userFriendlyError = "The records found in the screenshot were not better than your existing PRs.";
+        } else if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
             userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
         } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
             userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
@@ -77,11 +94,11 @@ export async function getPersonalRecords(userId: string): Promise<PersonalRecord
   return serverGetPersonalRecords(userId);
 }
 
-export async function addPersonalRecords(userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<void> {
+export async function addPersonalRecords(userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<{ success: boolean; message: string }> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  await serverAddPersonalRecords(userId, records);
+  return serverAddPersonalRecords(userId, records);
 }
 
 export async function updatePersonalRecord(userId: string, id: string, recordData: UpdatePersonalRecordClientData): Promise<void> {
@@ -89,8 +106,6 @@ export async function updatePersonalRecord(userId: string, id: string, recordDat
     throw new Error("User not authenticated.");
   }
   
-  // The server action receives the client data, which now includes a proper Date object.
-  // It will pass this directly to the server-side firestore function.
   const dataForServer: Partial<Omit<PersonalRecord, 'id' | 'userId'>> = { ...recordData };
 
   await serverUpdatePersonalRecord(userId, id, dataForServer);

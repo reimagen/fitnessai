@@ -63,7 +63,8 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
             })),
         };
         setParsedResult(normalizedData);
-        onParsedData(normalizedData);
+        // The onParsedData call is now handled by the server action, which will trigger a re-fetch
+        // on success. We just show the results here.
     } else {
       const isLimitError = result.error?.toLowerCase().includes('limit');
       toast({ 
@@ -148,7 +149,7 @@ export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
             <CardTitle className="text-green-700 !text-base">Parsing Successful</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-green-700 mb-2">Found {parsedResult.records.length} records. These have been added to your PR history below.</p>
+            <p className="text-sm text-green-700 mb-2">Found {parsedResult.records.length} records. New personal bests have been saved.</p>
             <ul className="space-y-1 text-xs text-muted-foreground max-h-40 overflow-y-auto pr-2">
               {parsedResult.records.map((rec, index) => (
                 <li key={index} className="truncate">
