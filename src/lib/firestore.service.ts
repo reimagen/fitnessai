@@ -40,7 +40,6 @@ export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
     queryKey: queryKey, 
     queryFn: () => getWorkoutLogs(user!.uid, forMonth),
     enabled: !!user && enabled,
-    // Cache previous months forever, but keep the current month fresh.
     staleTime: isCurrentMonth ? 0 : Infinity,
   });
 }
