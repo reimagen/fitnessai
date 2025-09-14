@@ -35,12 +35,22 @@ export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   const queryKey = ['workouts', user?.uid, monthKey];
 
   const isCurrentMonth = forMonth ? isSameMonth(forMonth, new Date()) : false;
+  
+  // Determine staleTime based on the context
+  let staleTime;
+  if (forMonth) {
+    // History page: a specific month is requested
+    staleTime = isCurrentMonth ? 0 : Infinity; // Stale immediately for current month, cache forever for past months
+  } else {
+    // Home page: all workouts are requested
+    staleTime = 1000 * 60 * 60; // 1 hour
+  }
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
     queryFn: () => getWorkoutLogs(user!.uid, forMonth),
     enabled: !!user && enabled,
-    staleTime: isCurrentMonth ? 0 : Infinity,
+    staleTime: staleTime,
   });
 }
 
@@ -109,7 +119,7 @@ export function useAddPersonalRecords() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: ({ userId, records }: AddPersonalRecordsPayload) => addPersonalRecords(userId, records),
-        onSuccess: (_, variables) => {
+        onSuccess: (response, variables) => {
             queryClient.invalidateQueries({ queryKey: ['prs', variables.userId] });
         }
     })
