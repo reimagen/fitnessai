@@ -29,26 +29,30 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
+export function useWorkouts(options?: { forMonth?: Date; forCurrentWeek?: boolean }, enabled: boolean = true) {
   const { user } = useAuth();
-  const monthKey = forMonth ? format(forMonth, 'yyyy-MM') : 'all';
-  const queryKey = ['workouts', user?.uid, monthKey];
+  
+  let queryKeySuffix = 'all';
+  if (options?.forMonth) {
+    queryKeySuffix = format(options.forMonth, 'yyyy-MM');
+  } else if (options?.forCurrentWeek) {
+    queryKeySuffix = 'current-week';
+  }
 
-  const isCurrentMonth = forMonth ? isSameMonth(forMonth, new Date()) : false;
+  const queryKey = ['workouts', user?.uid, queryKeySuffix];
+
+  const isCurrentMonth = options?.forMonth ? isSameMonth(options.forMonth, new Date()) : false;
   
   // Determine staleTime based on the context
-  let staleTime;
-  if (forMonth) {
-    // History page: a specific month is requested
-    staleTime = isCurrentMonth ? 0 : Infinity; // Stale immediately for current month, cache forever for past months
-  } else {
-    // Home page: all workouts are requested
-    staleTime = 1000 * 60 * 60; // 1 hour
+  let staleTime = 0; // Default to stale immediately (stale-while-revalidate)
+  if (options?.forMonth && !isCurrentMonth) {
+    // For past months on the history page, cache forever.
+    staleTime = Infinity;
   }
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
-    queryFn: () => getWorkoutLogs(user!.uid, forMonth),
+    queryFn: () => getWorkoutLogs(user!.uid, options),
     enabled: !!user && enabled,
     staleTime: staleTime,
   });
@@ -61,10 +65,12 @@ type AddWorkoutPayload = {
 
 export function useAddWorkoutLog() {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     return useMutation({
         mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+        onSuccess: () => {
+            // Invalidate both the month view and the current week view for the home page
+            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
     });
 }
@@ -77,10 +83,11 @@ type UpdateWorkoutPayload = {
 
 export function useUpdateWorkoutLog() {
     const queryClient = useQueryClient();
+    const { user } = useAuth();
     return useMutation<void, Error, UpdateWorkoutPayload>({
         mutationFn: ({ userId, id, data }) => updateWorkoutLog(userId, id, data),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
     });
 }
@@ -92,10 +99,11 @@ type DeleteWorkoutPayload = {
 
 export function useDeleteWorkoutLog() {
     const queryClient = useQueryClient();
+     const { user } = useAuth();
     return useMutation({
         mutationFn: ({ userId, logId }: DeleteWorkoutPayload) => deleteWorkoutLog(userId, logId),
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
     });
 }

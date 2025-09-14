@@ -64,11 +64,11 @@ export async function parseWorkoutScreenshotAction(
 
 // --- Server Actions for Workout Logs ---
 
-export async function getWorkoutLogs(userId: string, forMonth?: Date): Promise<WorkoutLog[]> {
+export async function getWorkoutLogs(userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean }): Promise<WorkoutLog[]> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }
-  return serverGetWorkoutLogs(userId, forMonth);
+  return serverGetWorkoutLogs(userId, options);
 }
 
 export async function addWorkoutLog(userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>): Promise<{ id: string }> {
