@@ -45,8 +45,13 @@ export function useWorkouts(options?: { forMonth?: Date; forCurrentWeek?: boolea
   
   // Determine staleTime based on the context
   let staleTime = 0; // Default to stale immediately (stale-while-revalidate)
-  if (options?.forMonth && !isCurrentMonth) {
-    // For past months on the history page, cache forever.
+  
+  if (options?.forCurrentWeek) {
+    // For the homepage, cache for 1 hour to prevent refetching on every navigation.
+    // Invalidation on change will handle immediate updates.
+    staleTime = 1000 * 60 * 60; // 1 hour
+  } else if (options?.forMonth && !isCurrentMonth) {
+    // For past months on the history page, cache "forever".
     staleTime = Infinity;
   }
 
@@ -69,7 +74,7 @@ export function useAddWorkoutLog() {
     return useMutation({
         mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
         onSuccess: () => {
-            // Invalidate both the month view and the current week view for the home page
+            // Invalidate all workout queries for this user to be safe
             queryClient.invalidateQueries({ queryKey: ['workouts', user?.uid] });
         },
     });
