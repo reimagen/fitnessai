@@ -7,7 +7,7 @@ import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
 import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
-import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
+import { useCurrentWeekWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function HomePage() {
     data: workoutLogs = [],
     isLoading: loadingWorkouts,
     isError: errorWorkouts,
-  } = useWorkouts({ forCurrentWeek: true }, enableDataFetching);
+  } = useCurrentWeekWorkouts(enableDataFetching);
 
   const isLoading = loadingProfile || (enableDataFetching && loadingWorkouts);
 

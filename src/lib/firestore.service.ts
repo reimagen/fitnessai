@@ -34,7 +34,7 @@ export function useWorkouts(forMonth: Date, enabled: boolean = true) {
   const queryKey = ['workouts', user?.uid, format(forMonth, 'yyyy-MM')];
 
   // For past months, cache "forever". For the current month, refetch in the background.
-  const staleTime = isSameMonth(forMonth, new Date()) ? 0 : Infinity;
+  const staleTime = isSameMonth(forMonth, new Date()) ? 1000 * 60 * 60 : Infinity; // 1 hour
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey, 
@@ -42,6 +42,18 @@ export function useWorkouts(forMonth: Date, enabled: boolean = true) {
     enabled: !!user && enabled,
     staleTime: staleTime,
   });
+}
+
+export function useCurrentWeekWorkouts(enabled: boolean = true) {
+    const { user } = useAuth();
+    const queryKey = ['workouts', user?.uid, 'currentWeek'];
+    
+    return useQuery<WorkoutLog[], Error>({
+        queryKey,
+        queryFn: () => getWorkoutLogs(user!.uid, { forCurrentWeek: true }),
+        enabled: !!user && enabled,
+        staleTime: 1000 * 60 * 60, // 1 hour cache
+    });
 }
 
 
@@ -101,7 +113,7 @@ export function usePersonalRecords(enabled: boolean = true) {
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 }
 
