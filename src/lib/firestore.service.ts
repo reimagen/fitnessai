@@ -154,7 +154,7 @@ export function useUserProfile() {
         return { data: profile, notFound: false as const };
       },
       enabled: !!user, // Only fetch profile if user is authenticated
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 1000 * 60 * 60 * 24, // 24 hours
       refetchOnWindowFocus: true,
       refetchOnMount: true,
     });
