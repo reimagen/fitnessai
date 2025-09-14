@@ -96,7 +96,8 @@ export function usePersonalRecords(enabled: boolean = true) {
   return useQuery<PersonalRecord[], Error>({ 
     queryKey: ['prs', user?.uid], 
     queryFn: () => getPersonalRecords(user!.uid),
-    enabled: !!user && enabled
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
   });
 }
 
