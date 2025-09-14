@@ -55,15 +55,23 @@ export async function parsePersonalRecordsAction(
           date: new Date(rec.dateString.replace(/-/g, '/')), // Ensure correct date parsing
           category: rec.category,
       }));
-      await serverAddPersonalRecords(userId, recordsToAdd);
+      // We call the server action but don't need to block its response here,
+      // as the success/error is handled on the client via toast notifications.
+      // We can let this run and return the parsed data to the UI immediately.
+      serverAddPersonalRecords(userId, recordsToAdd).catch(error => {
+          // We can log this server-side error, but the client will show the parsed data.
+          // The client-side mutation hook will show a more specific error toast if this fails.
+          console.error("Error saving parsed PRs:", error.message);
+      });
     }
     
     await incrementUsageCounter(userId, 'prParses');
-    // Return the original parsed data so the UI can show what it found, even if some weren't new PRs.
+    // Return the original parsed data so the UI can show what it found.
+    // The client-side logic will trigger a refetch of all PRs on success, showing the final state.
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error processing personal records screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing and saving the records. This attempt did not count against your daily limit.";
+    let userFriendlyError = "An unknown error occurred while parsing the records. This attempt did not count against your daily limit.";
     if (error instanceof Error) {
         if (error.message.includes("not a new personal record")) {
             userFriendlyError = "The records found in the screenshot were not better than your existing PRs.";
