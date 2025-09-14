@@ -23,7 +23,7 @@ import {
 import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
-import { format, isSameMonth, subWeeks } from 'date-fns';
+import { format, isSameMonth, subWeeks, getWeek, getYear } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -74,7 +74,10 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
 
 export function useCurrentWeekWorkouts(enabled: boolean = true) {
     const { user } = useAuth();
-    const queryKey = ['workouts', user?.uid, 'currentWeek'];
+    const today = new Date();
+    // Create a dynamic key based on the year and week number (starting on Sunday)
+    const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
+    const queryKey = ['workouts', user?.uid, weekKey];
     
     return useQuery<WorkoutLog[], Error>({
         queryKey,
@@ -96,10 +99,12 @@ export function useAddWorkoutLog() {
         mutationFn: ({ userId, data }: AddWorkoutPayload) => addWorkoutLog(userId, data),
         onSuccess: (data, variables) => {
             const monthKey = format(variables.data.date, 'yyyy-MM');
-            // Invalidate the specific month
             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
-            // Invalidate the "current week" query for the home page
-            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
+            
+            // Invalidate the "current week" query using the dynamic key
+            const today = new Date();
+            const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
         },
     });
 }
@@ -115,28 +120,18 @@ export function useUpdateWorkoutLog() {
     return useMutation<void, Error, UpdateWorkoutPayload>({
         mutationFn: ({ userId, id, data }) => updateWorkoutLog(userId, id, data),
         onSuccess: (_, variables) => {
-             // To get the date, we have to look it up in the cache as it might not be in the payload
-            const allCachedWorkouts = queryClient.getQueriesData<WorkoutLog[]>({ queryKey: ['workouts', variables.userId] });
-            let logDate: Date | undefined;
-
-            for (const [_queryKey, cachedData] of allCachedWorkouts) {
-                if (cachedData) {
-                    const foundLog = cachedData.find(log => log.id === variables.id);
-                    if (foundLog) {
-                        logDate = foundLog.date;
-                        break;
-                    }
-                }
-            }
-
-            if (logDate) {
-                 const monthKey = format(logDate, 'yyyy-MM');
+            const monthKey = variables.data.date ? format(variables.data.date, 'yyyy-MM') : undefined;
+            if (monthKey) {
                  queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
             } else {
-                // Fallback to broader invalidation if we can't find the specific log
-                queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
+                 // Fallback if date isn't in payload: invalidate all monthly views. Less optimal but safe.
+                 queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
             }
-            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
+             
+            // Invalidate the "current week" query using the dynamic key
+            const today = new Date();
+            const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
         },
     });
 }
@@ -151,6 +146,7 @@ export function useDeleteWorkoutLog() {
     return useMutation({
         mutationFn: ({ userId, logId }: DeleteWorkoutPayload) => deleteWorkoutLog(userId, logId),
         onSuccess: (_, variables) => {
+            // Find the specific log in the cache to get its date for targeted invalidation
             const allCachedWorkouts = queryClient.getQueriesData<WorkoutLog[]>({ queryKey: ['workouts', variables.userId] });
             let logDate: Date | undefined;
 
@@ -168,9 +164,14 @@ export function useDeleteWorkoutLog() {
                  const monthKey = format(logDate, 'yyyy-MM');
                  queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
             } else {
+                // Fallback to broader invalidation if the log isn't in the cache
                 queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId] });
             }
-             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, 'currentWeek'] });
+            
+            // Invalidate the "current week" query using the dynamic key
+            const today = new Date();
+            const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
         },
     });
 }
