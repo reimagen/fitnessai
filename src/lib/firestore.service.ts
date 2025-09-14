@@ -29,12 +29,16 @@ import { useToast } from '@/hooks/use-toast';
 
 // --- React Query Hooks ---
 
-export function useWorkouts(forMonth: Date, enabled: boolean = true) {
+export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   const { user } = useAuth();
-  const queryKey = ['workouts', user?.uid, format(forMonth, 'yyyy-MM')];
+  // If forMonth is provided, create a specific key for that month. Otherwise, a general key.
+  const queryKey = ['workouts', user?.uid, forMonth ? format(forMonth, 'yyyy-MM') : 'all'];
 
-  // For past months, cache "forever". For the current month, refetch in the background.
-  const staleTime = isSameMonth(forMonth, new Date()) ? 1000 * 60 * 60 : Infinity; // 1 hour
+  // For past months, cache "forever". For the current month, cache for 1 hour. For all data, cache for 1 hour.
+  let staleTime = 1000 * 60 * 60; // 1 hour default
+  if (forMonth && !isSameMonth(forMonth, new Date())) {
+    staleTime = Infinity;
+  }
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey, 
@@ -168,15 +172,22 @@ export function useUserProfile() {
       queryFn: async () => {
         const profile = await getUserProfile(user!.uid);
         if (profile === null) {
-          // This is a new user, not an error.
           return { data: null, notFound: true as const };
         }
         return { data: profile, notFound: false as const };
       },
-      enabled: !!user, // Only fetch profile if user is authenticated
+      enabled: !!user,
       staleTime: 1000 * 60 * 60, // 1 hour. A user's core profile data doesn't change that often.
-      refetchOnWindowFocus: true,
-      refetchOnMount: true,
+      // Custom logic to handle new user caching issue
+      refetchOnMount: (query) => {
+        const data = query.state.data as { data: UserProfile | null; notFound: boolean } | undefined;
+        // If the last fetch resulted in "not found", always refetch on mount.
+        // Otherwise, respect the staleTime.
+        if (data?.notFound) {
+            return true;
+        }
+        return 'always'; // default behavior
+      }
     });
 }
 
