@@ -58,20 +58,18 @@ const workoutLogConverter = {
 
 const personalRecordConverter = {
   toFirestore: (record: Omit<PersonalRecord, 'id' | 'userId'>) => {
-    return {
-      ...record,
-      date: Timestamp.fromDate(record.date),
-    };
+    const firestoreData: { [key: string]: any } = { ...record };
+    if (record.date) {
+      firestoreData.date = Timestamp.fromDate(record.date);
+    }
+    // No need to store userId in the document itself
+    delete (firestoreData as any).userId; 
+    return firestoreData;
   },
   fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): PersonalRecord => {
     const data = snapshot.data() || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
-    // The new model uses the normalized name as the ID, so we derive userId differently.
-    // However, to maintain backward compatibility, we check the old path structure first.
-    let userId = snapshot.ref.parent.parent?.id || ''; // old: /users/{userId}/personalRecords/{docId}
-    if (!userId || snapshot.ref.parent.id !== 'personalRecords') {
-      userId = snapshot.ref.parent.parent?.id || '';
-    }
+    const userId = snapshot.ref.parent.parent?.id || '';
 
     const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' 
         ? data.strengthLevel as StrengthLevel 
@@ -296,6 +294,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
     const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`);
     const LBS_TO_KG = 0.453592;
     let recordsAddedOrUpdated = 0;
+    let recordsNotImproved = 0;
 
     for (const newRecord of records) {
         const normalizedName = getNormalizedExerciseName(newRecord.exerciseName);
@@ -303,6 +302,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 
         const newRecordWeightInKg = newRecord.weightUnit === 'lbs' ? newRecord.weight * LBS_TO_KG : newRecord.weight;
         
+        // Find all existing records for this specific exercise to perform migration/consolidation
         const q = personalRecordsCollection.where('exerciseName', '==', newRecord.exerciseName);
         const existingRecordsSnapshot = await q.get();
         
@@ -311,12 +311,12 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 
         if (!existingRecordsSnapshot.empty) {
             existingRecordsSnapshot.forEach(doc => {
-                const docData = doc.data() as Omit<PersonalRecord, 'id' | 'userId'>;
+                const docData = personalRecordConverter.fromFirestore(doc as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
                 oldRecordRefsToDelete.push(doc.ref);
                 const existingWeightInKg = docData.weightUnit === 'lbs' ? docData.weight * LBS_TO_KG : docData.weight;
                 
                 if (!bestExistingRecord || existingWeightInKg > (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight)) {
-                    bestExistingRecord = { ...docData, id: doc.id, userId };
+                    bestExistingRecord = docData;
                 }
             });
         }
@@ -327,8 +327,10 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
             recordsAddedOrUpdated++;
             const batch = adminDb.batch();
 
+            // Delete all old, fragmented records for this exercise
             oldRecordRefsToDelete.forEach(ref => batch.delete(ref));
             
+            // Create a single new record with the normalized name as the ID
             const newDocRef = personalRecordsCollection.doc(normalizedName);
             const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
                 ...newRecord,
@@ -337,17 +339,21 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 
             batch.set(newDocRef, personalRecordConverter.toFirestore(recordWithLevel));
             await batch.commit();
+        } else {
+            recordsNotImproved++;
         }
     }
     
     if (recordsAddedOrUpdated > 0) {
-        return { success: true, message: `Successfully added or updated ${recordsAddedOrUpdated} personal record(s).` };
+        const notImprovedMessage = recordsNotImproved > 0 ? ` ${recordsNotImproved} record(s) were not an improvement.` : '';
+        return { success: true, message: `Successfully added or updated ${recordsAddedOrUpdated} personal record(s).${notImprovedMessage}` };
     } else {
         throw new Error("No new personal records to add. The submitted records were not better than your existing PRs.");
     }
 };
 
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
+  // 'id' is now the normalized exercise name
   const recordDocRef = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   const userProfile = await getUserProfile(userId);
   if (!userProfile) {
@@ -358,7 +364,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   if (!docSnapshot.exists) {
     throw new Error("Record not found.");
   }
-  const currentData = docSnapshot.data() as PersonalRecord;
+  const currentData = personalRecordConverter.fromFirestore(docSnapshot as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
   
   const updatedDataForCalc = { ...currentData, ...recordData };
   
