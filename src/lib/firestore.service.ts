@@ -23,7 +23,7 @@ import {
 import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
-import { format, isSameMonth } from 'date-fns';
+import { format, isSameMonth, subWeeks } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -37,20 +37,23 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, en
     if (forDateRange instanceof Date) {
       dateKey = format(forDateRange, 'yyyy-MM');
     } else {
-      dateKey = `${format(forDateRange.start, 'yyyy-MM-dd')}-to-${format(forDateRange.end, 'yyyy-MM-dd')}`;
+      // Create a key for the date range object
+      dateKey = `since-${format(forDateRange.start, 'yyyy-MM-dd')}`;
     }
+  } else {
+    dateKey = 'all';
   }
 
-  const queryKey = ['workouts', user?.uid, dateKey || 'all'];
+  const queryKey = ['workouts', user?.uid, dateKey];
 
   // --- Caching Strategy ---
   // - Past Months (History Page): Cache forever (`Infinity`). Data is historical and won't change.
-  // - Current Month (History Page): `staleTime: 0`. Always show cached data instantly, but trigger a background refetch to ensure it's up-to-date.
-  // - Current Week (Home Page): Handled by `useCurrentWeekWorkouts`.
-  // - All Workouts (Analysis/Profile Pages): Cache for 5 minutes. A reasonable balance for pages that need a full but not necessarily real-time overview.
-  let staleTime: number | undefined = 1000 * 60 * 5; // 5 minute default for "all"
+  // - Current Month (History Page): Cache for 1 hour. It's only updated from this page, and mutations invalidate it.
+  // - Date Range (AI Context): Cache for 5 minutes.
+  // - All Workouts (Analysis Page): Cache for 5 minutes.
+  let staleTime: number | undefined = 1000 * 60 * 5; // 5 minute default
   if (forDateRange && forDateRange instanceof Date) {
-      staleTime = isSameMonth(forDateRange, new Date()) ? 0 : Infinity;
+      staleTime = isSameMonth(forDateRange, new Date()) ? 1000 * 60 * 60 : Infinity; // 1 hour for current month
   }
 
   return useQuery<WorkoutLog[], Error>({ 
@@ -58,7 +61,7 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date }, en
     queryFn: () => {
       if (forDateRange && forDateRange instanceof Date) {
         return getWorkoutLogs(user!.uid, { forMonth: forDateRange });
-      } else if (forDateRange) { // This handles the { start, end } case for AI context
+      } else if (forDateRange && 'start' in forDateRange) { 
         return getWorkoutLogs(user!.uid, { since: forDateRange.start });
       }
       return getWorkoutLogs(user!.uid);
@@ -76,8 +79,6 @@ export function useCurrentWeekWorkouts(enabled: boolean = true) {
         queryKey,
         queryFn: () => getWorkoutLogs(user!.uid, { forCurrentWeek: true }),
         enabled: !!user && enabled,
-        // The home page doesn't need to be real-time. An hour is fine.
-        // It gets invalidated manually after logging a workout anyway.
         staleTime: 1000 * 60 * 60, // 1 hour cache
     });
 }
