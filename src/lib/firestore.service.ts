@@ -23,7 +23,7 @@ import {
 import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
-import { format } from 'date-fns';
+import { format, isSameMonth } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -31,14 +31,17 @@ import { useToast } from '@/hooks/use-toast';
 
 export function useWorkouts(forMonth?: Date, enabled: boolean = true) {
   const { user } = useAuth();
-  // The query key now includes the month and user ID, so each month's data is cached separately per user.
   const monthKey = forMonth ? format(forMonth, 'yyyy-MM') : 'all';
   const queryKey = ['workouts', user?.uid, monthKey];
+
+  const isCurrentMonth = forMonth ? isSameMonth(forMonth, new Date()) : false;
 
   return useQuery<WorkoutLog[], Error>({ 
     queryKey: queryKey, 
     queryFn: () => getWorkoutLogs(user!.uid, forMonth),
-    enabled: !!user && enabled
+    enabled: !!user && enabled,
+    // Cache previous months forever, but keep the current month fresh.
+    staleTime: isCurrentMonth ? 0 : Infinity,
   });
 }
 
