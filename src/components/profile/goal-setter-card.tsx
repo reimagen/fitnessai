@@ -26,6 +26,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 
 
 const goalSchema = z.object({
@@ -174,12 +175,17 @@ const constructUserProfileContext = (
     return context;
 };
 
+type AchieveGoalState = {
+  index: number;
+  date: string;
+};
 
 export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: GoalSetterCardProps) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const [acceptedSuggestions, setAcceptedSuggestions] = useState<string[]>([]);
+  const [achieveGoalState, setAchieveGoalState] = useState<AchieveGoalState | null>(null);
   const analyzeGoalsMutation = useAnalyzeGoals();
   const { data: personalRecords } = usePersonalRecords();
   
@@ -266,6 +272,25 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
 
     // Automatically switch to edit mode
     setIsEditing(true);
+  };
+  
+  const handleConfirmAchievement = () => {
+    if (achieveGoalState === null) return;
+    
+    const { index, date } = achieveGoalState;
+
+    if (!date || !isValid(new Date(date.replace(/-/g, '/')))) {
+        toast({ title: "Invalid Date", description: "Please select a valid date of achievement.", variant: "destructive" });
+        return;
+    }
+    
+    form.setValue(`goals.${index}.achieved`, true);
+    form.setValue(`goals.${index}.dateAchieved`, date, { shouldDirty: true });
+    
+    // Immediately submit the form to save the change
+    form.handleSubmit(onSubmit)();
+
+    setAchieveGoalState(null); // Close the dialog
   };
 
   const handleCancel = () => {
@@ -389,50 +414,59 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                             </FormItem>
                                         )}
                                         />
-                                        {isAchieved && (
-                                        <FormField
-                                            control={form.control}
-                                            name={`goals.${index}.dateAchieved`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                <FormLabel>Date Achieved</FormLabel>
-                                                <FormControl>
-                                                    <Input type="date" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                                </FormItem>
-                                            )}
-                                            />
-                                        )}
                                     </div>
 
                                     <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
                                         <div className="flex items-center gap-4">
-                                        <Button
-                                            type="button"
-                                            variant={isCurrentGoalPrimary ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => handleSetPrimary(index)}
-                                            disabled={isCurrentGoalPrimary}
-                                            className={cn("whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100")}
-                                        >
-                                            {isCurrentGoalPrimary ? <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> : "Set as Primary"}
-                                        </Button>
-                                        <FormField
-                                            control={form.control}
-                                            name={`goals.${index}.achieved`}
-                                            render={({ field: checkboxField }) => (
-                                            <FormItem className="flex flex-row items-center space-x-2">
-                                                <FormControl>
-                                                <Checkbox
-                                                    checked={checkboxField.value}
-                                                    onCheckedChange={checkboxField.onChange}
-                                                />
-                                                </FormControl>
-                                                <FormLabel className="font-normal !mt-0">Achieved</FormLabel>
-                                            </FormItem>
-                                            )}
-                                        />
+                                            <Button
+                                                type="button"
+                                                variant={isCurrentGoalPrimary ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => handleSetPrimary(index)}
+                                                disabled={isCurrentGoalPrimary}
+                                                className={cn("whitespace-nowrap", isCurrentGoalPrimary && "disabled:opacity-100")}
+                                            >
+                                                {isCurrentGoalPrimary ? <><Star className="mr-2 h-4 w-4 fill-current" /> Primary Goal</> : "Set as Primary"}
+                                            </Button>
+                                            
+                                            <Dialog onOpenChange={(open) => !open && setAchieveGoalState(null)}>
+                                                <DialogTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-green-600 border-green-600 hover:bg-green-50"
+                                                        onClick={() => setAchieveGoalState({ index, date: formatDate(new Date(), 'yyyy-MM-dd') })}
+                                                    >
+                                                        <CheckCircle className="mr-1 h-4 w-4" /> Mark as Achieved
+                                                    </Button>
+                                                </DialogTrigger>
+                                                {achieveGoalState?.index === index && (
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                        <DialogTitle>Congratulations!</DialogTitle>
+                                                        <DialogDescription>
+                                                            When did you achieve the goal: "{form.getValues(`goals.${index}.description`)}"?
+                                                        </DialogDescription>
+                                                        </DialogHeader>
+                                                        <div className="py-4">
+                                                            <Label htmlFor="achieved-date">Date Achieved</Label>
+                                                            <Input
+                                                                id="achieved-date"
+                                                                type="date"
+                                                                value={achieveGoalState.date}
+                                                                onChange={(e) => setAchieveGoalState({ ...achieveGoalState, date: e.target.value })}
+                                                            />
+                                                        </div>
+                                                        <DialogFooter>
+                                                             <DialogClose asChild>
+                                                                <Button type="button" variant="outline" onClick={() => setAchieveGoalState(null)}>Cancel</Button>
+                                                            </DialogClose>
+                                                            <Button type="button" onClick={handleConfirmAchievement}>Save Achievement</Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                )}
+                                            </Dialog>
                                         </div>
                                         <Button
                                         type="button"
@@ -456,7 +490,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                         <div className="flex justify-between items-start">
                                             <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
                                         </div>
-                                        <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
+                                        <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yy') : 'Not set'}</p>
                                     </div>
                                 </Card>
                              )
