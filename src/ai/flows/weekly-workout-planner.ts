@@ -67,7 +67,7 @@ Your primary directive is to create a plan that intelligently addresses the user
 3.  **Calculate Working Weights and Formatting - CRITICAL INSTRUCTION**:
     *   For any exercise that has a Personal Record (PR) listed in the user's context, you **MUST** calculate the suggested working weight as exactly **75% of the user's PR weight**. You **MUST NOT** use the PR weight as the working weight.
     *   You **MUST** round the final calculated weight to the nearest whole number.
-    *   **CRITICAL FORMATTING**: Your final output for the weight **MUST** be in the format `(XX lbs)` or `(XX kg)`. DO NOT include the calculation details in the final plan.
+    *   **CRITICAL FORMATTING**: Your final output for the weight **MUST** be in the format \`(XX lbs)\` or \`(XX kg)\`. DO NOT include the calculation details in the final plan.
         *   **CORRECT Example**: eGym Chest Press: 3 sets of 8-12 reps (88 lbs)
         *   **INCORRECT Example**: eGym Chest Press: 3 sets of 8-12 reps (75% of your PR, rounded to nearest whole number: 88 lbs)
     *   For exercises that do not have a PR, you must estimate an appropriate starting weight based on the user's overall profile, especially their experience level.
