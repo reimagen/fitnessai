@@ -185,6 +185,7 @@ type StrengthFinding = {
     lift2Unit: "kg" | "lbs";
     lift2Level: StrengthLevel;
     userRatio: string;
+    targetRatio: string;
     balancedRange: string;
     imbalanceFocus: ImbalanceFocus;
 };
@@ -354,6 +355,8 @@ export default function AnalysisPage() {
             ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
             : 'N/A';
         
+        const targetRatioDisplay = ratioStandards ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
+        
         let imbalanceFocus: ImbalanceFocus = 'Balanced';
         let ratioIsUnbalanced = false;
 
@@ -376,6 +379,7 @@ export default function AnalysisPage() {
             lift2Weight: lift2.weight,
             lift2Unit: lift2.weightUnit,
             userRatio: `${ratio.toFixed(2)}:1`,
+            targetRatio: targetRatioDisplay,
             balancedRange: balancedRangeDisplay,
             imbalanceFocus: imbalanceFocus,
             lift1Level,
@@ -387,13 +391,19 @@ export default function AnalysisPage() {
   }, [personalRecords, userProfile]);
 
   const handleAnalyzeStrength = () => {
+    // TypeScript guard: ensure userProfile is not null before proceeding
+    if (!userProfile) {
+        toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
+        return;
+    }
     // Filter out findings that don't have data
     const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
-    if (!userProfile) return;
-
     const analysisInput: StrengthImbalanceInput = {
-        clientSideFindings: validFindings,
+        clientSideFindings: validFindings.map(f => ({
+            ...f,
+            targetRatio: f.targetRatio, // Ensure targetRatio is passed
+        })),
         userProfile: {
             age: userProfile.age,
             gender: userProfile.gender,
@@ -756,7 +766,9 @@ const cardioAnalysisData = useMemo(() => {
             .map(ex => {
                 let name = toTitleCase(ex.name);
                 const exNameLower = ex.name.toLowerCase();
-                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical')) {
+
+                // Speed-based categorization for treadmill, elliptical, and ascent trainer
+                if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical') || exNameLower.includes('ascent trainer')) {
                     const distanceMi = (ex.distanceUnit === 'km' ? (ex.distance || 0) * 0.621371 : (ex.distance || 0));
                     
                     let durationHr = 0;
@@ -1004,8 +1016,12 @@ useEffect(() => {
 }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
   const handleAnalyzeProgression = () => {
+    if (!userProfile) {
+      toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
+      return;
+    }
     const sixWeeksAgo = subWeeks(new Date(), 6);
-    if (!workoutLogs || !userProfile) return;
+    if (!workoutLogs) return;
 
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
@@ -1561,8 +1577,8 @@ useEffect(() => {
                         </div>
                         <Tabs defaultValue="types" className="w-full">
                           <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="types">Cardio Types</TabsTrigger>
-                            <TabsTrigger value="amount">Cardio Amount</TabsTrigger>
+                            <TabsTrigger value="types">Cardio By Activity</TabsTrigger>
+                            <TabsTrigger value="amount">Cardio Over Time</TabsTrigger>
                           </TabsList>
                           <TabsContent value="types">
                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -1703,6 +1719,10 @@ useEffect(() => {
     
 
     
+
+
+
+
 
 
 

@@ -64,29 +64,10 @@ export function ManualPrForm({ onAdd, isSubmitting, allRecords }: ManualPrFormPr
 
   function onSubmit(values: ManualPrFormData) {
     const category = getExerciseCategory(values.exerciseName);
-    
-    // The `values.exerciseName` is the canonical name from the dropdown.
-    const canonicalName = values.exerciseName;
     const selectedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
-    // --- Duplicate Check ---
-    const recordExists = allRecords.some(record => 
-      getNormalizedExerciseName(record.exerciseName) === getNormalizedExerciseName(canonicalName) &&
-      startOfDay(record.date).getTime() === selectedDate.getTime()
-    );
-
-    if (recordExists) {
-      toast({
-        title: "Duplicate Record",
-        description: "A record for this exercise on this date already exists. Please edit the existing record or choose a different date.",
-        variant: "destructive",
-      });
-      return; // Stop the submission
-    }
-    // --- End Duplicate Check ---
-
     onAdd({
-      exerciseName: canonicalName,
+      exerciseName: values.exerciseName,
       weight: values.weight,
       weightUnit: values.weightUnit,
       date: selectedDate,

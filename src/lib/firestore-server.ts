@@ -4,8 +4,8 @@
 import { adminDb } from './firebase-admin';
 import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
-import { startOfMonth, endOfMonth, format } from 'date-fns';
-import { getStrengthLevel } from './strength-standards';
+import { startOfMonth, endOfMonth, format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
 import { cache } from 'react';
 
 // --- Data Converters ---
@@ -58,16 +58,19 @@ const workoutLogConverter = {
 
 const personalRecordConverter = {
   toFirestore: (record: Omit<PersonalRecord, 'id' | 'userId'>) => {
-    return {
-      ...record,
-      date: Timestamp.fromDate(record.date),
-    };
+    const firestoreData: { [key: string]: any } = { ...record };
+    if (record.date) {
+      firestoreData.date = Timestamp.fromDate(record.date);
+    }
+    // No need to store userId in the document itself
+    delete (firestoreData as any).userId; 
+    return firestoreData;
   },
   fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): PersonalRecord => {
     const data = snapshot.data() || {};
     const category = data.category && typeof data.category === 'string' ? data.category as ExerciseCategory : 'Other';
     const userId = snapshot.ref.parent.parent?.id || '';
-    
+
     const strengthLevel = data.strengthLevel && typeof data.strengthLevel === 'string' 
         ? data.strengthLevel as StrengthLevel 
         : 'N/A';
@@ -218,20 +221,34 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 
 // --- Firestore Service Functions ---
 
-export const getWorkoutLogs = async (userId: string, forMonth?: Date): Promise<WorkoutLog[]> => {
+export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean; since?: Date }): Promise<WorkoutLog[]> => {
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
   
   const baseQuery = workoutLogsCollection;
 
-  if (forMonth) {
-    const startDate = startOfMonth(forMonth);
-    const endDate = endOfMonth(forMonth);
+  if (options?.forMonth) {
+    const startDate = startOfMonth(options.forMonth);
+    const endDate = endOfMonth(options.forMonth);
     q = baseQuery
       .where('date', '>=', startDate)
       .where('date', '<=', endDate)
       .orderBy('date', 'desc');
-  } else {
+  } else if (options?.forCurrentWeek) {
+    const today = new Date();
+    const startDate = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+    const endDate = endOfWeek(today, { weekStartsOn: 0 });   // Saturday
+    q = baseQuery
+      .where('date', '>=', startDate)
+      .where('date', '<=', endDate)
+      .orderBy('date', 'desc');
+  } else if (options?.since) {
+    q = baseQuery
+      .where('date', '>=', options.since)
+      .orderBy('date', 'desc');
+  }
+  else {
+    // Default to fetching all logs if no specific range is given
     q = baseQuery.orderBy('date', 'desc');
   }
   
@@ -277,66 +294,104 @@ export const deleteWorkoutLog = async (userId: string, id: string): Promise<void
 // Personal Records
 export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
   const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
-  const q = personalRecordsCollection.orderBy('exerciseName', 'asc');
-  const snapshot = await q.get();
-  // Using the converter ensures that the id and userId are correctly populated.
+  // No ordering needed as we just want all records for client-side processing
+  const snapshot = await personalRecordsCollection.get();
   return snapshot.docs.map(doc => doc.data());
 });
 
-export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]) => {
-  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter);
-  const userProfile = await getUserProfile(userId);
-  if (!userProfile) {
-    throw new Error("User profile not found. Cannot calculate strength levels.");
-  }
+export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<{ success: boolean; message: string }> => {
+    const userProfile = await getUserProfile(userId);
+    if (!userProfile) {
+        throw new Error("User profile not found. Cannot calculate strength levels.");
+    }
+    
+    const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`);
+    const LBS_TO_KG = 0.453592;
+    let recordsAddedOrUpdated = 0;
+    let recordsNotImproved = 0;
 
-  const batch = adminDb.batch();
-  records.forEach(record => {
-    const newDocRef = personalRecordsCollection.doc();
-    const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
-      ...record,
-      strengthLevel: getStrengthLevel({ ...record, userId } as PersonalRecord, userProfile),
-    };
-    batch.set(newDocRef, recordWithLevel);
-  });
-  await batch.commit();
+    for (const newRecord of records) {
+        const normalizedName = getNormalizedExerciseName(newRecord.exerciseName);
+        if (!normalizedName) continue;
+
+        const newRecordWeightInKg = newRecord.weightUnit === 'lbs' ? newRecord.weight * LBS_TO_KG : newRecord.weight;
+        
+        // Find all existing records for this specific exercise to perform migration/consolidation
+        const q = personalRecordsCollection.where('exerciseName', '==', newRecord.exerciseName);
+        const existingRecordsSnapshot = await q.get();
+        
+        let bestExistingRecord: PersonalRecord | null = null;
+        const oldRecordRefsToDelete: FirebaseFirestore.DocumentReference[] = [];
+
+        if (!existingRecordsSnapshot.empty) {
+            existingRecordsSnapshot.forEach(doc => {
+                const docData = personalRecordConverter.fromFirestore(doc as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
+                oldRecordRefsToDelete.push(doc.ref);
+                const existingWeightInKg = docData.weightUnit === 'lbs' ? docData.weight * LBS_TO_KG : docData.weight;
+                
+                if (!bestExistingRecord || existingWeightInKg > (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight)) {
+                    bestExistingRecord = docData;
+                }
+            });
+        }
+        
+        const bestExistingWeightInKg = bestExistingRecord ? (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight) : -1;
+
+        if (newRecordWeightInKg > bestExistingWeightInKg) {
+            recordsAddedOrUpdated++;
+            const batch = adminDb.batch();
+
+            // Delete all old, fragmented records for this exercise
+            oldRecordRefsToDelete.forEach(ref => batch.delete(ref));
+            
+            // Create a single new record with the normalized name as the ID
+            const newDocRef = personalRecordsCollection.doc(normalizedName);
+            const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
+                ...newRecord,
+                strengthLevel: getStrengthLevel({ ...newRecord, userId } as PersonalRecord, userProfile),
+            };
+
+            batch.set(newDocRef, personalRecordConverter.toFirestore(recordWithLevel));
+            await batch.commit();
+        } else {
+            recordsNotImproved++;
+        }
+    }
+    
+    if (recordsAddedOrUpdated > 0) {
+        const notImprovedMessage = recordsNotImproved > 0 ? ` ${recordsNotImproved} record(s) were not an improvement.` : '';
+        return { success: true, message: `Successfully added or updated ${recordsAddedOrUpdated} personal record(s).${notImprovedMessage}` };
+    } else {
+        throw new Error("No new personal records to add. The submitted records were not better than your existing PRs.");
+    }
 };
 
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
-  const recordDoc = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
-  
-  const currentRecordSnapshot = await recordDoc.withConverter(personalRecordConverter).get() as DocumentSnapshot<PersonalRecord>;
-  const currentRecordData = currentRecordSnapshot.data();
-
-  if (!currentRecordData) {
-    throw new Error("Document not found.");
+  // 'id' is now the normalized exercise name
+  const recordDocRef = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
+  const userProfile = await getUserProfile(userId);
+  if (!userProfile) {
+    throw new Error("User profile not found, cannot update strength level.");
   }
+
+  const docSnapshot = await recordDocRef.get();
+  if (!docSnapshot.exists) {
+    throw new Error("Record not found.");
+  }
+  const currentData = personalRecordConverter.fromFirestore(docSnapshot as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
   
-  // Start with the new data.
-  const dataToUpdate: { [key:string]: any } = { ...recordData };
-  let dateForCalc: Date = currentRecordData.date;
+  const updatedDataForCalc = { ...currentData, ...recordData };
   
-  // If a new Date object is provided, convert it to a Firestore Timestamp.
-  // This is now aligned with the 'add' logic.
+  const newLevel = getStrengthLevel(updatedDataForCalc, userProfile);
+  
+  const dataToUpdate: { [key:string]: any } = { ...recordData, strengthLevel: newLevel };
   if (recordData.date) {
     dataToUpdate.date = Timestamp.fromDate(recordData.date);
-    dateForCalc = recordData.date;
   }
 
-  // Construct a full PR object for the strength level calculation, ensuring all required fields are present.
-  const updatedRecordForCalc: PersonalRecord = {
-      ...currentRecordData, // Start with the existing full record
-      ...recordData,         // Apply the updates
-      date: dateForCalc,        // Use the correct date object
-  };
-  
-  const userProfile = await getUserProfile(userId);
-  if (userProfile) {
-      dataToUpdate.strengthLevel = getStrengthLevel(updatedRecordForCalc, userProfile);
-  }
-
-  await recordDoc.update(dataToUpdate);
+  await recordDocRef.update(dataToUpdate);
 };
+
 
 export const clearAllPersonalRecords = async (userId: string): Promise<void> => {
     const collectionRef = adminDb.collection(`users/${userId}/personalRecords`);
