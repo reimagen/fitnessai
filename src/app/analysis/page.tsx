@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList } from 'recharts';
@@ -885,7 +886,7 @@ const cardioAnalysisData = useMemo(() => {
             activities.forEach(activity => {
                 total += dataPoint[activity] || 0;
             });
-            dataPoint.total = total;
+            dataPoint.total = Math.round(total);
         });
         return finalizedData;
     };
@@ -964,7 +965,7 @@ const cardioAnalysisData = useMemo(() => {
                 yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
             });
             const finalizedData = processAndFinalizeData(yearlyData);
-            cardioAmountChartData = Array.from(finalizedData.entries()).sort(([a], [b]) => a.dateLabel.localeCompare(b.dateLabel)).map(([, data]) => data);
+            cardioAmountChartData = Array.from(finalizedData.entries()).sort(([, a], [, b]) => a.dateLabel.localeCompare(b.dateLabel)).map(([, data]) => data);
             break;
         }
     }
@@ -1729,6 +1730,7 @@ useEffect(() => {
     
 
     
+
 
 
 
