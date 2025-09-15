@@ -27,6 +27,7 @@ import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestor
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 
 const goalSchema = z.object({
