@@ -7,7 +7,7 @@ import Link from "next/link";
 import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
 import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
-import { useWorkouts, useUserProfile } from "@/lib/firestore.service";
+import { useCurrentWeekWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,12 @@ export default function HomePage() {
   const profileNotFound = profileResult?.notFound === true;
   
   // Only fetch workouts if the profile has been found.
-  // This prevents errors for new users whose security rules may depend on a profile existing.
   const enableDataFetching = !loadingProfile && !profileNotFound;
   const {
     data: workoutLogs = [],
     isLoading: loadingWorkouts,
     isError: errorWorkouts,
-  } = useWorkouts(undefined, enableDataFetching);
+  } = useCurrentWeekWorkouts(enableDataFetching);
 
   const isLoading = loadingProfile || (enableDataFetching && loadingWorkouts);
 

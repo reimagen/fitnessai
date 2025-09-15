@@ -24,9 +24,19 @@ type DailyCardioData = {
   activities: Map<CardioActivity, ActivityStats>; 
 };
 
-const normalizeCardioActivity = (exerciseName: string): CardioActivity | null => {
+const normalizeCardioActivity = (exerciseName: string, distanceMi: number, durationHours: number): CardioActivity | null => {
   const name = exerciseName.toLowerCase();
-  if (name.includes('run') || name.includes('treadmill')) return 'Run';
+
+  // Speed-based categorization for treadmill, elliptical, and ascent trainer
+  if (name.includes('treadmill') || name.includes('elliptical') || name.includes('ascent trainer')) {
+    if (durationHours > 0) {
+      const speedMph = distanceMi / durationHours;
+      return speedMph > 4.0 ? 'Run' : 'Walk';
+    }
+    return 'Walk'; // Default to Walk if no duration is provided
+  }
+  
+  if (name.includes('run')) return 'Run';
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
   if (name.includes('climbmill')) return 'Climbmill';
@@ -62,11 +72,18 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
 
         log.exercises.forEach(ex => {
           if (ex.category === 'Cardio') {
-            const activityType = normalizeCardioActivity(ex.name);
+            const distanceMi = getDistanceInMiles(ex.distance, ex.distanceUnit);
+            let durationHours = 0;
+            if (ex.duration) {
+              if (ex.durationUnit === 'min') durationHours = ex.duration / 60;
+              else if (ex.durationUnit === 'sec') durationHours = ex.duration / 3600;
+              else if (ex.durationUnit === 'hr') durationHours = ex.duration;
+            }
+
+            const activityType = normalizeCardioActivity(ex.name, distanceMi, durationHours);
             if (!activityType) return;
 
             const calories = ex.calories || 0;
-            const distanceMi = getDistanceInMiles(ex.distance, ex.distanceUnit);
             
             dayData.totalCalories += calories;
 
