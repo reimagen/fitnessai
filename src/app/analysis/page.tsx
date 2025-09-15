@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line, Label } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -878,6 +878,18 @@ const cardioAnalysisData = useMemo(() => {
     const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
     const initialActivityData = Object.fromEntries(activities.map(act => [act, 0]));
 
+    const processAndFinalizeData = (dataMap: Map<string, any>) => {
+        const finalizedData = Array.from(dataMap.values());
+        finalizedData.forEach(dataPoint => {
+            let total = 0;
+            activities.forEach(activity => {
+                total += dataPoint[activity] || 0;
+            });
+            dataPoint.total = total;
+        });
+        return finalizedData;
+    };
+
     switch(timeRange) {
         case 'weekly': {
             const weekStart = startOfWeek(today, { weekStartsOn: 0 });
@@ -891,7 +903,7 @@ const cardioAnalysisData = useMemo(() => {
                     dayData[ex.name] = (dayData[ex.name] || 0) + (ex.calories || 0);
                 }
             });
-            cardioAmountChartData = Array.from(dailyData.values());
+            cardioAmountChartData = processAndFinalizeData(dailyData);
             break;
         }
         case 'monthly': {
@@ -918,7 +930,7 @@ const cardioAnalysisData = useMemo(() => {
                     weekData[ex.name] = (weekData[ex.name] || 0) + (ex.calories || 0);
                 }
             });
-            cardioAmountChartData = Array.from(weeklyData.values());
+            cardioAmountChartData = processAndFinalizeData(weeklyData);
             break;
         }
         case 'yearly': {
@@ -931,8 +943,9 @@ const cardioAnalysisData = useMemo(() => {
                 const monthData = monthlyData.get(monthKey);
                 monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
             });
+            const finalizedData = processAndFinalizeData(monthlyData);
              // Only show months that have data
-            cardioAmountChartData = Array.from(monthlyData.values())
+            cardioAmountChartData = finalizedData
                 .filter(month => Object.values(month).some(val => typeof val === 'number' && val > 0))
                 .sort((a,b) => {
                     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -950,7 +963,8 @@ const cardioAnalysisData = useMemo(() => {
                 const yearData = yearlyData.get(yearKey);
                 yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
             });
-            cardioAmountChartData = Array.from(yearlyData.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([, data]) => data);
+            const finalizedData = processAndFinalizeData(yearlyData);
+            cardioAmountChartData = Array.from(finalizedData.entries()).sort(([a], [b]) => a.dateLabel.localeCompare(b.dateLabel)).map(([, data]) => data);
             break;
         }
     }
@@ -1663,7 +1677,11 @@ useEffect(() => {
                                             )
                                         }} />
                                         {Object.keys(cardioAnalysisData.statsByActivity).map(activity => (
-                                            <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />} />
+                                            <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />}>
+                                              {Object.keys(cardioAnalysisData.statsByActivity).indexOf(activity) === Object.keys(cardioAnalysisData.statsByActivity).length - 1 && (
+                                                <LabelList dataKey="total" position="top" formatter={(value: number) => value > 0 ? value.toLocaleString() : ''} className="text-xs fill-foreground font-semibold" />
+                                              )}
+                                            </Bar>
                                         ))}
                                     </BarChart>
                                 </ResponsiveContainer>
@@ -1719,6 +1737,7 @@ useEffect(() => {
     
 
     
+
 
 
 
