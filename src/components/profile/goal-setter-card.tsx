@@ -491,7 +491,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                         <div className="flex justify-between items-start">
                                             <p className="font-semibold text-primary">{field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}</p>
                                         </div>
-                                        <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yy') : 'Not set'}</p>
+                                        <p className="text-muted-foreground mt-1">Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'Not set'}</p>
                                     </div>
                                 </Card>
                              )
