@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw, Undo2 } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
@@ -550,7 +550,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                                     className="text-muted-foreground hover:bg-secondary h-8 w-8"
                                                     aria-label={`Un-achieve goal: ${field.description}`}
                                                 >
-                                                    <Edit2 className="h-4 w-4" />
+                                                    <Undo2 className="h-4 w-4" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>
