@@ -28,6 +28,8 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "default",
     title: APP_NAME,
+    // Add this to link the apple touch icon
+    startupImage: [],
   },
   formatDetection: {
     telephone: false,
@@ -62,7 +64,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head />
+      <head>
+        <link rel="apple-touch-icon" href="/apple-icon.png"></link>
+      </head>
       <body className={`${inter.variable} font-body antialiased`}>
         <QueryProvider>
           <AuthProvider>
