@@ -418,7 +418,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
 
                                     <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                                             <Button
                                                 type="button"
                                                 variant={isCurrentGoalPrimary ? "default" : "outline"}
