@@ -19,7 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw, Undo2 } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
-import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
+import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -171,6 +171,19 @@ const constructUserProfileContext = (
       });
     } else {
       context += "- No active goals listed.\n";
+    }
+
+    const oneMonthAgo = subMonths(new Date(), 1);
+    const recentAchievedGoals = (userProfile.fitnessGoals || [])
+        .filter(g => g.achieved && g.dateAchieved && g.dateAchieved >= oneMonthAgo);
+
+    context += "\n--- Recently Achieved Goals (Last 30 Days) ---\n";
+    if (recentAchievedGoals.length > 0) {
+        recentAchievedGoals.forEach(goal => {
+            context += `- ${goal.description} (Achieved on: ${formatDate(goal.dateAchieved!, 'yyyy-MM-dd')})\n`;
+        });
+    } else {
+        context += "- No relevant goals achieved in the last 30 days.\n";
     }
 
     return context;
