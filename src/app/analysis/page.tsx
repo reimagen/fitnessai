@@ -584,7 +584,7 @@ export default function AnalysisPage() {
     logsForPeriod.forEach(log => { 
         log.exercises.forEach(ex => {
             const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
-            repsByCat[camelCaseCategory] += ex.reps || 0;
+            repsByCat[camelCaseCategory] += (ex.reps || 0) * (ex.sets || 0);
             caloriesByCat[camelCaseCategory] += ex.calories || 0;
         });
     });
@@ -1730,6 +1730,7 @@ useEffect(() => {
     
 
     
+
 
 
 
