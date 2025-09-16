@@ -550,7 +550,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                                     className="text-muted-foreground hover:bg-secondary h-8 w-8"
                                                     aria-label={`Un-achieve goal: ${field.description}`}
                                                 >
-                                                    <RefreshCw className="h-4 w-4" />
+                                                    <Edit2 className="h-4 w-4" />
                                                 </Button>
                                             </TooltipTrigger>
                                             <TooltipContent>
