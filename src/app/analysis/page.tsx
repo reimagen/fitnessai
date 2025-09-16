@@ -1305,7 +1305,7 @@ useEffect(() => {
                                 <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
                             </CardTitle>
                             <CardDescription className="mt-2">
-                              Applying a balanced approach to strength training protects you from injury.
+                              Applying a balanced approach to strength training protects you from injury. Uses your PRs for analysis.
                               {generatedDate && (
                                   <span className="block text-xs mt-1 text-muted-foreground/80">
                                       Last analysis on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}

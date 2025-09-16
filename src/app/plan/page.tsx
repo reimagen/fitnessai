@@ -9,7 +9,7 @@ import MarkdownRenderer from '@/components/shared/MarkdownRenderer';
 import { generateWeeklyWorkoutPlanAction } from "./actions";
 import type { UserProfile, WorkoutLog, PersonalRecord, StrengthImbalanceOutput, StoredWeeklyPlan } from "@/lib/types";
 import { useUserProfile, useWorkouts, usePersonalRecords, useUpdateUserProfile } from "@/lib/firestore.service";
-import { format, subWeeks, nextSunday as getNextSunday, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { format, subWeeks, nextSunday as getNextSunday, startOfWeek, endOfWeek, isWithinInterval, subDays } from 'date-fns';
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -128,8 +128,8 @@ const constructUserProfileContext = (
         
         // Find the start of the current week (Sunday)
         const startOfThisWeek = startOfWeek(today, { weekStartsOn: 0 });
-        // The most recent fully completed week is the one that ended before the start of this week.
-        const endOfLastCompletedWeek = subWeeks(startOfThisWeek, 1);
+        // The most recent completed week ended yesterday (or Saturday if today is Sunday).
+        const endOfLastCompletedWeek = subDays(startOfThisWeek, 1);
         
         for (let i = 0; i < 4; i++) {
             // Go back i weeks from the end of the last completed week.
