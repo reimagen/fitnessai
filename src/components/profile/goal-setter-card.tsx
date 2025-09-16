@@ -294,6 +294,15 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     setAchieveGoalState(null); // Close the dialog
   };
 
+  const handleUnachieve = (index: number) => {
+    form.setValue(`goals.${index}.achieved`, false);
+    form.setValue(`goals.${index}.dateAchieved`, "", { shouldDirty: true });
+    toast({
+      title: "Goal Reactivated",
+      description: "This goal has been moved back to your active list.",
+    });
+  };
+
   const handleCancel = () => {
     form.reset(createFormValues(initialGoals));
     setIsEditing(false);
@@ -522,23 +531,51 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                             <div className="flex flex-col">
                                 <p className="font-medium text-foreground">{field.description}</p>
                                 <p className="text-xs text-muted-foreground">
-                                    Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                                    Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'N/A'}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                                    Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMMM d, yyyy') : 'N/A'}
                                 </p>
                             </div>
                             {isEditing && (
-                                <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => remove(index)}
-                                className="text-destructive hover:bg-destructive/10 h-8 w-8"
-                                aria-label={`Remove goal: ${field.description}`}
-                                >
-                                <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleUnachieve(index)}
+                                                    className="text-muted-foreground hover:bg-secondary h-8 w-8"
+                                                    aria-label={`Un-achieve goal: ${field.description}`}
+                                                >
+                                                    <RefreshCw className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Move to Active Goals</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => remove(index)}
+                                                    className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                                                    aria-label={`Remove goal: ${field.description}`}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Delete Goal Permanently</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             )}
                         </div>
                       )
