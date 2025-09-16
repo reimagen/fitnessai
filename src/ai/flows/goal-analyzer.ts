@@ -14,7 +14,7 @@ import {z} from 'genkit';
 // --- Zod Schemas and Types ---
 
 const AnalyzeFitnessGoalsInputSchema = z.object({
-  userProfileContext: z.string().describe("A comprehensive string containing the user's fitness goals, personal statistics, relevant personal records, and recent workout history summaries to be used for the goal analysis."),
+  userProfileContext: z.string().describe("A comprehensive string containing the user's fitness goals, personal statistics, relevant personal records, recent workout history summaries, and recently achieved goals to be used for the goal analysis."),
 });
 export type AnalyzeFitnessGoalsInput = z.infer<typeof AnalyzeFitnessGoalsInputSchema>;
 
@@ -70,27 +70,28 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
         Your output MUST be a JSON object. For each goal, provide a detailed analysis.
 
         **CRITICAL INSTRUCTIONS FOR YOUR ANALYSIS:**
-        1.  **Use Performance Data First**: Your most important task is to base your timeline and goal suggestions on the user's actual performance data provided in the context (Personal Records and Workout History).
+        1.  **Prioritize Recent Achievements**: Before any other data, you MUST check the 'Recently Achieved Goals' section. If an active goal is a direct progression from a recently achieved one (e.g., active goal "do 5 pull-ups" and recent achievement "do 1 pull-up"), you MUST propose a significantly shorter and more aggressive timeline. It is a major failure to suggest a long, beginner-style timeline in this scenario. Your 'analysis' text MUST explicitly state that the shorter timeline is due to their recent success.
+        2.  **Use Performance Data Second**: If no recent achievement is relevant, your next most important task is to base your timeline and goal suggestions on the user's actual performance data provided in the context (Personal Records and Workout History).
             *   **Timeline Calculation**: If the context includes a relevant PR (e.g., a "Lat Pulldown" PR for a "do a pull-up" goal) or a recent workout summary (e.g., "average run distance 3.5 miles" for a "run 5 miles" goal), you **MUST** use this information to create a realistic timeline. A user who is closer to their goal should have a shorter timeline.
             *   **Reference the Data**: In your 'analysis' text, you **MUST** explicitly reference the performance data you used. For example: "Since your Lat Pulldown PR is already close to your bodyweight, achieving your first pull-up is a realistic short-term goal." or "Based on your consistent 3.5-mile runs, progressing to 5 miles over the next 6 weeks is an achievable target."
-        2.  **Respect The User's Original Intent**: Your primary directive is to make the user's goal SMART, not to change its fundamental nature.
+        3.  **Respect The User's Original Intent**: Your primary directive is to make the user's goal SMART, not to change its fundamental nature.
             *   **Milestone Goals**: If a user's goal is to achieve a single milestone (e.g., "Do 1 pull-up", "Run a 5k"), your 'suggestedGoal' MUST focus on that single achievement. DO NOT escalate it to a volume-based goal.
                 *   **GOOD Example**: Original: "Do a pull up". Suggested: "Achieve 1 strict, unassisted pull-up in 12 weeks."
                 *   **BAD Example**: Original: "Do a pull up". Suggested: "Complete 3 sets of 5 pull-ups." This is incorrect as it changes the user's core objective from a milestone to a workout routine.
             *   **Vague Goals**: If a goal is vague like "Tone up", you should make it more concrete and measurable, like "Decrease body fat by 2% and increase squat strength by 15 lbs in 10 weeks."
-        3.  **Handle Missing Data Gracefully**: If an optional field like 'Body Fat' is "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more optional stats will yield even more personalized advice.
-        4.  **Acknowledge Primary Goal**: In the 'overallSummary', you MUST start by acknowledging the user's primary goal.
-        5.  **Determine Goal Relationships**: For each goal, you MUST determine its relationship to the primary goal.
+        4.  **Handle Missing Data Gracefully**: If an optional field like 'Body Fat' is "Not Provided", you MUST still provide the best analysis possible with the available information. In your 'analysis' text, you can mention that providing more optional stats will yield even more personalized advice.
+        5.  **Acknowledge Primary Goal**: In the 'overallSummary', you MUST start by acknowledging the user's primary goal.
+        6.  **Determine Goal Relationships**: For each goal, you MUST determine its relationship to the primary goal.
             *   For the primary goal itself, you **MUST** set 'relationshipToPrimary' to "Primary".
             *   For other goals, you **MUST** set 'relationshipToPrimary' to "Supports", "Neutral", or "Conflicts". For example, "increase bench press" *Supports* a primary goal of "build muscle". "Improve flexibility" is likely *Neutral* to a primary goal of "lose 10 lbs".
-        6.  **Provide Expanded Explanations**: In the 'analysis' for each suggestion, you MUST provide the "why" behind your numbers by referencing industry or science-backed data. Crucially, your analysis MUST explicitly incorporate the user's gender and/or experience level (if they are provided) to make it personal.
+        7.  **Provide Expanded Explanations**: In the 'analysis' for each suggestion, you MUST provide the "why" behind your numbers by referencing industry or science-backed data. Crucially, your analysis MUST explicitly incorporate the user's gender and/or experience level (if they are provided) to make it personal.
             *   **For "Lose Body Fat"**: If the user has provided a body fat percentage, use it. Your 'suggestedGoal' should be something like "Reduce body fat from 28% to 25% over the next 3 months." Your 'analysis' MUST then explain this by explicitly mentioning their gender (if available). Example for a Female user: "For women, a healthy body fat range is typically 25-31%. A 3% drop over 3 months is a safe, sustainable rate of fat loss, which is why aiming for 25% is an excellent and achievable first step for you." Example for a Male user: "For men, a healthy body fat range is 18-24%. Reducing your body fat by 3% over 3 months is a sustainable rate of fat loss that aligns with your intermediate level."
             *   **For "Build Muscle" - CRITICAL**: You MUST tailor your suggestion and analysis based on the user's gender and experience level (if provided).
                 *   **Example for a Male User (Intermediate)**: 'suggestedGoal': "Gain 5-6 lbs of lean mass over the next 3 months." 'analysis': "As an intermediate male lifter, gaining 0.5 lbs per week is a realistic rate for lean muscle growth without excessive fat gain. This target of 5-6 lbs over 12 weeks aligns perfectly with that evidence-based approach."
                 *   **Example for a Female User (Intermediate)**: 'suggestedGoal': "Gain 2-3 lbs of lean mass over the next 3 months." 'analysis': "For an intermediate female lifter, a sustainable rate of muscle gain is about 0.5-1 lb per month. This target of 2-3 lbs over 3 months is an excellent, evidence-based goal that prioritizes lean growth."
-        7.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
-        8.  **Calculate Timeline in Days**: If your 'suggestedGoal' includes a time frame (e.g., "in 8 weeks", "over 3 months"), you **MUST** calculate the total number of days for that timeline and put it in the 'suggestedTimelineInDays' field. Use the conversion: 1 week = 7 days, 1 month = 30 days. For example, "8 weeks" is 56 days. "3 months" is 90 days. "10 weeks" is 70 days. If your goal has no timeline, you must omit this field.
-        9.  **Tailor to Experience**: Adjust timelines and targets based on the user's experience level (if provided). Beginners make faster progress. Advanced lifters have slower, more incremental goals. 
+        8.  **Quantify Everything**: Always add numbers and timelines. Instead of "increase strength," say "Increase bench press by 20 lbs in 8 weeks."
+        9.  **Calculate Timeline in Days**: If your 'suggestedGoal' includes a time frame (e.g., "in 8 weeks", "over 3 months"), you **MUST** calculate the total number of days for that timeline and put it in the 'suggestedTimelineInDays' field. Use the conversion: 1 week = 7 days, 1 month = 30 days. For example, "8 weeks" is 56 days. "3 months" is 90 days. "10 weeks" is 70 days. If your goal has no timeline, you must omit this field.
+        10. **Tailor to Experience**: Adjust timelines and targets based on the user's experience level (if provided). Beginners make faster progress. Advanced lifters have slower, more incremental goals. 
 
         **Your Response Fields:**
         1.  **overallSummary**: A brief (2-3 sentence) high-level summary. Start with encouragement, acknowledge the primary goal, then mention if there are conflicts.

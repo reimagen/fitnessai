@@ -16,10 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw } from "lucide-react";
+import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, Lightbulb, AlertTriangle, CheckCircle, Check, RefreshCw, Undo2 } from "lucide-react";
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
-import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks } from "date-fns";
+import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks, subMonths } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -173,6 +173,19 @@ const constructUserProfileContext = (
       context += "- No active goals listed.\n";
     }
 
+    const oneMonthAgo = subMonths(new Date(), 1);
+    const recentAchievedGoals = (userProfile.fitnessGoals || [])
+        .filter(g => g.achieved && g.dateAchieved && g.dateAchieved >= oneMonthAgo);
+
+    context += "\n--- Recently Achieved Goals (Last 30 Days) ---\n";
+    if (recentAchievedGoals.length > 0) {
+        recentAchievedGoals.forEach(goal => {
+            context += `- ${goal.description} (Achieved on: ${formatDate(goal.dateAchieved!, 'yyyy-MM-dd')})\n`;
+        });
+    } else {
+        context += "- No relevant goals achieved in the last 30 days.\n";
+    }
+
     return context;
 };
 
@@ -292,6 +305,15 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     form.handleSubmit(onSubmit)();
 
     setAchieveGoalState(null); // Close the dialog
+  };
+
+  const handleUnachieve = (index: number) => {
+    form.setValue(`goals.${index}.achieved`, false);
+    form.setValue(`goals.${index}.dateAchieved`, "", { shouldDirty: true });
+    toast({
+      title: "Goal Reactivated",
+      description: "This goal has been moved back to your active list.",
+    });
   };
 
   const handleCancel = () => {
@@ -418,7 +440,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                     </div>
 
                                     <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                                             <Button
                                                 type="button"
                                                 variant={isCurrentGoalPrimary ? "default" : "outline"}
@@ -522,23 +544,51 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                             <div className="flex flex-col">
                                 <p className="font-medium text-foreground">{field.description}</p>
                                 <p className="text-xs text-muted-foreground">
-                                    Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                                    Target: {field.targetDate ? formatDate(new Date(field.targetDate.replace(/-/g, '/')), 'MMMM d, yyyy') : 'N/A'}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMM d, yyyy') : 'N/A'}
+                                    Achieved on: {field.dateAchieved ? formatDate(new Date(field.dateAchieved.replace(/-/g, '/')), 'MMMM d, yyyy') : 'N/A'}
                                 </p>
                             </div>
                             {isEditing && (
-                                <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => remove(index)}
-                                className="text-destructive hover:bg-destructive/10 h-8 w-8"
-                                aria-label={`Remove goal: ${field.description}`}
-                                >
-                                <Trash2 className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center gap-1">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => handleUnachieve(index)}
+                                                    className="text-muted-foreground hover:bg-secondary h-8 w-8"
+                                                    aria-label={`Un-achieve goal: ${field.description}`}
+                                                >
+                                                    <Undo2 className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Move to Active Goals</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => remove(index)}
+                                                    className="text-destructive hover:bg-destructive/10 h-8 w-8"
+                                                    aria-label={`Remove goal: ${field.description}`}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Delete Goal Permanently</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </div>
                             )}
                         </div>
                       )
