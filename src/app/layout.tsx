@@ -23,13 +23,10 @@ export const metadata: Metadata = {
     template: `%s - ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
     title: APP_NAME,
-    // Add this to link the apple touch icon
-    startupImage: [],
   },
   formatDetection: {
     telephone: false,
@@ -64,9 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="apple-touch-icon" href="/apple-icon.png"></link>
-      </head>
+      <head />
       <body className={`${inter.variable} font-body antialiased`}>
         <QueryProvider>
           <AuthProvider>
