@@ -1,6 +1,6 @@
 
 import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+import {googleAI} from '@genkit-ai/google-genai';
 
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -30,5 +30,5 @@ export const ai = genkit({
   plugins: [
     googleAI({ apiKey: geminiApiKey }), // Explicitly pass the API key
   ],
-  model: 'googleai/gemini-1.5-flash-latest', // Default model
+  model: 'googleai/gemini-2.5-flash', // Default model
 });
