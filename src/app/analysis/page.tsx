@@ -599,7 +599,9 @@ export default function AnalysisPage() {
             if (ex.weight && ex.sets && ex.reps) totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
             if (ex.category === 'Cardio' && ex.distance) {
                 let distMi = ex.distance;
-                if (ex.distanceUnit === 'km') distMi *= 0.621371; else if (ex.distanceUnit === 'ft') distMi *= 0.000189394;
+                if (ex.distanceUnit === 'km') distMi *= 0.621371;
+                else if (ex.distanceUnit === 'm') distMi /= 1609.34;
+                else if (ex.distanceUnit === 'ft') distMi /= 5280;
                 totalDistance += distMi;
             }
             if (ex.category === 'Cardio' && ex.duration) {
@@ -1730,6 +1732,8 @@ useEffect(() => {
     
 
     
+
+
 
 
 
