@@ -600,6 +600,7 @@ export default function AnalysisPage() {
             if (ex.category === 'Cardio' && ex.distance) {
                 let distMi = ex.distance;
                 if (ex.distanceUnit === 'km') distMi *= 0.621371;
+                else if (ex.distanceUnit === 'm') distMi /= 1609.34;
                 else if (ex.distanceUnit === 'ft') distMi /= 5280;
                 totalDistance += distMi;
             }
@@ -1731,6 +1732,7 @@ useEffect(() => {
     
 
     
+
 
 
 
