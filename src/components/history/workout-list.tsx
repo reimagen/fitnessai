@@ -156,31 +156,32 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   };
 
   const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
-    // If only one entry for this exercise was logged
-    if (data.sets.length === 1) {
-      const set = data.sets[0];
-      const categoryText = data.category;
-      const caloriesText = set.calories && set.calories > 0 ? ` • ${Math.round(set.calories)} kcal` : '';
+    const isSingleEntry = data.sets.length === 1;
 
-      const setParts = [
-        set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
-        set.reps > 0 ? `${set.reps} reps` : null,
-        set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
-        set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
-        set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
-      ].filter(Boolean);
+    if (isSingleEntry) {
+        const set = data.sets[0];
+        const categoryText = data.category;
+        const caloriesText = set.calories && set.calories > 0 ? ` • ${Math.round(set.calories)} kcal` : '';
 
-      return (
-        <div className="py-3 border-b">
-           <p className="font-semibold">
-              <span className="text-primary">{name}</span>
-              <span className="text-muted-foreground">
-                {` • ${categoryText}${caloriesText}`}
-              </span>
-            </p>
-          <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
-        </div>
-      );
+        const setParts = [
+            set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
+            set.reps > 0 ? `${set.reps} reps` : null,
+            set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
+            set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
+            set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
+        ].filter(Boolean);
+        
+        return (
+            <div className="py-3 border-b">
+                <p className="font-semibold">
+                    <span className="text-primary">{name}</span>
+                    <span className="text-muted-foreground">
+                        {` • ${categoryText}${caloriesText}`}
+                    </span>
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
+            </div>
+        );
     }
     
     // Grouped View for multiple distinct sets
@@ -231,7 +232,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                 <div className="flex items-center gap-3">
                   <CalendarDays className="h-5 w-5 text-primary" />
                   <span className="font-medium text-lg whitespace-nowrap">
-                    {format(log.date, "MMMM d, yyyy")}
+                    {format(log.date, "MMM d, yyyy")}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -260,16 +261,16 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
           </AccordionPrimitive.Header>
 
           <AccordionContent className="px-6 pb-6 pt-0">
-            {(log.notes || (log.uniqueExerciseCount && log.uniqueExerciseCount > 1)) && (
+            {(log.uniqueExerciseCount && log.uniqueExerciseCount > 1) && (
                 <div className="mb-4 text-sm text-muted-foreground">
-                    {log.uniqueExerciseCount && log.uniqueExerciseCount > 1 && (
-                        <p className="font-semibold">
-                            {log.uniqueExerciseCount} exercises • {Math.round(log.totalCalories || 0)} kcal
-                        </p>
-                    )}
-                    {log.notes && (
-                        <p className="italic mt-1">Notes: {log.notes}</p>
-                    )}
+                    <p className="font-semibold">
+                        {log.uniqueExerciseCount} exercises • {Math.round(log.totalCalories || 0)} kcal
+                    </p>
+                </div>
+            )}
+             {log.notes && (
+                <div className={cn("text-sm text-muted-foreground", log.uniqueExerciseCount > 1 && "mt-2")}>
+                    <p className="italic">Notes: {log.notes}</p>
                 </div>
             )}
             <div className="space-y-2">
