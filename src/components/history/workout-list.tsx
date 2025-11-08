@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { WorkoutLog } from "@/lib/types";
+import type { WorkoutLog, Exercise } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
@@ -10,7 +10,7 @@ import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils,
 import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type WorkoutListProps = {
@@ -37,6 +37,26 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const groupedExercisesByLog = useMemo(() => {
+    return workoutLogs.map(log => {
+      const grouped = log.exercises.reduce((acc, exercise) => {
+        const key = toTitleCase(exercise.name);
+        if (!acc[key]) {
+          acc[key] = {
+            category: exercise.category || 'Other',
+            totalCalories: 0,
+            sets: []
+          };
+        }
+        acc[key].totalCalories += exercise.calories || 0;
+        acc[key].sets.push(exercise);
+        return acc;
+      }, {} as Record<string, { category: string; totalCalories: number; sets: Exercise[] }>);
+      
+      return { ...log, groupedExercises: grouped };
+    });
+  }, [workoutLogs]);
 
   if (!isClient) { // Show loading state before client-side rendering is complete
     return (
@@ -120,30 +140,44 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     return result.trim();
   };
 
-  const MobileExerciseView = ({ exercise }: { exercise: WorkoutLog['exercises'][0] }) => {
-    const parts = [
-      exercise.category,
-      exercise.sets > 0 ? `${exercise.sets} sets` : null,
-      exercise.reps > 0 ? `${exercise.reps} reps` : null,
-      exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : null,
-      exercise.distance && exercise.distance > 0 ? formatDistanceForDisplay(exercise.distance, exercise.distanceUnit) : null,
-      exercise.duration && exercise.duration > 0 ? formatDurationForDisplay(exercise.duration, exercise.durationUnit) : null,
-      exercise.calories && exercise.calories > 0 ? formatCaloriesForDisplay(exercise.calories) : null
-    ].filter(Boolean); // Filter out null values
+  const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
+    const headerParts = [
+      data.category,
+      data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
+    ].filter(Boolean);
 
     return (
       <div className="py-3 border-b">
-        <p className="font-semibold text-primary">{toTitleCase(exercise.name)}</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {parts.join(' • ')}
+        <p className="font-semibold text-primary">{name}</p>
+        <p className="text-sm text-muted-foreground mt-1 mb-2">
+          {headerParts.join(' • ')}
         </p>
+        <div className="pl-4 space-y-1">
+          {data.sets.map((set, index) => {
+             const setParts = [
+              set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
+              set.reps > 0 ? `${set.reps} reps` : null,
+              set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
+              set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
+              set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
+              // Only show calories per set if total calories is not already in header
+              data.totalCalories === 0 && set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
+            ].filter(Boolean);
+
+            return (
+              <p key={index} className="text-sm text-muted-foreground">
+                {setParts.join(' • ')}
+              </p>
+            )
+          })}
+        </div>
       </div>
     );
   };
 
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
-      {workoutLogs.map((log) => (
+      {groupedExercisesByLog.map((log) => (
         <AccordionItem value={log.id} key={log.id} className="border rounded-lg shadow-sm bg-card overflow-hidden">
           <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4">
             <AccordionPrimitive.Trigger className={cn(
@@ -185,8 +219,8 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             )}
             {isMobile ? (
               <div className="space-y-2">
-                {log.exercises.map(exercise => (
-                  <MobileExerciseView key={exercise.id} exercise={exercise} />
+                {Object.entries(log.groupedExercises).map(([name, data]) => (
+                  <MobileGroupedExerciseView key={name} name={name} data={data} />
                 ))}
               </div>
             ) : (
