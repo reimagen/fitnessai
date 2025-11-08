@@ -141,14 +141,15 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   };
 
   const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
-    const headerParts = [
-      data.category,
-      data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
-    ].filter(Boolean);
-
     // This is the corrected conditional logic block
+    // It now checks the length of the 'sets' array, which holds the individual Exercise logs.
     if (data.sets.length === 1) {
       const set = data.sets[0];
+      const singleLineHeaderParts = [
+        data.category,
+        set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
+      ].filter(Boolean);
+      
       const setParts = [
         set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
         set.reps > 0 ? `${set.reps} reps` : null,
@@ -156,9 +157,6 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
         set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
       ].filter(Boolean);
-      
-      const caloriesString = data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null;
-      const singleLineHeaderParts = [data.category, caloriesString].filter(Boolean);
 
       return (
         <div className="py-3 border-b">
@@ -170,8 +168,13 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         </div>
       );
     }
-
+    
     // Default Grouped View for multiple distinct sets
+    const headerParts = [
+      data.category,
+      data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
+    ].filter(Boolean);
+
     return (
       <div className="py-3 border-b">
         <p className="font-semibold text-primary">{name}</p>
