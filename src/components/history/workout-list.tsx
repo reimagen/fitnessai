@@ -8,10 +8,8 @@ import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
 import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils, Route, Timer } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useMemo } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -32,7 +30,6 @@ const toTitleCase = (str: string) => {
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     setIsClient(true);
@@ -141,8 +138,6 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   };
 
   const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
-    // This is the corrected conditional logic block
-    // It now checks the length of the 'sets' array, which holds the individual Exercise logs.
     if (data.sets.length === 1) {
       const set = data.sets[0];
       const categoryText = data.category;
@@ -171,7 +166,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       );
     }
     
-    // Default Grouped View for multiple distinct sets
+    // Grouped View for multiple distinct sets
     const headerParts = [
       data.category,
       data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
@@ -247,53 +242,11 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             {log.notes && (
               <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
             )}
-            {isMobile ? (
-              <div className="space-y-2">
-                {Object.entries(log.groupedExercises).map(([name, data]) => (
-                  <MobileGroupedExerciseView key={name} name={name} data={data} />
-                ))}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[25%]">Exercise</TableHead>
-                    <TableHead className="text-left w-[15%]">Category</TableHead>
-                    <TableHead className="text-right">Sets</TableHead>
-                    <TableHead className="text-right">Reps</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Distance</TableHead>
-                    <TableHead className="text-right">Duration</TableHead>
-                    <TableHead className="text-right">Calories</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {log.exercises.map((exercise) => (
-                    <TableRow key={exercise.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Dumbbell className="h-4 w-4 text-accent shrink-0" />
-                          <span className="font-medium">{toTitleCase(exercise.name)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-left">{exercise.category || "-"}</TableCell>
-                      <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
-                      <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
-                      <TableCell className="text-right">
-                          {exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          {formatDurationForDisplay(exercise.duration, exercise.durationUnit)}
-                      </TableCell>
-                      <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <div className="space-y-2">
+              {Object.entries(log.groupedExercises).map(([name, data]) => (
+                <MobileGroupedExerciseView key={name} name={name} data={data} />
+              ))}
+            </div>
           </AccordionContent>
         </AccordionItem>
       ))}
