@@ -598,8 +598,11 @@ export default function AnalysisPage() {
         log.exercises.forEach(ex => {
             if (ex.weight && ex.sets && ex.reps) totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
             if (ex.category === 'Cardio' && ex.distance) {
-                let distMi = ex.distance;
-                if (ex.distanceUnit === 'km') distMi *= 0.621371; else if (ex.distanceUnit === 'ft') distMi *= 0.000189394;
+                let distMi = 0;
+                if (ex.distanceUnit === 'km') distMi = (ex.distance || 0) * 0.621371;
+                else if (ex.distanceUnit === 'ft') distMi = (ex.distance || 0) / 5280;
+                else if (ex.distanceUnit === 'm') distMi = (ex.distance || 0) / 1609.34;
+                else if (ex.distanceUnit === 'mi') distMi = ex.distance || 0;
                 totalDistance += distMi;
             }
             if (ex.category === 'Cardio' && ex.duration) {
@@ -1466,29 +1469,27 @@ useEffect(() => {
                     <div className="pt-4">
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                            {(currentLiftLevel) && (
-                                <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
-                                    {currentLiftLevel && currentLiftLevel !== 'N/A' && (
-                                        <span>
-                                            Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
-                                        </span>
-                                    )}
-                                    {trendImprovement !== null && (
-                                        <span>
-                                            e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
-                                                {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
-                                            </Badge>
-                                        </span>
-                                    )}
-                                    {volumeTrend !== null && (
-                                        <span>
-                                            Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
-                                                {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
-                                            </Badge>
-                                        </span>
-                                    )}
-                                </div>
-                           )}
+                            <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap min-h-[24px]">
+                                {currentLiftLevel && currentLiftLevel !== 'N/A' && (
+                                    <span>
+                                        Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
+                                    </span>
+                                )}
+                                {trendImprovement !== null && (
+                                    <span>
+                                        e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
+                                            {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
+                                        </Badge>
+                                    </span>
+                                )}
+                                {volumeTrend !== null && (
+                                    <span>
+                                        Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
+                                            {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
+                                        </Badge>
+                                    </span>
+                                )}
+                            </div>
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
@@ -1730,6 +1731,7 @@ useEffect(() => {
     
 
     
+
 
 
 
