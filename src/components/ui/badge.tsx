@@ -16,6 +16,10 @@ const badgeVariants = cva(
           "border-transparent bg-chart-3 text-chart-3-foreground",
         accent:
           "border-transparent bg-chart-5 text-chart-5-foreground",
+        fullBody:
+          "border-transparent bg-chart-2 text-chart-2-foreground",
+        other:
+          "border-transparent bg-chart-6 text-chart-6-foreground",
         outline: "text-foreground",
       },
     },

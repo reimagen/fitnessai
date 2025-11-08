@@ -21,14 +21,14 @@ type WorkoutListProps = {
 const FEET_IN_A_MILE = 5280;
 const METERS_IN_A_KILOMETER = 1000;
 
-const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondary' | 'destructive' | 'accent' | 'outline' => {
+const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondary' | 'destructive' | 'accent' | 'outline' | 'fullBody' | 'other' => {
     switch (category) {
-        case 'Upper Body': return 'default'; // primary
+        case 'Upper Body': return 'default';
         case 'Lower Body': return 'destructive';
         case 'Core': return 'accent';
         case 'Cardio': return 'secondary';
-        case 'Full Body': return 'default'; // No specific color, maybe use a neutral one
-        case 'Other': return 'outline';
+        case 'Full Body': return 'fullBody';
+        case 'Other': return 'other';
         default: return 'outline';
     }
 };
@@ -153,6 +153,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   };
 
   const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
+    // If only one entry for this exercise was logged
     if (data.sets.length === 1) {
       const set = data.sets[0];
       const categoryText = data.category;
@@ -168,15 +169,14 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
 
       return (
         <div className="py-3 border-b">
-            <p className="font-semibold">
-              <span className="text-primary">{name}</span>
-              <span className="text-muted-foreground">
-                  {' • '}
-                  {categoryText}
-                  {caloriesText ? ` • ${caloriesText}` : ''}
-              </span>
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
+          <p className="font-semibold text-primary">
+            {name}
+          </p>
+          <p className="font-medium text-muted-foreground text-sm">
+            {categoryText}
+            {caloriesText ? ` • ${caloriesText}` : ''}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
         </div>
       );
     }
@@ -191,7 +191,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       <div className="py-3 border-b">
         <p className="font-semibold">
             <span className="text-primary">{name}</span>
-            {headerParts.length > 0 && <span className="text-muted-foreground">{' • '}{headerParts.join(' • ')}</span>}
+            {headerParts.length > 0 && <span className="text-muted-foreground text-sm">{' • '}{headerParts.join(' • ')}</span>}
         </p>
         <div className="space-y-1 mt-2">
           {data.sets.map((set, index) => {
