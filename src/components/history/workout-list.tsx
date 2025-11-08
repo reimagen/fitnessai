@@ -152,7 +152,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         <p className="text-sm text-muted-foreground mt-1 mb-2">
           {headerParts.join(' • ')}
         </p>
-        <div className="pl-4 space-y-1">
+        <div className="space-y-1">
           {data.sets.map((set, index) => {
              const setParts = [
               set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
