@@ -145,12 +145,9 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     // It now checks the length of the 'sets' array, which holds the individual Exercise logs.
     if (data.sets.length === 1) {
       const set = data.sets[0];
-      const headerParts = [
-        name,
-        data.category,
-        set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
-      ].filter(Boolean);
-      
+      const categoryText = data.category;
+      const caloriesText = set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null;
+
       const setParts = [
         set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
         set.reps > 0 ? `${set.reps} reps` : null,
@@ -161,7 +158,14 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
 
       return (
         <div className="py-3 border-b">
-            <p className="font-semibold text-primary">{headerParts.join(' • ')}</p>
+            <p className="font-semibold">
+              <span className="text-primary">{name}</span>
+              <span className="text-muted-foreground">
+                  {' • '}
+                  {categoryText}
+                  {caloriesText ? ` • ${caloriesText}` : ''}
+              </span>
+            </p>
             <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
         </div>
       );
@@ -169,14 +173,16 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     
     // Default Grouped View for multiple distinct sets
     const headerParts = [
-      name,
       data.category,
       data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
     ].filter(Boolean);
 
     return (
       <div className="py-3 border-b">
-        <p className="font-semibold text-primary">{headerParts.join(' • ')}</p>
+        <p className="font-semibold">
+            <span className="text-primary">{name}</span>
+            {headerParts.length > 0 && <span className="text-muted-foreground">{' • '}{headerParts.join(' • ')}</span>}
+        </p>
         <div className="space-y-1 mt-2">
           {data.sets.map((set, index) => {
              const setParts = [
