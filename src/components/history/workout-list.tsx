@@ -146,6 +146,34 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
     ].filter(Boolean);
 
+    // Conditional Rendering Logic
+    if (data.sets.length === 1) {
+      const set = data.sets[0];
+      const setParts = [
+        set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
+        set.reps > 0 ? `${set.reps} reps` : null,
+        set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
+        set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
+        set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
+      ].filter(Boolean);
+
+      const caloriesString = data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null;
+      const singleLineHeaderParts = [data.category, caloriesString].filter(Boolean);
+
+      return (
+        <div className="py-3 border-b">
+          <p className="font-semibold text-primary">{name}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {singleLineHeaderParts.join(' • ')}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {setParts.join(' • ')}
+          </p>
+        </div>
+      );
+    }
+
+    // Default Grouped View for multiple sets
     return (
       <div className="py-3 border-b">
         <p className="font-semibold text-primary">{name}</p>
@@ -160,7 +188,6 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
               set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
               set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
               set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
-              // Only show calories per set if total calories is not already in header
               data.totalCalories === 0 && set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
             ].filter(Boolean);
 
