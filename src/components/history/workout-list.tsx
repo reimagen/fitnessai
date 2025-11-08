@@ -145,7 +145,8 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     // It now checks the length of the 'sets' array, which holds the individual Exercise logs.
     if (data.sets.length === 1) {
       const set = data.sets[0];
-      const singleLineHeaderParts = [
+      const headerParts = [
+        name,
         data.category,
         set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
       ].filter(Boolean);
@@ -160,28 +161,23 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
 
       return (
         <div className="py-3 border-b">
-          <p className="font-semibold text-primary">{name}</p>
-          <div className="space-y-1 mt-1 text-sm text-muted-foreground">
-             <p>{singleLineHeaderParts.join(' • ')}</p>
-             <p>{setParts.join(' • ')}</p>
-          </div>
+            <p className="font-semibold text-primary">{headerParts.join(' • ')}</p>
+            <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
         </div>
       );
     }
     
     // Default Grouped View for multiple distinct sets
     const headerParts = [
+      name,
       data.category,
       data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
     ].filter(Boolean);
 
     return (
       <div className="py-3 border-b">
-        <p className="font-semibold text-primary">{name}</p>
-        <p className="text-sm text-muted-foreground mt-1 mb-2">
-          {headerParts.join(' • ')}
-        </p>
-        <div className="space-y-1">
+        <p className="font-semibold text-primary">{headerParts.join(' • ')}</p>
+        <div className="space-y-1 mt-2">
           {data.sets.map((set, index) => {
              const setParts = [
               set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
