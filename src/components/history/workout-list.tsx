@@ -146,7 +146,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
     ].filter(Boolean);
 
-    // Conditional Rendering Logic
+    // This is the corrected conditional logic block
     if (data.sets.length === 1) {
       const set = data.sets[0];
       const setParts = [
@@ -156,24 +156,22 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
         set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
       ].filter(Boolean);
-
+      
       const caloriesString = data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null;
       const singleLineHeaderParts = [data.category, caloriesString].filter(Boolean);
 
       return (
         <div className="py-3 border-b">
           <p className="font-semibold text-primary">{name}</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {singleLineHeaderParts.join(' • ')}
-          </p>
-          <p className="text-sm text-muted-foreground mt-1">
-            {setParts.join(' • ')}
-          </p>
+          <div className="space-y-1 mt-1 text-sm text-muted-foreground">
+             <p>{singleLineHeaderParts.join(' • ')}</p>
+             <p>{setParts.join(' • ')}</p>
+          </div>
         </div>
       );
     }
 
-    // Default Grouped View for multiple sets
+    // Default Grouped View for multiple distinct sets
     return (
       <div className="py-3 border-b">
         <p className="font-semibold text-primary">{name}</p>
