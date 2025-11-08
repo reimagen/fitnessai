@@ -169,13 +169,13 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
 
       return (
         <div className="py-3 border-b">
-          <p className="font-semibold text-primary">
-            {name}
-          </p>
-          <p className="font-medium text-muted-foreground text-sm">
-            {categoryText}
-            {caloriesText ? ` • ${caloriesText}` : ''}
-          </p>
+           <p className="font-semibold">
+              <span className="text-primary">{name}</span>
+              <span className="text-muted-foreground">
+                {` • ${categoryText}`}
+                {caloriesText ? ` • ${caloriesText}` : ''}
+              </span>
+            </p>
           <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
         </div>
       );
@@ -191,7 +191,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       <div className="py-3 border-b">
         <p className="font-semibold">
             <span className="text-primary">{name}</span>
-            {headerParts.length > 0 && <span className="text-muted-foreground text-sm">{' • '}{headerParts.join(' • ')}</span>}
+            {headerParts.length > 0 && <span className="text-muted-foreground">{' • '}{headerParts.join(' • ')}</span>}
         </p>
         <div className="space-y-1 mt-2">
           {data.sets.map((set, index) => {
