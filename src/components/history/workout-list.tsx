@@ -65,8 +65,11 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       }, {} as Record<string, { category: string; totalCalories: number; sets: Exercise[] }>);
       
       const categories = new Set(log.exercises.map(ex => ex.category || 'Other'));
+      
+      const totalCalories = log.exercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+      const uniqueExerciseCount = Object.keys(grouped).length;
 
-      return { ...log, groupedExercises: grouped, categories: Array.from(categories) };
+      return { ...log, groupedExercises: grouped, categories: Array.from(categories), totalCalories, uniqueExerciseCount };
     });
   }, [workoutLogs]);
 
@@ -157,7 +160,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     if (data.sets.length === 1) {
       const set = data.sets[0];
       const categoryText = data.category;
-      const caloriesText = set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null;
+      const caloriesText = set.calories && set.calories > 0 ? ` • ${Math.round(set.calories)} kcal` : '';
 
       const setParts = [
         set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
@@ -172,8 +175,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
            <p className="font-semibold">
               <span className="text-primary">{name}</span>
               <span className="text-muted-foreground">
-                {` • ${categoryText}`}
-                {caloriesText ? ` • ${caloriesText}` : ''}
+                {` • ${categoryText}${caloriesText}`}
               </span>
             </p>
           <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
@@ -234,7 +236,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {log.categories?.map(category => (
-                    <Badge key={category} variant={categoryBadgeVariant(category)} className="text-xs">
+                    <Badge key={category} variant={categoryBadgeVariant(category as ExerciseCategory)} className="text-xs">
                       {category}
                     </Badge>
                   ))}
@@ -258,8 +260,17 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
           </AccordionPrimitive.Header>
 
           <AccordionContent className="px-6 pb-6 pt-0">
-            {log.notes && (
-              <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
+            {(log.notes || (log.uniqueExerciseCount && log.uniqueExerciseCount > 1)) && (
+                <div className="mb-4 text-sm text-muted-foreground">
+                    {log.uniqueExerciseCount && log.uniqueExerciseCount > 1 && (
+                        <p className="font-semibold">
+                            {log.uniqueExerciseCount} exercises • {Math.round(log.totalCalories || 0)} kcal
+                        </p>
+                    )}
+                    {log.notes && (
+                        <p className="italic mt-1">Notes: {log.notes}</p>
+                    )}
+                </div>
             )}
             <div className="space-y-2">
               {Object.entries(log.groupedExercises).map(([name, data]) => (
