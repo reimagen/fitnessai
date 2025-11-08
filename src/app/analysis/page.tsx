@@ -598,10 +598,11 @@ export default function AnalysisPage() {
         log.exercises.forEach(ex => {
             if (ex.weight && ex.sets && ex.reps) totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
             if (ex.category === 'Cardio' && ex.distance) {
-                let distMi = ex.distance;
-                if (ex.distanceUnit === 'km') distMi *= 0.621371;
-                else if (ex.distanceUnit === 'm') distMi /= 1609.34;
-                else if (ex.distanceUnit === 'ft') distMi /= 5280;
+                let distMi = 0;
+                if (ex.distanceUnit === 'km') distMi = (ex.distance || 0) * 0.621371;
+                else if (ex.distanceUnit === 'ft') distMi = (ex.distance || 0) / 5280;
+                else if (ex.distanceUnit === 'm') distMi = (ex.distance || 0) / 1609.34;
+                else if (ex.distanceUnit === 'mi') distMi = ex.distance || 0;
                 totalDistance += distMi;
             }
             if (ex.category === 'Cardio' && ex.duration) {
@@ -1097,9 +1098,9 @@ useEffect(() => {
     const sin = Math.sin(-RADIAN * midAngle);
     const cos = Math.cos(-RADIAN * midAngle);
     
-    // Use a slightly larger radius for the label line, but keep it proportional
-    const availableRadius = Math.min(cx, cy) - 10; // 10px padding
-    const labelRadius = innerRadius + (availableRadius - innerRadius) * 0.7;
+    // Use a smaller radius, especially on mobile, to pull labels inward
+    const radiusMultiplier = isMobile ? 0.6 : 0.7;
+    const labelRadius = innerRadius + (outerRadius - innerRadius) * radiusMultiplier;
 
     const x = cx + labelRadius * cos;
     const y = cy + labelRadius * sin;
@@ -1112,7 +1113,7 @@ useEffect(() => {
         x={x} 
         y={y} 
         fill="hsl(var(--foreground))" 
-        textAnchor={cos >= 0 ? 'start' : 'end'} 
+        textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central" 
         className="text-xs"
       >
@@ -1296,8 +1297,8 @@ useEffect(() => {
                 </Tabs>
               </CardContent>
             </Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'reps')}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'reps')}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
+            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
             
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
@@ -1468,29 +1469,27 @@ useEffect(() => {
                     <div className="pt-4">
                         <div className="text-center mb-2">
                            <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                            {(currentLiftLevel) && (
-                                <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-2 flex-wrap">
-                                    {currentLiftLevel && currentLiftLevel !== 'N/A' && (
-                                        <span>
-                                            Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
-                                        </span>
-                                    )}
-                                    {trendImprovement !== null && (
-                                        <span>
-                                            e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
-                                                {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
-                                            </Badge>
-                                        </span>
-                                    )}
-                                    {volumeTrend !== null && (
-                                        <span>
-                                            Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
-                                                {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
-                                            </Badge>
-                                        </span>
-                                    )}
-                                </div>
-                           )}
+                            <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-x-4 gap-y-1 flex-wrap min-h-[24px]">
+                                {currentLiftLevel && currentLiftLevel !== 'N/A' && (
+                                    <span>
+                                        Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
+                                    </span>
+                                )}
+                                {trendImprovement !== null && (
+                                    <span>
+                                        e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
+                                            {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
+                                        </Badge>
+                                    </span>
+                                )}
+                                {volumeTrend !== null && (
+                                    <span>
+                                        Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
+                                            {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
+                                        </Badge>
+                                    </span>
+                                )}
+                            </div>
                         </div>
                          <ChartContainer config={chartConfig} className="h-[250px] w-full">
                             <ResponsiveContainer>
@@ -1600,7 +1599,7 @@ useEffect(() => {
                           <TabsContent value="types">
                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
                                 <ResponsiveContainer>
-                                <PieChart margin={isMobile ? { top: 30, right: 20, bottom: 30, left: 20 } : { top: 20, right: 20, bottom: 20, left: 20 }}>
+                                <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
                                     <Pie
                                     data={cardioAnalysisData.pieChartData}
                                     dataKey="value"
