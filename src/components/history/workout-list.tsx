@@ -1,17 +1,16 @@
 
 "use client";
 
-import type { WorkoutLog } from "@/lib/types";
+import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
 import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils, Route, Timer } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import React, { useState, useEffect, useMemo } from "react";
+import { Badge } from "../ui/badge";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -21,6 +20,18 @@ type WorkoutListProps = {
 
 const FEET_IN_A_MILE = 5280;
 const METERS_IN_A_KILOMETER = 1000;
+
+const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondary' | 'destructive' | 'accent' | 'outline' | 'fullBody' | 'other' => {
+    switch (category) {
+        case 'Upper Body': return 'default';
+        case 'Lower Body': return 'destructive';
+        case 'Core': return 'accent';
+        case 'Cardio': return 'secondary';
+        case 'Full Body': return 'fullBody';
+        case 'Other': return 'other';
+        default: return 'outline';
+    }
+};
 
 const toTitleCase = (str: string) => {
   if (!str) return "";
@@ -32,11 +43,35 @@ const toTitleCase = (str: string) => {
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
-  const isMobile = useIsMobile();
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const groupedExercisesByLog = useMemo(() => {
+    return workoutLogs.map(log => {
+      const grouped = log.exercises.reduce((acc, exercise) => {
+        const key = toTitleCase(exercise.name);
+        if (!acc[key]) {
+          acc[key] = {
+            category: exercise.category || 'Other',
+            totalCalories: 0,
+            sets: []
+          };
+        }
+        acc[key].totalCalories += exercise.calories || 0;
+        acc[key].sets.push(exercise);
+        return acc;
+      }, {} as Record<string, { category: string; totalCalories: number; sets: Exercise[] }>);
+      
+      const categories = new Set(log.exercises.map(ex => ex.category || 'Other'));
+      
+      const totalCalories = log.exercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+      const uniqueExerciseCount = Object.keys(grouped).length;
+
+      return { ...log, groupedExercises: grouped, categories: Array.from(categories), totalCalories, uniqueExerciseCount };
+    });
+  }, [workoutLogs]);
 
   if (!isClient) { // Show loading state before client-side rendering is complete
     return (
@@ -120,30 +155,71 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     return result.trim();
   };
 
-  const MobileExerciseView = ({ exercise }: { exercise: WorkoutLog['exercises'][0] }) => {
-    const parts = [
-      exercise.category,
-      exercise.sets > 0 ? `${exercise.sets} sets` : null,
-      exercise.reps > 0 ? `${exercise.reps} reps` : null,
-      exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : null,
-      exercise.distance && exercise.distance > 0 ? formatDistanceForDisplay(exercise.distance, exercise.distanceUnit) : null,
-      exercise.duration && exercise.duration > 0 ? formatDurationForDisplay(exercise.duration, exercise.durationUnit) : null,
-      exercise.calories && exercise.calories > 0 ? formatCaloriesForDisplay(exercise.calories) : null
-    ].filter(Boolean); // Filter out null values
+  const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] }}) => {
+    // If only one entry for this exercise was logged
+    if (data.sets.length === 1) {
+      const set = data.sets[0];
+      const categoryText = data.category;
+      const caloriesText = set.calories && set.calories > 0 ? ` • ${Math.round(set.calories)} kcal` : '';
+
+      const setParts = [
+        set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
+        set.reps > 0 ? `${set.reps} reps` : null,
+        set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
+        set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
+        set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
+      ].filter(Boolean);
+
+      return (
+        <div className="py-3 border-b">
+           <p className="font-semibold">
+              <span className="text-primary">{name}</span>
+              <span className="text-muted-foreground">
+                {` • ${categoryText}${caloriesText}`}
+              </span>
+            </p>
+          <p className="text-sm text-muted-foreground mt-1">{setParts.join(' • ')}</p>
+        </div>
+      );
+    }
+    
+    // Grouped View for multiple distinct sets
+    const headerParts = [
+      data.category,
+      data.totalCalories > 0 ? `${Math.round(data.totalCalories)} kcal` : null
+    ].filter(Boolean);
 
     return (
       <div className="py-3 border-b">
-        <p className="font-semibold text-primary">{toTitleCase(exercise.name)}</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          {parts.join(' • ')}
+        <p className="font-semibold">
+            <span className="text-primary">{name}</span>
+            {headerParts.length > 0 && <span className="text-muted-foreground">{' • '}{headerParts.join(' • ')}</span>}
         </p>
+        <div className="space-y-1 mt-2">
+          {data.sets.map((set, index) => {
+             const setParts = [
+              set.sets > 0 ? `${set.sets} set${set.sets > 1 ? 's' : ''}` : null,
+              set.reps > 0 ? `${set.reps} reps` : null,
+              set.weight && set.weight > 0 ? `${set.weight} ${set.weightUnit || 'kg'}` : null,
+              set.distance && set.distance > 0 ? formatDistanceForDisplay(set.distance, set.distanceUnit) : null,
+              set.duration && set.duration > 0 ? formatDurationForDisplay(set.duration, set.durationUnit) : null,
+              data.totalCalories === 0 && set.calories && set.calories > 0 ? `${Math.round(set.calories)} kcal` : null
+            ].filter(Boolean);
+
+            return (
+              <p key={index} className="text-sm text-muted-foreground">
+                {setParts.join(' • ')}
+              </p>
+            )
+          })}
+        </div>
       </div>
     );
   };
 
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
-      {workoutLogs.map((log) => (
+      {groupedExercisesByLog.map((log) => (
         <AccordionItem value={log.id} key={log.id} className="border rounded-lg shadow-sm bg-card overflow-hidden">
           <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4">
             <AccordionPrimitive.Trigger className={cn(
@@ -151,16 +227,20 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-offset-2",
               "[&[data-state=open]>svg]:rotate-180"
             )}>
-              <div className="flex flex-col sm:flex-row sm:items-center w-full">
-                <div className="flex items-center gap-3 mb-2 sm:mb-0">
+              <div className="flex flex-col sm:flex-row sm:items-center w-full gap-x-4 gap-y-2">
+                <div className="flex items-center gap-3">
                   <CalendarDays className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-lg">
+                  <span className="font-medium text-lg whitespace-nowrap">
                     {format(log.date, "MMMM d, yyyy")}
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground sm:ml-4">
-                  {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {log.categories?.map(category => (
+                    <Badge key={category} variant={categoryBadgeVariant(category as ExerciseCategory)} className="text-xs">
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 ml-2" />
             </AccordionPrimitive.Trigger>
@@ -180,56 +260,23 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
           </AccordionPrimitive.Header>
 
           <AccordionContent className="px-6 pb-6 pt-0">
-            {log.notes && (
-              <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
+            {(log.notes || (log.uniqueExerciseCount && log.uniqueExerciseCount > 1)) && (
+                <div className="mb-4 text-sm text-muted-foreground">
+                    {log.uniqueExerciseCount && log.uniqueExerciseCount > 1 && (
+                        <p className="font-semibold">
+                            {log.uniqueExerciseCount} exercises • {Math.round(log.totalCalories || 0)} kcal
+                        </p>
+                    )}
+                    {log.notes && (
+                        <p className="italic mt-1">Notes: {log.notes}</p>
+                    )}
+                </div>
             )}
-            {isMobile ? (
-              <div className="space-y-2">
-                {log.exercises.map(exercise => (
-                  <MobileExerciseView key={exercise.id} exercise={exercise} />
-                ))}
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[25%]">Exercise</TableHead>
-                    <TableHead className="text-left w-[15%]">Category</TableHead>
-                    <TableHead className="text-right">Sets</TableHead>
-                    <TableHead className="text-right">Reps</TableHead>
-                    <TableHead className="text-right">Weight</TableHead>
-                    <TableHead className="text-right">Distance</TableHead>
-                    <TableHead className="text-right">Duration</TableHead>
-                    <TableHead className="text-right">Calories</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {log.exercises.map((exercise) => (
-                    <TableRow key={exercise.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Dumbbell className="h-4 w-4 text-accent shrink-0" />
-                          <span className="font-medium">{toTitleCase(exercise.name)}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-left">{exercise.category || "-"}</TableCell>
-                      <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
-                      <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
-                      <TableCell className="text-right">
-                          {exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : "-"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          {formatDurationForDisplay(exercise.duration, exercise.durationUnit)}
-                      </TableCell>
-                      <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+            <div className="space-y-2">
+              {Object.entries(log.groupedExercises).map(([name, data]) => (
+                <MobileGroupedExerciseView key={name} name={name} data={data} />
+              ))}
+            </div>
           </AccordionContent>
         </AccordionItem>
       ))}
