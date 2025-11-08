@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -31,6 +32,7 @@ const toTitleCase = (str: string) => {
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
   const [isClient, setIsClient] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     setIsClient(true);
@@ -118,6 +120,27 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     return result.trim();
   };
 
+  const MobileExerciseView = ({ exercise }: { exercise: WorkoutLog['exercises'][0] }) => {
+    const parts = [
+      exercise.category,
+      exercise.sets > 0 ? `${exercise.sets} sets` : null,
+      exercise.reps > 0 ? `${exercise.reps} reps` : null,
+      exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : null,
+      exercise.distance && exercise.distance > 0 ? formatDistanceForDisplay(exercise.distance, exercise.distanceUnit) : null,
+      exercise.duration && exercise.duration > 0 ? formatDurationForDisplay(exercise.duration, exercise.durationUnit) : null,
+      exercise.calories && exercise.calories > 0 ? formatCaloriesForDisplay(exercise.calories) : null
+    ].filter(Boolean); // Filter out null values
+
+    return (
+      <div className="py-3 border-b">
+        <p className="font-semibold text-primary">{toTitleCase(exercise.name)}</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {parts.join(' • ')}
+        </p>
+      </div>
+    );
+  };
+
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
       {workoutLogs.map((log) => (
@@ -160,45 +183,53 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             {log.notes && (
               <p className="mb-4 text-sm text-muted-foreground italic">Notes: {log.notes}</p>
             )}
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[25%]">Exercise</TableHead>
-                  <TableHead className="text-left w-[15%]">Category</TableHead>
-                  <TableHead className="text-right">Sets</TableHead>
-                  <TableHead className="text-right">Reps</TableHead>
-                  <TableHead className="text-right">Weight</TableHead>
-                  <TableHead className="text-right">Distance</TableHead>
-                  <TableHead className="text-right">Duration</TableHead>
-                  <TableHead className="text-right">Calories</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {log.exercises.map((exercise) => (
-                  <TableRow key={exercise.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Dumbbell className="h-4 w-4 text-accent shrink-0" />
-                        <span className="font-medium">{toTitleCase(exercise.name)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-left">{exercise.category || "-"}</TableCell>
-                    <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
-                    <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
-                    <TableCell className="text-right">
-                        {exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : "-"}
-                    </TableCell>
-                    <TableCell className="text-right">
-                        {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                        {formatDurationForDisplay(exercise.duration, exercise.durationUnit)}
-                    </TableCell>
-                    <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
-                  </TableRow>
+            {isMobile ? (
+              <div className="space-y-2">
+                {log.exercises.map(exercise => (
+                  <MobileExerciseView key={exercise.id} exercise={exercise} />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[25%]">Exercise</TableHead>
+                    <TableHead className="text-left w-[15%]">Category</TableHead>
+                    <TableHead className="text-right">Sets</TableHead>
+                    <TableHead className="text-right">Reps</TableHead>
+                    <TableHead className="text-right">Weight</TableHead>
+                    <TableHead className="text-right">Distance</TableHead>
+                    <TableHead className="text-right">Duration</TableHead>
+                    <TableHead className="text-right">Calories</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {log.exercises.map((exercise) => (
+                    <TableRow key={exercise.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Dumbbell className="h-4 w-4 text-accent shrink-0" />
+                          <span className="font-medium">{toTitleCase(exercise.name)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-left">{exercise.category || "-"}</TableCell>
+                      <TableCell className="text-right">{exercise.sets > 0 ? exercise.sets : "-"}</TableCell>
+                      <TableCell className="text-right">{exercise.reps > 0 ? exercise.reps : "-"}</TableCell>
+                      <TableCell className="text-right">
+                          {exercise.weight && exercise.weight > 0 ? `${exercise.weight} ${exercise.weightUnit || 'kg'}` : "-"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                          {formatDistanceForDisplay(exercise.distance, exercise.distanceUnit)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                          {formatDurationForDisplay(exercise.duration, exercise.durationUnit)}
+                      </TableCell>
+                      <TableCell className="text-right">{formatCaloriesForDisplay(exercise.calories)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </AccordionContent>
         </AccordionItem>
       ))}
