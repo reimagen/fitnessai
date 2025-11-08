@@ -53,6 +53,13 @@ export default {
           '3': 'hsl(var(--chart-3))',
           '4': 'hsl(var(--chart-4))',
           '5': 'hsl(var(--chart-5))',
+          '6': 'hsl(var(--chart-6))',
+          '1-foreground': 'hsl(var(--chart-1-foreground))',
+          '2-foreground': 'hsl(var(--chart-2-foreground))',
+          '3-foreground': 'hsl(var(--chart-3-foreground))',
+          '4-foreground': 'hsl(var(--chart-4-foreground))',
+          '5-foreground': 'hsl(var(--chart-5-foreground))',
+          '6-foreground': 'hsl(var(--chart-6-foreground))',
         },
         sidebar: {
           DEFAULT: 'hsl(var(--sidebar-background))',
