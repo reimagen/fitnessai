@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { WorkoutLog, Exercise } from "@/lib/types";
+import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
@@ -10,6 +10,7 @@ import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils,
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect, useMemo } from "react";
+import { Badge } from "../ui/badge";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -19,6 +20,18 @@ type WorkoutListProps = {
 
 const FEET_IN_A_MILE = 5280;
 const METERS_IN_A_KILOMETER = 1000;
+
+const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondary' | 'destructive' | 'accent' | 'outline' => {
+    switch (category) {
+        case 'Upper Body': return 'default'; // primary
+        case 'Lower Body': return 'destructive';
+        case 'Core': return 'accent';
+        case 'Cardio': return 'secondary';
+        case 'Full Body': return 'default'; // No specific color, maybe use a neutral one
+        case 'Other': return 'outline';
+        default: return 'outline';
+    }
+};
 
 const toTitleCase = (str: string) => {
   if (!str) return "";
@@ -51,7 +64,9 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
         return acc;
       }, {} as Record<string, { category: string; totalCalories: number; sets: Exercise[] }>);
       
-      return { ...log, groupedExercises: grouped };
+      const categories = new Set(log.exercises.map(ex => ex.category || 'Other'));
+
+      return { ...log, groupedExercises: grouped, categories: Array.from(categories) };
     });
   }, [workoutLogs]);
 
@@ -210,16 +225,20 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-offset-2",
               "[&[data-state=open]>svg]:rotate-180"
             )}>
-              <div className="flex flex-col sm:flex-row sm:items-center w-full">
-                <div className="flex items-center gap-3 mb-2 sm:mb-0">
+              <div className="flex flex-col sm:flex-row sm:items-center w-full gap-x-4 gap-y-2">
+                <div className="flex items-center gap-3">
                   <CalendarDays className="h-5 w-5 text-primary" />
-                  <span className="font-medium text-lg">
+                  <span className="font-medium text-lg whitespace-nowrap">
                     {format(log.date, "MMMM d, yyyy")}
                   </span>
                 </div>
-                <span className="text-sm text-muted-foreground sm:ml-4">
-                  {log.exercises.length} exercise{log.exercises.length !== 1 ? 's' : ''}
-                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {log.categories?.map(category => (
+                    <Badge key={category} variant={categoryBadgeVariant(category)} className="text-xs">
+                      {category}
+                    </Badge>
+                  ))}
+                </div>
               </div>
               <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 ml-2" />
             </AccordionPrimitive.Trigger>
