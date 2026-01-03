@@ -71,10 +71,10 @@ The most important part of your task is to correctly categorize each exercise.
 *   **Date - CRITICAL**:
     *   You must extract the date (year and month and day) associated with each specific record.
     *   Format the final date as YYYY-MM-DD.
-    *   **Handling "Today"**: If a record's date is listed as "Today", you MUST look for a general date at the top of the screenshot, such as "Updated on...". Use that date for the record. For example, if the top says "Updated on Jul 4, 2025" and a record says "Today", you MUST use "2025-07-04" as the dateString for that record.
-    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2025", the 'dateString' MUST be "2025-06-26".
-    *   **Example 2:** If a line says "Squat 120 kg July 1, 2025", the 'dateString' MUST be "2025-07-01".
-    *   **Example 3:** If a line says "Leg Press 200 kg May 15 2025", the 'dateString' MUST be "2025-05-15".
+    *   **Handling "Today"**: If a record's date is listed as "Today", you MUST look for a general date at the top of the screenshot, such as "Updated on...". Use that date for the record. For example, if the top says "Updated on Jul 4, 2026" and a record says "Today", you MUST use "2026-07-04" as the dateString for that record.
+    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2026", the 'dateString' MUST be "2026-06-26".
+    *   **Example 2:** If a line says "Squat 120 kg July 1, 2026", the 'dateString' MUST be "2026-07-01".
+    *   **Example 3:** If a line says "Leg Press 200 kg May 15 2026", the 'dateString' MUST be "2026-05-15".
 
 Here is the screenshot to parse:
 {{media url=photoDataUri}}
