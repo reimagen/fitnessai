@@ -136,7 +136,7 @@ You will be provided with a screenshot of a workout log. Your goal is to extract
 
 **Workout Date - CRITICAL INSTRUCTION**:
 - This is your most important instruction. You will be told whether to extract a date or not.
-- **IF THE USER SAYS 'parseDate: true'**: You MUST find the date in the image. A date is only valid if a month and day are clearly and explicitly written in the image AS PART OF THE WORKOUT LOG ITSELF. Text such as "Parsing Successful", "Workout Details", or any other UI element is NOT a date. You must ignore these. If, and only if, you find a valid month and day (e.g., "June 26", "Jul 4") within the log data itself, you MUST use the year '2025' for the output. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2025-06-26".
+- **IF THE USER SAYS 'parseDate: true'**: You MUST find the date in the image. A date is only valid if a month and day are clearly and explicitly written in the image AS PART OF THE WORKOUT LOG ITSELF. Text such as "Parsing Successful", "Workout Details", or any other UI element is NOT a date. You must ignore these. If, and only if, you find a valid month and day (e.g., "June 26", "Jul 4") within the log data itself, you MUST use the year '2026' for the output. For example, "June 26, 2023", "June 26, 2024", and "June 26" all result in a 'workoutDate' of "2026-06-26".
 - **IF THE USER SAYS 'parseDate: false'**: You MUST NOT include the 'workoutDate' field in your JSON output. Do not guess, infer, or hallucinate a date. Omit the field entirely.
 
 Now, follow all the common instructions provided below.
