@@ -53,6 +53,7 @@ import { LiftProgressionCard } from '@/components/analysis/LiftProgressionCard';
 import { ExerciseVarietyCard } from '@/components/analysis/ExerciseVarietyCard';
 import { MilestonesCard } from '@/components/analysis/MilestonesCard';
 import { PeriodSummaryCard } from '@/components/analysis/PeriodSummaryCard';
+import { CardioAnalysisCard } from '@/components/analysis/CardioAnalysisCard';
 import { ProfileNotFoundDisplay } from '@/components/analysis/ProfileNotFoundDisplay';
 import { LoadingStateDisplay } from '@/components/analysis/LoadingStateDisplay';
 
@@ -1101,475 +1102,63 @@ useEffect(() => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading ? Array.from({length: 6}).map((_, i) => <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></Card>)
         : !isError && (<>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline">Exercise Variety</CardTitle><CardDescription>Unique exercises performed per category {timeRangeDisplayNames[timeRange]}.</CardDescription></CardHeader><CardContent>{chartData.workoutFrequencyData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData.workoutFrequencyData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}><CartesianGrid strokeDasharray="3 3" vertical={false}/><XAxis dataKey="dateLabel" tick={{fontSize: 12}} interval={0} /><YAxis allowDecimals={false} /><Tooltip content={<ChartTooltipContent />} /><Legend content={<CustomBarChartLegend />} /><Bar dataKey="upperBody" stackId="a" fill="var(--color-upperBody)" shape={<RoundedBar />} /><Bar dataKey="lowerBody" stackId="a" fill="var(--color-lowerBody)" shape={<RoundedBar />} /><Bar dataKey="cardio" stackId="a" fill="var(--color-cardio)" shape={<RoundedBar />} /><Bar dataKey="core" stackId="a" fill="var(--color-core)" shape={<RoundedBar />} /><Bar dataKey="fullBody" stackId="a" fill="var(--color-fullBody)" shape={<RoundedBar />} /><Bar dataKey="other" stackId="a" fill="var(--color-other)" shape={<RoundedBar />} /></BarChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No workout data for this period.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2">
-                  <Award className="h-6 w-6 text-accent" /> New Milestones
-                </CardTitle>
-                <CardDescription>Achievements {timeRangeDisplayNames[timeRange]}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="prs" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="prs" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                      <Trophy className="mr-2 h-4 w-4" /> PRs
-                    </TabsTrigger>
-                    <TabsTrigger value="goals" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                      <Flag className="mr-2 h-4 w-4" /> Goals
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="prs">
-                    {chartData.newPrsData.length > 0 ? (
-                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
-                        {chartData.newPrsData.map(pr => (
-                          <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
-                            <div className="flex flex-col">
-                              <p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p>
-                              <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
-                            </div>
-                            <p className="font-bold text-lg text-accent">{pr.weight} <span className="text-sm font-medium text-muted-foreground">{pr.weightUnit}</span></p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
-                        <Trophy className="h-12 w-12 text-primary/30 mb-4" />
-                        <p className="text-muted-foreground">No new PRs for this period.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                  <TabsContent value="goals">
-                    {chartData.achievedGoalsData.length > 0 ? (
-                      <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
-                        {chartData.achievedGoalsData.map(goal => (
-                          <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
-                            <div className="flex flex-col">
-                              <p className="font-semibold text-primary">{goal.description}</p>
-                              {goal.dateAchieved && <p className="text-xs text-muted-foreground">Achieved on: {format(goal.dateAchieved, "MMMM d, yyyy")}</p>}
-                            </div>
-                            <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-[240px] flex flex-col items-center justify-center text-center">
-                        <Flag className="h-12 w-12 text-primary/30 mb-4" />
-                        <p className="text-muted-foreground">No goals achieved this period.</p>
-                      </div>
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+            <ExerciseVarietyCard
+              isLoading={isLoading}
+              isError={isError}
+              workoutFrequencyData={chartData.workoutFrequencyData}
+              timeRange={timeRange}
+            />
+            <MilestonesCard
+              isLoading={isLoading}
+              isError={isError}
+              newPrsData={chartData.newPrsData}
+              achievedGoalsData={chartData.achievedGoalsData}
+              timeRange={timeRange}
+            />
             <CalorieBreakdownCard
               isLoading={isLoading}
               isError={isError}
               categoryCalorieData={chartData.categoryCalorieData}
               timeRange={timeRange}
             />
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'reps')}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
+            <RepetitionBreakdownCard
+              isLoading={isLoading}
+              isError={isError}
+              categoryRepData={chartData.categoryRepData}
+              timeRange={timeRange}
+            />
 
-            
-            <Card className="shadow-lg lg:col-span-6">
-                <CardHeader>
-                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div className="flex-grow">
-                             <CardTitle className="font-headline flex items-center gap-2">
-                                <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
-                            </CardTitle>
-                            <CardDescription className="mt-2">
-                              Applying a balanced approach to strength training protects you from injury. Uses your PRs for analysis.
-                              {generatedDate && (
-                                  <span className="block text-xs mt-1 text-muted-foreground/80">
-                                      Last analysis on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}
-                                  </span>
-                              )}
-                            </CardDescription>
-                        </div>
-                        <Button onClick={handleAnalyzeStrength} disabled={analyzeStrengthMutation.isPending || isLoading || clientSideFindings.length === 0} className="flex-shrink-0 w-full md:w-auto">
-                            {analyzeStrengthMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                            {userProfile?.strengthAnalysis ? "Re-analyze Insights" : "Get AI Insights"}
-                        </Button>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-4">
-                    {isLoadingPrs ? (
-                        <div className="text-center text-muted-foreground p-4">
-                           <Loader2 className="h-6 w-6 animate-spin mx-auto"/>
-                        </div>
-                    ) : (
-                        <div className="w-full space-y-4">
-                            {analysisToRender?.summary && analysisToRender.findings.length > 0 && (
-                                <p className="text-center text-muted-foreground italic text-sm">{analysisToRender.summary}</p>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {IMBALANCE_TYPES.map((type, index) => {
-                                    const finding = clientSideFindings.find(f => f.imbalanceType === type);
-                                    if (!finding) return null;
 
-                                    if ('hasData' in finding && !finding.hasData) {
-                                        const config = IMBALANCE_CONFIG[type];
-                                        const requirements = `Requires: ${config.lift1Options.map(toTitleCase).join('/')} & ${config.lift2Options.map(toTitleCase).join('/')}`;
-                                        return (
-                                            <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
-                                                <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
-                                                <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
-                                                    <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
-                                                    <p className="text-sm font-semibold">Log PRs to analyze</p>
-                                                    <p className="text-xs mt-1">{requirements}</p>
-                                                </div>
-                                            </Card>
-                                        );
-                                    }
-                                    
-                                    const dataFinding = finding as StrengthFinding;
-                                    const aiFinding = analysisToRender ? analysisToRender.findings.find(f => f.imbalanceType === dataFinding.imbalanceType) : undefined;
-                                    const badgeProps = focusBadgeProps(dataFinding.imbalanceFocus);
-                                    
-                                    return (
-                                        <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
-                                            <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                            <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
-                                                <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
-                                                <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
-                                                <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
-                                                <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
-                                                <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                                <p>Balanced Range: <span className="font-bold text-foreground">{dataFinding.balancedRange}</span></p>
-                                            </div>
-                                            
-                                            <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
-                                                <div className="flex-grow">
-                                                    {analyzeStrengthMutation.isPending ? (
-                                                        <div className="flex items-center justify-center text-muted-foreground text-sm">
-                                                            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
-                                                        </div>
-                                                    ) : aiFinding ? (
-                                                    <div className="space-y-3">
-                                                            <div className="mb-4">
-                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                                <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
-                                                            </div>
-                                                    </div>
-                                                    ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
-                                                        <div>
-                                                            <div className="mb-4">
-                                                                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                            </div>
-                                                            <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
-                                                        </div>
-                                                    ) : (() => {
-                                                          const currentLevel = dataFinding.lift1Level;
-                                                          if (currentLevel === 'N/A' || currentLevel === 'Elite') {
-                                                              return null;
-                                                          }
-                                                          // This block will only render for Beginner, Intermediate, and Advanced
-                                                          return (
-                                                              <div>
-                                                                  <div className="mb-4">
-                                                                      <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                                  </div>
-                                                                  {(() => {
-                                                                      let nextLevel: string | null = null;
-                                                                      if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
-                                                                      else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
-                                                                      else if (currentLevel === 'Advanced') nextLevel = 'Elite';
-
-                                                                      if (nextLevel) {
-                                                                          return (
-                                                                              <>
-                                                                                  <p className="text-sm font-semibold flex items-center gap-2"><Milestone className="h-4 w-4 text-primary" />Next Focus</p>
-                                                                                  <p className="text-xs text-muted-foreground mt-1">
-                                                                                      Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
-                                                                                  </p>
-                                                                              </>
-                                                                          );
-                                                                      }
-                                                                      return null;
-                                                                  })()}
-                                                              </div>
-                                                          );
-                                                      })()
-                                                    }
-                                                </div>
-                                            </div>
-                                        </Card>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-            <Card className="shadow-lg lg:col-span-6">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><TrendingUp className="h-6 w-6 text-primary" />Lift Progression Analysis</CardTitle>
-                <CardDescription>Select a frequently logged lift to analyze your strength (e1RM) and volume trends over the last 6 weeks.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4">
-                    <Select value={selectedLift} onValueChange={setSelectedLift}>
-                        <SelectTrigger className="w-full sm:w-[250px]">
-                            <SelectValue placeholder="Select an exercise...">
-                                {selectedLift ? toTitleCase(selectedLift) : "Select an exercise..."}
-                            </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            {frequentlyLoggedLifts.length > 0 ? (
-                                frequentlyLoggedLifts.map(lift => <SelectItem key={lift} value={lift}>{toTitleCase(lift)}</SelectItem>)
-                            ) : (
-                                <SelectItem value="none" disabled>Log more workouts to analyze</SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
-                     <Button onClick={handleAnalyzeProgression} disabled={!selectedLift || analyzeProgressionMutation.isPending} className="w-full sm:w-auto">
-                        {analyzeProgressionMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Zap className="mr-2 h-4 w-4" />}
-                        {showProgressionReanalyze ? "Re-analyze" : "Get AI Progression Analysis"}
-                    </Button>
-                </div>
-
-                {selectedLift && progressionChartData.chartData.length > 1 && (
-                    <div className="pt-4">
-                        <div className="text-center mb-2">
-                           <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
-                            <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-x-4 gap-y-1 flex-wrap min-h-[24px]">
-                                {currentLiftLevel && currentLiftLevel !== 'N/A' && (
-                                    <span>
-                                        Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
-                                    </span>
-                                )}
-                                {trendImprovement !== null && (
-                                    <span>
-                                        e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
-                                            {trendImprovement > 0 ? '+' : ''}{trendImprovement.toFixed(0)}%
-                                        </Badge>
-                                    </span>
-                                )}
-                                {volumeTrend !== null && (
-                                    <span>
-                                        Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
-                                            {volumeTrend > 0 ? '+' : ''}{volumeTrend.toFixed(0)}%
-                                        </Badge>
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                         <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                            <ResponsiveContainer>
-                                <ComposedChart data={progressionChartData.chartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                                    <YAxis yAxisId="left" domain={['dataMin - 10', 'dataMax + 10']} allowDecimals={false} tick={{ fontSize: 10 }}>
-                                        <Label value="e1RM (lbs)" angle={-90} position="insideLeft" style={{ textAnchor: 'middle', fontSize: '12px' }} />
-                                    </YAxis>
-                                    <YAxis yAxisId="right" orientation="right" domain={['dataMin - 500', 'dataMax + 500']} allowDecimals={false} tick={{ fontSize: 10 }}>
-                                        <Label value="Total Volume (lbs)" angle={90} position="insideRight" style={{ textAnchor: 'middle', fontSize: '12px' }} />
-                                    </YAxis>
-                                    <Tooltip content={<ProgressionTooltip />} />
-                                    <Legend content={<ProgressionChartLegend />} />
-                                    <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
-                                    <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
-                                    <Scatter yAxisId="left" dataKey="actualPR" fill="var(--color-actualPR)" shape={<TrophyShape />} />
-                                    {progressionChartData.trendlineData && (
-                                        <ReferenceLine
-                                            yAxisId="left"
-                                            segment={[progressionChartData.trendlineData.start, progressionChartData.trendlineData.end]}
-                                            stroke="hsl(var(--muted-foreground))"
-                                            strokeDasharray="3 3"
-                                            strokeWidth={2}
-                                        />
-                                    )}
-                                </ComposedChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                        <p className="text-xs text-muted-foreground text-center mt-2 px-4">
-                           e1RM is calculated from your workout history. The weight you can lift for 10 reps is about 75% of your true 1-rep max
-                        </p>
-                    </div>
-                )}
-
-                 <div className="pt-4 border-t">
-                    {analyzeProgressionMutation.isPending ? (
-                        <div className="flex items-center justify-center text-muted-foreground p-4 text-sm">
-                            <Loader2 className="h-5 w-5 animate-spin mr-3" /> Generating AI analysis...
-                        </div>
-                    ) : progressionAnalysisToRender ? (
-                        <div className="space-y-4">
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-                                <p className="text-xs text-muted-foreground">Analysis from: {format(progressionAnalysisToRender.generatedDate, "MMM d, yyyy")}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.insight}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                <p className="text-xs text-muted-foreground mt-1">{progressionAnalysisToRender.result.recommendation}</p>
-                            </div>
-                        </div>
-                    ) : null}
-                 </div>
-
-              </CardContent>
-            </Card>
-             <Card className="shadow-lg lg:col-span-6">
-              <CardHeader>
-                <CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" />Cardio Analysis</CardTitle>
-                <CardDescription>A summary of your cardio performance {timeRangeDisplayNames[timeRange]}.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {cardioAnalysisData.totalCalories > 0 ? (
-                  <div className="space-y-4">
-                    <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-                        <div className="flex flex-col">
-                          <h4 className="font-bold mb-4 text-center md:text-left">Activity Summary</h4>
-                          <div className="flex flex-col justify-start items-start space-y-3">
-                            {Object.entries(cardioAnalysisData.statsByActivity).map(([name, stats]) => {
-                            const avgDistance = stats.count > 0 && stats.totalDistanceMi > 0 ? (stats.totalDistanceMi / stats.count).toFixed(1) : null;
-                            const formattedDuration = formatCardioDuration(stats.totalDurationMin);
-                            
-                            let icon = <Footprints className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Running') icon = <HeartPulse className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Cycling') icon = <Bike className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Rowing') icon = <Ship className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Climbmill') icon = <Mountain className="h-5 w-5 text-accent flex-shrink-0" />;
-                            if (name === 'Swimming') icon = <Waves className="h-5 w-5 text-accent flex-shrink-0" />;
-
-                            return (
-                                <div key={name} className="flex items-start gap-3">
-                                {icon}
-                                <div>
-                                    <p className="font-bold">{name}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                    You completed {stats.count} session{stats.count > 1 ? 's' : ''}
-                                    {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
-                                    {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
-                                    , burning {Math.round(stats.totalCalories).toLocaleString()} kcal.
-                                    {avgDistance && ` Your average distance was ${avgDistance} mi.`}
-                                    </p>
-                                </div>
-                                </div>
-                            );
-                            })}
-                          </div>
-                        </div>
-                        <Tabs defaultValue="types" className="w-full">
-                          <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="types">Cardio By Activity</TabsTrigger>
-                            <TabsTrigger value="amount">Cardio Over Time</TabsTrigger>
-                          </TabsList>
-                          <TabsContent value="types">
-                            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                                <ResponsiveContainer>
-                                <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                                    <Pie
-                                    data={cardioAnalysisData.pieChartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={isMobile ? 60 : 80}
-                                    labelLine={false}
-                                    label={(props) => renderPieLabel(props, 'kcal')}
-                                    >
-                                    {cardioAnalysisData.pieChartData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                                    ))}
-                                    </Pie>
-                                    <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                                    <Legend content={({ payload }) => {
-                                        if (!payload) return null;
-                                        const numItems = payload.length;
-                                        const useTwoRows = numItems > 3;
-
-                                        return (
-                                          <div className="flex justify-center">
-                                            <div
-                                              className="grid gap-x-2 gap-y-1 text-xs mt-2"
-                                              style={{
-                                                gridTemplateColumns: `repeat(${useTwoRows ? Math.ceil(numItems / 2) : numItems}, auto)`,
-                                              }}
-                                            >
-                                              {payload?.map((entry: any, index: number) => (
-                                                <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
-                                                  <span
-                                                    className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
-                                                    style={{ backgroundColor: entry.color }}
-                                                  />
-                                                  <span className="text-muted-foreground">{entry.payload?.name}</span>
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        );
-                                      }} />
-                                </PieChart>
-                                </ResponsiveContainer>
-                            </ChartContainer>
-                          </TabsContent>
-                          <TabsContent value="amount">
-                             <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                                <ResponsiveContainer>
-                                    <BarChart data={cardioAnalysisData.cardioAmountChartData} margin={{ top: 20, right: 20, left: -10, bottom: 5 }}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false}/>
-                                        <XAxis 
-                                          dataKey="dateLabel" 
-                                          tick={{fontSize: 12}} 
-                                          interval={0} 
-                                          angle={isMobile ? -45 : 0}
-                                          textAnchor={isMobile ? 'end' : 'middle'}
-                                          height={isMobile ? 50 : 30}
-                                          minTickGap={-5}
-                                        />
-                                        <YAxis allowDecimals={false} />
-                                        <Tooltip content={<ChartTooltipContent nameKey="name" />} />
-                                        <Legend content={({payload}) => {
-                                            if (!payload) return null;
-                                            const numItems = payload.length;
-                                            const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
-                                            return (
-                                                <div className="flex justify-center mt-4">
-                                                    <div className="grid gap-x-2 gap-y-1 text-xs" style={{ gridTemplateColumns: `repeat(${columns}, auto)`}}>
-                                                        {payload.map((entry:any, index:number) => (
-                                                            <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
-                                                                <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
-                                                                <span className="text-muted-foreground">{entry.value}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )
-                                        }} />
-                                        {Object.keys(cardioAnalysisData.statsByActivity).map(activity => (
-                                            <Bar key={activity} dataKey={activity} stackId="a" fill={`var(--color-${activity})`} shape={<RoundedBar />}>
-                                              {Object.keys(cardioAnalysisData.statsByActivity).indexOf(activity) === Object.keys(cardioAnalysisData.statsByActivity).length - 1 && (
-                                                <LabelList dataKey="total" position="top" formatter={(value: number) => value > 0 ? value.toLocaleString() : ''} className="text-xs fill-foreground font-semibold" />
-                                              )}
-                                            </Bar>
-                                        ))}
-                                    </BarChart>
-                                </ResponsiveContainer>
-                            </ChartContainer>
-                          </TabsContent>
-                        </Tabs>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground text-center">
-                    <p>No cardio data logged for this period.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <StrengthBalanceCard
+              isLoading={isLoading}
+              isError={isError}
+              userProfile={userProfile}
+              personalRecords={personalRecords}
+              strengthAnalysis={userProfile?.strengthAnalysis}
+            />
+            <LiftProgressionCard
+              isLoading={isLoading}
+              isError={isError}
+              userProfile={userProfile}
+              workoutLogs={workoutLogs}
+              personalRecords={personalRecords}
+              selectedLift={selectedLift}
+              setSelectedLift={setSelectedLift}
+              frequentlyLoggedLifts={frequentlyLoggedLifts}
+            />
+            <CardioAnalysisCard
+              isLoading={isLoading}
+              isError={isError}
+              userProfile={userProfile}
+              workoutLogs={workoutLogs}
+              filteredData={{
+                logsForPeriod: [],
+                prsForPeriod: [],
+                goalsForPeriod: [],
+              }}
+              timeRange={timeRange}
+              timeRangeDisplayNames={timeRangeDisplayNames}
+            />
         </>)}
       </div>
     </div>
