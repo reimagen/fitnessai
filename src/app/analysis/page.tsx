@@ -1141,11 +1141,7 @@ useEffect(() => {
               isError={isError}
               userProfile={userProfile!}
               workoutLogs={workoutLogs}
-              filteredData={{
-                logsForPeriod: [],
-                prsForPeriod: [],
-                goalsForPeriod: [],
-              }}
+              filteredData={filteredData}
               timeRange={timeRange}
               timeRangeDisplayNames={timeRangeDisplayNames}
             />
