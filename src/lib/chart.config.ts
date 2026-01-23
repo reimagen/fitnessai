@@ -1,3 +1,5 @@
+import { ChartConfig } from '@/components/ui/chart';
+
 export const chartConfig = {
   distance: { label: "Distance (mi)", color: "hsl(var(--accent))" },
   upperBody: { label: "Upper Body", color: "hsl(var(--chart-1))" },
