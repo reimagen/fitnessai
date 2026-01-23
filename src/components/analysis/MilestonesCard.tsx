@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import type { PersonalRecord, FitnessGoal } from '@/lib/types';
 import React from 'react';
+import { timeRangeDisplayNames } from '@/lib/analysis-constants';
+import { toTitleCase } from '@/lib/analysis.config';
 
 interface MilestonesCardProps {
   isLoading: boolean;
@@ -15,22 +17,6 @@ interface MilestonesCardProps {
   achievedGoalsData: (FitnessGoal & { id: string; dateAchieved: Date; })[];
   timeRange: string;
 }
-
-const timeRangeDisplayNames: Record<string, string> = {
-  'weekly': 'This Week',
-  'monthly': 'This Month',
-  'yearly': 'This Year',
-  'all-time': 'All Time',
-};
-
-// Helper to convert a string to title case (copied from page.tsx)
-const toTitleCase = (str: string) => {
-  if (!str) return "";
-  return str.replace(
-    /\w\S*/g,
-    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
-};
 
 export function MilestonesCard({ isLoading, isError, newPrsData, achievedGoalsData, timeRange }: MilestonesCardProps) {
   if (isLoading) {

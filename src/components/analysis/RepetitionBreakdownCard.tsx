@@ -6,7 +6,10 @@ import { ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/compo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { IterationCw, Loader2 } from 'lucide-react';
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile'; // Assuming this hook is available
+import { useIsMobile } from '@/hooks/use-mobile';
+import { renderPieLabel } from '@/lib/chart-utils';
+import { timeRangeDisplayNames } from '@/lib/analysis-constants';
+import { chartConfig } from '@/lib/chart.config';
 
 interface CategoryChartData {
   key: string;
@@ -21,56 +24,6 @@ interface RepetitionBreakdownCardProps {
   categoryRepData: CategoryChartData[];
   timeRange: string;
 }
-
-const timeRangeDisplayNames: Record<string, string> = {
-  'weekly': 'This Week',
-  'monthly': 'This Month',
-  'yearly': 'This Year',
-  'all-time': 'All Time',
-};
-
-// Re-defining necessary constants/helpers from page.tsx for this component
-const RADIAN = Math.PI / 180;
-const renderPieLabel = (props: any, unit?: 'reps' | 'kcal', isMobile?: boolean) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
-    if (percent < 0.05) return null;
-    
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    
-    // Use a smaller radius, especially on mobile, to pull labels inward
-    const radiusMultiplier = isMobile ? 0.6 : 0.7;
-    const labelRadius = innerRadius + (outerRadius - innerRadius) * radiusMultiplier;
-
-    const x = cx + labelRadius * cos;
-    const y = cy + labelRadius * sin;
-    
-    const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
-    const unitString = unit ? ` ${unit}` : '';
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="hsl(var(--foreground))" 
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central" 
-        className="text-xs"
-      >
-        {`${name} (${displayValue}${unitString})`}
-      </text>
-    );
-  };
-
-const chartConfig = {
-    // Only include what's necessary for the legend or labels
-    upperBody: { label: "Upper Body" },
-    lowerBody: { label: "Lower Body" },
-    fullBody: { label: "Full Body" },
-    cardio: { label: "Cardio" },
-    core: { label: "Core" },
-    other: { label: "Other" },
-};
 
 
 export function RepetitionBreakdownCard({ isLoading, isError, categoryRepData, timeRange }: RepetitionBreakdownCardProps) {

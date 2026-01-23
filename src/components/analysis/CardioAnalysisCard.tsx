@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useMemo } from 'react';
-import type { WorkoutLog, UserProfile, ExerciseCategory } from '@/lib/types';
+import type { WorkoutLog, UserProfile, ExerciseCategory, PersonalRecord } from '@/lib/types';
 import { format } from 'date-fns/format';
 import { eachDayOfInterval, startOfMonth, endOfMonth, eachWeekOfInterval, startOfWeek, endOfWeek, differenceInDays, differenceInWeeks } from 'date-fns';
 import { Flame, Bike, Footprints, HeartPulse, Mountain, Ship, Waves } from 'lucide-react';
@@ -15,11 +15,12 @@ import { cn } from '@/lib/utils';
 import { chartConfig } from '@/lib/chart.config';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, XAxis, YAxis, CartesianGrid, LabelList, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { getPath, RoundedBar, renderPieLabel } from '@/lib/chart-utils';
 
 
 type ChartDataKey = keyof typeof chartConfig;
 
-const categoryToCamelCase = (category: ExerciseCategory): string => { // Changed return type to string as it's used as a key
+const categoryToCamelCase = (category: ExerciseCategory): string => {
   switch (category) {
     case 'Upper Body': return 'upperBody';
     case 'Lower Body': return 'lowerBody';
@@ -28,37 +29,6 @@ const categoryToCamelCase = (category: ExerciseCategory): string => { // Changed
     case 'Core': return 'core';
     default: return 'other';
   }
-};
-
-const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
-    const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
-    let path = `M ${x + tl},${y}`;
-    path += ` L ${x + width - tr},${y}`;
-    path += ` Q ${x + width},${y} ${x + width},${y + tr}`;
-    path += ` L ${x + width},${y + height - br}`;
-    path += ` Q ${x + width},${y + height} ${x + width - br},${y + height}`;
-    path += ` L ${x + bl},${y + height}`;
-    path += ` Q ${x},${y + height} ${x},${y + height - bl}`;
-    path += ` L ${x},${y + tl}`;
-    path += ` Q ${x},${y} ${x + tl},${y}`;
-    path += ` Z`;
-    return path;
-};
-
-const stackOrder: (string)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
-
-const RoundedBar = (props: any) => {
-  const { fill, x, y, width, height, payload, dataKey } = props;
-  if (!payload || !dataKey || props.value === 0 || height === 0) return null;
-  const myIndex = stackOrder.indexOf(dataKey as any);
-  let isTop = true;
-  if (myIndex !== -1) {
-    for (let i = myIndex + 1; i < stackOrder.length; i++) {
-      if (payload[stackOrder[i]] > 0) { isTop = false; break; }
-    }
-  }
-  const radius = isTop ? [4, 4, 0, 0] : [0, 0, 0, 0];
-  return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
 };
 
 
@@ -302,37 +272,6 @@ export const CardioAnalysisCard: React.FC<CardioAnalysisCardProps> = ({
         return { totalCalories, statsByActivity, pieChartData, calorieSummary, cardioAmountChartData };
     }, [filteredData, workoutLogs, timeRange, userProfile]);
 
-    const RADIAN = Math.PI / 180;
-    const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
-        const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
-        if (percent < 0.05) return null;
-
-        const sin = Math.sin(-RADIAN * midAngle);
-        const cos = Math.cos(-RADIAN * midAngle);
-
-        const radiusMultiplier = isMobile ? 0.6 : 0.7;
-        const labelRadius = innerRadius + (outerRadius - innerRadius) * radiusMultiplier;
-
-        const x = cx + labelRadius * cos;
-        const y = cy + labelRadius * sin;
-
-        const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
-        const unitString = unit ? ` ${unit}` : '';
-
-        return (
-            <text
-                x={x}
-                y={y}
-                fill="hsl(var(--foreground))"
-                textAnchor={x > cx ? 'start' : 'end'}
-                dominantBaseline="central"
-                className="text-xs"
-            >
-                {`${name} (${displayValue}${unitString})`}
-            </text>
-        );
-    };
-
     const formatCardioDuration = (totalMinutes: number): string => {
         const hours = Math.floor(totalMinutes / 60);
         const minutes = Math.round(totalMinutes % 60);
@@ -402,7 +341,7 @@ export const CardioAnalysisCard: React.FC<CardioAnalysisCardProps> = ({
                                                     cy="50%"
                                                     outerRadius={isMobile ? 60 : 80}
                                                     labelLine={false}
-                                                    label={(props) => renderPieLabel(props, 'kcal')}
+                                                    label={(props) => renderPieLabel(props, 'kcal', isMobile)}
                                                 >
                                                     {cardioAnalysisData.pieChartData.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={entry.fill} />

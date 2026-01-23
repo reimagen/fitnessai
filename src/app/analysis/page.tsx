@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList, Pie, PieChart, Cell } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal, StrengthFinding } from '@/lib/types';
+import type { ImbalanceType } from '@/lib/analysis.config';
 import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
 import { isWithinInterval } from 'date-fns/isWithinInterval';
@@ -35,73 +36,25 @@ import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriang
 import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName, getStrengthRatioStandards } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
+import { cn } from '@/lib/utils';
+import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/lib/analysis.config';
+import { chartConfig } from '@/lib/chart.config';
+import { type ImbalanceFocus } from '@/lib/analysis.utils';
+import { getPath, RoundedBar, renderPieLabel, stackOrder } from '@/lib/chart-utils';
+import { timeRangeDisplayNames } from '@/lib/analysis-constants';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { CalorieBreakdownCard } from '@/components/analysis/CalorieBreakdownCard';
-
-
-const IMBALANCE_TYPES = [
-    'Horizontal Push vs. Pull',
-    'Vertical Push vs. Pull',
-    'Hamstring vs. Quad',
-    'Adductor vs. Abductor',
-] as const;
-
-type ImbalanceType = (typeof IMBALANCE_TYPES)[number];
-type ImbalanceFocus = 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
-
-const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], lift2Options: string[], ratioCalculation: (l1: number, l2: number) => number }> = {
-    'Horizontal Push vs. Pull': { lift1Options: ['chest press'], lift2Options: ['seated row'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Vertical Push vs. Pull': { lift1Options: ['shoulder press'], lift2Options: ['lat pulldown'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Hamstring vs. Quad': { lift1Options: ['leg curl'], lift2Options: ['leg extension'], ratioCalculation: (l1, l2) => l1/l2 },
-    'Adductor vs. Abductor': { lift1Options: ['adductor'], lift2Options: ['abductor'], ratioCalculation: (l1, l2) => l1/l2 },
-};
-
-// Helper to find the best PR for a given list of exercises
-function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
-    let searchNames = [...exerciseNames];
-    
-    const relevantRecords = records.filter(r => searchNames.some(name => getNormalizedExerciseName(r.exerciseName) === name.trim().toLowerCase()));
-    if (relevantRecords.length === 0) return null;
-
-    return relevantRecords.reduce((best, current) => {
-        const bestWeightKg = best.weightUnit === 'lbs' ? best.weight * 0.453592 : best.weight;
-        const currentWeightKg = current.weightUnit === 'lbs' ? current.weight * 0.453592 : current.weight;
-        return currentWeightKg > bestWeightKg ? current : best;
-    });
-}
-
-// Helper to convert a string to title case
-const toTitleCase = (str: string) => {
-  if (!str) return "";
-  return str.replace(
-    /\w\S*/g,
-    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
-};
-
-
-const chartConfig = {
-  distance: { label: "Distance (mi)", color: "hsl(var(--accent))" },
-  upperBody: { label: "Upper Body", color: "hsl(var(--chart-1))" },
-  fullBody: { label: "Full Body", color: "hsl(var(--chart-2))" },
-  lowerBody: { label: "Lower Body", color: "hsl(var(--chart-3))" },
-  cardio: { label: "Cardio", color: "hsl(var(--chart-4))" },
-  core: { label: "Core", color: "hsl(var(--chart-5))" },
-  other: { label: "Other", color: "hsl(var(--chart-6))" },
-  e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
-  volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
-  actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
-  trend: { label: "e1RM Trend", color: "hsl(var(--muted-foreground))" },
-  Running: { label: "Running", color: "hsl(var(--chart-1))" },
-  Walking: { label: "Walking", color: "hsl(var(--chart-2))" },
-  Cycling: { label: "Cycling", color: "hsl(var(--chart-3))" },
-  Climbmill: { label: "Climbmill", color: "hsl(var(--chart-4))" },
-  Rowing: { label: "Rowing", color: "hsl(var(--chart-5))" },
-  Swimming: { label: "Swimming", color: "hsl(var(--chart-6))" },
-} satisfies ChartConfig;
+import { RepetitionBreakdownCard } from '@/components/analysis/RepetitionBreakdownCard';
+import StrengthBalanceCard from '@/components/analysis/StrengthBalanceCard';
+import { LiftProgressionCard } from '@/components/analysis/LiftProgressionCard';
+import { ExerciseVarietyCard } from '@/components/analysis/ExerciseVarietyCard';
+import { MilestonesCard } from '@/components/analysis/MilestonesCard';
+import { PeriodSummaryCard } from '@/components/analysis/PeriodSummaryCard';
+import { ProfileNotFoundDisplay } from '@/components/analysis/ProfileNotFoundDisplay';
+import { LoadingStateDisplay } from '@/components/analysis/LoadingStateDisplay';
 
 type ChartDataKey = keyof typeof chartConfig;
 
@@ -125,13 +78,6 @@ interface PeriodSummaryStats {
   periodLabel: string;
 }
 
-const timeRangeDisplayNames: Record<string, string> = {
-  'weekly': 'This Week',
-  'monthly': 'This Month',
-  'yearly': 'This Year',
-  'all-time': 'All Time',
-};
-
 const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPoint, 'dateLabel' | 'date'> => {
   switch (category) {
     case 'Upper Body': return 'upperBody';
@@ -141,53 +87,6 @@ const categoryToCamelCase = (category: ExerciseCategory): keyof Omit<ChartDataPo
     case 'Core': return 'core';
     default: return 'other';
   }
-};
-
-const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
-    const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
-    let path = `M ${x + tl},${y}`;
-    path += ` L ${x + width - tr},${y}`;
-    path += ` Q ${x + width},${y} ${x + width},${y + tr}`;
-    path += ` L ${x + width},${y + height - br}`;
-    path += ` Q ${x + width},${y + height} ${x + width - br},${y + height}`;
-    path += ` L ${x + bl},${y + height}`;
-    path += ` Q ${x},${y + height} ${x},${y + height - bl}`;
-    path += ` L ${x},${y + tl}`;
-    path += ` Q ${x},${y} ${x + tl},${y}`;
-    path += ` Z`;
-    return path;
-};
-
-const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
-
-const RoundedBar = (props: any) => {
-  const { fill, x, y, width, height, payload, dataKey } = props;
-  if (!payload || !dataKey || props.value === 0 || height === 0) return null;
-  const myIndex = stackOrder.indexOf(dataKey as any);
-  let isTop = true;
-  if (myIndex !== -1) {
-    for (let i = myIndex + 1; i < stackOrder.length; i++) {
-      if (payload[stackOrder[i]] > 0) { isTop = false; break; }
-    }
-  }
-  const radius = isTop ? [4, 4, 0, 0] : [0, 0, 0, 0];
-  return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
-};
-
-type StrengthFinding = {
-    imbalanceType: ImbalanceType;
-    lift1Name: string;
-    lift1Weight: number;
-    lift1Unit: "kg" | "lbs";
-    lift1Level: StrengthLevel;
-    lift2Name: string;
-    lift2Weight: number;
-    lift2Unit: "kg" | "lbs";
-    lift2Level: StrengthLevel;
-    userRatio: string;
-    targetRatio: string;
-    balancedRange: string;
-    imbalanceFocus: ImbalanceFocus;
 };
 
 const calculateE1RM = (weight: number, reps: number): number => {

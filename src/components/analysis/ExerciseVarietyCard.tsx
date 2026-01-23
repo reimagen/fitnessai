@@ -6,8 +6,10 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
+import { getPath, RoundedBar } from '@/lib/chart-utils';
+import { timeRangeDisplayNames } from '@/lib/analysis-constants';
+import { chartConfig } from '@/lib/chart.config';
 
-// Re-defining necessary types and constants from page.tsx for this component
 interface ChartDataPoint {
   date: string;
   dateLabel: string;
@@ -19,64 +21,7 @@ interface ChartDataPoint {
   other: number;
 }
 
-const timeRangeDisplayNames: Record<string, string> = {
-  'weekly': 'This Week',
-  'monthly': 'This Month',
-  'yearly': 'This Year',
-  'all-time': 'All Time',
-};
-
-const chartConfig = {
-  distance: { label: "Distance (mi)", color: "hsl(var(--accent))" },
-  upperBody: { label: "Upper Body", color: "hsl(var(--chart-1))" },
-  fullBody: { label: "Full Body", color: "hsl(var(--chart-2))" },
-  lowerBody: { label: "Lower Body", color: "hsl(var(--chart-3))" },
-  cardio: { label: "Cardio", color: "hsl(var(--chart-4))" },
-  core: { label: "Core", color: "hsl(var(--chart-5))" },
-  other: { label: "Other", color: "hsl(var(--chart-6))" },
-  value: { label: "Value", color: "hsl(var(--accent))" },
-  e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
-  volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
-  actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
-  trend: { label: "e1RM Trend", color: "hsl(var(--muted-foreground))" },
-  Running: { label: "Running", color: "hsl(var(--chart-1))" },
-  Walking: { label: "Walking", color: "hsl(var(--chart-2))" },
-  Cycling: { label: "Cycling", color: "hsl(var(--chart-3))" },
-  Climbmill: { label: "Climbmill", color: "hsl(var(--chart-4))" },
-  Rowing: { label: "Rowing", color: "hsl(var(--chart-5))" },
-  Swimming: { label: "Swimming", color: "hsl(var(--chart-6))" },
-};
 type ChartDataKey = keyof typeof chartConfig;
-
-const stackOrder: (keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>)[] = ['upperBody', 'lowerBody', 'cardio', 'core', 'fullBody', 'other'];
-
-const getPath = (x: number, y: number, width: number, height: number, radius: number | number[]) => {
-    const [tl, tr, br, bl] = Array.isArray(radius) ? radius : [radius, radius, radius, radius];
-    let path = `M ${x + tl},${y}`;
-    path += ` L ${x + width - tr},${y}`;
-    path += ` Q ${x + width},${y} ${x + width},${y + tr}`;
-    path += ` L ${x + width},${y + height - br}`;
-    path += ` Q ${x + width},${y + height} ${x + width - br},${y + height}`;
-    path += ` L ${x + bl},${y + height}`;
-    path += ` Q ${x},${y + height} ${x},${y + height - bl}`;
-    path += ` L ${x},${y + tl}`;
-    path += ` Q ${x},${y} ${x + tl},${y}`;
-    return path;
-};
-
-const RoundedBar = (props: any) => {
-  const { fill, x, y, width, height, payload, dataKey } = props;
-  if (!payload || !dataKey || props.value === 0 || height === 0) return null;
-  const myIndex = stackOrder.indexOf(dataKey as any);
-  let isTop = true;
-  if (myIndex !== -1) {
-    for (let i = myIndex + 1; i < stackOrder.length; i++) {
-      if (payload[stackOrder[i]] > 0) { isTop = false; break; }
-    }
-  }
-  const radius = isTop ? [4, 4, 0, 0] : [0, 0, 0, 0];
-  return <path d={getPath(x, y, width, height, radius)} stroke="none" fill={fill} />;
-};
 
 const CustomBarChartLegend = ({ payload }: any) => {
     if (!payload) return null;

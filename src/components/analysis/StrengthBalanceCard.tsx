@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Zap, Lightbulb, Scale } from 'lucide-react';
 import { format } from 'date-fns/format';
 import React from 'react';
-import type { ImbalanceFocus, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
+import type { StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
+import type { ImbalanceType } from '@/lib/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/use-toast';
-import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, getStrengthLevel, toTitleCase, getStrengthRatioStandards } from '@/lib/strength-standards';
-import { focusBadgeProps, strengthLevelRanks } from '@/lib/analysis.utils';
+import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/lib/analysis.config';
+import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
+import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/lib/analysis.utils';
 
 interface StrengthBalanceCardProps {
   isLoading: boolean;
