@@ -2,6 +2,22 @@
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
+export interface StrengthFinding {
+  imbalanceType: string;
+  lift1Name: string;
+  lift1Weight: number;
+  lift1Unit: 'kg' | 'lbs';
+  lift2Name: string;
+  lift2Weight: number;
+  lift2Unit: 'kg' | 'lbs';
+  userRatio: string;
+  targetRatio: string;
+  balancedRange: string;
+  imbalanceFocus: 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
+  lift1Level: StrengthLevel;
+  lift2Level: StrengthLevel;
+}
+
 export interface Exercise {
   id: string;
   name: string;
