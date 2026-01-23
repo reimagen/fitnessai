@@ -3,14 +3,11 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList, Pie, PieChart, Cell } from 'recharts';
-import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React, { useState, useMemo, useEffect } from 'react';
-import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthImbalanceOutput, UserProfile, StrengthLevel, Exercise, StoredLiftProgressionAnalysis, AnalyzeLiftProgressionOutput, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal, StrengthFinding } from '@/lib/types';
+import type { WorkoutLog, PersonalRecord, ExerciseCategory, StrengthLevel, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal, StrengthFinding } from '@/lib/types';
 import type { ImbalanceType } from '@/lib/analysis.config';
 import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
 import { format } from 'date-fns/format';
@@ -21,26 +18,21 @@ import { startOfMonth } from 'date-fns/startOfMonth';
 import { endOfMonth } from 'date-fns/endOfMonth';
 import { startOfYear } from 'date-fns/startOfYear';
 import { endOfYear } from 'date-fns/endOfYear';
-import { getWeek } from 'date-fns/getWeek';
-import { getYear } from 'date-fns/getYear';
 import { parse } from 'date-fns/parse';
 import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
-import { getWeekOfMonth } from 'date-fns/getWeekOfMonth';
 import type { Interval } from 'date-fns';
 import { subWeeks } from 'date-fns/subWeeks';
 import { isAfter } from 'date-fns/isAfter';
-import { differenceInDays, differenceInWeeks, getWeeksInMonth, differenceInMonths, differenceInYears } from 'date-fns';
-import { isSameDay } from 'date-fns/isSameDay';
+import { differenceInDays, differenceInWeeks } from 'date-fns';
 import { eachWeekOfInterval } from 'date-fns/eachWeekOfInterval';
-import { TrendingUp, Award, Flame, IterationCw, Scale, Loader2, Zap, AlertTriangle, Lightbulb, Milestone, Trophy, UserPlus, Flag, CheckCircle, Bike, Footprints, Ship, Mountain, Waves, HeartPulse } from 'lucide-react';
-import { getStrengthLevel, getStrengthThresholds, getNormalizedExerciseName, getStrengthRatioStandards } from '@/lib/strength-standards';
+import { TrendingUp, Loader2, Trophy, UserPlus } from 'lucide-react';
+import { getStrengthLevel, getNormalizedExerciseName, getStrengthRatioStandards } from '@/lib/strength-standards';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import { cn } from '@/lib/utils';
 import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/lib/analysis.config';
 import { chartConfig } from '@/lib/chart.config';
 import { type ImbalanceFocus } from '@/lib/analysis.utils';
-import { getPath, RoundedBar, renderPieLabel, stackOrder } from '@/lib/chart-utils';
 import { timeRangeDisplayNames } from '@/lib/analysis-constants';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -52,10 +44,7 @@ import StrengthBalanceCard from '@/components/analysis/StrengthBalanceCard';
 import { LiftProgressionCard } from '@/components/analysis/LiftProgressionCard';
 import { ExerciseVarietyCard } from '@/components/analysis/ExerciseVarietyCard';
 import { MilestonesCard } from '@/components/analysis/MilestonesCard';
-import { PeriodSummaryCard } from '@/components/analysis/PeriodSummaryCard';
 import { CardioAnalysisCard } from '@/components/analysis/CardioAnalysisCard';
-import { ProfileNotFoundDisplay } from '@/components/analysis/ProfileNotFoundDisplay';
-import { LoadingStateDisplay } from '@/components/analysis/LoadingStateDisplay';
 
 type ChartDataKey = keyof typeof chartConfig;
 
@@ -297,10 +286,10 @@ export default function AnalysisPage() {
         return;
     }
     // Filter out findings that don't have data
-    const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
+    const validFindings = clientSideFindings.filter((f): f is StrengthFinding => !('hasData' in f));
 
     const analysisInput: StrengthImbalanceInput = {
-        clientSideFindings: validFindings.map(f => ({
+        clientSideFindings: validFindings.map((f: StrengthFinding) => ({
             ...f,
             targetRatio: f.targetRatio, // Ensure targetRatio is passed
         })),
@@ -312,8 +301,8 @@ export default function AnalysisPage() {
             skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
             skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
             fitnessGoals: (userProfile.fitnessGoals || [])
-              .filter(g => !g.achieved)
-              .map(g => ({
+              .filter((g: FitnessGoal) => !g.achieved)
+              .map((g: FitnessGoal) => ({
                 description: g.description,
                 isPrimary: g.isPrimary || false,
               })),
@@ -328,17 +317,17 @@ export default function AnalysisPage() {
     const today = new Date();
     let logsForPeriod = workoutLogs || [];
     let prsForPeriod = personalRecords || [];
-    let goalsForPeriod = (userProfile?.fitnessGoals || []).filter(g => g.achieved && g.dateAchieved);
+    let goalsForPeriod = (userProfile?.fitnessGoals || []).filter((g: FitnessGoal) => g.achieved && g.dateAchieved);
 
     if (timeRange !== 'all-time') {
       let interval: Interval;
       if (timeRange === 'weekly') interval = { start: startOfWeek(today, { weekStartsOn: 0 }), end: endOfWeek(today, { weekStartsOn: 0 }) };
       else if (timeRange === 'monthly') interval = { start: startOfMonth(today), end: endOfMonth(today) };
       else interval = { start: startOfYear(today), end: endOfYear(today) };
-      
-      logsForPeriod = (workoutLogs || []).filter(log => isWithinInterval(log.date, interval));
-      prsForPeriod = (personalRecords || []).filter(pr => isWithinInterval(pr.date, interval));
-      goalsForPeriod = goalsForPeriod.filter(g => isWithinInterval(g.dateAchieved!, interval));
+
+      logsForPeriod = (workoutLogs || []).filter((log: WorkoutLog) => isWithinInterval(log.date, interval));
+      prsForPeriod = (personalRecords || []).filter((pr: PersonalRecord) => isWithinInterval(pr.date, interval));
+      goalsForPeriod = goalsForPeriod.filter((g: FitnessGoal) => isWithinInterval(g.dateAchieved!, interval));
     }
 
     return { logsForPeriod, prsForPeriod, goalsForPeriod };
@@ -357,9 +346,9 @@ export default function AnalysisPage() {
     // Helper function to process logs for a given period and return unique exercise counts
     const getUniqueExerciseCounts = (logs: WorkoutLog[]): Partial<Record<ExerciseCategoryKey, number>> => {
       const uniqueExercises: Partial<Record<ExerciseCategoryKey, Set<string>>> = {};
-      
-      logs.forEach(log => {
-        log.exercises.forEach(ex => {
+
+      logs.forEach((log: WorkoutLog) => {
+        log.exercises.forEach((ex) => {
           const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
           if (!uniqueExercises[camelCaseCategory]) {
             uniqueExercises[camelCaseCategory] = new Set();
@@ -382,9 +371,9 @@ export default function AnalysisPage() {
             const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
             const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-            workoutFrequencyData = daysInWeek.map(day => {
+            workoutFrequencyData = daysInWeek.map((day: Date) => {
                 const dateKey = format(day, 'yyyy-MM-dd');
-                const logsForDay = logsForPeriod.filter(log => format(log.date, 'yyyy-MM-dd') === dateKey);
+                const logsForDay = logsForPeriod.filter((log: WorkoutLog) => format(log.date, 'yyyy-MM-dd') === dateKey);
                 const counts = getUniqueExerciseCounts(logsForDay);
                 return {
                     date: dateKey,
@@ -402,14 +391,14 @@ export default function AnalysisPage() {
             
         case 'monthly': {
             const aggregatedData: { [key: string]: WorkoutLog[] } = {};
-            logsForPeriod.forEach(log => {
+            logsForPeriod.forEach((log: WorkoutLog) => {
                 const weekStart = startOfWeek(log.date, { weekStartsOn: 0 });
                 const dateKey = format(weekStart, 'yyyy-MM-dd');
                 if (!aggregatedData[dateKey]) aggregatedData[dateKey] = [];
                 aggregatedData[dateKey].push(log);
             });
 
-            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]) => {
+            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]: [string, WorkoutLog[]]) => {
                 const weekStart = parse(dateKey, 'yyyy-MM-dd', new Date());
                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
                 const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
@@ -424,18 +413,18 @@ export default function AnalysisPage() {
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
-            }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            }).sort((a: ChartDataPoint, b: ChartDataPoint) => new Date(a.date).getTime() - new Date(b.date).getTime());
             break;
         }
-        
+
         case 'yearly': {
             const aggregatedData: { [key: string]: WorkoutLog[] } = {};
-            logsForPeriod.forEach(log => {
+            logsForPeriod.forEach((log: WorkoutLog) => {
                 const dateKey = format(log.date, 'yyyy-MM');
                 if (!aggregatedData[dateKey]) aggregatedData[dateKey] = [];
                 aggregatedData[dateKey].push(log);
             });
-            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]) => {
+            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]: [string, WorkoutLog[]]) => {
                 const dateLabel = format(parse(dateKey, 'yyyy-MM', new Date()), 'MMM');
                 const counts = getUniqueExerciseCounts(logs);
                 return {
@@ -448,18 +437,18 @@ export default function AnalysisPage() {
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
-            }).sort((a, b) => parse(a.date, 'yyyy-MM', new Date()).getTime() - parse(b.date, 'yyyy-MM', new Date()).getTime());
+            }).sort((a: ChartDataPoint, b: ChartDataPoint) => parse(a.date, 'yyyy-MM', new Date()).getTime() - parse(b.date, 'yyyy-MM', new Date()).getTime());
             break;
         }
-        
+
         case 'all-time': {
             const aggregatedData: { [key: string]: WorkoutLog[] } = {};
-            logsForPeriod.forEach(log => {
+            logsForPeriod.forEach((log: WorkoutLog) => {
                 const dateKey = format(log.date, 'yyyy');
                 if (!aggregatedData[dateKey]) aggregatedData[dateKey] = [];
                 aggregatedData[dateKey].push(log);
             });
-            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]) => {
+            workoutFrequencyData = Object.entries(aggregatedData).map(([dateKey, logs]: [string, WorkoutLog[]]) => {
                 const counts = getUniqueExerciseCounts(logs);
                 return {
                     date: dateKey,
@@ -471,7 +460,7 @@ export default function AnalysisPage() {
                     fullBody: counts.fullBody || 0,
                     other: counts.other || 0,
                 };
-            }).sort((a, b) => parseInt(a.date) - parseInt(b.date));
+            }).sort((a: ChartDataPoint, b: ChartDataPoint) => parseInt(a.date) - parseInt(b.date));
             break;
         }
     }
@@ -479,22 +468,22 @@ export default function AnalysisPage() {
 
     const repsByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
     const caloriesByCat: Record<keyof Omit<ChartDataPoint, 'dateLabel' | 'date'>, number> = { upperBody: 0, lowerBody: 0, fullBody: 0, cardio: 0, core: 0, other: 0 };
-    
-    logsForPeriod.forEach(log => { 
-        log.exercises.forEach(ex => {
+
+    logsForPeriod.forEach((log: WorkoutLog) => {
+        log.exercises.forEach((ex) => {
             const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
             repsByCat[camelCaseCategory] += (ex.reps || 0) * (ex.sets || 0);
             caloriesByCat[camelCaseCategory] += ex.calories || 0;
         });
     });
-    const categoryRepData = Object.entries(repsByCat).filter(([, value]) => value > 0).map(([name, value]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
-    const categoryCalorieData = Object.entries(caloriesByCat).filter(([, value]) => value > 0).map(([name, value]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
-    
+    const categoryRepData = Object.entries(repsByCat).filter(([, value]: [string, number]) => value > 0).map(([name, value]: [string, number]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
+    const categoryCalorieData = Object.entries(caloriesByCat).filter(([, value]: [string, number]) => value > 0).map(([name, value]: [string, number]) => ({ key: name, name: (chartConfig[name as ChartDataKey]?.label || name) as string, value, fill: `var(--color-${name})`}));
+
     const uniqueWorkoutDates = new Set<string>();
     let totalWeight = 0, totalDistance = 0, totalDuration = 0, totalCalories = 0;
-    logsForPeriod.forEach(log => {
+    logsForPeriod.forEach((log: WorkoutLog) => {
         uniqueWorkoutDates.add(format(log.date, 'yyyy-MM-dd'));
-        log.exercises.forEach(ex => {
+        log.exercises.forEach((ex) => {
             if (ex.weight && ex.sets && ex.reps) totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
             if (ex.category === 'Cardio' && ex.distance) {
                 let distMi = 0;
@@ -520,20 +509,21 @@ export default function AnalysisPage() {
         totalCaloriesBurned: Math.round(totalCalories),
         periodLabel: periodLabel
     };
-    return { 
-        workoutFrequencyData, 
-        newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()),
-        achievedGoalsData: filteredData.goalsForPeriod.sort((a,b) => b.dateAchieved!.getTime() - a.dateAchieved!.getTime()),
-        categoryRepData, 
-        periodSummary 
+    return {
+        workoutFrequencyData,
+        newPrsData: filteredData.prsForPeriod.sort((a: PersonalRecord, b: PersonalRecord) => b.date.getTime() - a.date.getTime()),
+        achievedGoalsData: (filteredData.goalsForPeriod as (FitnessGoal & { dateAchieved: Date })[]).sort((a: FitnessGoal & { dateAchieved: Date }, b: FitnessGoal & { dateAchieved: Date }) => b.dateAchieved.getTime() - a.dateAchieved.getTime()),
+        categoryRepData,
+        categoryCalorieData,
+        periodSummary
     };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
   
   const frequentlyLoggedLifts = useMemo(() => {
     if (!workoutLogs) return [];
     const weightedExercises = new Map<string, number>();
-    workoutLogs.forEach(log => {
-      log.exercises.forEach(ex => {
+    workoutLogs.forEach((log: WorkoutLog) => {
+      log.exercises.forEach((ex) => {
         if (ex.weight && ex.weight > 0 && ex.category !== 'Cardio') {
           const name = getNormalizedExerciseName(ex.name);
           weightedExercises.set(name, (weightedExercises.get(name) || 0) + 1);
@@ -541,9 +531,9 @@ export default function AnalysisPage() {
       });
     });
     return Array.from(weightedExercises.entries())
-      .filter(([, count]) => count > 1) // Need at least 2 workouts to calc regression
-      .sort((a, b) => b[1] - a[1])
-      .map(([name]) => name);
+      .filter(([, count]: [string, number]) => count > 1) // Need at least 2 workouts to calc regression
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
+      .map(([name]: [string, number]) => name);
   }, [workoutLogs]);
 
   useEffect(() => {
@@ -562,10 +552,10 @@ export default function AnalysisPage() {
     const sixWeeksAgo = subWeeks(new Date(), 6);
     const liftHistory = new Map<string, { date: Date; e1RM: number; volume: number; actualPR?: number; isActualPR?: boolean; }>();
 
-    workoutLogs.forEach(log => {
+    workoutLogs.forEach((log: WorkoutLog) => {
       if (!isAfter(log.date, sixWeeksAgo)) return;
 
-      log.exercises.forEach(ex => {
+      log.exercises.forEach((ex) => {
         if (getNormalizedExerciseName(ex.name) === selectedLiftKey && ex.weight && ex.reps && ex.sets) {
           const dateKey = format(log.date, 'yyyy-MM-dd');
           const weightInLbs = ex.weightUnit === 'kg' ? ex.weight * 2.20462 : ex.weight;
@@ -699,9 +689,9 @@ const cardioAnalysisData = useMemo(() => {
             })
     );
 
-    const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+    const totalCalories = cardioExercises.reduce((sum: number, ex: any) => sum + (ex.calories || 0), 0);
 
-    const statsByActivity = cardioExercises.reduce((acc, ex) => {
+    const statsByActivity = cardioExercises.reduce((acc: Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>, ex: any) => {
         if (!acc[ex.name]) {
             acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0 };
         }
@@ -724,13 +714,13 @@ const cardioAnalysisData = useMemo(() => {
             else if (ex.durationUnit === 'min') durationMin = ex.duration;
         }
         stats.totalDurationMin += durationMin;
-        
+
         return acc;
     }, {} as Record<string, { count: number; totalDistanceMi: number; totalDurationMin: number; totalCalories: number }>);
 
-    const pieChartData = Object.entries(statsByActivity).map(([name, stats], index) => ({
+    const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
         name: `${name} `, // Add padding
-        value: Math.round(stats.totalCalories),
+        value: Math.round((stats as any).totalCalories),
         fill: `var(--color-${name})`
     }));
     
@@ -754,7 +744,7 @@ const cardioAnalysisData = useMemo(() => {
         weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
         calorieSummary = `This year you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else { // all-time
-        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest, log) => log.date < earliest.date ? log : earliest).date : new Date();
+        const firstLogDate = workoutLogs && workoutLogs.length > 0 ? workoutLogs.reduce((earliest: WorkoutLog, log: WorkoutLog) => log.date < earliest.date ? log : earliest).date : new Date();
         const numWeeks = differenceInWeeks(new Date(), firstLogDate) || 1;
         weeklyAverage = numWeeks > 0 ? totalCalories / numWeeks : 0;
         calorieSummary = `You've burned ${Math.round(totalCalories).toLocaleString()} cardio calories in total, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
@@ -777,14 +767,14 @@ const cardioAnalysisData = useMemo(() => {
     
     // --- Cardio Amount Bar Chart Data ---
     let cardioAmountChartData: any[] = [];
-    const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
-    const initialActivityData = Object.fromEntries(activities.map(act => [act, 0]));
+    const activities = Array.from(new Set(cardioExercises.map((ex: any) => ex.name)));
+    const initialActivityData = Object.fromEntries(activities.map((act: string) => [act, 0]));
 
     const processAndFinalizeData = (dataMap: Map<string, any>) => {
         const finalizedData = Array.from(dataMap.values());
-        finalizedData.forEach(dataPoint => {
+        finalizedData.forEach((dataPoint: any) => {
             let total = 0;
-            activities.forEach(activity => {
+            activities.forEach((activity: string) => {
                 total += dataPoint[activity] || 0;
             });
             dataPoint.total = Math.round(total);
@@ -796,9 +786,9 @@ const cardioAnalysisData = useMemo(() => {
         case 'weekly': {
             const weekStart = startOfWeek(today, { weekStartsOn: 0 });
             const daysInWeek = eachDayOfInterval({ start: weekStart, end: endOfWeek(today, { weekStartsOn: 0 }) });
-            const dailyData = new Map<string, any>(daysInWeek.map(day => [format(day, 'yyyy-MM-dd'), { dateLabel: format(day, 'E'), ...initialActivityData }]));
-            
-            cardioExercises.forEach(ex => {
+            const dailyData = new Map<string, any>(daysInWeek.map((day: Date) => [format(day, 'yyyy-MM-dd'), { dateLabel: format(day, 'E'), ...initialActivityData }]));
+
+            cardioExercises.forEach((ex: any) => {
                 const dateKey = format(ex.date, 'yyyy-MM-dd');
                 const dayData = dailyData.get(dateKey);
                 if (dayData) {
@@ -816,7 +806,7 @@ const cardioAnalysisData = useMemo(() => {
             // Get all weeks that have at least one day in the current month
             const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
 
-            weeks.forEach(weekStart => {
+            weeks.forEach((weekStart: Date) => {
                 const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
                  // Ensure we only create labels for weeks that are part of the month
                 if (weekStart.getMonth() === monthStart.getMonth() || weekEnd.getMonth() === monthStart.getMonth()) {
@@ -825,7 +815,7 @@ const cardioAnalysisData = useMemo(() => {
                 }
             });
 
-            cardioExercises.forEach(ex => {
+            cardioExercises.forEach((ex: any) => {
                 const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
                 const weekData = weeklyData.get(weekStartKey);
                 if (weekData) {
@@ -837,7 +827,7 @@ const cardioAnalysisData = useMemo(() => {
         }
         case 'yearly': {
             const monthlyData = new Map<string, any>();
-            cardioExercises.forEach(ex => {
+            cardioExercises.forEach((ex: any) => {
                 const monthKey = format(ex.date, 'yyyy-MM');
                 if (!monthlyData.has(monthKey)) {
                     monthlyData.set(monthKey, { dateLabel: format(ex.date, 'MMM'), ...initialActivityData });
@@ -848,8 +838,8 @@ const cardioAnalysisData = useMemo(() => {
             const finalizedData = processAndFinalizeData(monthlyData);
              // Only show months that have data
             cardioAmountChartData = finalizedData
-                .filter(month => Object.values(month).some(val => typeof val === 'number' && val > 0))
-                .sort((a,b) => {
+                .filter((month: any) => Object.values(month).some((val: any) => typeof val === 'number' && val > 0))
+                .sort((a: any, b: any) => {
                     const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                     return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
             });
@@ -857,7 +847,7 @@ const cardioAnalysisData = useMemo(() => {
         }
         case 'all-time': {
             const yearlyData = new Map<string, any>();
-            cardioExercises.forEach(ex => {
+            cardioExercises.forEach((ex: any) => {
                 const yearKey = format(ex.date, 'yyyy');
                 if (!yearlyData.has(yearKey)) {
                     yearlyData.set(yearKey, { dateLabel: yearKey, ...initialActivityData });
@@ -866,7 +856,7 @@ const cardioAnalysisData = useMemo(() => {
                 yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
             });
             const finalizedData = processAndFinalizeData(yearlyData);
-            cardioAmountChartData = Array.from(finalizedData.entries()).sort(([, a], [, b]) => a.dateLabel.localeCompare(b.dateLabel)).map(([, data]) => data);
+            cardioAmountChartData = Array.from(finalizedData.entries()).sort(([, a]: [any, any], [, b]: [any, any]) => a.dateLabel.localeCompare(b.dateLabel)).map(([, data]: [any, any]) => data);
             break;
         }
     }
@@ -898,17 +888,17 @@ useEffect(() => {
     
     // --- Trend Calculation Function ---
     const calculateTrend = (dataKey: 'e1RM' | 'volume') => {
-        const points = chartData.map((d, i) => ({ x: i, y: d[dataKey] })).filter(p => p.y > 0);
+        const points = chartData.map((d: any, i: number) => ({ x: i, y: d[dataKey] })).filter((p: any) => p.y > 0);
         if (points.length < 2) {
             return null;
         }
 
         const n = points.length;
-        const x_mean = points.reduce((acc, p) => acc + p.x, 0) / n;
-        const y_mean = points.reduce((acc, p) => acc + p.y, 0) / n;
+        const x_mean = points.reduce((acc: number, p: any) => acc + p.x, 0) / n;
+        const y_mean = points.reduce((acc: number, p: any) => acc + p.y, 0) / n;
 
-        const numerator = points.reduce((acc, p) => acc + (p.x - x_mean) * (p.y - y_mean), 0);
-        const denominator = points.reduce((acc, p) => acc + (p.x - x_mean) ** 2, 0);
+        const numerator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) * (p.y - y_mean), 0);
+        const denominator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) ** 2, 0);
 
         if (denominator === 0) {
             return null;
@@ -940,11 +930,11 @@ useEffect(() => {
     if (!workoutLogs) return;
 
     const exerciseHistory = workoutLogs
-      .filter(log => isAfter(log.date, sixWeeksAgo))
-      .flatMap(log => 
+      .filter((log: WorkoutLog) => isAfter(log.date, sixWeeksAgo))
+      .flatMap((log: WorkoutLog) =>
         log.exercises
-          .filter(ex => getNormalizedExerciseName(ex.name) === selectedLiftKey)
-          .map(ex => ({
+          .filter((ex) => getNormalizedExerciseName(ex.name) === selectedLiftKey)
+          .map((ex) => ({
             date: log.date.toISOString(),
             weight: ex.weight || 0,
             sets: ex.sets || 0,
@@ -965,8 +955,8 @@ useEffect(() => {
             skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
             skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
             fitnessGoals: (userProfile.fitnessGoals || [])
-              .filter(g => !g.achieved)
-              .map(g => ({
+              .filter((g: FitnessGoal) => !g.achieved)
+              .map((g: FitnessGoal) => ({
                 description: g.description,
                 isPrimary: g.isPrimary || false,
               })),
@@ -1132,14 +1122,14 @@ useEffect(() => {
             <StrengthBalanceCard
               isLoading={isLoading}
               isError={isError}
-              userProfile={userProfile}
+              userProfile={userProfile!}
               personalRecords={personalRecords}
               strengthAnalysis={userProfile?.strengthAnalysis}
             />
             <LiftProgressionCard
               isLoading={isLoading}
               isError={isError}
-              userProfile={userProfile}
+              userProfile={userProfile!}
               workoutLogs={workoutLogs}
               personalRecords={personalRecords}
               selectedLift={selectedLift}
@@ -1149,7 +1139,7 @@ useEffect(() => {
             <CardioAnalysisCard
               isLoading={isLoading}
               isError={isError}
-              userProfile={userProfile}
+              userProfile={userProfile!}
               workoutLogs={workoutLogs}
               filteredData={{
                 logsForPeriod: [],
