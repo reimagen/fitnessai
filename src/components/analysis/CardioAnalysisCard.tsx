@@ -13,9 +13,10 @@ import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { chartConfig } from '@/lib/chart.config';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, XAxis, YAxis, CartesianGrid, LabelList, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { getPath, RoundedBar, renderPieLabel } from '@/lib/chart-utils';
+import { toTitleCase } from '@/lib/analysis.config';
 
 
 type ChartDataKey = keyof typeof chartConfig;
