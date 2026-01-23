@@ -2,7 +2,7 @@
 
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, PieChart, Pie, Cell, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label, LabelList } from 'recharts';
 import { ChartConfig, ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +39,7 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
+import { CalorieBreakdownCard } from '@/components/analysis/CalorieBreakdownCard';
 
 
 const IMBALANCE_TYPES = [
@@ -91,7 +91,6 @@ const chartConfig = {
   cardio: { label: "Cardio", color: "hsl(var(--chart-4))" },
   core: { label: "Core", color: "hsl(var(--chart-5))" },
   other: { label: "Other", color: "hsl(var(--chart-6))" },
-  value: { label: "Value", color: "hsl(var(--accent))" },
   e1RM: { label: "Est. 1-Rep Max (lbs)", color: "hsl(var(--primary))" },
   volume: { label: "Volume (lbs)", color: "hsl(var(--chart-2))"},
   actualPR: { label: "Actual PR", color: "hsl(var(--accent))" },
@@ -626,7 +625,6 @@ export default function AnalysisPage() {
         newPrsData: filteredData.prsForPeriod.sort((a,b) => b.date.getTime() - a.date.getTime()),
         achievedGoalsData: filteredData.goalsForPeriod.sort((a,b) => b.dateAchieved!.getTime() - a.dateAchieved!.getTime()),
         categoryRepData, 
-        categoryCalorieData, 
         periodSummary 
     };
   }, [filteredData, timeRange, workoutLogs, personalRecords]);
@@ -1090,38 +1088,6 @@ useEffect(() => {
     }
   };
 
-  const RADIAN = Math.PI / 180;
-  const renderPieLabel = (props: any, unit?: 'reps' | 'kcal') => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
-    if (percent < 0.05) return null;
-    
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    
-    // Use a smaller radius, especially on mobile, to pull labels inward
-    const radiusMultiplier = isMobile ? 0.6 : 0.7;
-    const labelRadius = innerRadius + (outerRadius - innerRadius) * radiusMultiplier;
-
-    const x = cx + labelRadius * cos;
-    const y = cy + labelRadius * sin;
-    
-    const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
-    const unitString = unit ? ` ${unit}` : '';
-
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="hsl(var(--foreground))" 
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central" 
-        className="text-xs"
-      >
-        {`${name} (${displayValue}${unitString})`}
-      </text>
-    );
-  };
-
   const formatCardioDuration = (totalMinutes: number): string => {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = Math.round(totalMinutes % 60);
@@ -1297,8 +1263,14 @@ useEffect(() => {
                 </Tabs>
               </CardContent>
             </Card>
+            <CalorieBreakdownCard
+              isLoading={isLoading}
+              isError={isError}
+              categoryCalorieData={chartData.categoryCalorieData}
+              timeRange={timeRange}
+            />
             <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><IterationCw className="h-6 w-6 text-primary" /> Repetition Breakdown</CardTitle><CardDescription>Total reps per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryRepData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryRepData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryRepData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'reps')}>{chartData.categoryRepData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No repetition data available.</p></div>}</CardContent></Card>
-            <Card className="shadow-lg lg:col-span-3"><CardHeader><CardTitle className="font-headline flex items-center gap-2"><Flame className="h-6 w-6 text-primary" /> Calorie Breakdown</CardTitle><CardDescription>Total calories burned per category {timeRangeDisplayNames[timeRange]}</CardDescription></CardHeader><CardContent>{chartData.categoryCalorieData.length > 0 ? <ChartContainer config={chartConfig} className="h-[300px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart data={chartData.categoryCalorieData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}><Pie data={chartData.categoryCalorieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={isMobile ? 60 : 80} labelLine={false} label={(props) => renderPieLabel(props, 'kcal')}>{chartData.categoryCalorieData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />)}</Pie><Tooltip content={<ChartTooltipContent hideIndicator />} /><Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{paddingTop: "20px"}}/></PieChart></ResponsiveContainer></ChartContainer> : <div className="h-[300px] flex items-center justify-center text-muted-foreground"><p>No calorie data available.</p></div>}</CardContent></Card>
+
             
             <Card className="shadow-lg lg:col-span-6">
                 <CardHeader>
