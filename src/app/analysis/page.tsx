@@ -34,91 +34,6 @@ import { subWeeks, isAfter } from 'date-fns';
 import { chartConfig } from '@/lib/chart.config';
 import { timeRangeDisplayNames } from '@/lib/analysis-constants';
 
-// Custom shape for the Scatter plot to render the Trophy icon
-const TrophyShape = (props: any) => {
-  const { cx, cy, payload } = props;
-  if (!payload.isActualPR) return null;
-  return (
-    <g transform={`translate(${cx - 12}, ${cy - 12})`}>
-      <foreignObject x={0} y={0} width={24} height={24}>
-        <Trophy
-          className="h-6 w-6 text-yellow-500 fill-yellow-400 stroke-yellow-600"
-          strokeWidth={1.5}
-        />
-      </foreignObject>
-    </g>
-  );
-};
-
-// Custom Tooltip for progression chart
-const ProgressionTooltip = (props: any) => {
-  const { active, payload } = props;
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-
-    return (
-      <div className="p-2 bg-background border rounded-md shadow-lg text-xs space-y-1">
-        <p className="font-bold">{data.name}</p>
-        {data.isActualPR && (
-          <p className="font-bold text-yellow-500 flex items-center gap-1">
-            <Trophy className="h-4 w-4" />
-            Personal Record: {data.actualPR.toLocaleString()} lbs
-          </p>
-        )}
-        {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM.toLocaleString()} lbs</p>}
-        {data.volume > 0 && <p style={{ color: 'hsl(var(--chart-2))' }}>Volume: {data.volume.toLocaleString()} lbs</p>}
-      </div>
-    );
-  }
-  return null;
-};
-
-// Custom Legend for the progression chart
-const ProgressionChartLegend = (props: any) => {
-  const { payload } = props;
-  const isMobile = useIsMobile();
-  if (!payload) return null;
-
-  const legendItems = [
-    { dataKey: 'volume', color: 'hsl(var(--chart-2))' },
-    { dataKey: 'e1RM', color: 'hsl(var(--primary))' },
-    { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
-    { dataKey: 'actualPR', color: 'hsl(var(--accent))' },
-  ];
-
-  return (
-    <div
-      className={cn(
-        'flex items-center justify-center gap-x-4 gap-y-2 text-xs mt-2',
-        isMobile && 'flex-wrap'
-      )}
-    >
-      {legendItems.map((entry: any, index: number) => {
-        const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
-        if (!config) return null;
-        const isLine = entry.dataKey === 'e1RM';
-        const isTrend = entry.dataKey === 'trend';
-
-        return (
-          <div key={`item-${index}`} className="flex items-center gap-1.5">
-            {entry.dataKey === 'actualPR' ? (
-              <Trophy className="h-4 w-4 text-yellow-500" />
-            ) : isTrend ? (
-              <span className="w-4 h-px border-t-2 border-dashed" style={{ borderColor: entry.color }} />
-            ) : (
-              <span
-                className={`h-2.5 w-2.5 shrink-0 ${isLine ? 'rounded-full' : 'rounded-[2px]'}`}
-                style={{ backgroundColor: entry.color }}
-              />
-            )}
-            <span className="text-muted-foreground">{config.label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
 export default function AnalysisPage() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -473,7 +388,7 @@ export default function AnalysisPage() {
                   isError={isError}
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
-                  filteredData={filteredData}
+                  cardioAnalysisData={cardioAnalysisData}
                   timeRange={timeRange}
                   timeRangeDisplayNames={timeRangeDisplayNames}
                 />
