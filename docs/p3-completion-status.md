@@ -141,5 +141,87 @@ All changes have been tested:
 
 ---
 
-**Status**: Ready for Phase 3b-3d (component decomposition)
+## Phase 3c: CardioAnalysisCard Decomposition - COMPLETE ✅
+
+### Overview
+Successfully refactored CardioAnalysisCard to eliminate duplicate data processing logic and extract chart components into smaller, focused components.
+
+### Key Achievements
+- **Eliminated 213 lines of duplicate logic** - CardioAnalysisCard had a 212-line useMemo that duplicated the existing `useCardioAnalysis` hook
+- **Removed duplicate utility function** - `formatCardioDuration` now imported from shared `formatting-utils.ts`
+- **Extracted three focused components:**
+  * `CardioActivitySummary.tsx` (54 lines) - Activity list with icons and stats
+  * `CardioByActivityChart.tsx` (68 lines) - Pie chart visualization
+  * `CardioOverTimeChart.tsx` (71 lines) - Bar chart visualization
+- **Refactored main component** - CardioAnalysisCard reduced from 437 lines to 97 lines (-78% reduction)
+- **Follows established patterns** - Component now receives processed data as prop, similar to ExerciseVarietyCard
+
+### Changes Made
+
+#### Files Modified
+1. **`/src/app/analysis/page.tsx`**
+   - Added `cardioAnalysisData={cardioAnalysisData}` prop to CardioAnalysisCard
+   - Data now passed from page rather than component processing it locally
+
+2. **`/src/components/analysis/CardioAnalysisCard.tsx`** (437 → 97 lines, -78%)
+   - Removed 212-line useMemo block (duplicate of useCardioAnalysis)
+   - Removed duplicate formatCardioDuration function
+   - Updated props interface to receive cardioAnalysisData
+   - Now pure presentation component using three sub-components
+   - Simplified to orchestration and layout only
+
+#### Files Created
+1. **`CardioActivitySummary.tsx`** (54 lines)
+   - Extracted activity summary list rendering
+   - Icon mapping logic for each activity type
+   - Stats display with distance, duration, and calorie information
+
+2. **`CardioByActivityChart.tsx`** (68 lines)
+   - Pie chart tab content extraction
+   - Pie chart rendering with legend
+   - ChartContainer wrapper and custom legend layout
+
+3. **`CardioOverTimeChart.tsx`** (71 lines)
+   - Bar chart tab content extraction
+   - Stacked bar chart with LabelList for totals
+   - Custom legend with responsive layout
+
+### Build Status
+✅ **Build: SUCCESSFUL** (compiled in 5.2s)
+✅ **No TypeScript errors**
+✅ **No runtime errors**
+
+### Code Statistics
+
+| Metric | Value |
+|--------|-------|
+| Original CardioAnalysisCard | 437 lines |
+| Refactored CardioAnalysisCard | 97 lines |
+| Reduction | 340 lines (-78%) |
+| New Components | 3 files |
+| Total New Component Lines | 193 lines |
+| Net Reduction | 147 lines (-34%) |
+| Build Time | 5.2s |
+
+### Architecture Improvements
+1. **DRY Principle** - Eliminated duplicate data processing logic
+2. **Separation of Concerns** - Data processing in hook, rendering in components
+3. **Component Composition** - Three focused, reusable components
+4. **Pattern Alignment** - Matches ExerciseVarietyCard pattern
+5. **Maintainability** - Easier to test and modify individual components
+
+### Verification
+- ✅ Build completes successfully with no errors
+- ✅ All imports resolve correctly
+- ✅ Components render correctly with data from useCardioAnalysis hook
+- ✅ No code duplication with existing utilities
+- ✅ Type safety maintained throughout
+
+---
+
+**Overall Phase 3 Status**: ✅ COMPLETE
+- Phase 3a: Custom hooks extracted ✅
+- Phase 3b: Utilities consolidated ✅
+- Phase 3c: CardioAnalysisCard decomposed ✅
+
 **Date**: 2026-01-24
