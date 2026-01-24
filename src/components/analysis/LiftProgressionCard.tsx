@@ -14,6 +14,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { getLevelBadgeVariant, getTrendBadgeVariant } from '@/lib/badge-utils';
 
 import { chartConfig } from '@/lib/chart.config';
 
@@ -28,6 +29,36 @@ interface LiftProgressionCardProps {
     frequentlyLoggedLifts: string[];
 }
 
+interface ProgressionChartDataPoint {
+  name: string;
+  e1RM: number;
+  volume: number;
+  isActualPR?: boolean;
+  actualPR?: number;
+}
+
+interface TrophyShapeProps {
+  cx: number;
+  cy: number;
+  payload: ProgressionChartDataPoint;
+}
+
+interface ProgressionTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    payload: ProgressionChartDataPoint;
+  }>;
+}
+
+interface ProgressionChartLegendPayloadItem {
+  dataKey: string;
+  color: string;
+}
+
+interface ProgressionChartLegendProps {
+  payload?: ProgressionChartLegendPayloadItem[];
+}
+
 const calculateE1RM = (weight: number, reps: number): number => {
     if (reps === 1) return weight;
     if (reps === 0) return 0;
@@ -35,8 +66,7 @@ const calculateE1RM = (weight: number, reps: number): number => {
 };
 
 // Custom shape for the Scatter plot to render the Trophy icon
-const TrophyShape = (props: any) => {
-    const { cx, cy, payload } = props;
+const TrophyShape: React.FC<TrophyShapeProps> = ({ cx, cy, payload }) => {
     if (!payload.isActualPR) return null;
     return (
         <g transform={`translate(${cx - 12}, ${cy - 12})`}>
@@ -51,8 +81,7 @@ const TrophyShape = (props: any) => {
 };
 
 // Custom Tooltip for progression chart
-const ProgressionTooltip = (props: any) => {
-    const { active, payload } = props;
+const ProgressionTooltip: React.FC<ProgressionTooltipProps> = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
         return (
@@ -61,7 +90,7 @@ const ProgressionTooltip = (props: any) => {
                 {data.isActualPR && (
                     <p className="font-bold text-yellow-500 flex items-center gap-1">
                         <Trophy className="h-4 w-4" />
-                        Personal Record: {data.actualPR.toLocaleString()} lbs
+                        Personal Record: {data.actualPR?.toLocaleString()} lbs
                     </p>
                 )}
                 {data.e1RM > 0 && <p style={{ color: 'hsl(var(--primary))' }}>e1RM: {data.e1RM.toLocaleString()} lbs</p>}
@@ -73,12 +102,11 @@ const ProgressionTooltip = (props: any) => {
 };
 
 // Custom Legend for the progression chart
-const ProgressionChartLegend = (props: any) => {
-    const { payload } = props;
+const ProgressionChartLegend: React.FC<ProgressionChartLegendProps> = ({ payload }) => {
     const isMobile = useIsMobile();
     if (!payload) return null;
 
-    const legendItems = [
+    const legendItems: ProgressionChartLegendPayloadItem[] = [
         { dataKey: 'volume', color: 'hsl(var(--chart-2))' },
         { dataKey: 'e1RM', color: 'hsl(var(--primary))' },
         { dataKey: 'trend', color: 'hsl(var(--muted-foreground))' },
@@ -90,7 +118,7 @@ const ProgressionChartLegend = (props: any) => {
             "flex items-center justify-center gap-x-4 gap-y-2 text-xs mt-2",
             isMobile && "flex-wrap"
         )}>
-            {legendItems.map((entry: any, index: number) => {
+            {legendItems.map((entry, index: number) => {
                 const config = chartConfig[entry.dataKey as keyof typeof chartConfig];
                 if (!config) return null;
                 const isLine = entry.dataKey === 'e1RM';
@@ -337,24 +365,6 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
         };
 
         analyzeProgressionMutation.mutate(analysisInput);
-    };
-
-    const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
-        if (!level) return 'outline';
-        switch (level) {
-            case 'Beginner': return 'destructive';
-            case 'Intermediate': return 'secondary';
-            case 'Advanced': return 'default';
-            case 'Elite': return 'default';
-            default: return 'outline';
-        }
-    };
-
-    const getTrendBadgeVariant = (trend: number | null): 'default' | 'destructive' | 'secondary' => {
-        if (trend === null) return 'secondary';
-        if (trend > 1) return 'default';
-        if (trend < -1) return 'destructive';
-        return 'secondary';
     };
 
     const showProgressionReanalyze = !!progressionAnalysisToRender;
