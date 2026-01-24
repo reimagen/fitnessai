@@ -2,9 +2,9 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
-import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
+import { Timestamp, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
-import { format, subWeeks } from 'date-fns';
+import { format } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
 import { cache } from 'react';
 
@@ -325,7 +325,10 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
             });
         }
         
-        const bestExistingWeightInKg = bestExistingRecord ? (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight) : -1;
+        let bestExistingWeightInKg = -1;
+        if (bestExistingRecord) {
+            bestExistingWeightInKg = bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight;
+        }
 
         if (newRecordWeightInKg > bestExistingWeightInKg) {
             recordsAddedOrUpdated++;
