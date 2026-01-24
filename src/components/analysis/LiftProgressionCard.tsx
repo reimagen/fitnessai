@@ -14,6 +14,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { getLevelBadgeVariant, getTrendBadgeVariant } from '@/lib/badge-utils';
 
 import { chartConfig } from '@/lib/chart.config';
 
@@ -337,24 +338,6 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
         };
 
         analyzeProgressionMutation.mutate(analysisInput);
-    };
-
-    const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
-        if (!level) return 'outline';
-        switch (level) {
-            case 'Beginner': return 'destructive';
-            case 'Intermediate': return 'secondary';
-            case 'Advanced': return 'default';
-            case 'Elite': return 'default';
-            default: return 'outline';
-        }
-    };
-
-    const getTrendBadgeVariant = (trend: number | null): 'default' | 'destructive' | 'secondary' => {
-        if (trend === null) return 'secondary';
-        if (trend > 1) return 'default';
-        if (trend < -1) return 'destructive';
-        return 'secondary';
     };
 
     const showProgressionReanalyze = !!progressionAnalysisToRender;
