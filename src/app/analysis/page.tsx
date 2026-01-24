@@ -10,8 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
-import { getNormalizedExerciseName, getStrengthLevel } from '@/lib/strength-standards';
-import { findBestPr } from '@/lib/analysis.config';
+import { getNormalizedExerciseName } from '@/lib/strength-standards';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
@@ -26,6 +25,7 @@ import { useStrengthFindings } from '@/hooks/useStrengthFindings';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useChartData } from '@/hooks/useChartData';
 import { useLiftProgression } from '@/hooks/useLiftProgression';
+import { useLiftTrends } from '@/hooks/useLiftTrends';
 import { useCardioAnalysis } from '@/hooks/useCardioAnalysis';
 import { formatCardioDuration } from '@/lib/formatting-utils';
 import { getLevelBadgeVariant, getTrendBadgeVariant, focusBadgeProps } from '@/lib/badge-utils';
@@ -39,9 +39,6 @@ export default function AnalysisPage() {
   const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('weekly');
   const [selectedLift, setSelectedLift] = useState<string>('');
-  const [currentLiftLevel, setCurrentLiftLevel] = useState<StrengthLevel | null>(null);
-  const [trendImprovement, setTrendImprovement] = useState<number | null>(null);
-  const [volumeTrend, setVolumeTrend] = useState<number | null>(null);
 
   // Data fetching
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
@@ -66,6 +63,7 @@ export default function AnalysisPage() {
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const progressionChartData = useLiftProgression(selectedLift, selectedLiftKey, workoutLogs, personalRecords);
+  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile);
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
   // Handler for strength analysis
@@ -124,60 +122,6 @@ export default function AnalysisPage() {
       setSelectedLift(frequentlyLoggedLifts[0]);
     }
   }, [frequentlyLoggedLifts, selectedLift]);
-
-  // Update lift progression trends
-  useEffect(() => {
-    if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
-      setCurrentLiftLevel(null);
-      setTrendImprovement(null);
-      setVolumeTrend(null);
-      return;
-    }
-
-    if (userProfile && personalRecords) {
-      const bestPRforLift = findBestPr(personalRecords, [selectedLiftKey]);
-
-      if (bestPRforLift) {
-        setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
-      } else {
-        setCurrentLiftLevel(null);
-      }
-    }
-
-    const { chartData: data } = progressionChartData;
-
-    const calculateTrend = (dataKey: 'e1RM' | 'volume') => {
-      const points = data.map((d: any, i: number) => ({ x: i, y: d[dataKey] })).filter((p: any) => p.y > 0);
-      if (points.length < 2) {
-        return null;
-      }
-
-      const n = points.length;
-      const x_mean = points.reduce((acc: number, p: any) => acc + p.x, 0) / n;
-      const y_mean = points.reduce((acc: number, p: any) => acc + p.y, 0) / n;
-
-      const numerator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) * (p.y - y_mean), 0);
-      const denominator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) ** 2, 0);
-
-      if (denominator === 0) {
-        return null;
-      }
-
-      const slope = numerator / denominator;
-      const intercept = y_mean - slope * x_mean;
-
-      const startY = slope * 0 + intercept;
-      const endY = slope * (data.length - 1) + intercept;
-
-      if (startY > 0) {
-        return ((endY - startY) / startY) * 100;
-      }
-      return null;
-    };
-
-    setTrendImprovement(calculateTrend('e1RM'));
-    setVolumeTrend(calculateTrend('volume'));
-  }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
 
   // Handle lift progression analysis
   const handleAnalyzeProgression = () => {
