@@ -151,11 +151,13 @@ export default function ProfilePage() {
             }}
             onUpdate={handlePreferencesUpdate}
           />
-          <GoalSetterCard 
-            initialGoals={userProfile.fitnessGoals} 
-            onGoalsChange={handleGoalsUpdate}
-            userProfile={userProfile}
-          />
+          <div id="goals">
+            <GoalSetterCard
+              initialGoals={userProfile.fitnessGoals}
+              onGoalsChange={handleGoalsUpdate}
+              userProfile={userProfile}
+            />
+          </div>
         </>
       ) : (
           <Card className="shadow-lg border-primary">

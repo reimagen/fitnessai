@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserProfile } from "@/lib/auth-server";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { LapsedGoalBanner } from "@/components/home/LapsedGoalBanner";
 import { Suspense } from "react";
 
 function getGreeting(userName?: string): string {
@@ -63,6 +64,12 @@ export default async function HomePage() {
         <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">{getGreeting(profile?.name)}</h1>
         <p className="mt-2 text-lg text-muted-foreground">Continue your fitness journey.</p>
       </header>
+
+      {profile?.fitnessGoals && (
+        <div className="mb-8">
+          <LapsedGoalBanner goals={profile.fitnessGoals} />
+        </div>
+      )}
 
       <section>
         <Card className="shadow-lg">
