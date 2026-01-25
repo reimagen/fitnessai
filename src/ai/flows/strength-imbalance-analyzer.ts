@@ -47,6 +47,7 @@ const ClientSideFindingSchema = z.object({
     lift2Unit: z.enum(['kg', 'lbs']),
     lift2Level: z.custom<StrengthLevel>(),
     userRatio: z.string(),
+    targetRatio: z.string(),
     balancedRange: z.string(),
     imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES),
 });
@@ -67,6 +68,7 @@ const ImbalanceFindingSchema = z.object({
     lift2Weight: z.number().describe("The weight of the second exercise PR."),
     lift2Unit: z.enum(['kg', 'lbs']).describe("The weight unit for the second exercise."),
     userRatio: z.string().describe("The user's calculated strength ratio, formatted as 'X : Y'."),
+    targetRatio: z.string().describe("The target or ideal ratio, formatted as 'X:1'."),
     balancedRange: z.string().describe("The ideal or target strength ratio, formatted as 'X-Y:1'."),
     imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The primary issue to focus on: a disparity in strength levels or an incorrect ratio between same-level lifts."),
     insight: z.string().describe("A concise, AI-generated explanation of what the imbalance means."),

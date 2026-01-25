@@ -88,7 +88,7 @@ const personalRecordConverter = {
   }
 };
 
-const userProfileConverter = {
+export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: { [key: string]: any } = { ...profile };
         if (profile.joinedDate) {

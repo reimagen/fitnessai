@@ -438,7 +438,12 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
                                     <Legend content={<ProgressionChartLegend />} />
                                     <Bar yAxisId="right" dataKey="volume" fill="var(--color-volume)" radius={[4, 4, 0, 0]} />
                                     <Line yAxisId="left" type="monotone" dataKey="e1RM" stroke="var(--color-e1RM)" strokeWidth={2} dot={{ r: 4, fill: "var(--color-e1RM)" }} />
-                                    <Scatter yAxisId="left" dataKey="actualPR" fill="var(--color-actualPR)" shape={<TrophyShape />} />
+                                    <Scatter
+                                        yAxisId="left"
+                                        dataKey="actualPR"
+                                        fill="var(--color-actualPR)"
+                                        shape={(props: unknown) => <TrophyShape {...(props as TrophyShapeProps)} />}
+                                    />
                                     {progressionChartData.trendlineData && (
                                         <ReferenceLine
                                             yAxisId="left"
