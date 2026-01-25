@@ -243,6 +243,10 @@ export default function PlanPage() {
       toast({ title: "Missing Data", description: "User profile or workout history is not available yet. Please wait or complete your profile.", variant: "destructive"});
       return;
     }
+    if (!user) {
+      toast({ title: "Not Signed In", description: "Please sign in again to generate a plan.", variant: "destructive" });
+      return;
+    }
 
     setApiIsLoading(true);
     setError(null);

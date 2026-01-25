@@ -4,7 +4,8 @@
 import React, { useMemo } from 'react';
 import type { WorkoutLog, ExerciseCategory } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
+import { format, isToday } from 'date-fns';
+import { useCurrentWeek } from '@/hooks/useCurrentWeek';
 import { cn } from '@/lib/utils';
 import { Route } from 'lucide-react';
 
@@ -21,12 +22,10 @@ type RecentHistoryProps = {
   workoutLogs: WorkoutLog[];
 };
 
-export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
-  const dailyData = useMemo(() => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-    const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+export function RecentHistory({ workoutLogs }: RecentHistoryProps): JSX.Element {
+  const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
 
+  const dailyData = useMemo(() => {
     const dataMap = new Map<string, { categories: Set<ExerciseCategory> }>();
 
     // Filter logs to only include the current week before processing
@@ -46,18 +45,17 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
       });
     });
     return dataMap;
-  }, [workoutLogs]);
+  }, [workoutLogs, weekStart, weekEnd]);
 
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const hasAnyWorkouts = workoutLogs.some(log => log.date >= weekStart && log.date <= weekEnd);
 
   return (
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Daily Exercises By Category</CardTitle>
-        <CardDescription>A summary of your completed workout categories.</CardDescription>
+        <CardDescription>
+          {hasAnyWorkouts ? "A summary of your completed workout categories." : "Log your first workout to see your exercise categories here."}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-7 gap-2">

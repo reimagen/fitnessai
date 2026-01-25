@@ -9,7 +9,7 @@ import { WorkoutList } from "@/components/history/workout-list";
 import { parseWorkoutScreenshotAction } from "../../app/history/actions";
 import type { WorkoutLog, Exercise, ExerciseCategory, UserProfile } from "@/lib/types";
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
-import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-parser";
+import type { ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
 import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, useDeleteWorkoutLog } from "@/lib/firestore.service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ export function HistoryPageContent() {
   const goToPreviousMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const goToNextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
   
-  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id'>) => {
+  const handleManualLogSubmit = (data: Omit<WorkoutLog, 'id' | 'userId'>) => {
     const finalData = {
         ...data,
         exercises: data.exercises.map(ex => {
@@ -126,7 +126,7 @@ export function HistoryPageContent() {
       (log) => format(log.date, 'yyyy-MM-dd') === format(targetDate, 'yyyy-MM-dd')
     );
 
-    const parsedExercises: Exercise[] = parsedData.exercises.map(ex => {
+    const parsedExercises: Exercise[] = parsedData.exercises.map((ex: ParseWorkoutScreenshotOutput['exercises'][number]) => {
         const exercise: Exercise = {
             id: Math.random().toString(36).substring(2, 9),
             name: getNormalizedExerciseName(ex.name),
@@ -142,10 +142,10 @@ export function HistoryPageContent() {
         if (exercise.weight > 0) {
             exercise.weightUnit = ex.weightUnit || 'kg';
         }
-        if (exercise.distance > 0) {
+        if ((exercise.distance ?? 0) > 0) {
             exercise.distanceUnit = ex.distanceUnit || 'mi';
         }
-        if (exercise.duration > 0) {
+        if ((exercise.duration ?? 0) > 0) {
             exercise.durationUnit = ex.durationUnit || 'min';
         }
         return exercise;
