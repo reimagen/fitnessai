@@ -5,7 +5,9 @@ import React, { useMemo } from 'react';
 import type { WorkoutLog, UserProfile } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isToday } from 'date-fns';
+import { format, isToday } from 'date-fns';
+import { useCurrentWeek } from '@/hooks/useCurrentWeek';
+import { DEFAULT_WEEKLY_CARDIO_MIN_GOAL, DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL, CARDIO_RUN_THRESHOLD_MPH, MILES_PER_KM, MILES_PER_FEET } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Flame, Info } from 'lucide-react';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
@@ -31,11 +33,11 @@ const normalizeCardioActivity = (exerciseName: string, distanceMi: number, durat
   if (name.includes('treadmill') || name.includes('elliptical') || name.includes('ascent trainer')) {
     if (durationHours > 0) {
       const speedMph = distanceMi / durationHours;
-      return speedMph > 4.0 ? 'Run' : 'Walk';
+      return speedMph > CARDIO_RUN_THRESHOLD_MPH ? 'Run' : 'Walk';
     }
     return 'Walk'; // Default to Walk if no duration is provided
   }
-  
+
   if (name.includes('run')) return 'Run';
   if (name.includes('walk')) return 'Walk';
   if (name.includes('cycle') || name.includes('bike')) return 'Cycle';
@@ -47,18 +49,16 @@ const normalizeCardioActivity = (exerciseName: string, distanceMi: number, durat
 const getDistanceInMiles = (distance?: number, unit?: string): number => {
     if (!distance) return 0;
     if (unit === 'mi') return distance;
-    if (unit === 'km') return distance * 0.621371;
-    if (unit === 'ft') return distance * 0.000189394;
+    if (unit === 'km') return distance * MILES_PER_KM;
+    if (unit === 'ft') return distance * MILES_PER_FEET;
     return 0;
 };
 
 
-export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps) {
-  const weeklyData = useMemo(() => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-    const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps): JSX.Element {
+  const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
 
+  const weeklyData = useMemo(() => {
     const dataMap = new Map<string, DailyCardioData>();
 
     workoutLogs.forEach(log => {
@@ -96,16 +96,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     });
 
     return dataMap;
-  }, [workoutLogs]);
-
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  }, [workoutLogs, weekStart, weekEnd]);
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
-  const minGoal = userProfile?.weeklyCardioCalorieGoal || 1000;
-  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || 1200;
+  const minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
+  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
   
   const caloriesPerMile = useMemo(() => {
