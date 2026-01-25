@@ -4,7 +4,7 @@
 import { auth } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 import { onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 
 // Define the shape of the context value
 interface AuthContextType {
@@ -23,11 +23,32 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastSessionUid = useRef<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const ensureSessionCookie = async (currentUser: User) => {
+      try {
+        const idToken = await currentUser.getIdToken();
+        await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idToken }),
+        });
+      } catch (error) {
+        console.error('Failed to set session cookie:', error);
+      }
+    };
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setIsLoading(false);
+      if (currentUser && lastSessionUid.current !== currentUser.uid) {
+        lastSessionUid.current = currentUser.uid;
+        void ensureSessionCookie(currentUser);
+      }
+      if (!currentUser) {
+        lastSessionUid.current = null;
+      }
     });
 
     // Cleanup subscription on unmount
@@ -43,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   
   const signOutUser = async () => {
+      await fetch('/api/session', { method: 'DELETE' });
       await signOut(auth);
   }
   

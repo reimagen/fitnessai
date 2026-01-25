@@ -88,7 +88,7 @@ const personalRecordConverter = {
   }
 };
 
-const userProfileConverter = {
+export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: { [key: string]: any } = { ...profile };
         if (profile.joinedDate) {
@@ -335,7 +335,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
             });
         }
         
-        const bestExistingWeightInKg = bestExistingRecord ? (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight) : -1;
+        const bestExistingWeightInKg = bestExistingRecord ? ((bestExistingRecord as PersonalRecord).weightUnit === 'lbs' ? (bestExistingRecord as PersonalRecord).weight * LBS_TO_KG : (bestExistingRecord as PersonalRecord).weight) : -1;
 
         if (newRecordWeightInKg > bestExistingWeightInKg) {
             recordsAddedOrUpdated++;

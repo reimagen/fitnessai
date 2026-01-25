@@ -7,7 +7,7 @@ import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loade
 import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { ManualPrForm } from "@/components/prs/manual-pr-form";
-import { parsePersonalRecordsAction, clearAllPersonalRecords } from "./actions";
+import { parsePersonalRecordsAction, clearAllPersonalRecords } from "@/app/prs/actions";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay } from "date-fns";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";

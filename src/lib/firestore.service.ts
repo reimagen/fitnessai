@@ -230,7 +230,9 @@ export function useClearAllPersonalRecords() {
     });
 }
 
-export function useUserProfile() {
+export function useUserProfile(opts?: {
+    initialData?: { data: UserProfile | null; notFound: boolean };
+}) {
     const { user } = useAuth();
     return useQuery<{ data: UserProfile | null; notFound: boolean }, Error>({
       queryKey: ['profile', user?.uid], 
@@ -243,6 +245,7 @@ export function useUserProfile() {
         return { data: profile, notFound: false as const };
       },
       enabled: !!user,
+      initialData: opts?.initialData,
       staleTime: 1000 * 60 * 60, // 1 hour for existing users
       refetchOnMount: (query) => {
         const data = query.state.data as { data: UserProfile | null; notFound: boolean } | undefined;

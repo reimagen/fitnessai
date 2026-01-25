@@ -1,9 +1,8 @@
-
 export type ExerciseCategory = 'Cardio' | 'Lower Body' | 'Upper Body' | 'Full Body' | 'Core' | 'Other';
 export type StrengthLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite' | 'N/A';
 
 export interface StrengthFinding {
-  imbalanceType: string;
+  imbalanceType: "Horizontal Push vs. Pull" | "Vertical Push vs. Pull" | "Hamstring vs. Quad" | "Adductor vs. Abductor";
   lift1Name: string;
   lift1Weight: number;
   lift1Unit: 'kg' | 'lbs';
@@ -59,18 +58,7 @@ export interface StoredStrengthAnalysis {
 }
 
 export interface AnalyzeFitnessGoalsInput {
-  userProfile: {
-      age?: number;
-      gender?: 'Male' | 'Female';
-      weightValue?: number;
-      weightUnit?: 'kg' | 'lbs';
-      bodyFatPercentage?: number;
-      experienceLevel?: 'beginner' | 'intermediate' | 'advanced';
-      fitnessGoals: {
-          description: string;
-          isPrimary?: boolean;
-      }[];
-  };
+  userProfileContext: string;
 }
 
 export interface AnalyzeFitnessGoalsOutput {
@@ -78,6 +66,7 @@ export interface AnalyzeFitnessGoalsOutput {
     goalInsights: {
         originalGoalDescription: string;
         isConflicting: boolean;
+        relationshipToPrimary?: 'Primary' | 'Supports' | 'Neutral' | 'Conflicts';
         isVague: boolean;
         suggestedGoal: string;
         analysis: string;
@@ -90,10 +79,9 @@ export interface StoredGoalAnalysis {
   generatedDate: Date;
 }
 
-
 export interface StrengthImbalanceInput {
   clientSideFindings: {
-      imbalanceType: string;
+      imbalanceType: "Horizontal Push vs. Pull" | "Vertical Push vs. Pull" | "Hamstring vs. Quad" | "Adductor vs. Abductor";
       lift1Name: string;
       lift1Weight: number;
       lift1Unit: "kg" | "lbs";
@@ -104,6 +92,7 @@ export interface StrengthImbalanceInput {
       lift2Level: StrengthLevel;
       userRatio: string;
       targetRatio: string;
+      balancedRange: string; // Added this line
       imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
   }[];
   userProfile: {
@@ -239,7 +228,7 @@ export interface PersonalRecord {
 export interface StrengthImbalanceOutput {
   summary: string;
   findings: {
-      imbalanceType: string;
+      imbalanceType: "Horizontal Push vs. Pull" | "Vertical Push vs. Pull" | "Hamstring vs. Quad" | "Adductor vs. Abductor"; // Corrected type
       lift1Name: string;
       lift1Weight: number;
       lift1Unit: "kg" | "lbs";
@@ -248,6 +237,7 @@ export interface StrengthImbalanceOutput {
       lift2Unit: "kg" | "lbs";
       userRatio: string;
       targetRatio: string;
+      balancedRange: string; // Added this line
       imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
       insight: string;
       recommendation: string;
