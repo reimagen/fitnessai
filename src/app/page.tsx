@@ -60,7 +60,7 @@ export default async function HomePage() {
     <div className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center">
         <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">{getGreeting(profile?.name)}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Your personal AI fitness companion.</p>
+        <p className="mt-2 text-lg text-muted-foreground">Continue your fitness journey.</p>
       </header>
 
       <section>
