@@ -1,55 +1,18 @@
 
-"use client";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dumbbell, Target, BarChartBig, Award, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
-import { RecentHistory } from "@/components/home/RecentHistory";
-import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
-import { useCurrentWeekWorkouts, useUserProfile } from "@/lib/firestore.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { Button } from "@/components/ui/button";
+import { getCurrentUserProfile } from "@/lib/auth-server";
+import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { Suspense } from "react";
 
-export default function HomePage() {
-  const { data: profileResult, isLoading: loadingProfile } = useUserProfile();
-  const profile = profileResult?.data ?? null;
-  const profileNotFound = profileResult?.notFound === true;
-  
-  // Only fetch workouts if the profile has been found.
-  const enableDataFetching = !loadingProfile && !profileNotFound;
-  const {
-    data: workoutLogs = [],
-    isLoading: loadingWorkouts,
-    isError: errorWorkouts,
-  } = useCurrentWeekWorkouts(enableDataFetching);
 
-  const isLoading = loadingProfile || (enableDataFetching && loadingWorkouts);
+export default async function HomePage() {
+  const { data: profile, notFound: profileNotFound } = await getCurrentUserProfile();
 
-  // A genuine failure is an error fetching workouts that is NOT because the profile is missing.
-  const isGenuineFailure = errorWorkouts && !profileNotFound;
-
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8 space-y-12">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
-
-  if (isGenuineFailure) {
-    return (
-       <div className="container mx-auto px-4 py-8">
-          <ErrorState message="Could not load your dashboard data. Please try again later." />
-       </div>
-    );
-  }
-
-  // New-user welcome state (no profile yet)
   if (profileNotFound) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
@@ -77,7 +40,6 @@ export default function HomePage() {
     );
   }
 
-  // Normal dashboard for existing users
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center">
@@ -113,11 +75,17 @@ export default function HomePage() {
         </Card>
       </section>
 
-      <section className="mt-12 space-y-12">
-        <WeeklyProgressTracker workoutLogs={workoutLogs} userProfile={profile} />
-        <RecentHistory workoutLogs={workoutLogs} />
-        <WeeklyCardioTracker workoutLogs={workoutLogs} userProfile={profile} />
-      </section>
+      <Suspense fallback={
+        <div className="mt-12 space-y-12">
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      }>
+        <div className="mt-12">
+            <HomeDashboard initialProfile={profile} />
+        </div>
+      </Suspense>
     </div>
   );
 }

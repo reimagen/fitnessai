@@ -64,7 +64,7 @@ export async function parseWorkoutScreenshotAction(
 
 // --- Server Actions for Workout Logs ---
 
-export async function getWorkoutLogs(userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean }): Promise<WorkoutLog[]> {
+export async function getWorkoutLogs(userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean; since?: Date }): Promise<WorkoutLog[]> {
   if (!userId) {
     throw new Error("User not authenticated.");
   }

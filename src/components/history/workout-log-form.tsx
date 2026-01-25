@@ -50,7 +50,7 @@ const workoutLogSchema = z.object({
 type WorkoutLogFormData = z.infer<typeof workoutLogSchema>;
 
 type WorkoutLogFormProps = {
-  onSubmitLog: (data: Omit<WorkoutLog, 'id'>) => void;
+  onSubmitLog: (data: Omit<WorkoutLog, 'id' | 'userId'>) => void;
   initialData?: WorkoutLog;
   editingLogId?: string | null;
   onCancelEdit?: () => void;

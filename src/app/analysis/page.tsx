@@ -63,7 +63,13 @@ export default function AnalysisPage() {
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const progressionChartData = useLiftProgression(selectedLift, selectedLiftKey, workoutLogs, personalRecords);
-  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile);
+  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(
+    selectedLift,
+    selectedLiftKey,
+    progressionChartData,
+    personalRecords,
+    userProfile || undefined
+  );
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
   // Handler for strength analysis
