@@ -23,7 +23,7 @@ import {
 import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
-import { format, isSameMonth, subWeeks, getWeek, getYear } from 'date-fns';
+import { format, isSameMonth, subWeeks, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 
@@ -31,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | undefined, enabled: boolean = true) {
   const { user } = useAuth();
-  
+
   let dateKey: string | undefined;
   if (forDateRange) {
     if (forDateRange instanceof Date) {
@@ -56,13 +56,16 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
       staleTime = isSameMonth(forDateRange, new Date()) ? 1000 * 60 * 60 : Infinity; // 1 hour for current month
   }
 
-  return useQuery<WorkoutLog[], Error>({ 
-    queryKey, 
+  return useQuery<WorkoutLog[], Error>({
+    queryKey,
     queryFn: () => {
       if (!user) return Promise.resolve([]); // Return empty array if no user
       if (forDateRange && forDateRange instanceof Date) {
-        return getWorkoutLogs(user.uid, { forMonth: forDateRange });
-      } else if (forDateRange && 'start' in forDateRange) { 
+        // Calculate month boundaries in local timezone on the client
+        const monthStartDate = startOfMonth(forDateRange);
+        const monthEndDate = endOfMonth(forDateRange);
+        return getWorkoutLogs(user.uid, { startDate: monthStartDate, endDate: monthEndDate });
+      } else if (forDateRange && 'start' in forDateRange) {
         return getWorkoutLogs(user.uid, { since: forDateRange.start });
       }
       return getWorkoutLogs(user.uid);
@@ -75,13 +78,18 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
 export function useCurrentWeekWorkouts(enabled: boolean = true) {
     const { user } = useAuth();
     const today = new Date();
+
+    // Calculate week boundaries in local timezone on the client
+    const weekStartDate = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
+    const weekEndDate = endOfWeek(today, { weekStartsOn: 0 });     // Saturday
+
     // Create a dynamic key based on the year and week number (starting on Sunday)
     const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
     const queryKey = ['workouts', user?.uid, weekKey];
-    
+
     return useQuery<WorkoutLog[], Error>({
         queryKey,
-        queryFn: () => getWorkoutLogs(user!.uid, { forCurrentWeek: true }),
+        queryFn: () => getWorkoutLogs(user!.uid, { startDate: weekStartDate, endDate: weekEndDate }),
         enabled: !!user && enabled,
         staleTime: 1000 * 60 * 60, // 1 hour cache
     });

@@ -2,9 +2,9 @@
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
 import { adminDb } from './firebase-admin';
-import { Timestamp, DocumentSnapshot, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
+import { Timestamp, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
-import { startOfMonth, endOfMonth, format, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
+import { format } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
 import { cache } from 'react';
 
@@ -221,26 +221,16 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 
 // --- Firestore Service Functions ---
 
-export const getWorkoutLogs = async (userId: string, options?: { forMonth?: Date; forCurrentWeek?: boolean; since?: Date }): Promise<WorkoutLog[]> => {
+export const getWorkoutLogs = async (userId: string, options?: { startDate?: Date; endDate?: Date; since?: Date }): Promise<WorkoutLog[]> => {
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
-  
+
   const baseQuery = workoutLogsCollection;
 
-  if (options?.forMonth) {
-    const startDate = startOfMonth(options.forMonth);
-    const endDate = endOfMonth(options.forMonth);
+  if (options?.startDate && options?.endDate) {
     q = baseQuery
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
-      .orderBy('date', 'desc');
-  } else if (options?.forCurrentWeek) {
-    const today = new Date();
-    const startDate = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-    const endDate = endOfWeek(today, { weekStartsOn: 0 });   // Saturday
-    q = baseQuery
-      .where('date', '>=', startDate)
-      .where('date', '<=', endDate)
+      .where('date', '>=', options.startDate)
+      .where('date', '<=', options.endDate)
       .orderBy('date', 'desc');
   } else if (options?.since) {
     q = baseQuery
@@ -335,7 +325,10 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
             });
         }
         
-        const bestExistingWeightInKg = bestExistingRecord ? ((bestExistingRecord as PersonalRecord).weightUnit === 'lbs' ? (bestExistingRecord as PersonalRecord).weight * LBS_TO_KG : (bestExistingRecord as PersonalRecord).weight) : -1;
+        let bestExistingWeightInKg = -1;
+        if (bestExistingRecord) {
+            bestExistingWeightInKg = bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight;
+        }
 
         if (newRecordWeightInKg > bestExistingWeightInKg) {
             recordsAddedOrUpdated++;
