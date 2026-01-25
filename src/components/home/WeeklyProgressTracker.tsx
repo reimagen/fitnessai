@@ -4,13 +4,12 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Star } from 'lucide-react';
 import type { WorkoutLog, UserProfile } from '@/lib/types';
-import { startOfWeek } from 'date-fns/startOfWeek';
-import { endOfWeek } from 'date-fns/endOfWeek';
-import { eachDayOfInterval } from 'date-fns/eachDayOfInterval';
 import { format } from 'date-fns/format';
 import { isSameDay } from 'date-fns/isSameDay';
 import { isToday } from 'date-fns/isToday';
 import { cn } from '@/lib/utils';
+import { useCurrentWeek } from '@/hooks/useCurrentWeek';
+import { DEFAULT_WORKOUTS_PER_WEEK } from '@/lib/constants';
 import React from 'react';
 
 type WeeklyProgressTrackerProps = {
@@ -18,13 +17,10 @@ type WeeklyProgressTrackerProps = {
   userProfile?: UserProfile | null;
 };
 
-export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgressTrackerProps) {
-  const workoutGoal = userProfile?.workoutsPerWeek || 3;
-  
+export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgressTrackerProps): JSX.Element {
+  const workoutGoal = userProfile?.workoutsPerWeek || DEFAULT_WORKOUTS_PER_WEEK;
+  const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 }); // Sunday
-  const weekEnd = endOfWeek(today, { weekStartsOn: 0 }); // Saturday
-  const daysOfWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
   
   const completedWorkouts = workoutLogs.filter(log => 
     log.date >= weekStart && log.date <= weekEnd
@@ -36,10 +32,15 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
     if (!userProfile) {
         return "Set your preferences in your profile to track weekly workout goals.";
     }
+
+    if (completedThisWeek === 0) {
+      return "Start your first workout this week to begin tracking progress!";
+    }
+
     const workoutsLeft = workoutGoal - completedThisWeek;
-    
+
     // Day of the week (Sunday = 0, Saturday = 6)
-    const currentDayOfWeek = today.getDay(); 
+    const currentDayOfWeek = today.getDay();
     // Days remaining in the week, including today.
     // e.g., on Friday (5), days remaining is 7 - 5 = 2 (Friday, Saturday)
     const daysRemaining = 7 - currentDayOfWeek;
@@ -47,7 +48,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
     if (workoutsLeft <= 0) {
       return "Goal achieved! Great job this week!";
     }
-    
+
     // Check if the goal is still achievable
     if (workoutsLeft > daysRemaining) {
       return "Missed the workout goal this week, try again next week!";
@@ -56,7 +57,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
     if (workoutsLeft === 1) {
       return "Just 1 more workout to hit your goal!";
     }
-    
+
     return `You're ${workoutsLeft} workouts away from your goal. Keep going!`;
   };
 
