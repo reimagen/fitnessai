@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getCurrentUserProfile } from "@/lib/auth-server";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
+import { Suspense } from "react";
 
 function getGreeting(userName?: string): string {
   const hour = new Date().getHours();
@@ -91,9 +92,17 @@ export default async function HomePage() {
         </Card>
       </section>
 
-      <div className="mt-12">
-        <HomeDashboard initialProfile={profile} />
-      </div>
+      <Suspense fallback={
+        <div className="mt-12 space-y-12">
+          <div className="h-48 w-full bg-muted rounded-lg animate-pulse" />
+          <div className="h-64 w-full bg-muted rounded-lg animate-pulse" />
+          <div className="h-64 w-full bg-muted rounded-lg animate-pulse" />
+        </div>
+      }>
+        <div className="mt-12">
+          <HomeDashboard initialProfile={profile} />
+        </div>
+      </Suspense>
     </div>
   );
 }
