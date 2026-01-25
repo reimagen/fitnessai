@@ -23,7 +23,7 @@ import {
 import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
-import { format, isSameMonth, subWeeks, getWeek, getYear, startOfWeek, endOfWeek } from 'date-fns';
+import { format, isSameMonth, subWeeks, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 
