@@ -6,9 +6,9 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
-import { getPath, RoundedBar } from '@/lib/chart-utils';
-import { timeRangeDisplayNames } from '@/lib/analysis-constants';
-import { chartConfig } from '@/lib/chart.config';
+import { getPath, RoundedBar } from '@/analysis/chart-utils';
+import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
+import { chartConfig } from '@/analysis/chart.config';
 
 interface ChartDataPoint {
   date: string;

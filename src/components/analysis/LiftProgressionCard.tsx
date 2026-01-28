@@ -4,19 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Zap, Trophy, TrendingUp, Lightbulb } from 'lucide-react';
 import { format, subWeeks, isAfter } from 'date-fns';
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import type { WorkoutLog, PersonalRecord, UserProfile, StrengthLevel, AnalyzeLiftProgressionInput } from '@/lib/types';
 import { useAnalyzeLiftProgression } from '@/lib/firestore.service';
 import { getNormalizedExerciseName, getStrengthLevel } from '@/lib/strength-standards';
-import { toTitleCase, findBestPr } from '@/lib/analysis.config';
+import { toTitleCase, findBestPr } from '@/analysis/analysis.config';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
-import { getLevelBadgeVariant, getTrendBadgeVariant } from '@/lib/badge-utils';
+import { getLevelBadgeVariant, getTrendBadgeVariant } from '@/analysis/badge-utils';
 
-import { chartConfig } from '@/lib/chart.config';
+import { chartConfig } from '@/analysis/chart.config';
 
 interface LiftProgressionCardProps {
     isLoading: boolean;
@@ -158,10 +158,6 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
     const isMobile = useIsMobile();
     const analyzeProgressionMutation = useAnalyzeLiftProgression();
 
-    const [currentLiftLevel, setCurrentLiftLevel] = React.useState<StrengthLevel | null>(null);
-    const [trendImprovement, setTrendImprovement] = React.useState<number | null>(null);
-    const [volumeTrend, setVolumeTrend] = React.useState<number | null>(null);
-
     const selectedLiftKey = getNormalizedExerciseName(selectedLift);
     const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
 
@@ -265,22 +261,15 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
         return { chartData, trendlineData };
     }, [selectedLift, selectedLiftKey, workoutLogs, personalRecords]);
 
-    useEffect(() => {
+    const currentLiftLevel = useMemo(() => {
+        if (!selectedLift || !userProfile || !personalRecords) return null;
+        const bestPRforLift = findBestPr(personalRecords, [selectedLiftKey]);
+        return bestPRforLift ? getStrengthLevel(bestPRforLift, userProfile) : null;
+    }, [selectedLift, selectedLiftKey, personalRecords, userProfile]);
+
+    const { trendImprovement, volumeTrend } = useMemo(() => {
         if (!selectedLift || !progressionChartData.chartData || progressionChartData.chartData.length < 2) {
-            setCurrentLiftLevel(null);
-            setTrendImprovement(null);
-            setVolumeTrend(null);
-            return;
-        }
-
-        if (userProfile && personalRecords) {
-            const bestPRforLift = findBestPr(personalRecords, [selectedLiftKey]);
-
-            if (bestPRforLift) {
-                setCurrentLiftLevel(getStrengthLevel(bestPRforLift, userProfile));
-            } else {
-                setCurrentLiftLevel(null);
-            }
+            return { trendImprovement: null, volumeTrend: null };
         }
 
         const { chartData } = progressionChartData;
@@ -314,10 +303,11 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
             return null;
         };
 
-        setTrendImprovement(calculateTrend('e1RM'));
-        setVolumeTrend(calculateTrend('volume'));
-
-    }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
+        return {
+            trendImprovement: calculateTrend('e1RM'),
+            volumeTrend: calculateTrend('volume'),
+        };
+    }, [selectedLift, progressionChartData]);
 
     const handleAnalyzeProgression = () => {
         if (!userProfile) {

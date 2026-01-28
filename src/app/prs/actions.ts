@@ -10,8 +10,8 @@ import {
   incrementUsageCounter,
 } from "@/lib/firestore-server";
 import type { PersonalRecord } from "@/lib/types";
-import { checkRateLimit } from "@/lib/rate-limiting";
-import { formatParsePrError } from "@/lib/error-handling";
+import { checkRateLimit } from "./rate-limiting";
+import { formatParsePrError } from "./error-handling";
 
 export async function parsePersonalRecordsAction(
   userId: string,

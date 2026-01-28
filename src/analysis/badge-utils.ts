@@ -1,5 +1,5 @@
 import type { StrengthLevel } from '@/lib/types';
-import type { ImbalanceFocus } from '@/lib/analysis.utils';
+import type { ImbalanceFocus } from '@/analysis/analysis.utils';
 
 export const getLevelBadgeVariant = (level: StrengthLevel | null): 'secondary' | 'default' | 'destructive' | 'outline' => {
   if (!level) return 'outline';
