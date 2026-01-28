@@ -23,10 +23,20 @@ interface ChartDataPoint {
 
 type ChartDataKey = keyof typeof chartConfig;
 
-const CustomBarChartLegend = ({ payload }: any) => {
+type LegendPayloadEntry = {
+  dataKey?: string;
+  color?: string;
+};
+
+const CustomBarChartLegend = ({ payload }: { payload?: LegendPayloadEntry[] }) => {
     if (!payload) return null;
     const legendOrder: ChartDataKey[] = ['upperBody', 'lowerBody', 'core', 'fullBody', 'cardio', 'other'];
-    const payloadMap = payload.reduce((acc: any, entry: any) => { acc[entry.dataKey] = entry; return acc; }, {});
+    const payloadMap = payload.reduce<Record<string, LegendPayloadEntry>>((acc, entry) => {
+      if (entry.dataKey) {
+        acc[entry.dataKey] = entry;
+      }
+      return acc;
+    }, {});
     return <div className="grid grid-cols-3 gap-x-4 gap-y-2 text-xs mt-4">{legendOrder.map(name => { const entry = payloadMap[name]; if (!entry || !chartConfig[name]) return null; return <div key={`item-${entry.dataKey}`} className="flex items-center justify-center gap-1.5"><span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} /><span className="text-muted-foreground">{chartConfig[name].label}</span></div>; })}</div>;
 };
 

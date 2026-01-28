@@ -16,11 +16,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Loader2 } from "lucide-react";
-import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
-import { format, startOfDay } from 'date-fns';
-import { classifiedExercises, getExerciseCategory, getNormalizedExerciseName } from "@/lib/strength-standards";
+import type { PersonalRecord } from "@/lib/types";
+import { startOfDay } from 'date-fns';
+import { classifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
+import { PR_EXERCISES_TO_HIDE } from "@/lib/constants";
+import { toTitleCase } from "@/lib/string-utils";
 import { StepperInput } from "../ui/stepper-input";
-import { useToast } from "@/hooks/use-toast";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -34,24 +35,12 @@ type ManualPrFormData = z.infer<typeof manualPrSchema>;
 type ManualPrFormProps = {
   onAdd: (data: Omit<PersonalRecord, 'id' | 'userId'>) => void;
   isSubmitting?: boolean;
-  allRecords: PersonalRecord[];
-};
-
-const toTitleCase = (str: string) => {
-  return str.replace(
-    /\w\S*/g,
-    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
 };
 
 // Filter the exercise list to hide aliases from the dropdown
-const exercisesToHide = ["reverse fly", "tricep extension", "tricep pushdown", "squat", "biceps curl"];
-const exercisesForDropdown = classifiedExercises.filter(
-  (exercise) => !exercisesToHide.includes(exercise)
-);
+const exercisesForDropdown = classifiedExercises.filter(exercise => !PR_EXERCISES_TO_HIDE.includes(exercise));
 
-export function ManualPrForm({ onAdd, isSubmitting, allRecords }: ManualPrFormProps) {
-  const { toast } = useToast();
+export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
     defaultValues: { 

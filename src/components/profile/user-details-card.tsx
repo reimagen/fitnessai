@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { UserProfile } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,44 +57,44 @@ export function UserDetailsCard({ user, onUpdate }: UserDetailsCardProps) {
   const [editedSkeletalMuscleMassUnit, setEditedSkeletalMuscleMassUnit] = useState<'kg' | 'lbs'>(user.skeletalMuscleMassUnit || "lbs");
   const [editedBodyFat, setEditedBodyFat] = useState(user.bodyFatPercentage?.toString() || "");
 
-  useEffect(() => {
-    if (isEditing) {
-      setEditedName(user.name || "");
-      setEditedJoinedDate(formatDateForInput(user.joinedDate));
-      setEditedAge(user.age?.toString() || "");
-      setEditedGender(user.gender || "");
-      const initialHeightUnit = user.heightUnit || "ft/in";
-      setEditedHeightUnit(initialHeightUnit);
+  const syncEditFields = () => {
+    setEditedName(user.name || "");
+    setEditedJoinedDate(formatDateForInput(user.joinedDate));
+    setEditedAge(user.age?.toString() || "");
+    setEditedGender(user.gender || "");
+    const initialHeightUnit = user.heightUnit || "ft/in";
+    setEditedHeightUnit(initialHeightUnit);
 
-      if (user.heightValue !== undefined) {
-        if (initialHeightUnit === "cm") {
-          setEditedHeightCm(user.heightValue.toString());
-          setEditedHeightFt("");
-          setEditedHeightIn("");
-        } else { // ft/in
-          const totalInches = user.heightValue / INCH_TO_CM;
-          setEditedHeightFt(Math.floor(totalInches / FT_TO_INCHES).toString());
-          setEditedHeightIn(Math.round(totalInches % FT_TO_INCHES).toString());
-          setEditedHeightCm("");
-        }
-      } else {
-        setEditedHeightCm("");
+    if (user.heightValue !== undefined) {
+      if (initialHeightUnit === "cm") {
+        setEditedHeightCm(user.heightValue.toString());
         setEditedHeightFt("");
         setEditedHeightIn("");
+      } else { // ft/in
+        const totalInches = user.heightValue / INCH_TO_CM;
+        setEditedHeightFt(Math.floor(totalInches / FT_TO_INCHES).toString());
+        setEditedHeightIn(Math.round(totalInches % FT_TO_INCHES).toString());
+        setEditedHeightCm("");
       }
-
-      setEditedWeightUnit(user.weightUnit || "lbs");
-      setEditedWeight(user.weightValue?.toString() || "");
-      
-      setEditedSkeletalMuscleMassUnit(user.skeletalMuscleMassUnit || 'lbs');
-      setEditedSkeletalMuscleMassValue(user.skeletalMuscleMassValue?.toString() || "");
-      
-      setEditedBodyFat(user.bodyFatPercentage?.toString() || "");
-
+    } else {
+      setEditedHeightCm("");
+      setEditedHeightFt("");
+      setEditedHeightIn("");
     }
-  }, [isEditing, user]);
 
-  const handleEditClick = () => setIsEditing(true);
+    setEditedWeightUnit(user.weightUnit || "lbs");
+    setEditedWeight(user.weightValue?.toString() || "");
+
+    setEditedSkeletalMuscleMassUnit(user.skeletalMuscleMassUnit || 'lbs');
+    setEditedSkeletalMuscleMassValue(user.skeletalMuscleMassValue?.toString() || "");
+
+    setEditedBodyFat(user.bodyFatPercentage?.toString() || "");
+  };
+
+  const handleEditClick = () => {
+    syncEditFields();
+    setIsEditing(true);
+  };
   const handleCancelClick = () => setIsEditing(false);
 
   const handleHeightUnitChange = (newUnit: 'cm' | 'ft/in') => {

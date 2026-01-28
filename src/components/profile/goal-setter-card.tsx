@@ -469,7 +469,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                                         <DialogHeader>
                                                         <DialogTitle>Congratulations!</DialogTitle>
                                                         <DialogDescription>
-                                                            When did you achieve the goal: "{form.getValues(`goals.${index}.description`)}"?
+                                                            When did you achieve the goal: &quot;{form.getValues(`goals.${index}.description`)}&quot;?
                                                         </DialogDescription>
                                                         </DialogHeader>
                                                         <div className="py-4">
@@ -671,7 +671,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
                                   <div className="md:pr-36">
                                      <p className="text-sm font-semibold text-muted-foreground">
                                         {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
-                                        Original Goal: "{insight.originalGoalDescription}"
+                                        Original Goal: &quot;{insight.originalGoalDescription}&quot;
                                     </p>
                                   </div>
                                   <div className="absolute top-0 right-0 hidden md:block">

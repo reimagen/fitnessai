@@ -373,7 +373,7 @@ export default function PlanPage() {
             <div className="space-y-4">
               {generatedPlan && (
                 <div className="space-y-2">
-                  <Label htmlFor="regeneration-feedback">Not quite right? Tell AI what to change for this week's plan. Note: long-term preferences should be stored in your profile.</Label>
+                  <Label htmlFor="regeneration-feedback">Not quite right? Tell AI what to change for this week&apos;s plan. Note: long-term preferences should be stored in your profile.</Label>
                   <Textarea
                     id="regeneration-feedback"
                     placeholder="e.g., 'Twisted my ankle last week, need to take it easy' or 'Can you add more cardio this week?'"

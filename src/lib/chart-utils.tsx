@@ -22,7 +22,18 @@ export const getPath = (x: number, y: number, width: number, height: number, rad
 };
 
 // Pie chart label renderer
-export const renderPieLabel = (props: any, unit?: 'reps' | 'kcal', isMobile: boolean = false) => {
+type PieLabelProps = {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
+  name: string;
+  value: number;
+};
+
+export const renderPieLabel = (props: PieLabelProps, unit?: 'reps' | 'kcal', isMobile: boolean = false) => {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
   if (percent < 0.05) return null;
 
@@ -53,14 +64,28 @@ export const renderPieLabel = (props: any, unit?: 'reps' | 'kcal', isMobile: boo
 };
 
 // Custom rounded bar component for bar charts
-export const RoundedBar = (props: any) => {
-  const { fill, x, y, width, height, payload, dataKey } = props;
-  if (!payload || !dataKey || props.value === 0 || height === 0) return null;
-  const myIndex = (stackOrder as readonly any[]).indexOf(dataKey as any);
+type RoundedBarProps = {
+  fill?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: Record<string, number>;
+  dataKey?: string | number;
+  value?: number;
+};
+
+export const RoundedBar = (props: RoundedBarProps) => {
+  const { fill, x, y, width, height, payload, dataKey, value } = props;
+  if (!payload || dataKey === undefined || value === 0 || !height) return null;
+  if (x === undefined || y === undefined || width === undefined) return null;
+  const dataKeyString = String(dataKey);
+  const myIndex = stackOrder.indexOf(dataKeyString as (typeof stackOrder)[number]);
   let isTop = true;
   if (myIndex !== -1) {
     for (let i = myIndex + 1; i < stackOrder.length; i++) {
-      if (payload[(stackOrder as readonly any[])[i]] > 0) {
+      const stackKey = stackOrder[i];
+      if ((payload[stackKey] || 0) > 0) {
         isTop = false;
         break;
       }

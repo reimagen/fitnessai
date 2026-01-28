@@ -35,8 +35,9 @@ export default function SignInPage() {
         await signInWithEmail(email, password);
         router.push('/');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
@@ -57,8 +58,9 @@ export default function SignInPage() {
         description: "Please check your inbox for instructions to reset your password.",
       });
       setIsResettingPassword(false); // Go back to the sign-in form
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setError(message);
     } finally {
       setIsLoading(false);
     }
