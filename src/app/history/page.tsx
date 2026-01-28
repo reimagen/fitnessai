@@ -1,7 +1,7 @@
 
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { HistoryPageContent } from "@/components/history/history-page-content";
+import { HistoryPageContent } from "@/components/history/HistoryPageContent";
 
 export default function HistoryPage() {
   return (

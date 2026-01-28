@@ -3,12 +3,12 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Edit, UploadCloud } from "lucide-react";
 import type { PersonalRecord } from "@/lib/types";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
-import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
-import { ManualPrForm } from "@/components/prs/manual-pr-form";
+import { PrUploaderForm } from "@/components/prs/PrUploaderForm";
+import { ManualPrForm } from "@/components/prs/ManualPrForm";
 import { useToast } from "@/hooks/useToast";
 import { useAddPersonalRecords } from "@/lib/firestore.service";
 import { useAuth } from "@/lib/auth.service";
-import { FormContainer } from "@/components/prs/form-container";
+import { FormContainer } from "@/components/prs/FormContainer";
 import { FORM_STATES, type FormState } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 

@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Edit2, Save, XCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useIsMobile } from "@/hooks/useMobile";
-import { cn } from "@/lib/utils";
 
 type WorkoutPreferences = Pick<UserProfile, 
   'workoutsPerWeek' | 

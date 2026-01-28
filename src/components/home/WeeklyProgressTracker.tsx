@@ -17,7 +17,7 @@ type WeeklyProgressTrackerProps = {
   userProfile?: UserProfile | null;
 };
 
-export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgressTrackerProps): JSX.Element {
+export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgressTrackerProps) {
   const workoutGoal = userProfile?.workoutsPerWeek || DEFAULT_WORKOUTS_PER_WEEK;
   const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
   const today = new Date();

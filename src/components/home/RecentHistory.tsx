@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { format, isToday } from 'date-fns';
 import { useCurrentWeek } from '@/hooks/useCurrentWeek';
 import { cn } from '@/lib/utils';
-import { Route } from 'lucide-react';
 
 const categoryStyles: Record<ExerciseCategory, React.CSSProperties> = {
   'Upper Body': { backgroundColor: 'hsl(var(--chart-1))', color: 'hsl(var(--chart-1-foreground))' },
@@ -22,7 +21,7 @@ type RecentHistoryProps = {
   workoutLogs: WorkoutLog[];
 };
 
-export function RecentHistory({ workoutLogs }: RecentHistoryProps): JSX.Element {
+export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
   const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
 
   const dailyData = useMemo(() => {

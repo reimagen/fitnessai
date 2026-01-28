@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
-import { getPath, RoundedBar } from '@/analysis/chart-utils';
+import { RoundedBar } from '@/analysis/chart-utils';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 import { chartConfig } from '@/analysis/chart.config';
 

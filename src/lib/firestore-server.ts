@@ -121,13 +121,15 @@ export const userProfileConverter = {
             };
         }
         if (profile.liftProgressionAnalysis) {
-            const convertedAnalyses: Record<string, StoredLiftProgressionAnalysis> = {};
+            const convertedAnalyses: Record<string, Record<string, unknown>> = {};
             for (const key in profile.liftProgressionAnalysis) {
                 const analysis = profile.liftProgressionAnalysis[key];
                 if (analysis && analysis.generatedDate) {
                     convertedAnalyses[key] = {
                         ...analysis,
-                        generatedDate: Timestamp.fromDate(analysis.generatedDate),
+                        generatedDate: analysis.generatedDate instanceof Timestamp
+                            ? analysis.generatedDate
+                            : Timestamp.fromDate(analysis.generatedDate),
                     };
                 }
             }
@@ -320,6 +322,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
         
         let bestExistingRecord: PersonalRecord | null = null;
         const oldRecordRefsToDelete: FirebaseFirestore.DocumentReference[] = [];
+        let bestExistingWeightInKg = -1;
 
         if (!existingRecordsSnapshot.empty) {
             existingRecordsSnapshot.forEach(doc => {
@@ -327,15 +330,11 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
                 oldRecordRefsToDelete.push(doc.ref);
                 const existingWeightInKg = docData.weightUnit === 'lbs' ? docData.weight * LBS_TO_KG : docData.weight;
                 
-                if (!bestExistingRecord || existingWeightInKg > (bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight)) {
+                if (!bestExistingRecord || existingWeightInKg > bestExistingWeightInKg) {
                     bestExistingRecord = docData;
+                    bestExistingWeightInKg = existingWeightInKg;
                 }
             });
-        }
-        
-        let bestExistingWeightInKg = -1;
-        if (bestExistingRecord) {
-            bestExistingWeightInKg = bestExistingRecord.weightUnit === 'lbs' ? bestExistingRecord.weight * LBS_TO_KG : bestExistingRecord.weight;
         }
 
         if (newRecordWeightInKg > bestExistingWeightInKg) {
@@ -460,17 +459,26 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
             generatedDate: Timestamp.fromDate(profileData.goalAnalysis.generatedDate),
         };
     }
+    if (profileData.liftProgressionAnalysis) {
+        const convertedAnalyses: Record<string, Record<string, unknown>> = {};
+        for (const key in profileData.liftProgressionAnalysis) {
+            const analysis = profileData.liftProgressionAnalysis[key];
+            if (analysis && analysis.generatedDate) {
+                convertedAnalyses[key] = {
+                    ...analysis,
+                    generatedDate: analysis.generatedDate instanceof Timestamp
+                        ? analysis.generatedDate
+                        : Timestamp.fromDate(analysis.generatedDate),
+                };
+            }
+        }
+        dataToUpdate.liftProgressionAnalysis = convertedAnalyses;
+    }
     if (profileData.weeklyPlan) {
         dataToUpdate.weeklyPlan = {
             ...profileData.weeklyPlan,
             generatedDate: Timestamp.fromDate(profileData.weeklyPlan.generatedDate),
         };
-    }
-    
-    for (const key in dataToUpdate) {
-        if (key.startsWith('liftProgressionAnalysis.') && dataToUpdate[key]?.generatedDate) {
-            dataToUpdate[key].generatedDate = Timestamp.fromDate(dataToUpdate[key].generatedDate);
-        }
     }
 
     await profileDocRef.set(dataToUpdate, { merge: true });

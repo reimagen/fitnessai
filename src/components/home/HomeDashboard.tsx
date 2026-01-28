@@ -8,15 +8,12 @@ import { WeeklyProgressTracker } from "@/components/home/WeeklyProgressTracker";
 import { RecentHistory } from "@/components/home/RecentHistory";
 import { WeeklyCardioTracker } from "@/components/home/WeeklyCardioTracker";
 import { AlertCircle } from "lucide-react";
-import { useState } from "react";
 
 type HomeDashboardProps = {
   initialProfile?: UserProfile | null;
 };
 
-export function HomeDashboard({ initialProfile }: HomeDashboardProps): JSX.Element {
-  const [retryCount, setRetryCount] = useState(0);
-
+export function HomeDashboard({ initialProfile }: HomeDashboardProps) {
   const { data: profileResult, isLoading: loadingProfile } = useUserProfile({
     initialData: initialProfile ? { data: initialProfile, notFound: false } : undefined,
   });
@@ -46,11 +43,6 @@ export function HomeDashboard({ initialProfile }: HomeDashboardProps): JSX.Eleme
   }
 
   if (isGenuineFailure) {
-    const handleRetry = () => {
-      setRetryCount(prev => prev + 1);
-      // The component will re-render and the query will retry
-    };
-
     return (
       <div className="flex gap-4 p-6 rounded-lg border border-destructive bg-destructive/10 text-destructive">
         <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
@@ -58,7 +50,7 @@ export function HomeDashboard({ initialProfile }: HomeDashboardProps): JSX.Eleme
           <h3 className="font-semibold mb-1">Unable to load dashboard</h3>
           <p className="text-sm mb-4">We encountered an error while loading your workout data. Please check your connection and try again.</p>
           <button
-            onClick={handleRetry}
+            onClick={() => window.location.reload()}
             className="px-4 py-2 rounded-md bg-destructive text-white font-medium text-sm hover:bg-destructive/90 transition-colors"
           >
             Retry

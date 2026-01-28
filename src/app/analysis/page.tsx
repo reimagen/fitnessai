@@ -1,18 +1,15 @@
 
 "use client";
 
-import { Loader2, Trophy, UserPlus, TrendingUp } from 'lucide-react';
-import React, { useState, useEffect, useMemo } from 'react';
-import type { WorkoutLog, PersonalRecord, AnalyzeLiftProgressionInput, StrengthImbalanceInput, FitnessGoal, StrengthFinding, StrengthLevel } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile, useAnalyzeLiftProgression, useAnalyzeStrength } from '@/lib/firestore.service';
+import { Loader2, UserPlus, TrendingUp } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import type { WorkoutLog } from '@/lib/types';
+import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { useAuth } from '@/lib/auth.service';
 import { getNormalizedExerciseName } from '@/lib/strength-standards';
-import { useToast } from '@/hooks/useToast';
-import { useIsMobile } from '@/hooks/useMobile';
 import Link from 'next/link';
 import { CalorieBreakdownCard } from '@/components/analysis/CalorieBreakdownCard';
 import { RepetitionBreakdownCard } from '@/components/analysis/RepetitionBreakdownCard';
@@ -21,22 +18,13 @@ import { LiftProgressionCard } from '@/components/analysis/LiftProgressionCard';
 import { ExerciseVarietyCard } from '@/components/analysis/ExerciseVarietyCard';
 import { MilestonesCard } from '@/components/analysis/MilestonesCard';
 import { CardioAnalysisCard } from '@/components/analysis/CardioAnalysisCard';
-import { useStrengthFindings } from '@/hooks/useStrengthFindings';
 import { useFilteredData } from '@/hooks/useFilteredData';
 import { useChartData } from '@/hooks/useChartData';
-import { useLiftProgression } from '@/hooks/useLiftProgression';
-import { useLiftTrends } from '@/hooks/useLiftTrends';
 import { useCardioAnalysis } from '@/hooks/useCardioAnalysis';
 import { formatCardioDuration } from '@/analysis/formatting-utils';
-import { getLevelBadgeVariant, getTrendBadgeVariant, focusBadgeProps } from '@/analysis/badge-utils';
-import { cn } from '@/lib/utils';
-import { subWeeks, isAfter } from 'date-fns';
-import { chartConfig } from '@/analysis/chart.config';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 
 export default function AnalysisPage() {
-  const { toast } = useToast();
-  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState('weekly');
   const [selectedLift, setSelectedLift] = useState<string>('');
 
@@ -45,53 +33,14 @@ export default function AnalysisPage() {
   const userProfile = profileResult?.data;
   const isProfileNotFound = profileResult?.notFound === true;
 
-  const analyzeProgressionMutation = useAnalyzeLiftProgression();
-  const analyzeStrengthMutation = useAnalyzeStrength();
-
   const enableDataFetching = !isLoadingProfile && !!userProfile;
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
 
-  const analysisToRender = userProfile?.strengthAnalysis?.result;
-  const generatedDate = userProfile?.strengthAnalysis?.generatedDate;
-
   // Custom hooks for data processing
-  const clientSideFindings = useStrengthFindings(personalRecords, userProfile || undefined);
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
-
-  // Handler for strength analysis
-  const handleAnalyzeStrength = () => {
-    if (!userProfile) {
-      toast({ title: 'Profile Not Loaded', description: 'Your user profile is not available. Please try again.', variant: 'destructive' });
-      return;
-    }
-    const validFindings = clientSideFindings.filter((f): f is StrengthFinding => !('hasData' in f));
-
-    const analysisInput: StrengthImbalanceInput = {
-      clientSideFindings: validFindings.map((f: StrengthFinding) => ({
-        ...f,
-        targetRatio: f.targetRatio,
-      })),
-      userProfile: {
-        age: userProfile.age,
-        gender: userProfile.gender,
-        weightValue: userProfile.weightValue,
-        weightUnit: userProfile.weightUnit,
-        skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-        skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-        fitnessGoals: (userProfile.fitnessGoals || [])
-          .filter((g: FitnessGoal) => !g.achieved)
-          .map((g: FitnessGoal) => ({
-            description: g.description,
-            isPrimary: g.isPrimary || false,
-          })),
-      },
-    };
-
-    analyzeStrengthMutation.mutate(analysisInput);
-  };
 
   // Get frequently logged lifts
   const frequentlyLoggedLifts = useMemo(() => {
@@ -112,70 +61,10 @@ export default function AnalysisPage() {
   }, [workoutLogs]);
 
   const resolvedSelectedLift = selectedLift || frequentlyLoggedLifts[0] || '';
-  const selectedLiftKey = getNormalizedExerciseName(resolvedSelectedLift);
-  const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
-  const progressionChartData = useLiftProgression(resolvedSelectedLift, selectedLiftKey, workoutLogs, personalRecords);
-  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(
-    resolvedSelectedLift,
-    selectedLiftKey,
-    progressionChartData,
-    personalRecords,
-    userProfile || undefined
-  );
-
-  // Handle lift progression analysis
-  const handleAnalyzeProgression = () => {
-    if (!userProfile) {
-      toast({ title: 'Profile Not Loaded', description: 'Your user profile is not available. Please try again.', variant: 'destructive' });
-      return;
-    }
-    const sixWeeksAgo = subWeeks(new Date(), 6);
-    if (!workoutLogs) return;
-
-    const exerciseHistory = workoutLogs
-      .filter((log: WorkoutLog) => isAfter(log.date, sixWeeksAgo))
-      .flatMap((log: WorkoutLog) =>
-        log.exercises
-          .filter((ex) => getNormalizedExerciseName(ex.name) === selectedLiftKey)
-          .map((ex) => ({
-            date: log.date.toISOString(),
-            weight: ex.weight || 0,
-            sets: ex.sets || 0,
-            reps: ex.reps || 0,
-          }))
-      );
-
-    const analysisInput: AnalyzeLiftProgressionInput = {
-      exerciseName: resolvedSelectedLift,
-      exerciseHistory,
-      userProfile: {
-        age: userProfile.age,
-        gender: userProfile.gender,
-        heightValue: userProfile.heightValue,
-        heightUnit: userProfile.heightUnit,
-        weightValue: userProfile.weightValue,
-        weightUnit: userProfile.weightUnit,
-        skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-        skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-        fitnessGoals: (userProfile.fitnessGoals || [])
-          .filter((g: FitnessGoal) => !g.achieved)
-          .map((g: FitnessGoal) => ({
-            description: g.description,
-            isPrimary: g.isPrimary || false,
-          })),
-      },
-      currentLevel: currentLiftLevel || undefined,
-      trendPercentage: trendImprovement ?? undefined,
-      volumeTrendPercentage: volumeTrend ?? undefined,
-    };
-
-    analyzeProgressionMutation.mutate(analysisInput);
-  };
 
   // Loading and error states
   const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
   const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
-  const showProgressionReanalyze = !!progressionAnalysisToRender;
 
   if (isLoadingProfile) {
     return (
@@ -312,14 +201,11 @@ export default function AnalysisPage() {
 
                 <StrengthBalanceCard
                   isLoading={isLoading}
-                  isError={isError}
                   userProfile={userProfile!}
                   personalRecords={personalRecords}
                   strengthAnalysis={userProfile?.strengthAnalysis}
                 />
                 <LiftProgressionCard
-                  isLoading={isLoading}
-                  isError={isError}
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
                   personalRecords={personalRecords}
@@ -328,10 +214,6 @@ export default function AnalysisPage() {
                   frequentlyLoggedLifts={frequentlyLoggedLifts}
                 />
                 <CardioAnalysisCard
-                  isLoading={isLoading}
-                  isError={isError}
-                  userProfile={userProfile!}
-                  workoutLogs={workoutLogs}
                   cardioAnalysisData={cardioAnalysisData}
                   timeRange={timeRange}
                   timeRangeDisplayNames={timeRangeDisplayNames}
