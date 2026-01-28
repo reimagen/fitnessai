@@ -2,9 +2,8 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
   maxInstances: 1
 
-yaml environment: 
-  projectId: fitnessai-prod 
+env:
+  - variable: GEMINI_API_KEY
+    secret: gemini-api-key

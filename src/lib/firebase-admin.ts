@@ -1,8 +1,14 @@
-import { initializeApp, getApps, App, cert } from 'firebase-admin/app';
+import { initializeApp, getApps, App, cert, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 
 let adminApp: App | null = null;
+
+// On Firebase App Hosting, Application Default Credentials are available automatically.
+// For local dev, we use explicit service account credentials from env vars.
+function isAppHosting(): boolean {
+  return !!process.env.FIREBASE_CONFIG;
+}
 
 function getServiceAccount() {
   const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -27,12 +33,18 @@ export function getAdminApp(): App {
     return adminApp;
   }
 
-  adminApp = initializeApp(
-    {
-      credential: cert(getServiceAccount()),
-    },
-    'admin'
-  );
+  if (isAppHosting()) {
+    adminApp = initializeApp(
+      { credential: applicationDefault() },
+      'admin'
+    );
+  } else {
+    adminApp = initializeApp(
+      { credential: cert(getServiceAccount()) },
+      'admin'
+    );
+  }
+
   return adminApp;
 }
 
