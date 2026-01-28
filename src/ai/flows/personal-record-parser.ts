@@ -26,7 +26,7 @@ const PersonalRecordSchema = z.object({
     exerciseName: z.string().describe("The name of the exercise. If the original name starts with 'EGYM ', remove this prefix."),
     weight: z.number().describe("The weight lifted for the record."),
     weightUnit: z.enum(['kg', 'lbs']).describe("The unit for the weight (kg or lbs)."),
-    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD."),
+    dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. Omit if the date is not explicitly shown (e.g., if it says 'Today').").optional(),
     category: z.enum(CATEGORY_OPTIONS).describe("The category of the exercise. Infer based on the exercise name. Must be one of: 'Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', or 'Other'.")
 });
 
@@ -68,12 +68,12 @@ The most important part of your task is to correctly categorize each exercise.
     *   If an exercise name begins with "EGYM " (case-insensitive), you must remove this prefix. For example, "EGYM Chest Press" becomes "Chest Press".
 *   **Weight and Unit**: Extract the numerical weight value and its unit (kg or lbs).
 *   **Date - CRITICAL**:
-    *   You must extract the date (year and month and day) associated with each specific record.
-    *   Format the final date as YYYY-MM-DD.
-    *   **Handling "Today"**: If a record's date is listed as "Today", you MUST look for a general date at the top of the screenshot, such as "Updated on...". Use that date for the record. For example, if the top says "Updated on Jul 4, 2026" and a record says "Today", you MUST use "2026-07-04" as the dateString for that record.
-    *   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2026", the 'dateString' MUST be "2026-06-26".
-    *   **Example 2:** If a line says "Squat 120 kg July 1, 2026", the 'dateString' MUST be "2026-07-01".
-    *   **Example 3:** If a line says "Leg Press 200 kg May 15 2026", the 'dateString' MUST be "2026-05-15".
+*   You must extract the date (year and month and day) associated with each specific record.
+*   Format the final date as YYYY-MM-DD.
+*   **Handling "Today" or missing dates**: If a record's date is listed as "Today" or no explicit date is shown, you MUST omit the dateString field for that record.
+*   **Example 1:** If a line says "Bench Press 100 kg Jun 26, 2026", the 'dateString' MUST be "2026-06-26".
+*   **Example 2:** If a line says "Squat 120 kg July 1, 2026", the 'dateString' MUST be "2026-07-01".
+*   **Example 3:** If a line says "Leg Press 200 kg May 15 2026", the 'dateString' MUST be "2026-05-15".
 
 Here is the screenshot to parse:
 {{media url=photoDataUri}}
