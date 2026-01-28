@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from 'react';
 import type { WorkoutLog, UserProfile } from '@/lib/types';
 import { Flame } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/useMobile';
 import { CardioActivitySummary } from './CardioActivitySummary';
 import { CardioByActivityChart } from './CardioByActivityChart';
 import { CardioOverTimeChart } from './CardioOverTimeChart';

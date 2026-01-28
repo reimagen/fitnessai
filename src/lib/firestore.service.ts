@@ -24,7 +24,7 @@ import { analyzeStrengthAction } from '@/app/analysis/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, subWeeks, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 
 // --- React Query Hooks ---
