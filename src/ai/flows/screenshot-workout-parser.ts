@@ -191,13 +191,14 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
       // Step 2: Call the main parser, telling it whether to look for a date.
       const result = await mainParserPrompt(promptInputWithFlag);
       output = result.output;
-    } catch (e: any) {
-      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('503') || message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('unavailable')) {
         console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
         const result = await mainParserPrompt(promptInputWithFlag, { model: FALLBACK_MODEL });
         output = result.output;
       } else {
-        throw e;
+        throw error;
       }
     }
 
@@ -242,7 +243,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
         let finalWeight = ex.weight ?? 0;
         let finalDistance = ex.distance ?? 0;
         let finalDuration = ex.duration ?? 0;
-        let finalCalories = ex.calories;
+        const finalCalories = ex.calories;
         let finalDistanceUnit = ex.distanceUnit;
         let finalDurationUnit = ex.durationUnit;
 

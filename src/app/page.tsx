@@ -36,7 +36,7 @@ export default async function HomePage() {
       <div className="container mx-auto px-4 py-8 text-center">
         <header className="mb-12">
             <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Welcome to FitnessAI!</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Let's get your profile set up to personalize your experience.</p>
+            <p className="mt-2 text-lg text-muted-foreground">Let&apos;s get your profile set up to personalize your experience.</p>
         </header>
         <Card className="shadow-lg max-w-md mx-auto">
             <CardHeader>

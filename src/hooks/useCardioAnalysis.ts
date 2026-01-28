@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { WorkoutLog, UserProfile } from '@/lib/types';
+import type { Exercise, WorkoutLog, UserProfile } from '@/lib/types';
 import { toTitleCase } from '@/lib/analysis.config';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import {
@@ -32,6 +32,12 @@ interface CardioAmountChartPoint {
   [key: string]: number | string;
 }
 
+type CardioExercise = Exercise & {
+  date: Date;
+  calories?: number;
+  name: string;
+};
+
 interface CardioAnalysisResult {
   totalCalories: number;
   statsByActivity: Record<string, CardioStats>;
@@ -59,7 +65,7 @@ export function useCardioAnalysis(
 
     const today = new Date();
 
-    const cardioExercises = logsForPeriod.flatMap(log =>
+    const cardioExercises: CardioExercise[] = logsForPeriod.flatMap(log =>
       log.exercises
         .filter(ex => ex.category === 'Cardio')
         .map(ex => {
@@ -101,10 +107,10 @@ export function useCardioAnalysis(
         })
     );
 
-    const totalCalories = cardioExercises.reduce((sum: number, ex: any) => sum + (ex.calories || 0), 0);
+    const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
 
     const statsByActivity = cardioExercises.reduce(
-      (acc: Record<string, CardioStats>, ex: any) => {
+      (acc: Record<string, CardioStats>, ex) => {
         if (!acc[ex.name]) {
           acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0 };
         }
@@ -135,7 +141,7 @@ export function useCardioAnalysis(
 
     const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
       name: `${name} `,
-      value: Math.round((stats as any).totalCalories),
+      value: Math.round(stats.totalCalories),
       fill: `var(--color-${name})`,
     }));
 
@@ -186,16 +192,17 @@ export function useCardioAnalysis(
     }
 
     // --- Cardio Amount Bar Chart Data ---
-    let cardioAmountChartData: any[] = [];
-    const activities = Array.from(new Set(cardioExercises.map((ex: any) => ex.name)));
+    let cardioAmountChartData: CardioAmountChartPoint[] = [];
+    const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
     const initialActivityData = Object.fromEntries(activities.map((act: string) => [act, 0]));
 
-    const processAndFinalizeData = (dataMap: Map<string, any>) => {
+    const processAndFinalizeData = (dataMap: Map<string, CardioAmountChartPoint>) => {
       const finalizedData = Array.from(dataMap.values());
-      finalizedData.forEach((dataPoint: any) => {
+      finalizedData.forEach(dataPoint => {
         let total = 0;
         activities.forEach((activity: string) => {
-          total += dataPoint[activity] || 0;
+          const value = dataPoint[activity];
+          total += typeof value === 'number' ? value : 0;
         });
         dataPoint.total = Math.round(total);
       });
@@ -211,14 +218,14 @@ export function useCardioAnalysis(
           day.setDate(day.getDate() + i);
           return day;
         });
-        const dailyData = new Map<string, any>(
+        const dailyData = new Map<string, CardioAmountChartPoint>(
           daysInWeek.map((day: Date) => [
             format(day, 'yyyy-MM-dd'),
             { dateLabel: format(day, 'E'), ...initialActivityData },
           ])
         );
 
-        cardioExercises.forEach((ex: any) => {
+        cardioExercises.forEach(ex => {
           const dateKey = format(ex.date, 'yyyy-MM-dd');
           const dayData = dailyData.get(dateKey);
           if (dayData) {
@@ -231,7 +238,7 @@ export function useCardioAnalysis(
       case 'monthly': {
         const monthStart = startOfMonth(today);
         const monthEnd = endOfMonth(today);
-        const weeklyData = new Map<string, any>();
+        const weeklyData = new Map<string, CardioAmountChartPoint>();
 
         const weeks = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 0 });
 
@@ -243,7 +250,7 @@ export function useCardioAnalysis(
           }
         });
 
-        cardioExercises.forEach((ex: any) => {
+        cardioExercises.forEach(ex => {
           const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
           const weekData = weeklyData.get(weekStartKey);
           if (weekData) {
@@ -254,8 +261,8 @@ export function useCardioAnalysis(
         break;
       }
       case 'yearly': {
-        const monthlyData = new Map<string, any>();
-        cardioExercises.forEach((ex: any) => {
+        const monthlyData = new Map<string, CardioAmountChartPoint>();
+        cardioExercises.forEach(ex => {
           const monthKey = format(ex.date, 'yyyy-MM');
           if (!monthlyData.has(monthKey)) {
             monthlyData.set(monthKey, { dateLabel: format(ex.date, 'MMM'), ...initialActivityData });
@@ -265,16 +272,16 @@ export function useCardioAnalysis(
         });
         const finalizedData = processAndFinalizeData(monthlyData);
         cardioAmountChartData = finalizedData
-          .filter((month: any) => Object.values(month).some((val: any) => typeof val === 'number' && val > 0))
-          .sort((a: any, b: any) => {
+          .filter(month => Object.values(month).some(val => typeof val === 'number' && val > 0))
+          .sort((a, b) => {
             const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            return monthOrder.indexOf(a.dateLabel) - monthOrder.indexOf(b.dateLabel);
+            return monthOrder.indexOf(String(a.dateLabel)) - monthOrder.indexOf(String(b.dateLabel));
           });
         break;
       }
       case 'all-time': {
-        const yearlyData = new Map<string, any>();
-        cardioExercises.forEach((ex: any) => {
+        const yearlyData = new Map<string, CardioAmountChartPoint>();
+        cardioExercises.forEach(ex => {
           const yearKey = format(ex.date, 'yyyy');
           if (!yearlyData.has(yearKey)) {
             yearlyData.set(yearKey, { dateLabel: yearKey, ...initialActivityData });
@@ -283,9 +290,9 @@ export function useCardioAnalysis(
           yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
         });
         const finalizedData = processAndFinalizeData(yearlyData);
-        cardioAmountChartData = Array.from(finalizedData.entries())
-          .sort(([, a]: [any, any], [, b]: [any, any]) => a.dateLabel.localeCompare(b.dateLabel))
-          .map(([, data]: [any, any]) => data);
+        cardioAmountChartData = finalizedData.sort((a, b) =>
+          String(a.dateLabel).localeCompare(String(b.dateLabel))
+        );
         break;
       }
     }

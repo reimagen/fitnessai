@@ -23,6 +23,11 @@ interface CardioOverTimeChartProps {
   isMobile: boolean;
 }
 
+type LegendPayloadEntry = {
+  color?: string;
+  value?: string | number;
+};
+
 export const CardioOverTimeChart: React.FC<CardioOverTimeChartProps> = ({ cardioAmountChartData, statsByActivity, isMobile }) => {
   return (
     <ChartContainer config={chartConfig} className="h-[250px] w-full">
@@ -40,14 +45,14 @@ export const CardioOverTimeChart: React.FC<CardioOverTimeChartProps> = ({ cardio
           />
           <YAxis allowDecimals={false} />
           <Tooltip content={<ChartTooltipContent nameKey="name" />} />
-          <Legend content={({ payload }) => {
+          <Legend content={({ payload }: { payload?: LegendPayloadEntry[] }) => {
             if (!payload) return null;
             const numItems = payload.length;
             const columns = numItems > 2 ? Math.ceil(numItems / 2) : numItems;
             return (
               <div className="flex justify-center mt-4">
                 <div className="grid gap-x-2 gap-y-1 text-xs" style={{ gridTemplateColumns: `repeat(${columns}, auto)` }}>
-                  {payload.map((entry: any, index: number) => (
+                  {payload.map((entry, index) => (
                     <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                       <span className="h-2.5 w-2.5 shrink-0 rounded-[2px]" style={{ backgroundColor: entry.color }} />
                       <span className="text-muted-foreground">{entry.value}</span>

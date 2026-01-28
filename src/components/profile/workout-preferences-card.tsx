@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { ExperienceLevel, SessionTime, UserProfile } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,18 +53,19 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
   const [editedCardioGoal, setEditedCardioGoal] = useState(preferences.weeklyCardioCalorieGoal?.toString() || "");
   const [editedCardioStretchGoal, setEditedCardioStretchGoal] = useState(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
 
-  useEffect(() => {
-    if (isEditing) {
-      setEditedWorkoutsPerWeek(preferences.workoutsPerWeek?.toString() || "3");
-      setEditedSessionTime(preferences.sessionTimeMinutes || 45);
-      setEditedExperienceLevel(preferences.experienceLevel || "intermediate");
-      setEditedAiPreferencesNotes(preferences.aiPreferencesNotes || "");
-      setEditedCardioGoal(preferences.weeklyCardioCalorieGoal?.toString() || "");
-      setEditedCardioStretchGoal(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
-    }
-  }, [isEditing, preferences]);
+  const syncEditFields = () => {
+    setEditedWorkoutsPerWeek(preferences.workoutsPerWeek?.toString() || "3");
+    setEditedSessionTime(preferences.sessionTimeMinutes || 45);
+    setEditedExperienceLevel(preferences.experienceLevel || "intermediate");
+    setEditedAiPreferencesNotes(preferences.aiPreferencesNotes || "");
+    setEditedCardioGoal(preferences.weeklyCardioCalorieGoal?.toString() || "");
+    setEditedCardioStretchGoal(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
+  };
 
-  const handleEditClick = () => setIsEditing(true);
+  const handleEditClick = () => {
+    syncEditFields();
+    setIsEditing(true);
+  };
   const handleCancelClick = () => setIsEditing(false);
 
   const handleSaveClick = () => {

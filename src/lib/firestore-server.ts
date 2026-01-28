@@ -27,10 +27,11 @@ const workoutLogConverter = {
     const userId = snapshot.ref.parent.parent?.id || '';
     
     const exercises: Exercise[] = Array.isArray(data.exercises)
-      ? data.exercises.map((ex: any, index: number) => {
-          const category = ex.category && typeof ex.category === 'string' ? ex.category as ExerciseCategory : 'Other';
+      ? data.exercises.map((ex: Record<string, unknown>, index: number) => {
+          const category =
+            typeof ex.category === 'string' ? (ex.category as ExerciseCategory) : 'Other';
           return {
-            id: ex.id || `${snapshot.id}-${index}`,
+            id: typeof ex.id === 'string' ? ex.id : `${snapshot.id}-${index}`,
             name: typeof ex.name === 'string' ? ex.name : 'Unnamed Exercise',
             sets: Number(ex.sets || 0),
             reps: Number(ex.reps || 0),
@@ -38,7 +39,10 @@ const workoutLogConverter = {
             weightUnit: ex.weightUnit === 'kg' || ex.weightUnit === 'lbs' ? ex.weightUnit : 'lbs',
             category: category,
             distance: Number(ex.distance || 0),
-            distanceUnit: ex.distanceUnit === 'mi' || ex.distanceUnit === 'km' || ex.distanceUnit === 'ft' || ex.distanceUnit === 'm' ? ex.distanceUnit : 'mi',
+            distanceUnit:
+              ex.distanceUnit === 'mi' || ex.distanceUnit === 'km' || ex.distanceUnit === 'ft' || ex.distanceUnit === 'm'
+                ? ex.distanceUnit
+                : 'mi',
             duration: Number(ex.duration || 0),
             durationUnit: ex.durationUnit === 'min' || ex.durationUnit === 'hr' || ex.durationUnit === 'sec' ? ex.durationUnit : 'min',
             calories: Number(ex.calories || 0),
@@ -58,12 +62,10 @@ const workoutLogConverter = {
 
 const personalRecordConverter = {
   toFirestore: (record: Omit<PersonalRecord, 'id' | 'userId'>) => {
-    const firestoreData: { [key: string]: any } = { ...record };
+    const firestoreData: Record<string, unknown> = { ...record };
     if (record.date) {
       firestoreData.date = Timestamp.fromDate(record.date);
     }
-    // No need to store userId in the document itself
-    delete (firestoreData as any).userId; 
     return firestoreData;
   },
   fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): PersonalRecord => {
@@ -90,13 +92,13 @@ const personalRecordConverter = {
 
 export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
-        const dataToStore: { [key: string]: any } = { ...profile };
+        const dataToStore: Record<string, unknown> = { ...profile };
         if (profile.joinedDate) {
             dataToStore.joinedDate = Timestamp.fromDate(profile.joinedDate);
         }
         if (profile.fitnessGoals) {
             dataToStore.fitnessGoals = profile.fitnessGoals.map(goal => {
-                const newGoal: { [key: string]: any } = { ...goal };
+                const newGoal: Record<string, unknown> = { ...goal };
                 newGoal.targetDate = Timestamp.fromDate(goal.targetDate);
                 if (goal.dateAchieved) {
                     newGoal.dateAchieved = Timestamp.fromDate(goal.dateAchieved);
@@ -119,7 +121,7 @@ export const userProfileConverter = {
             };
         }
         if (profile.liftProgressionAnalysis) {
-            const convertedAnalyses: { [key: string]: any } = {};
+            const convertedAnalyses: Record<string, StoredLiftProgressionAnalysis> = {};
             for (const key in profile.liftProgressionAnalysis) {
                 const analysis = profile.liftProgressionAnalysis[key];
                 if (analysis && analysis.generatedDate) {
@@ -142,14 +144,16 @@ export const userProfileConverter = {
     fromFirestore: (snapshot: FirebaseFirestore.DocumentSnapshot): UserProfile => {
         const data = snapshot.data() || {};
         const joinedDate = data.joinedDate instanceof Timestamp ? data.joinedDate.toDate() : undefined;
-        const fitnessGoals = Array.isArray(data.fitnessGoals) ? data.fitnessGoals.map((goal: any) => ({
-                id: goal.id || `goal-${Math.random()}`,
-                description: goal.description || '',
+        const fitnessGoals = Array.isArray(data.fitnessGoals)
+            ? data.fitnessGoals.map((goal: Record<string, unknown>) => ({
+                id: typeof goal.id === 'string' ? goal.id : `goal-${Math.random()}`,
+                description: typeof goal.description === 'string' ? goal.description : '',
                 achieved: !!goal.achieved,
                 isPrimary: !!goal.isPrimary,
                 targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : new Date(),
                 dateAchieved: goal.dateAchieved instanceof Timestamp ? goal.dateAchieved.toDate() : undefined,
-            })) : [];
+            }))
+            : [];
         
         const strengthAnalysis: StoredStrengthAnalysis | undefined = data.strengthAnalysis && data.strengthAnalysis.generatedDate instanceof Timestamp ? {
             ...data.strengthAnalysis,
@@ -245,14 +249,18 @@ export const getWorkoutLogs = async (userId: string, options?: { startDate?: Dat
   try {
     const snapshot = await q.get();
     return snapshot.docs.map(doc => doc.data());
-  } catch (error: any) {
-    if (error.code === 5 && error.details?.includes('requires an index')) {
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 5 && 'details' in error && typeof (error as { details?: string }).details === 'string' && (error as { details?: string }).details?.includes('requires an index')) {
         console.warn(`Firestore index missing for workoutLogs query for user ${userId}. Returning empty list. Please create the required index in the Firebase console.`);
         return [];
     }
-    if (error.code === 7 || (error.details && error.details.includes('Permission denied'))) {
+    if (error && typeof error === 'object' && ('code' in error || 'details' in error)) {
+      const code = (error as { code?: number }).code;
+      const details = (error as { details?: string }).details;
+      if (code === 7 || (details && details.includes('Permission denied'))) {
       console.log(`Gracefully handling Firestore permission error for user ${userId}. Returning empty log list.`);
       return [];
+      }
     }
     console.error("Error fetching workout logs:", error);
     throw error;
@@ -269,7 +277,7 @@ export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' |
 export const updateWorkoutLog = async (userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>) => {
   const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
 
-  const dataToUpdate: { [key: string]: any } = { ...log };
+  const dataToUpdate: Record<string, unknown> = { ...log };
   if (log.date) {
     dataToUpdate.date = Timestamp.fromDate(log.date);
   }
@@ -377,7 +385,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   
   const newLevel = getStrengthLevel(updatedDataForCalc, userProfile);
   
-  const dataToUpdate: { [key:string]: any } = { ...recordData, strengthLevel: newLevel };
+  const dataToUpdate: Record<string, unknown> = { ...recordData, strengthLevel: newLevel };
   if (recordData.date) {
     dataToUpdate.date = Timestamp.fromDate(recordData.date);
   }
@@ -422,7 +430,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 export const updateUserProfile = async (userId: string, profileData: Partial<Omit<UserProfile, 'id'>>) => {
     const profileDocRef = adminDb.collection('users').doc(userId);
     
-    const dataToUpdate: { [key: string]: any } = { ...profileData };
+    const dataToUpdate: Record<string, unknown> = { ...profileData };
     
     if ('joinedDate' in profileData && profileData.joinedDate) {
         dataToUpdate.joinedDate = Timestamp.fromDate(profileData.joinedDate);
@@ -430,7 +438,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
 
     if (profileData.fitnessGoals) {
         dataToUpdate.fitnessGoals = profileData.fitnessGoals.map(goal => {
-            const newGoal: { [key: string]: any } = { ...goal };
+            const newGoal: Record<string, unknown> = { ...goal };
             newGoal.targetDate = Timestamp.fromDate(goal.targetDate);
             if (goal.dateAchieved) {
                 newGoal.dateAchieved = Timestamp.fromDate(goal.dateAchieved);

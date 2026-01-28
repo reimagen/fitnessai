@@ -10,6 +10,11 @@ interface ProgressionChartData {
   }>;
 }
 
+type TrendPoint = {
+  x: number;
+  y: number;
+};
+
 interface LiftTrendsResult {
   currentLiftLevel: StrengthLevel | null;
   trendImprovement: number | null;
@@ -43,20 +48,20 @@ export function useLiftTrends(
     const { chartData: data } = progressionChartData;
 
     const calculateTrend = (dataKey: 'e1RM' | 'volume'): number | null => {
-      const points = data
-        .map((d: any, i: number) => ({ x: i, y: d[dataKey] }))
-        .filter((p: any) => p.y > 0);
+      const points: TrendPoint[] = data
+        .map((d, i) => ({ x: i, y: d[dataKey] }))
+        .filter(point => point.y > 0);
 
       if (points.length < 2) {
         return null;
       }
 
       const n = points.length;
-      const x_mean = points.reduce((acc: number, p: any) => acc + p.x, 0) / n;
-      const y_mean = points.reduce((acc: number, p: any) => acc + p.y, 0) / n;
+      const x_mean = points.reduce((acc, point) => acc + point.x, 0) / n;
+      const y_mean = points.reduce((acc, point) => acc + point.y, 0) / n;
 
-      const numerator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) * (p.y - y_mean), 0);
-      const denominator = points.reduce((acc: number, p: any) => acc + (p.x - x_mean) ** 2, 0);
+      const numerator = points.reduce((acc, point) => acc + (point.x - x_mean) * (point.y - y_mean), 0);
+      const denominator = points.reduce((acc, point) => acc + (point.x - x_mean) ** 2, 0);
 
       if (denominator === 0) {
         return null;

@@ -7,11 +7,11 @@ import {
   addPersonalRecords as serverAddPersonalRecords,
   updatePersonalRecord as serverUpdatePersonalRecord,
   clearAllPersonalRecords as serverClearAllPersonalRecords,
-  getUserProfile,
   incrementUsageCounter,
 } from "@/lib/firestore-server";
 import type { PersonalRecord } from "@/lib/types";
-import { format } from "date-fns";
+import { checkRateLimit } from "@/lib/rate-limiting";
+import { formatParsePrError } from "@/lib/error-handling";
 
 export async function parsePersonalRecordsAction(
   userId: string,
@@ -33,12 +33,9 @@ export async function parsePersonalRecordsAction(
   
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfile(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.prParses;
-
-    if (usage && usage.date === today && usage.count >= 10) {
-      return { success: false, error: "You have reached your daily limit of 10 parses." };
+    const { allowed, error } = await checkRateLimit(userId, "prParses", 10);
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 
@@ -71,19 +68,7 @@ export async function parsePersonalRecordsAction(
     return { success: true, data: parsedData };
   } catch (error) {
     console.error("Error processing personal records screenshot:", error);
-    let userFriendlyError = "An unknown error occurred while parsing the records. This attempt did not count against your daily limit.";
-    if (error instanceof Error) {
-        if (error.message.includes("not a new personal record")) {
-            userFriendlyError = "The records found in the screenshot were not better than your existing PRs.";
-        } else if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-            userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
-        } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-            userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
-        } else {
-            userFriendlyError = `Failed to parse screenshot: ${error.message}. This attempt did not count against your daily limit.`;
-        }
-    }
-    return { success: false, error: userFriendlyError };
+    return { success: false, error: formatParsePrError(error) };
   }
 }
 
