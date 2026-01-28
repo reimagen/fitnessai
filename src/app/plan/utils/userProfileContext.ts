@@ -8,9 +8,7 @@ import type {
 import { getNormalizedExerciseName, getStrengthLevel } from "@/lib/strength-standards";
 import { calculateWeeklyCardioSummaries } from "./cardio";
 import { FOUR_WEEKS, FT_TO_INCHES, INCH_TO_CM, LBS_TO_KG } from "@/lib/constants";
-
-const toTitleCase = (value: string) =>
-  value.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.slice(1).toLowerCase());
+import { toTitleCase } from "@/lib/utils";
 
 const formatHeight = (userProfile: UserProfile) => {
   if (!userProfile.heightValue || !userProfile.heightUnit) return "Not specified";

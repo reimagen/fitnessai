@@ -1,5 +1,5 @@
 
-import type { StrengthLevel, PersonalRecord } from "@/lib/types";
+import type { PersonalRecord } from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 
 export type ImbalanceType = 'Horizontal Push vs. Pull' | 'Vertical Push vs. Pull' | 'Hamstring vs. Quad' | 'Adductor vs. Abductor';
@@ -33,10 +33,3 @@ export function findBestPr(records: PersonalRecord[], exerciseNames: string[]): 
 }
 
 // Helper to convert a string to title case (moved from page.tsx)
-export const toTitleCase = (str: string) => {
-  if (!str) return "";
-  return str.replace(
-    /\w\S*/g,
-    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
-};

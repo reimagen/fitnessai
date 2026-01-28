@@ -20,12 +20,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const isCheckingWhitelist = !isLoading && !!user?.email && isWhitelisted === null;
 
   useEffect(() => {
-    if (!isCheckingWhitelist || !user?.email) return;
+    const email = user?.email;
+    if (!isCheckingWhitelist || !email) return;
 
     let isActive = true;
-    isEmailWhitelisted(user.email).then((status) => {
+    isEmailWhitelisted(email).then((status) => {
       if (isActive) {
-        setWhitelistStatus({ email: user.email, status });
+        setWhitelistStatus({ email, status });
       }
     });
 

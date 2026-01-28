@@ -1,7 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import React from 'react';
-import type { WorkoutLog, UserProfile } from '@/lib/types';
 import { Flame } from 'lucide-react';
 import { useIsMobile } from '@/hooks/useMobile';
 import { CardioActivitySummary } from './CardioActivitySummary';
@@ -36,20 +35,12 @@ interface CardioAnalysisData {
 }
 
 interface CardioAnalysisCardProps {
-    isLoading: boolean;
-    isError: boolean;
-    userProfile: UserProfile | undefined;
-    workoutLogs: WorkoutLog[] | undefined;
     cardioAnalysisData: CardioAnalysisData;
     timeRange: string;
     timeRangeDisplayNames: Record<string, string>;
 }
 
 export const CardioAnalysisCard: React.FC<CardioAnalysisCardProps> = ({
-    isLoading,
-    isError,
-    userProfile,
-    workoutLogs,
     cardioAnalysisData,
     timeRange,
     timeRangeDisplayNames,

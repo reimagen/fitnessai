@@ -1,4 +1,4 @@
-import { FitnessGoal } from "./types";
+import type { FitnessGoal } from "@/lib/types";
 import { isPast, startOfToday } from "date-fns";
 
 /**

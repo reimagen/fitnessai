@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Exercise, WorkoutLog, UserProfile } from '@/lib/types';
-import { toTitleCase } from '@/analysis/analysis.config';
+import { toTitleCase } from '@/lib/utils';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import {
   format,
@@ -194,7 +194,7 @@ export function useCardioAnalysis(
     // --- Cardio Amount Bar Chart Data ---
     let cardioAmountChartData: CardioAmountChartPoint[] = [];
     const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
-    const initialActivityData = Object.fromEntries(activities.map((act: string) => [act, 0]));
+    const initialActivityData = { total: 0, ...Object.fromEntries(activities.map((act: string) => [act, 0])) };
 
     const processAndFinalizeData = (dataMap: Map<string, CardioAmountChartPoint>) => {
       const finalizedData = Array.from(dataMap.values());
@@ -212,7 +212,6 @@ export function useCardioAnalysis(
     switch (timeRange) {
       case 'weekly': {
         const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
         const daysInWeek = Array.from({ length: 7 }, (_, i) => {
           const day = new Date(weekStart);
           day.setDate(day.getDate() + i);
@@ -229,7 +228,8 @@ export function useCardioAnalysis(
           const dateKey = format(ex.date, 'yyyy-MM-dd');
           const dayData = dailyData.get(dateKey);
           if (dayData) {
-            dayData[ex.name] = (dayData[ex.name] || 0) + (ex.calories || 0);
+            const existingValue = Number(dayData[ex.name] ?? 0);
+            dayData[ex.name] = existingValue + (ex.calories || 0);
           }
         });
         cardioAmountChartData = processAndFinalizeData(dailyData);
@@ -254,7 +254,8 @@ export function useCardioAnalysis(
           const weekStartKey = format(startOfWeek(ex.date, { weekStartsOn: 0 }), 'yyyy-MM-dd');
           const weekData = weeklyData.get(weekStartKey);
           if (weekData) {
-            weekData[ex.name] = (weekData[ex.name] || 0) + (ex.calories || 0);
+            const existingValue = Number(weekData[ex.name] ?? 0);
+            weekData[ex.name] = existingValue + (ex.calories || 0);
           }
         });
         cardioAmountChartData = processAndFinalizeData(weeklyData);
@@ -268,7 +269,10 @@ export function useCardioAnalysis(
             monthlyData.set(monthKey, { dateLabel: format(ex.date, 'MMM'), ...initialActivityData });
           }
           const monthData = monthlyData.get(monthKey);
-          monthData[ex.name] = (monthData[ex.name] || 0) + (ex.calories || 0);
+          if (monthData) {
+            const existingValue = Number(monthData[ex.name] ?? 0);
+            monthData[ex.name] = existingValue + (ex.calories || 0);
+          }
         });
         const finalizedData = processAndFinalizeData(monthlyData);
         cardioAmountChartData = finalizedData
@@ -287,7 +291,10 @@ export function useCardioAnalysis(
             yearlyData.set(yearKey, { dateLabel: yearKey, ...initialActivityData });
           }
           const yearData = yearlyData.get(yearKey);
-          yearData[ex.name] = (yearData[ex.name] || 0) + (ex.calories || 0);
+          if (yearData) {
+            const existingValue = Number(yearData[ex.name] ?? 0);
+            yearData[ex.name] = existingValue + (ex.calories || 0);
+          }
         });
         const finalizedData = processAndFinalizeData(yearlyData);
         cardioAmountChartData = finalizedData.sort((a, b) =>

@@ -12,7 +12,6 @@ import { Edit2, Save, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { format } from "date-fns";
 import { useIsMobile } from "@/hooks/useMobile";
-import { cn } from "@/lib/utils";
 
 type UserDetailsCardProps = {
   user: UserProfile;

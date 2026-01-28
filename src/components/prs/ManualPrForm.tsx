@@ -20,7 +20,7 @@ import type { PersonalRecord } from "@/lib/types";
 import { startOfDay } from 'date-fns';
 import { classifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
 import { PR_EXERCISES_TO_HIDE } from "@/lib/constants";
-import { toTitleCase } from "./string-utils";
+import { toTitleCase } from "@/lib/utils";
 import { StepperInput } from "../ui/stepper-input";
 
 const manualPrSchema = z.object({

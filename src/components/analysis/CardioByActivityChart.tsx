@@ -15,11 +15,9 @@ interface CardioByActivityChartProps {
   isMobile: boolean;
 }
 
-type LegendPayloadEntry = {
+type LegendItem = {
   color?: string;
-  payload?: {
-    name?: string;
-  };
+  value?: string | number;
 };
 
 export const CardioByActivityChart: React.FC<CardioByActivityChartProps> = ({ pieChartData, isMobile }) => {
@@ -42,7 +40,7 @@ export const CardioByActivityChart: React.FC<CardioByActivityChartProps> = ({ pi
             ))}
           </Pie>
           <Tooltip content={<ChartTooltipContent hideIndicator />} />
-          <Legend content={({ payload }: { payload?: LegendPayloadEntry[] }) => {
+          <Legend content={({ payload }: { payload?: LegendItem[] }) => {
             if (!payload) return null;
             const numItems = payload.length;
             const useTwoRows = numItems > 3;
@@ -55,13 +53,13 @@ export const CardioByActivityChart: React.FC<CardioByActivityChartProps> = ({ pi
                     gridTemplateColumns: `repeat(${useTwoRows ? Math.ceil(numItems / 2) : numItems}, auto)`,
                   }}
                 >
-                  {payload?.map((entry, index) => (
+                  {payload?.map((entry, index: number) => (
                     <div key={`item-${index}`} className="flex items-center gap-1.5 justify-start">
                       <span
                         className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
                         style={{ backgroundColor: entry.color }}
                       />
-                      <span className="text-muted-foreground">{entry.payload?.name}</span>
+                      <span className="text-muted-foreground">{entry.value}</span>
                     </div>
                   ))}
                 </div>
