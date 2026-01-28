@@ -14,7 +14,7 @@ import { useWorkouts, useUserProfile, useAddWorkoutLog, useUpdateWorkoutLog, use
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileUp, Edit, ImageUp, Loader2, ChevronLeft, ChevronRight, X, UserPlus } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { format } from 'date-fns/format';
 import { startOfDay } from 'date-fns/startOfDay';
 import { addMonths } from 'date-fns/addMonths';

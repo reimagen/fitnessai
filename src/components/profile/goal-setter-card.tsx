@@ -20,12 +20,12 @@ import { PlusCircle, Trash2, Target, Star, Edit2, Save, XCircle, Zap, Loader2, L
 import type { FitnessGoal, UserProfile, AnalyzeFitnessGoalsOutput, AnalyzeFitnessGoalsInput, PersonalRecord, WorkoutLog } from "@/lib/types";
 import { useEffect, useState, useMemo } from "react";
 import { format as formatDate, isValid, differenceInDays, addDays, differenceInWeeks, subWeeks, subMonths } from "date-fns";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/useMobile";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 

@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { useAuth } from "@/lib/auth.service";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 type PrUploaderFormProps = {
   onParse: (userId: string, data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
