@@ -10,22 +10,31 @@ import { Loader2, UploadCloud, CheckCircle, RotateCcw } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { format } from 'date-fns';
+import { format } from "date-fns";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { useAuth } from "@/lib/auth.service";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
+import { useAddPersonalRecords } from "@/lib/firestore.service";
+import { RecordDatePickerDialog } from "@/components/prs/RecordDatePickerDialog";
 
 type PrUploaderFormProps = {
   onParse: (userId: string, data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
 };
 
+type ParsedRecord = ParsePersonalRecordsOutput["records"][number];
+
 export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const addPersonalRecordsMutation = useAddPersonalRecords();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [parsedResult, setParsedResult] = useState<ParsePersonalRecordsOutput | null>(null);
+  const [recordsNeedingDate, setRecordsNeedingDate] = useState<ParsedRecord[]>([]);
+  const [pendingRecords, setPendingRecords] = useState<ParsedRecord[]>([]);
+  const [confirmDate, setConfirmDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -33,6 +42,9 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
     if (selectedFile) {
       // Clear previous state before setting the new file
       setParsedResult(null);
+      setRecordsNeedingDate([]);
+      setPendingRecords([]);
+      setShowDatePicker(false);
 
       setFile(selectedFile);
       const reader = new FileReader();
@@ -50,6 +62,9 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
     }
     setIsLoading(true);
     setParsedResult(null);
+    setRecordsNeedingDate([]);
+    setPendingRecords([]);
+    setShowDatePicker(false);
 
     const result = await onParse(user.uid, { photoDataUri: previewUrl });
 
@@ -62,8 +77,14 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
             })),
         };
         setParsedResult(normalizedData);
-        // The onParsedData call is now handled by the server action, which will trigger a re-fetch
-        // on success. We just show the results here.
+        const missingDates = normalizedData.records.filter(rec => !rec.dateString);
+        if (missingDates.length > 0) {
+          setRecordsNeedingDate(missingDates);
+          setPendingRecords(normalizedData.records);
+          setShowDatePicker(true);
+        } else {
+          await saveParsedRecords(normalizedData.records);
+        }
     } else {
       const isLimitError = result.error?.toLowerCase().includes('limit');
       toast({ 
@@ -75,10 +96,57 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
     setIsLoading(false);
   };
   
+  const saveParsedRecords = async (records: ParsedRecord[]) => {
+    if (!user) return;
+    const recordsToAdd = records.map(record => ({
+      exerciseName: record.exerciseName,
+      weight: record.weight,
+      weightUnit: record.weightUnit,
+      date: new Date(record.dateString!.replace(/-/g, "/")),
+      category: record.category,
+    }));
+
+    addPersonalRecordsMutation.mutate(
+      { userId: user.uid, records: recordsToAdd },
+      {
+        onSuccess: () => {
+          toast({
+            title: "PRs Saved!",
+            description: `Saved ${recordsToAdd.length} personal records.`,
+          });
+        },
+        onError: error => {
+          toast({
+            title: "Save Failed",
+            description: `Could not save parsed PRs: ${error.message}`,
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  const handleConfirmDate = async () => {
+    if (!confirmDate) return;
+    const updatedRecords = pendingRecords.map(record => ({
+      ...record,
+      dateString: record.dateString || confirmDate,
+    }));
+    await saveParsedRecords(updatedRecords);
+    setShowDatePicker(false);
+  };
+
+  const handleCancelDatePicker = () => {
+    handleClear();
+  };
+
   const handleClear = () => {
     setFile(null);
     setPreviewUrl(null);
     setParsedResult(null);
+    setRecordsNeedingDate([]);
+    setPendingRecords([]);
+    setShowDatePicker(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -129,7 +197,11 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
         </div>
       )}
       
-      <Button onClick={handleSubmit} disabled={!file || isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+      <Button
+        onClick={handleSubmit}
+        disabled={!file || isLoading || showDatePicker || addPersonalRecordsMutation.isPending}
+        className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+      >
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
         Parse PRs
       </Button>
@@ -141,24 +213,35 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
         </Button>
       )}
 
-      {parsedResult && (
+      {parsedResult && !showDatePicker && (
          <Card className="mt-4 border-green-500 bg-green-500/10">
           <CardHeader className="flex flex-row items-center gap-2 !pb-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
             <CardTitle className="text-green-700 !text-base">Parsing Successful</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-green-700 mb-2">Found {parsedResult.records.length} records. New personal bests have been saved.</p>
+            <p className="text-sm text-green-700 mb-2">Found {parsedResult.records.length} records.</p>
             <ul className="space-y-1 text-xs text-muted-foreground max-h-40 overflow-y-auto pr-2">
               {parsedResult.records.map((rec, index) => (
                 <li key={index} className="truncate">
-                  <strong>{rec.exerciseName}:</strong> {rec.weight}{rec.weightUnit} on {format(new Date(rec.dateString.replace(/-/g, '/')), "MMM d, yyyy")}
+                  <strong>{rec.exerciseName}:</strong> {rec.weight}{rec.weightUnit} on{" "}
+                  {rec.dateString ? format(new Date(rec.dateString.replace(/-/g, "/")), "MMM d, yyyy") : "Date required"}
                 </li>
               ))}
             </ul>
           </CardContent>
         </Card>
       )}
+
+      <RecordDatePickerDialog
+        isOpen={showDatePicker}
+        onClose={handleCancelDatePicker}
+        records={recordsNeedingDate}
+        selectedDate={confirmDate}
+        onDateChange={setConfirmDate}
+        onConfirm={handleConfirmDate}
+        isSaving={addPersonalRecordsMutation.isPending}
+      />
     </div>
   );
 }

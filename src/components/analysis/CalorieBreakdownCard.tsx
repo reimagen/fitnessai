@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltipContent, ChartLegendContent } from '@/compo
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flame, Loader2 } from 'lucide-react';
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/useMobile';
 import { renderPieLabel } from '@/analysis/chart-utils';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 import { chartConfig } from '@/analysis/chart.config';

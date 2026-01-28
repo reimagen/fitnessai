@@ -12,8 +12,8 @@ import { toTitleCase, findBestPr } from '@/analysis/analysis.config';
 import { ChartConfig, ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, ComposedChart, Scatter, ReferenceLine, Line, Label } from 'recharts';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/useMobile';
+import { useToast } from '@/hooks/useToast';
 import { getLevelBadgeVariant, getTrendBadgeVariant } from '@/analysis/badge-utils';
 
 import { chartConfig } from '@/analysis/chart.config';
