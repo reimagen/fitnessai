@@ -42,26 +42,6 @@ export async function parsePersonalRecordsAction(
   try {
     const parsedData = await parsePersonalRecords(values);
     
-    if (parsedData.records.length > 0) {
-      // If records were parsed, attempt to add them using the consolidation logic.
-      // The serverAddPersonalRecords function will handle duplicates and find the best record.
-      const recordsToAdd = parsedData.records.map(rec => ({
-          exerciseName: rec.exerciseName,
-          weight: rec.weight,
-          weightUnit: rec.weightUnit,
-          date: new Date(rec.dateString.replace(/-/g, '/')), // Ensure correct date parsing
-          category: rec.category,
-      }));
-      // We call the server action but don't need to block its response here,
-      // as the success/error is handled on the client via toast notifications.
-      // We can let this run and return the parsed data to the UI immediately.
-      serverAddPersonalRecords(userId, recordsToAdd).catch(error => {
-          // We can log this server-side error, but the client will show the parsed data.
-          // The client-side mutation hook will show a more specific error toast if this fails.
-          console.error("Error saving parsed PRs:", error.message);
-      });
-    }
-    
     await incrementUsageCounter(userId, 'prParses');
     // Return the original parsed data so the UI can show what it found.
     // The client-side logic will trigger a refetch of all PRs on success, showing the final state.
