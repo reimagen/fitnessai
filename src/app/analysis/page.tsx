@@ -27,12 +27,12 @@ import { useChartData } from '@/hooks/useChartData';
 import { useLiftProgression } from '@/hooks/useLiftProgression';
 import { useLiftTrends } from '@/hooks/useLiftTrends';
 import { useCardioAnalysis } from '@/hooks/useCardioAnalysis';
-import { formatCardioDuration } from '@/lib/formatting-utils';
-import { getLevelBadgeVariant, getTrendBadgeVariant, focusBadgeProps } from '@/lib/badge-utils';
+import { formatCardioDuration } from '@/analysis/formatting-utils';
+import { getLevelBadgeVariant, getTrendBadgeVariant, focusBadgeProps } from '@/analysis/badge-utils';
 import { cn } from '@/lib/utils';
 import { subWeeks, isAfter } from 'date-fns';
-import { chartConfig } from '@/lib/chart.config';
-import { timeRangeDisplayNames } from '@/lib/analysis-constants';
+import { chartConfig } from '@/analysis/chart.config';
+import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 
 export default function AnalysisPage() {
   const { toast } = useToast();

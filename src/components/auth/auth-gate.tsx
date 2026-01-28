@@ -14,26 +14,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
-  const [isCheckingWhitelist, setIsCheckingWhitelist] = useState(false);
+  const [whitelistStatus, setWhitelistStatus] = useState<{ email: string; status: boolean } | null>(null);
+  const isWhitelisted =
+    user?.email && whitelistStatus?.email === user.email ? whitelistStatus.status : null;
+  const isCheckingWhitelist = !isLoading && !!user?.email && isWhitelisted === null;
 
   useEffect(() => {
-    // If auth is finished loading and there is a user
-    if (!isLoading && user?.email) {
-      // Avoid re-checking if we already have the status
-      if (isWhitelisted === null) {
-        setIsCheckingWhitelist(true);
-        isEmailWhitelisted(user.email).then(status => {
-          setIsWhitelisted(status);
-          setIsCheckingWhitelist(false);
-        });
-      }
-    } else if (!isLoading && !user) {
-      // Clear whitelist status on sign-out
-      setIsWhitelisted(null);
-    }
+    if (!isCheckingWhitelist || !user?.email) return;
 
-  }, [user, isLoading, isWhitelisted]);
+    let isActive = true;
+    isEmailWhitelisted(user.email).then((status) => {
+      if (isActive) {
+        setWhitelistStatus({ email: user.email, status });
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isCheckingWhitelist, user?.email]);
 
   useEffect(() => {
     // Don't perform redirects until all loading is complete

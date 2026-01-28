@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, FitnessGoal } from '@/lib/types';
-import { chartConfig } from '@/lib/chart.config';
-import { timeRangeDisplayNames } from '@/lib/analysis-constants';
+import { chartConfig } from '@/analysis/chart.config';
+import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 import {
   format,
   parse,

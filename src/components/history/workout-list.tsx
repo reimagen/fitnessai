@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils, Route, Timer } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Badge } from "../ui/badge";
 
 type WorkoutListProps = {
@@ -42,12 +42,6 @@ const toTitleCase = (str: string) => {
 };
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const groupedExercisesByLog = useMemo(() => {
     return workoutLogs.map(log => {
       const grouped = log.exercises.reduce((acc, exercise) => {
@@ -72,16 +66,6 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       return { ...log, groupedExercises: grouped, categories: Array.from(categories), totalCalories, uniqueExerciseCount };
     });
   }, [workoutLogs]);
-
-  if (!isClient) { // Show loading state before client-side rendering is complete
-    return (
-      <Card className="shadow-sm">
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">Loading workout history...</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (workoutLogs.length === 0) {
     return (

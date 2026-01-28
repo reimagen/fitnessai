@@ -1,6 +1,6 @@
 
-import type { StrengthLevel, PersonalRecord } from "./types";
-import { getNormalizedExerciseName } from "./strength-standards";
+import type { StrengthLevel, PersonalRecord } from "@/lib/types";
+import { getNormalizedExerciseName } from "@/lib/strength-standards";
 
 export type ImbalanceType = 'Horizontal Push vs. Pull' | 'Vertical Push vs. Pull' | 'Hamstring vs. Quad' | 'Adductor vs. Abductor';
 

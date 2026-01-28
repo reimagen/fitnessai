@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bike, Footprints, HeartPulse, Mountain, Ship, Waves } from 'lucide-react';
-import { formatCardioDuration } from '@/lib/formatting-utils';
+import { formatCardioDuration } from '@/analysis/formatting-utils';
 
 interface CardioStats {
   count: number;

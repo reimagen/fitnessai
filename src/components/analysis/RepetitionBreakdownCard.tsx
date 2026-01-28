@@ -7,9 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { IterationCw, Loader2 } from 'lucide-react';
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { renderPieLabel } from '@/lib/chart-utils';
-import { timeRangeDisplayNames } from '@/lib/analysis-constants';
-import { chartConfig } from '@/lib/chart.config';
+import { renderPieLabel } from '@/analysis/chart-utils';
+import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
+import { chartConfig } from '@/analysis/chart.config';
 
 interface CategoryChartData {
   key: string;

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import type { PersonalRecord, UserProfile, StrengthLevel } from '@/lib/types';
 import { getStrengthLevel } from '@/lib/strength-standards';
-import { findBestPr } from '@/lib/analysis.config';
+import { findBestPr } from '@/analysis/analysis.config';
 
 interface ProgressionChartData {
   chartData: Array<{

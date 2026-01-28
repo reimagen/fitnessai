@@ -1,8 +1,8 @@
 import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { chartConfig } from '@/lib/chart.config';
-import { renderPieLabel } from '@/lib/chart-utils';
+import { chartConfig } from '@/analysis/chart.config';
+import { renderPieLabel } from '@/analysis/chart-utils';
 
 interface PieChartData {
   name: string;
