@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Loader2, AlertTriangle, UserPlus, Info } from "lucide-react";
 import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { useAuth } from "@/lib/auth.service";
 import { checkProfileCompletion } from "@/lib/profile-completion";
 import Link from "next/link";

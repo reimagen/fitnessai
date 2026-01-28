@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import type { PersonalRecord } from "@/lib/types";
 
-type EditState = {
+export type EditState = {
   recordId: string | null;
   weight: number;
   date: string;

@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ErrorState } from '@/components/shared/ErrorState';
 import { useAuth } from '@/lib/auth.service';
 import { getNormalizedExerciseName } from '@/lib/strength-standards';
-import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/useToast';
+import { useIsMobile } from '@/hooks/useMobile';
 import Link from 'next/link';
 import { CalorieBreakdownCard } from '@/components/analysis/CalorieBreakdownCard';
 import { RepetitionBreakdownCard } from '@/components/analysis/RepetitionBreakdownCard';

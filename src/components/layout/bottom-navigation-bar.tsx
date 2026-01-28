@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Home, BarChart3, Award, CalendarCheck, History, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUserProfile } from '@/lib/firestore.service';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 import { checkProfileCompletion } from '@/lib/profile-completion';
 
 const navItems = [
