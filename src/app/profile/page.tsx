@@ -164,10 +164,10 @@ export default function ProfilePage() {
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <AlertTriangle className="h-6 w-6 text-primary" />
-                Welcome! Let's Create Your Profile
+                Welcome! Let&apos;s Create Your Profile
               </CardTitle>
               <CardDescription>
-                It looks like you're new here. Create a profile to get started.
+                It looks like you&apos;re new here. Create a profile to get started.
               </CardDescription>
             </CardHeader>
             <CardContent>
