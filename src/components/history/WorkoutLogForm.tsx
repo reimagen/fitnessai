@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, Loader2 } from "lucide-react";
-import type { WorkoutLog, Exercise, ExerciseCategory } from "@/lib/types";
+import type { WorkoutLog, ExerciseCategory } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 import { startOfDay } from 'date-fns';
@@ -86,8 +85,6 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     name: "exercises",
   });
   
-  const exercisesWatcher = form.watch("exercises");
-
   useEffect(() => {
     if (editingLogId && initialData) {
       form.reset({
@@ -171,10 +168,6 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         <div>
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
           {fields.map((field, index) => {
-            const durationUnit = exercisesWatcher?.[index]?.durationUnit;
-            const durationStep = durationUnit === 'hr' ? 0.5 : 1;
-            const durationButtonStep = 1; // Always increment/decrement by 1
-            
             return (
               <Card key={field.id} className="mb-4 p-4 border rounded-md shadow-sm relative">
                 <Button

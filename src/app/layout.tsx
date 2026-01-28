@@ -2,10 +2,10 @@ import type {Metadata, Viewport} from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { QueryProvider } from '@/components/query-provider';
-import { BottomNavigationBar } from '@/components/layout/bottom-navigation-bar';
+import { QueryProvider } from '@/components/QueryProvider';
+import { BottomNavigationBar } from '@/components/layout/BottomNavigationBar';
 import { AuthProvider } from '@/lib/auth.service';
-import { AuthGate } from '@/components/auth/auth-gate';
+import { AuthGate } from '@/components/auth/AuthGate';
 
 const inter = Inter({
   subsets: ['latin'],

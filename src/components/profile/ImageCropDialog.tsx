@@ -2,6 +2,7 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 // import ReactCrop, { centerCrop, makeAspectCrop, type Crop, type PixelCrop } from 'react-image-crop';
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,6 @@ interface ImageCropDialogProps {
   isOpen: boolean;
   onClose: () => void;
   imageSrc: string | null;
-  onCropComplete: (croppedImageDataUrl: string) => void;
 }
 
 // // Utility function to get cropped image data URL
@@ -59,7 +59,7 @@ interface ImageCropDialogProps {
 // }
 
 
-export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropComplete }: ImageCropDialogProps) {
+export function ImageCropDialog({ isOpen, onClose, imageSrc }: ImageCropDialogProps) {
   // const [crop, setCrop] = useState<Crop>();
   // const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
   const imgRef = useRef<HTMLImageElement>(null);
@@ -112,10 +112,12 @@ export function ImageCropDialog({ isOpen, onClose, imageSrc, onCropComplete }: I
             //   minWidth={50} // Minimum crop width in pixels
             //   minHeight={50} // Minimum crop height in pixels
             // >
-              <img
+              <Image
                 ref={imgRef}
                 alt="Crop me"
                 src={imageSrc}
+                width={500}
+                height={500}
                 // onLoad={onImageLoad}
                 style={{ maxHeight: '70vh', objectFit: 'contain' }}
                 data-ai-hint="uploaded image"

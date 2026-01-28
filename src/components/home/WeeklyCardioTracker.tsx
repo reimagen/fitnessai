@@ -55,7 +55,7 @@ const getDistanceInMiles = (distance?: number, unit?: string): number => {
 };
 
 
-export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps): JSX.Element {
+export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps) {
   const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
 
   const weeklyData = useMemo(() => {

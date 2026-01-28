@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import type { PersonalRecord, FitnessGoal } from '@/lib/types';
 import React from 'react';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
-import { toTitleCase } from '@/analysis/analysis.config';
+import { toTitleCase } from '@/lib/utils';
 
 interface MilestonesCardProps {
   isLoading: boolean;

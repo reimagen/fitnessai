@@ -1,98 +1,47 @@
 
 "use client";
 
-import { UserDetailsCard } from "@/components/profile/user-details-card";
-import { GoalSetterCard } from "@/components/profile/goal-setter-card";
-import { WorkoutPreferencesCard } from "@/components/profile/workout-preferences-card";
+import { UserDetailsCard } from "@/components/profile/UserDetailsCard";
+import { GoalSetterCard } from "@/components/profile/GoalSetterCard";
+import { WorkoutPreferencesCard } from "@/components/profile/WorkoutPreferencesCard";
+import { ProfileCompletionNotice } from "@/components/profile/ProfileCompletionNotice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Loader2, AlertTriangle, UserPlus, Info } from "lucide-react";
-import { useUserProfile, useUpdateUserProfile } from "@/lib/firestore.service";
+import { LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react";
+import { useUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
-import { useToast } from "@/hooks/useToast";
+import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 import { useAuth } from "@/lib/auth.service";
-import { checkProfileCompletion } from "@/lib/profile-completion";
-import Link from "next/link";
-
-function ProfileCompletionNotice({ profile }: { profile: UserProfile }) {
-  const status = checkProfileCompletion(profile);
-
-  if (status.isCoreComplete) {
-    return null; // Don't show if core profile is complete
-  }
-
-  return (
-    <Card className="shadow-lg border-primary bg-primary/5">
-      <CardHeader>
-        <CardTitle className="font-headline flex items-center gap-2">
-          <Info className="h-6 w-6 text-primary" />
-          Complete Your Profile
-        </CardTitle>
-        <CardDescription>
-          Fill in the required fields below to unlock all app features like workout planning and analysis.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm font-semibold text-primary mb-2">Required Information:</p>
-        <ul className="grid grid-cols-2 gap-x-4 gap-y-1 list-disc list-inside text-sm text-muted-foreground">
-          {status.missingCoreFields.map(field => <li key={field}>{field}</li>)}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
 
 
 export default function ProfilePage() {
-  const { toast } = useToast();
   const { data: profileResult, isLoading: isLoadingProfile } = useUserProfile();
   const userProfile = profileResult?.data;
-  const updateUserMutation = useUpdateUserProfile();
+  const { updateProfile, isPending } = useProfileUpdate();
   const { user, signOut: handleSignOut } = useAuth();
   
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     if (!user) return;
-    updateUserMutation.mutate({ fitnessGoals: updatedGoals }, {
-      onSuccess: () => {
-        toast({
-          title: "Goals Updated!",
-          description: "Your fitness goals have been saved.",
-        });
-      },
-      onError: (error) => {
-        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
-      }
-    });
+    updateProfile(
+      { fitnessGoals: updatedGoals },
+      { successTitle: "Goals Updated!", successDescription: "Your fitness goals have been saved." }
+    );
   };
 
   const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => {
     if (!user) return;
-    updateUserMutation.mutate(updatedDetails, {
-      onSuccess: () => {
-        toast({
-          title: "Profile Updated!",
-          description: "Your profile details have been saved.",
-        });
-      },
-      onError: (error) => {
-        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
-      }
-    });
+    updateProfile(
+      updatedDetails,
+      { successTitle: "Profile Updated!", successDescription: "Your profile details have been saved." }
+    );
   };
 
   const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal'>>) => {
     if (!user) return;
-    updateUserMutation.mutate(updatedPreferences, {
-      onSuccess: () => {
-        toast({
-          title: "Preferences Updated!",
-          description: "Your workout preferences have been saved.",
-        });
-      },
-      onError: (error) => {
-        toast({ title: "Update Failed", description: error.message, variant: "destructive" });
-      }
-    });
+    updateProfile(
+      updatedPreferences,
+      { successTitle: "Preferences Updated!", successDescription: "Your workout preferences have been saved." }
+    );
   };
 
   const handleCreateProfile = () => {
@@ -105,21 +54,10 @@ export default function ProfilePage() {
       joinedDate: new Date(), // Set the joined date to now
       // name is intentionally omitted to allow "Not set" to display
     };
-    updateUserMutation.mutate(defaultProfileData, {
-      onSuccess: () => {
-        toast({
-          title: "Profile Created!",
-          description: "Welcome! You can now customize your profile.",
-        });
-      },
-      onError: (error) => {
-        toast({
-          title: "Creation Failed",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    });
+    updateProfile(
+      defaultProfileData,
+      { successTitle: "Profile Created!", successDescription: "Welcome! You can now customize your profile." }
+    );
   }
 
   return (
@@ -174,8 +112,8 @@ export default function ProfilePage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Creating a profile will allow you to save your workout data and track your progress.
               </p>
-              <Button onClick={handleCreateProfile} disabled={updateUserMutation.isPending}>
-                {updateUserMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4"/>}
+              <Button onClick={handleCreateProfile} disabled={isPending}>
+                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4"/>}
                 Create My Profile
               </Button>
             </CardContent>

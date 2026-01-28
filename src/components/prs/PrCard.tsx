@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StepperInput } from "@/components/ui/stepper-input";
 import type { PersonalRecord, UserProfile } from "@/lib/types";
-import { StrengthLevelBadge } from "@/components/prs/strength-level-badge";
-import { PrProgress } from "@/components/prs/pr-progress";
+import { StrengthLevelBadge } from "@/components/prs/StrengthLevelBadge";
+import { PrProgress } from "@/components/prs/PrProgress";
 
 type PrCardProps = {
   record: PersonalRecord;

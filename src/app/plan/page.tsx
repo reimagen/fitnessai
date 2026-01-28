@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, UserPlus } from "lucide-react";
 import { useUserProfile, useWorkouts, usePersonalRecords } from "@/lib/firestore.service";
 import Link from "next/link";
-import { PlanGeneratorSection } from "@/components/plan/plan-generator-section";
-import { GeneratedPlanSection } from "@/components/plan/generated-plan-section";
+import { PlanGeneratorSection } from "@/components/plan/PlanGeneratorSection";
+import { GeneratedPlanSection } from "@/components/plan/GeneratedPlanSection";
 
 
 export default function PlanPage() {

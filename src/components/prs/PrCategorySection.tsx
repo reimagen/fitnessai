@@ -1,5 +1,5 @@
 import type { ExerciseCategory, PersonalRecord, UserProfile } from "@/lib/types";
-import { PrCard } from "@/components/prs/pr-card";
+import { PrCard } from "@/components/prs/PrCard";
 
 type PrCategorySectionProps = {
   category: ExerciseCategory;

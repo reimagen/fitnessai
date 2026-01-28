@@ -8,21 +8,217 @@ import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProf
 import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/useToast';
-import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/analysis/analysis.config';
+import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr } from '@/analysis/analysis.config';
+import { toTitleCase } from '@/lib/utils';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/analysis/analysis.utils';
 
 interface StrengthBalanceCardProps {
   isLoading: boolean;
-  isError: boolean;
   userProfile: UserProfile | undefined;
   personalRecords: PersonalRecord[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
 }
 
+type ClientSideFinding = StrengthFinding | { imbalanceType: ImbalanceType; hasData: false };
+
+const getGuidingLevel = (lift1Level: StrengthLevel, lift2Level: StrengthLevel) => {
+  const rank1 = strengthLevelRanks[lift1Level];
+  const rank2 = strengthLevelRanks[lift2Level];
+  const guidingLevelRank = rank1 === -1 || rank2 === -1 ? -1 : Math.min(rank1, rank2);
+  return (Object.keys(strengthLevelRanks).find(
+    key => strengthLevelRanks[key as StrengthLevel] === guidingLevelRank,
+  ) as StrengthLevel) || 'N/A';
+};
+
+const getNextStrengthLevel = (currentLevel: StrengthLevel) => {
+  if (currentLevel === 'Beginner') return 'Intermediate';
+  if (currentLevel === 'Intermediate') return 'Advanced';
+  if (currentLevel === 'Advanced') return 'Elite';
+  return null;
+};
+
+const buildClientSideFindings = (personalRecords: PersonalRecord[] | undefined, userProfile: UserProfile | undefined) => {
+  if (!personalRecords || !userProfile || !userProfile.gender) {
+    return [];
+  }
+
+  const findings: ClientSideFinding[] = [];
+
+  IMBALANCE_TYPES.forEach(type => {
+    const config = IMBALANCE_CONFIG[type];
+    const lift1 = findBestPr(personalRecords, config.lift1Options);
+    const lift2 = findBestPr(personalRecords, config.lift2Options);
+
+    if (!lift1 || !lift2) {
+      findings.push({ imbalanceType: type, hasData: false });
+      return;
+    }
+
+    const lift1Level = getStrengthLevel(lift1, userProfile);
+    const lift2Level = getStrengthLevel(lift2, userProfile);
+
+    const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
+    const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
+
+    if (lift2WeightKg === 0) {
+      findings.push({ imbalanceType: type, hasData: false });
+      return;
+    }
+
+    const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
+    const guidingLevel = getGuidingLevel(lift1Level, lift2Level);
+    const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
+
+    const balancedRangeDisplay = ratioStandards
+      ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
+      : 'N/A';
+
+    const targetRatioDisplay = ratioStandards ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
+
+    let imbalanceFocus: ImbalanceFocus = 'Balanced';
+    let ratioIsUnbalanced = false;
+
+    if (ratioStandards) {
+      ratioIsUnbalanced = ratio < ratioStandards.lowerBound || ratio > ratioStandards.upperBound;
+    }
+
+    if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
+      imbalanceFocus = 'Level Imbalance';
+    } else if (ratioIsUnbalanced) {
+      imbalanceFocus = 'Ratio Imbalance';
+    }
+
+    findings.push({
+      imbalanceType: type,
+      lift1Name: toTitleCase(lift1.exerciseName),
+      lift1Weight: lift1.weight,
+      lift1Unit: lift1.weightUnit,
+      lift2Name: toTitleCase(lift2.exerciseName),
+      lift2Weight: lift2.weight,
+      lift2Unit: lift2.weightUnit,
+      userRatio: `${ratio.toFixed(2)}:1`,
+      targetRatio: targetRatioDisplay,
+      balancedRange: balancedRangeDisplay,
+      imbalanceFocus: imbalanceFocus,
+      lift1Level,
+      lift2Level,
+    });
+  });
+
+  return findings;
+};
+
+const buildStrengthAnalysisInput = (userProfile: UserProfile, clientSideFindings: ClientSideFinding[]): StrengthImbalanceInput => {
+  const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
+
+  return {
+    clientSideFindings: validFindings.map(f => ({
+      ...f,
+      targetRatio: f.targetRatio,
+    })),
+    userProfile: {
+      age: userProfile.age,
+      gender: userProfile.gender,
+      weightValue: userProfile.weightValue,
+      weightUnit: userProfile.weightUnit,
+      skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
+      skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
+      fitnessGoals: (userProfile.fitnessGoals || [])
+        .filter(g => !g.achieved)
+        .map(g => ({
+          description: g.description,
+          isPrimary: g.isPrimary || false,
+        })),
+    },
+  };
+};
+
+const StrengthBalanceFindingCard: React.FC<{
+  type: ImbalanceType;
+  finding: ClientSideFinding;
+  aiFinding: StrengthImbalanceOutput['findings'][number] | undefined;
+  isAnalyzing: boolean;
+}> = ({ type, finding, aiFinding, isAnalyzing }) => {
+  if ('hasData' in finding && !finding.hasData) {
+    const config = IMBALANCE_CONFIG[type];
+    const requirements = `Requires: ${config.lift1Options.map(toTitleCase).join('/')} & ${config.lift2Options.map(toTitleCase).join('/')}`;
+    return (
+      <Card className="p-4 bg-secondary/50 flex flex-col">
+        <CardTitle className="text-base flex items-center justify-between">
+          {type} <Badge variant="secondary">No Data</Badge>
+        </CardTitle>
+        <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
+          <Scale className="h-8 w-8 text-muted-foreground/50 mb-2" />
+          <p className="text-sm font-semibold">Log PRs to analyze</p>
+          <p className="text-xs mt-1">{requirements}</p>
+        </div>
+      </Card>
+    );
+  }
+
+  const dataFinding = finding as StrengthFinding;
+  const badgeProps = focusBadgeProps(dataFinding.imbalanceFocus);
+  const nextLevel = getNextStrengthLevel(dataFinding.lift1Level);
+
+  return (
+    <Card className="p-4 bg-secondary/50 flex flex-col">
+      <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
+      <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
+        <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
+        <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
+        <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
+        <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
+        <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
+        <p>Balanced Range: <span className="font-bold text-foreground">{dataFinding.balancedRange}</span></p>
+      </div>
+
+      <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
+        <div className="flex-grow">
+          {isAnalyzing ? (
+            <div className="flex items-center justify-center text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
+            </div>
+          ) : aiFinding ? (
+            <div className="space-y-3">
+              <div className="mb-4">
+                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+              </div>
+              <div>
+                <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
+                <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
+                <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
+              </div>
+            </div>
+          ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
+            <div>
+              <div className="mb-4">
+                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+              </div>
+              <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click &quot;Get AI Insights&quot; for analysis.</p>
+            </div>
+          ) : dataFinding.lift1Level === 'N/A' || dataFinding.lift1Level === 'Elite' || !nextLevel ? null : (
+            <div>
+              <div className="mb-4">
+                <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
+              </div>
+              <p className="text-sm font-semibold flex items-center gap-2">Next Focus</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{dataFinding.lift1Level}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+};
+
 const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   isLoading,
-  isError,
   userProfile,
   personalRecords,
   strengthAnalysis,
@@ -30,110 +226,17 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   const { toast } = useToast();
   const analyzeStrengthMutation = useAnalyzeStrength();
 
-  const clientSideFindings = React.useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
-    if (!personalRecords || !userProfile || !userProfile.gender) {
-      return [];
-    }
-    const findings: (StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[] = [];
-
-
-    IMBALANCE_TYPES.forEach(type => {
-        const config = IMBALANCE_CONFIG[type];
-        const lift1 = findBestPr(personalRecords, config.lift1Options);
-        const lift2 = findBestPr(personalRecords, config.lift2Options);
-
-        if (!lift1 || !lift2) {
-             findings.push({ imbalanceType: type, hasData: false });
-             return;
-        };
-
-        const lift1Level = getStrengthLevel(lift1, userProfile);
-        const lift2Level = getStrengthLevel(lift2, userProfile);
-
-        const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
-        const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
-
-        if (lift2WeightKg === 0) {
-            findings.push({ imbalanceType: type, hasData: false });
-            return;
-        }
-
-        const ratio = config.ratioCalculation(lift1WeightKg, lift2WeightKg);
-        
-        const rank1 = strengthLevelRanks[lift1Level];
-        const rank2 = strengthLevelRanks[lift2Level];
-        const guidingLevelRank = (rank1 === -1 || rank2 === -1) ? -1 : Math.min(rank1, rank2);
-        const guidingLevel: StrengthLevel = Object.keys(strengthLevelRanks).find(key => strengthLevelRanks[key as StrengthLevel] === guidingLevelRank) as StrengthLevel || 'N/A';
-        
-        const ratioStandards = getStrengthRatioStandards(type, userProfile.gender as 'Male' | 'Female', guidingLevel);
-        
-        const balancedRangeDisplay = ratioStandards
-            ? `${ratioStandards.lowerBound.toFixed(2)}-${ratioStandards.upperBound.toFixed(2)}:1`
-            : 'N/A';
-        
-        const targetRatioDisplay = ratioStandards ? `${ratioStandards.targetRatio.toFixed(2)}:1` : 'N/A';
-        
-        let imbalanceFocus: ImbalanceFocus = 'Balanced';
-        let ratioIsUnbalanced = false;
-
-        if (ratioStandards) {
-            ratioIsUnbalanced = ratio < ratioStandards.lowerBound || ratio > ratioStandards.upperBound;
-        }
-
-        if (lift1Level !== 'N/A' && lift2Level !== 'N/A' && lift1Level !== lift2Level) {
-            imbalanceFocus = 'Level Imbalance';
-        } else if (ratioIsUnbalanced) {
-            imbalanceFocus = 'Ratio Imbalance';
-        }
-
-        findings.push({
-            imbalanceType: type,
-            lift1Name: toTitleCase(lift1.exerciseName),
-            lift1Weight: lift1.weight,
-            lift1Unit: lift1.weightUnit,
-            lift2Name: toTitleCase(lift2.exerciseName),
-            lift2Weight: lift2.weight,
-            lift2Unit: lift2.weightUnit,
-            userRatio: `${ratio.toFixed(2)}:1`,
-            targetRatio: targetRatioDisplay,
-            balancedRange: balancedRangeDisplay,
-            imbalanceFocus: imbalanceFocus,
-            lift1Level,
-            lift2Level,
-        });
-    });
-
-    return findings;
-  }, [personalRecords, userProfile]);
+  const clientSideFindings = React.useMemo(
+    () => buildClientSideFindings(personalRecords, userProfile),
+    [personalRecords, userProfile],
+  );
 
   const handleAnalyzeStrength = () => {
     if (!userProfile) {
         toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
         return;
     }
-    const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
-
-    const analysisInput: StrengthImbalanceInput = {
-        clientSideFindings: validFindings.map(f => ({
-            ...f,
-            targetRatio: f.targetRatio,
-        })),
-        userProfile: {
-            age: userProfile.age,
-            gender: userProfile.gender,
-            weightValue: userProfile.weightValue,
-            weightUnit: userProfile.weightUnit,
-            skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
-            skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-            fitnessGoals: (userProfile.fitnessGoals || [])
-              .filter(g => !g.achieved)
-              .map(g => ({
-                description: g.description,
-                isPrimary: g.isPrimary || false,
-              })),
-        }
-    };
-
+    const analysisInput = buildStrengthAnalysisInput(userProfile, clientSideFindings);
     analyzeStrengthMutation.mutate(analysisInput);
   };
 
@@ -179,100 +282,15 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
                     {IMBALANCE_TYPES.map((type, index) => {
                         const finding = clientSideFindings.find(f => f.imbalanceType === type);
                         if (!finding) return null;
-
-                        if ('hasData' in finding && !finding.hasData) {
-                            const config = IMBALANCE_CONFIG[type];
-                            const requirements = `Requires: ${config.lift1Options.map(toTitleCase).join('/')} & ${config.lift2Options.map(toTitleCase).join('/')}`;
-                            return (
-                                <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
-                                    <CardTitle className="text-base flex items-center justify-between">{type} <Badge variant="secondary">No Data</Badge></CardTitle>
-                                    <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
-                                        <Scale className="h-8 w-8 text-muted-foreground/50 mb-2"/>
-                                        <p className="text-sm font-semibold">Log PRs to analyze</p>
-                                        <p className="text-xs mt-1">{requirements}</p>
-                                    </div>
-                                </Card>
-                            );
-                        }
-                        
-                        const dataFinding = finding as StrengthFinding;
-                        const aiFinding = analysisToRender ? analysisToRender.findings.find(f => f.imbalanceType === dataFinding.imbalanceType) : undefined;
-                        const badgeProps = focusBadgeProps(dataFinding.imbalanceFocus);
-                        
+                        const aiFinding = analysisToRender?.findings.find(f => f.imbalanceType === type);
                         return (
-                            <Card key={index} className="p-4 bg-secondary/50 flex flex-col">
-                                <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
-                                <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
-                                    <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
-                                    <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
-                                    <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
-                                    <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
-                                    <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
-                                    <p>Balanced Range: <span className="font-bold text-foreground">{dataFinding.balancedRange}</span></p>
-                                </div>
-                                
-                                <div className="pt-4 mt-auto border-t flex flex-col flex-grow">
-                                    <div className="flex-grow">
-                                        {analyzeStrengthMutation.isPending ? (
-                                            <div className="flex items-center justify-center text-muted-foreground text-sm">
-                                                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating AI insight...
-                                            </div>
-                                        ) : aiFinding ? (
-                                        <div className="space-y-3">
-                                                <div className="mb-4">
-                                                    <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold flex items-center gap-2"><Lightbulb className="h-4 w-4 text-primary" />Insight</p>
-                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.insight}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-accent" />Recommendation</p>
-                                                    <p className="text-xs text-muted-foreground mt-1">{aiFinding.recommendation}</p>
-                                                </div>
-                                        </div>
-                                        ) : dataFinding.imbalanceFocus !== 'Balanced' ? (
-                                            <div>
-                                                <div className="mb-4">
-                                                    <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                </div>
-                                                <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click &quot;Get AI Insights&quot; for analysis.</p>
-                                            </div>
-                                        ) : (() => {
-                                              const currentLevel = dataFinding.lift1Level;
-                                              if (currentLevel === 'N/A' || currentLevel === 'Elite') {
-                                                  return null;
-                                              }
-                                              return (
-                                                  <div>
-                                                      <div className="mb-4">
-                                                          <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
-                                                      </div>
-                                                      {(() => {
-                                                          let nextLevel: string | null = null;
-                                                          if (currentLevel === 'Beginner') nextLevel = 'Intermediate';
-                                                          else if (currentLevel === 'Intermediate') nextLevel = 'Advanced';
-                                                          else if (currentLevel === 'Advanced') nextLevel = 'Elite';
-
-                                                          if (nextLevel) {
-                                                              return (
-                                                                  <>
-                                                                      <p className="text-sm font-semibold flex items-center gap-2">Next Focus</p>
-                                                                      <p className="text-xs text-muted-foreground mt-1">
-                                                                          Your lifts are well-balanced. Focus on progressive overload to advance both lifts towards the <span className="font-bold text-foreground">{currentLevel}</span> to <span className="font-bold text-foreground">{nextLevel}</span>.
-                                                                      </p>
-                                                                  </>
-                                                              );
-                                                          }
-                                                          return null;
-                                                      })()}
-                                                  </div>
-                                              );
-                                          })()
-                                        }
-                                    </div>
-                                </div>
-                            </Card>
+                          <StrengthBalanceFindingCard
+                            key={index}
+                            type={type}
+                            finding={finding}
+                            aiFinding={aiFinding}
+                            isAnalyzing={analyzeStrengthMutation.isPending}
+                          />
                         );
                     })}
                 </div>

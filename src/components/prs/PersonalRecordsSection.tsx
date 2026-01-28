@@ -4,7 +4,7 @@ import { Trophy, Trash2, Loader2 } from "lucide-react";
 import type { PersonalRecord, UserProfile } from "@/lib/types";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { CATEGORY_ORDER } from "@/lib/constants";
-import { PrCategorySection } from "@/components/prs/pr-category-section";
+import { PrCategorySection } from "@/components/prs/PrCategorySection";
 import { usePrEdit } from "@/hooks/usePrEdit";
 import { getBestRecords, groupRecordsByCategory } from "@/app/prs/pr-utils";
 import { Button } from "@/components/ui/button";

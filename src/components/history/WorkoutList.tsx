@@ -6,9 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
-import { CalendarDays, Dumbbell, Edit3, Trash2, ChevronDown, Activity, Utensils, Route, Timer } from "lucide-react"; // Added icons
+import { CalendarDays, Edit3, Trash2, ChevronDown } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
-import { cn } from "@/lib/utils";
+import { cn, toTitleCase } from "@/lib/utils";
 import React, { useMemo } from "react";
 import { Badge } from "../ui/badge";
 
@@ -31,14 +31,6 @@ const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondar
         case 'Other': return 'other';
         default: return 'outline';
     }
-};
-
-const toTitleCase = (str: string) => {
-  if (!str) return "";
-  return str.replace(
-    /\w\S*/g,
-    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
-  );
 };
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
@@ -90,11 +82,6 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     return `${distance} ${unit || ''}`.trim();
   };
 
-  const formatCaloriesForDisplay = (calories?: number): string => {
-    if (calories === undefined || calories === null || calories <= 0) return "-";
-    return `${calories} kcal`;
-  }
-  
   const formatDurationForDisplay = (duration?: number, unit?: 'min' | 'hr' | 'sec'): string => {
     if (duration === undefined || duration === null || duration <= 0) {
       return "-";

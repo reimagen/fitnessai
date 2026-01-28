@@ -8,11 +8,6 @@ import {
   eachDayOfInterval,
   startOfWeek,
   endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  startOfYear,
-  endOfYear,
-  eachWeekOfInterval,
 } from 'date-fns';
 
 interface ChartDataPoint {

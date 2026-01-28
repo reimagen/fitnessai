@@ -10,9 +10,9 @@ import { usePersonalRecords, useUserProfile } from "@/lib/firestore.service";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
-import { PrsFormSection } from "@/components/prs/prs-form-section";
-import { PersonalRecordsSection } from "@/components/prs/personal-records-section";
-import { CompletedGoalsSection } from "@/components/prs/completed-goals-section";
+import { PrsFormSection } from "@/components/prs/PrsFormSection";
+import { PersonalRecordsSection } from "@/components/prs/PersonalRecordsSection";
+import { CompletedGoalsSection } from "@/components/prs/CompletedGoalsSection";
 
 export default function MilestonesPage() {
   const { user } = useAuth();
