@@ -1,7 +1,7 @@
 
 'use server';
 
-import { adminDb } from './firebase-admin';
+import { getAdminDb } from './firebase-admin';
 
 /**
  * Checks if a given email exists in the 'whitelist' collection in Firestore.
@@ -16,6 +16,7 @@ export async function isEmailWhitelisted(email: string): Promise<boolean> {
   }
 
   try {
+    const adminDb = getAdminDb();
     const whitelistCollection = adminDb.collection('whitelist');
     const docRef = whitelistCollection.doc(email); // Use the exact email as the document ID
     const docSnap = await docRef.get();

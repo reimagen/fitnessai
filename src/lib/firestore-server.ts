@@ -1,7 +1,7 @@
 
 // NOTE: This file does NOT have "use client" and is intended for server-side use.
 
-import { adminDb } from './firebase-admin';
+import { getAdminDb } from './firebase-admin';
 import { Timestamp, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
 import { format } from 'date-fns';
@@ -228,6 +228,7 @@ aiPreferencesNotes: data.aiPreferencesNotes,
 // --- Firestore Service Functions ---
 
 export const getWorkoutLogs = async (userId: string, options?: { startDate?: Date; endDate?: Date; since?: Date }): Promise<WorkoutLog[]> => {
+  const adminDb = getAdminDb();
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
 
@@ -271,12 +272,14 @@ export const getWorkoutLogs = async (userId: string, options?: { startDate?: Dat
 
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
+    const adminDb = getAdminDb();
     const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
     const docRef = await workoutLogsCollection.add(log);
     return { id: docRef.id };
 };
 
 export const updateWorkoutLog = async (userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>) => {
+  const adminDb = getAdminDb();
   const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
 
   const dataToUpdate: Record<string, unknown> = { ...log };
@@ -287,12 +290,14 @@ export const updateWorkoutLog = async (userId: string, id: string, log: Partial<
 };
 
 export const deleteWorkoutLog = async (userId: string, id: string): Promise<void> => {
+  const adminDb = getAdminDb();
   const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
   await logDoc.delete();
 };
 
 // Personal Records
 export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
+  const adminDb = getAdminDb();
   const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
   // No ordering needed as we just want all records for client-side processing
   const snapshot = await personalRecordsCollection.get();
@@ -300,6 +305,7 @@ export const getPersonalRecords = cache(async (userId: string): Promise<Personal
 });
 
 export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<{ success: boolean; message: string }> => {
+    const adminDb = getAdminDb();
     const userProfile = await getUserProfile(userId);
     if (!userProfile) {
         throw new Error("User profile not found. Cannot calculate strength levels.");
@@ -367,6 +373,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 };
 
 export const updatePersonalRecord = async (userId: string, id: string, recordData: Partial<Omit<PersonalRecord, 'id' | 'userId'>>): Promise<void> => {
+  const adminDb = getAdminDb();
   // 'id' is now the normalized exercise name
   const recordDocRef = adminDb.collection(`users/${userId}/personalRecords`).doc(id);
   const userProfile = await getUserProfile(userId);
@@ -394,6 +401,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
 
 
 export const clearAllPersonalRecords = async (userId: string): Promise<void> => {
+    const adminDb = getAdminDb();
     const collectionRef = adminDb.collection(`users/${userId}/personalRecords`);
     const snapshot = await collectionRef.get();
     
@@ -412,6 +420,7 @@ export const clearAllPersonalRecords = async (userId: string): Promise<void> => 
 
 // User Profile
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
+    const adminDb = getAdminDb();
     const profileDocRef = adminDb.collection('users').doc(userId).withConverter(userProfileConverter) as FirebaseFirestore.DocumentReference<UserProfile>;
 
     try {
@@ -427,6 +436,7 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
 };
 
 export const updateUserProfile = async (userId: string, profileData: Partial<Omit<UserProfile, 'id'>>) => {
+    const adminDb = getAdminDb();
     const profileDocRef = adminDb.collection('users').doc(userId);
     
     const dataToUpdate: Record<string, unknown> = { ...profileData };
@@ -516,6 +526,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
  * @param feature The key of the feature to increment (e.g., 'goalAnalyses').
  */
 export async function incrementUsageCounter(userId: string, feature: keyof AIUsageStats): Promise<void> {
+  const adminDb = getAdminDb();
   const profileDocRef = adminDb.collection('users').doc(userId);
   const today = format(new Date(), 'yyyy-MM-dd');
 

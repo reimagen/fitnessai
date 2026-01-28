@@ -1,6 +1,6 @@
 
 import { cookies } from 'next/headers';
-import { adminAuth, adminDb } from './firebase-admin';
+import { getAdminAuth, getAdminDb } from './firebase-admin';
 import { UserProfile } from './types';
 import { userProfileConverter } from './firestore-server';
 
@@ -13,6 +13,7 @@ export async function getAuthenticatedUser(): Promise<{ id: string; email: strin
   }
 
   try {
+    const adminAuth = getAdminAuth();
     const decodedToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     return {
       id: decodedToken.uid,
@@ -30,6 +31,7 @@ export async function getCurrentUserProfile(): Promise<{ data: UserProfile | nul
         return { data: null, notFound: true };
     }
 
+    const adminDb = getAdminDb();
     const profileDocRef = adminDb.collection('users').doc(user.id).withConverter(userProfileConverter);
     const docSnap = await profileDocRef.get();
 
