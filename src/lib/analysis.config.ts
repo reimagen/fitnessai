@@ -20,7 +20,7 @@ export const IMBALANCE_CONFIG: Record<ImbalanceType, { lift1Options: string[], l
 
 // Helper to find the best PR for a given list of exercises (moved from page.tsx)
 export function findBestPr(records: PersonalRecord[], exerciseNames: string[]): PersonalRecord | null {
-    let searchNames = [...exerciseNames];
+    const searchNames = [...exerciseNames];
     
     const relevantRecords = records.filter(r => searchNames.some(name => getNormalizedExerciseName(r.exerciseName) === name.trim().toLowerCase()));
     if (relevantRecords.length === 0) return null;

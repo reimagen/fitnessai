@@ -6,21 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
-import { Loader2, UploadCloud, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { Loader2, UploadCloud, CheckCircle, RotateCcw } from "lucide-react";
 import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { useAuth } from "@/lib/auth.service";
 import { useToast } from "@/hooks/use-toast";
 
 type PrUploaderFormProps = {
   onParse: (userId: string, data: { photoDataUri: string }) => Promise<{ success: boolean; data?: ParsePersonalRecordsOutput; error?: string }>;
-  onParsedData: (data: ParsePersonalRecordsOutput) => void;
 };
 
-export function PrUploaderForm({ onParse, onParsedData }: PrUploaderFormProps) {
+export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);

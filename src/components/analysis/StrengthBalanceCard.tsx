@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Zap, Lightbulb, Scale } from 'lucide-react';
 import { format } from 'date-fns/format';
 import React from 'react';
-import type { StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
+import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
 import type { ImbalanceType } from '@/lib/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +16,7 @@ interface StrengthBalanceCardProps {
   isLoading: boolean;
   isError: boolean;
   userProfile: UserProfile | undefined;
-  personalRecords: any[] | undefined; // Adjust type as needed
+  personalRecords: PersonalRecord[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
 }
 
