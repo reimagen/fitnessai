@@ -20,7 +20,7 @@ import { FormContainer } from "@/components/prs/form-container";
 import { PrCategorySection } from "@/components/prs/pr-category-section";
 import { usePrEdit } from "@/hooks/use-pr-edit";
 import { CATEGORY_ORDER, FORM_STATES, type FormState } from "@/lib/constants";
-import { getBestRecords, groupRecordsByCategory } from "@/lib/pr-utils";
+import { getBestRecords, groupRecordsByCategory } from "./pr-utils";
 
 export default function MilestonesPage() {
   const { toast } = useToast();

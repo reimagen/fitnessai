@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import type { PersonalRecord, StrengthFinding, StrengthLevel } from '@/lib/types';
-import type { ImbalanceType } from '@/lib/analysis.config';
-import { IMBALANCE_TYPES, IMBALANCE_CONFIG, findBestPr, toTitleCase } from '@/lib/analysis.config';
+import type { ImbalanceType } from '@/analysis/analysis.config';
+import { IMBALANCE_TYPES, IMBALANCE_CONFIG, findBestPr, toTitleCase } from '@/analysis/analysis.config';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import type { UserProfile } from '@/lib/types';
-import type { ImbalanceFocus } from '@/lib/analysis.utils';
+import type { ImbalanceFocus } from '@/analysis/analysis.utils';
 
 export function useStrengthFindings(
   personalRecords: PersonalRecord[] | undefined,

@@ -1,8 +1,8 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList, Legend, ResponsiveContainer, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
-import { RoundedBar } from '@/lib/chart-utils';
-import { chartConfig } from '@/lib/chart.config';
+import { RoundedBar } from '@/analysis/chart-utils';
+import { chartConfig } from '@/analysis/chart.config';
 
 interface CardioStats {
   count: number;

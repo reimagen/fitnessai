@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Exercise, WorkoutLog, UserProfile } from '@/lib/types';
-import { toTitleCase } from '@/lib/analysis.config';
+import { toTitleCase } from '@/analysis/analysis.config';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import {
   format,

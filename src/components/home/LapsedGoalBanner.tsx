@@ -4,7 +4,7 @@ import { FitnessGoal } from "@/lib/types";
 import { Target } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { getLapsedGoals, sortGoalsByUrgency } from "@/lib/goal-utils";
+import { getLapsedGoals, sortGoalsByUrgency } from "./goal-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface LapsedGoalBannerProps {

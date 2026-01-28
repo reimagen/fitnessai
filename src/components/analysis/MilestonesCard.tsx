@@ -7,8 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import type { PersonalRecord, FitnessGoal } from '@/lib/types';
 import React from 'react';
-import { timeRangeDisplayNames } from '@/lib/analysis-constants';
-import { toTitleCase } from '@/lib/analysis.config';
+import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
+import { toTitleCase } from '@/analysis/analysis.config';
 
 interface MilestonesCardProps {
   isLoading: boolean;

@@ -165,7 +165,7 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
           <CardHeader>
             <CardTitle className="text-primary">Confirm Workout Date</CardTitle>
             <CardDescription>
-              We couldn't find a date in the screenshot. Please select the correct date for this workout to merge it with your history.
+              We couldn&apos;t find a date in the screenshot. Please select the correct date for this workout to merge it with your history.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

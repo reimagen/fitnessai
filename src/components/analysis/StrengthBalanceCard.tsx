@@ -5,12 +5,12 @@ import { Loader2, Zap, Lightbulb, Scale } from 'lucide-react';
 import { format } from 'date-fns/format';
 import React from 'react';
 import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
-import type { ImbalanceType } from '@/lib/analysis.config';
+import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/use-toast';
-import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/lib/analysis.config';
+import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr, toTitleCase } from '@/analysis/analysis.config';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
-import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/lib/analysis.utils';
+import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/analysis/analysis.utils';
 
 interface StrengthBalanceCardProps {
   isLoading: boolean;
@@ -236,7 +236,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
                                                 <div className="mb-4">
                                                     <Badge variant={badgeProps.variant}>{badgeProps.text}</Badge>
                                                 </div>
-                                                <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click "Get AI Insights" for analysis.</p>
+                                                <p className="text-center text-muted-foreground text-xs">This appears imbalanced. Click &quot;Get AI Insights&quot; for analysis.</p>
                                             </div>
                                         ) : (() => {
                                               const currentLevel = dataFinding.lift1Level;

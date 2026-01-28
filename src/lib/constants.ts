@@ -21,6 +21,14 @@ export const CARDIO_RUN_THRESHOLD_MPH = 4.0;
  */
 export const MILES_PER_KM = 0.621371;
 export const MILES_PER_FEET = 0.000189394;
+export const LBS_TO_KG = 0.453592;
+export const INCH_TO_CM = 2.54;
+export const FT_TO_INCHES = 12;
+
+/**
+ * Time range defaults
+ */
+export const FOUR_WEEKS = 4;
 
 /**
  * PR form state constants.
