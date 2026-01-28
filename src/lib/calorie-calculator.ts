@@ -115,7 +115,7 @@ export function calculateExerciseCalories(
         return 0;
     }
 
-    let { name, distance, distanceUnit, duration, durationUnit } = exercise;
+    const { name, distance, distanceUnit, duration, durationUnit } = exercise;
 
     const weightInKg = userProfile.weightUnit === 'lbs' 
         ? (userProfile.weightValue || 0) * 0.453592 

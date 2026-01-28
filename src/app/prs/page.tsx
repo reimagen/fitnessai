@@ -1,63 +1,33 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Milestone, Loader2, Edit2, Check, X, Info, Edit, UserPlus } from "lucide-react";
-import type { PersonalRecord, ExerciseCategory, UserProfile, FitnessGoal, StrengthLevel } from "@/lib/types";
+import { Award, Trophy, UploadCloud, Trash2, Flag, CheckCircle, Loader2, Edit, UserPlus } from "lucide-react";
+import type { PersonalRecord } from "@/lib/types";
 import { PrUploaderForm } from "@/components/prs/pr-uploader-form";
 import { ManualPrForm } from "@/components/prs/manual-pr-form";
-import { parsePersonalRecordsAction, clearAllPersonalRecords } from "./actions";
+import { parsePersonalRecordsAction } from "./actions";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfDay } from "date-fns";
-import type { ParsePersonalRecordsOutput } from "@/ai/flows/personal-record-parser";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { usePersonalRecords, useUserProfile, useAddPersonalRecords, useUpdatePersonalRecord, useClearAllPersonalRecords } from "@/lib/firestore.service";
-import { getStrengthThresholds, getStrengthStandardType } from "@/lib/strength-standards";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { useAuth } from "@/lib/auth.service";
 import Link from "next/link";
-import { StepperInput } from "@/components/ui/stepper-input";
-
-
-// Function to group records and find the best for each exercise
-const getBestRecords = (records: PersonalRecord[]): PersonalRecord[] => {
-    if (!records || records.length === 0) return [];
-
-    const recordsByExercise: { [key: string]: PersonalRecord[] } = records.reduce((acc, record) => {
-        const key = record.exerciseName.trim().toLowerCase();
-        if (!acc[key]) {
-            acc[key] = [];
-        }
-        acc[key].push(record);
-        return acc;
-    }, {} as { [key: string]: PersonalRecord[] });
-
-    const bestRecords = Object.values(recordsByExercise).map(exerciseRecords => {
-        return exerciseRecords.reduce((best, current) => {
-            // Simple weight comparison, assuming same unit for now. 
-            // A more robust solution would convert units before comparing.
-            return current.weight > best.weight ? current : best;
-        });
-    });
-
-    // Sort by most recent date
-    return bestRecords.sort((a, b) => b.date.getTime() - a.date.getTime());
-}
+import { FormContainer } from "@/components/prs/form-container";
+import { PrCategorySection } from "@/components/prs/pr-category-section";
+import { usePrEdit } from "@/hooks/use-pr-edit";
+import { CATEGORY_ORDER, FORM_STATES, type FormState } from "@/lib/constants";
+import { getBestRecords, groupRecordsByCategory } from "@/lib/pr-utils";
 
 export default function MilestonesPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
-  const [editedWeight, setEditedWeight] = useState(0);
-  const [editedDate, setEditedDate] = useState('');
-  const [activeForm, setActiveForm] = useState<'manual' | 'parse' | 'none'>('none');
+  const [activeForm, setActiveForm] = useState<FormState>(FORM_STATES.NONE);
+  const { editState, isEditing, startEdit, cancelEdit, updateWeight, updateDate } = usePrEdit();
 
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
@@ -70,56 +40,8 @@ export default function MilestonesPage() {
   const clearAllRecordsMutation = useClearAllPersonalRecords();
 
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
+  const groupedRecords = useMemo(() => groupRecordsByCategory(bestRecords), [bestRecords]);
   const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
-  
-  const handleParsedData = (parsedData: ParsePersonalRecordsOutput) => {
-    let addedCount = 0;
-    const newRecords: Omit<PersonalRecord, 'id' | 'userId'>[] = [];
-
-    const existingRecordKeys = new Set((allRecords || []).map(r => `${r.exerciseName.trim().toLowerCase()}|${format(r.date, 'yyyy-MM-dd')}`));
-
-    parsedData.records.forEach(rec => {
-        const key = `${rec.exerciseName.trim().toLowerCase()}|${rec.dateString}`;
-        if (!existingRecordKeys.has(key)) {
-            const newRecord: Omit<PersonalRecord, 'id' | 'userId'> = {
-                exerciseName: rec.exerciseName,
-                weight: rec.weight,
-                weightUnit: rec.weightUnit,
-                date: new Date(`${rec.dateString}T00:00:00Z`),
-                category: rec.category,
-            };
-            newRecords.push(newRecord);
-            existingRecordKeys.add(key); // prevent duplicates in the same upload
-            addedCount++;
-        }
-    });
-
-    if (addedCount > 0) {
-        addPersonalRecordsMutation.mutate({ userId: user!.uid, records: newRecords }, {
-            onSuccess: () => {
-                toast({
-                    title: "Records Updated",
-                    description: `Added ${addedCount} new personal record(s).`,
-                });
-                setActiveForm('none');
-            },
-            onError: (error) => {
-                 toast({
-                    title: "Update Failed",
-                    description: `Could not save new records: ${error.message}`,
-                    variant: "destructive"
-                });
-            }
-        });
-    } else {
-        toast({
-            title: "No New Records",
-            description: "The uploaded screenshot contained no new records.",
-            variant: "default",
-        });
-        setActiveForm('none');
-    }
-  };
   
   const handleManualAdd = (newRecord: Omit<PersonalRecord, 'id' | 'userId'>) => {
     addPersonalRecordsMutation.mutate({ userId: user!.uid, records: [newRecord] }, {
@@ -128,7 +50,7 @@ export default function MilestonesPage() {
                 title: "PR Added!",
                 description: `Your new record for ${newRecord.exerciseName} has been saved.`,
             });
-            setActiveForm('none');
+            setActiveForm(FORM_STATES.NONE);
         },
         onError: (error) => {
             toast({
@@ -161,24 +83,18 @@ export default function MilestonesPage() {
   };
   
   const handleEditClick = (record: PersonalRecord) => {
-    setEditingRecordId(record.id);
-    setEditedWeight(record.weight);
-    setEditedDate(format(record.date, 'yyyy-MM-dd'));
-  };
-
-  const handleCancelEdit = () => {
-    setEditingRecordId(null);
+    startEdit(record);
   };
 
   const handleSaveEdit = (recordId: string) => {
-    const weight = editedWeight;
+    const weight = editState.weight;
     if (isNaN(weight) || weight <= 0) {
         toast({ title: 'Invalid Weight', description: 'Please enter a valid positive number for weight.', variant: 'destructive' });
         return;
     }
     
     // Create a Date object in the client's local timezone.
-    const date = new Date(editedDate.replace(/-/g, '/'));
+    const date = new Date(editState.date.replace(/-/g, '/'));
     if (isNaN(date.getTime())) {
         toast({ title: 'Invalid Date', description: 'Please enter a valid date.', variant: 'destructive' });
         return;
@@ -192,34 +108,13 @@ export default function MilestonesPage() {
         {
             onSuccess: () => {
                 toast({ title: 'PR Updated!', description: 'Your personal record has been successfully updated.' });
-                setEditingRecordId(null);
+                cancelEdit();
             },
             onError: (error) => {
                 toast({ title: 'Update Failed', description: error.message, variant: 'destructive' });
             },
         }
     );
-  };
-
-  const groupedRecords = bestRecords.reduce((acc, record) => {
-    const category = record.category || 'Other';
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(record);
-    return acc;
-  }, {} as Record<string, PersonalRecord[]>);
-
-  const categoryOrder: ExerciseCategory[] = ['Upper Body', 'Lower Body', 'Core', 'Full Body', 'Cardio', 'Other'];
-
-  const levelToBadgeVariant = (level: StrengthLevel) => {
-    switch (level) {
-      case 'Beginner': return 'destructive';
-      case 'Intermediate': return 'secondary';
-      case 'Advanced': return 'accent';
-      case 'Elite': return 'default';
-      default: return 'outline';
-    }
   };
 
   const isLoading = isLoadingProfile || isLoadingPrs;
@@ -277,9 +172,12 @@ export default function MilestonesPage() {
         <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
       </header>
 
-      {activeForm === 'none' && (
+      {activeForm === FORM_STATES.NONE && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('manual')}>
+          <Card
+            className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => setActiveForm(FORM_STATES.MANUAL)}
+          >
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <Edit className="h-6 w-6 text-accent" />
@@ -290,7 +188,10 @@ export default function MilestonesPage() {
               </CardDescription>
             </CardHeader>
           </Card>
-          <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer" onClick={() => setActiveForm('parse')}>
+          <Card
+            className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            onClick={() => setActiveForm(FORM_STATES.PARSE)}
+          >
             <CardHeader>
               <CardTitle className="font-headline flex items-center gap-2">
                 <UploadCloud className="h-6 w-6 text-accent" />
@@ -304,60 +205,26 @@ export default function MilestonesPage() {
         </div>
       )}
 
-      <div className={cn(activeForm === 'manual' ? "block" : "hidden")}>
-        <Card className="shadow-lg">
-          <CardHeader className="relative">
-             <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setActiveForm('none')}
-                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
-                aria-label="Close form"
-            >
-                <X className="h-5 w-5" />
-            </Button>
-             <CardTitle className="font-headline flex items-center gap-2">
-                <Edit className="h-6 w-6 text-accent" />
-                Add PR Manually
-              </CardTitle>
-              <CardDescription>
-                Log a single personal record for a classifiable exercise.
-              </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ManualPrForm 
-              onAdd={handleManualAdd} 
-              isSubmitting={addPersonalRecordsMutation.isPending} 
-              allRecords={allRecords || []}
-            />
-          </CardContent>
-        </Card>
+      <div className={cn(activeForm === FORM_STATES.MANUAL ? "block" : "hidden")}>
+        <FormContainer
+          title="Add PR Manually"
+          description="Log a single personal record for a classifiable exercise."
+          icon={<Edit className="h-6 w-6 text-accent" />}
+          onClose={() => setActiveForm(FORM_STATES.NONE)}
+        >
+          <ManualPrForm onAdd={handleManualAdd} isSubmitting={addPersonalRecordsMutation.isPending} />
+        </FormContainer>
       </div>
       
-      <div className={cn(activeForm === 'parse' ? "block" : "hidden")}>
-        <Card className="shadow-lg">
-           <CardHeader className="relative">
-             <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setActiveForm('none')}
-                className="absolute top-4 right-4 text-muted-foreground hover:bg-secondary"
-                aria-label="Close form"
-            >
-                <X className="h-5 w-5" />
-            </Button>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <UploadCloud className="h-6 w-6 text-accent" />
-                Upload from Screenshot
-              </CardTitle>
-              <CardDescription>
-                Upload an image to parse multiple PRs at once.
-              </CardDescription>
-            </CardHeader>
-          <CardContent>
-            <PrUploaderForm onParse={parsePersonalRecordsAction} onParsedData={handleParsedData} />
-          </CardContent>
-        </Card>
+      <div className={cn(activeForm === FORM_STATES.PARSE ? "block" : "hidden")}>
+        <FormContainer
+          title="Upload from Screenshot"
+          description="Upload an image to parse multiple PRs at once."
+          icon={<UploadCloud className="h-6 w-6 text-accent" />}
+          onClose={() => setActiveForm(FORM_STATES.NONE)}
+        >
+          <PrUploaderForm onParse={parsePersonalRecordsAction} />
+        </FormContainer>
       </div>
       
       <Card className="shadow-lg">
@@ -392,150 +259,26 @@ export default function MilestonesPage() {
           ) : isError ? (
             <ErrorState message="Could not load your personal records. Please try again." />
           ) : bestRecords.length > 0 ? (
-             <div className="space-y-8">
-                {categoryOrder.map(category => (
-                  groupedRecords[category] && groupedRecords[category].length > 0 && (
-                    <div key={category}>
-                        <h3 className="text-xl font-headline font-semibold mb-4 text-primary border-b pb-2">{category}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-                            {groupedRecords[category].map(record => {
-                                const isEditing = editingRecordId === record.id;
-                                const level = record.strengthLevel || 'N/A';
-                                const standardType = getStrengthStandardType(record.exerciseName);
-                                const isSmmExercise = standardType === 'smm';
-                                const needsSmmData = isSmmExercise && (!userProfile?.skeletalMuscleMassValue || !userProfile.gender);
-
-                                const thresholds = userProfile && !needsSmmData ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
-                                const isTricepsExercise = ['tricep extension', 'tricep pushdown', 'triceps'].includes(record.exerciseName.trim().toLowerCase());
-
-                                let progressData: { value: number; text?: string; } | null = null;
-                                if (level !== 'N/A' && level !== 'Elite' && thresholds) {
-                                  const levelOrder: StrengthLevel[] = ['Beginner', 'Intermediate', 'Advanced', 'Elite'];
-                                  const currentLevelIndex = levelOrder.indexOf(level);
-                                  const nextLevel = levelOrder[currentLevelIndex + 1];
-                                  
-                                  const currentThreshold = level === 'Beginner' ? 0 : thresholds[level.toLowerCase() as keyof typeof thresholds];
-                                  const nextThreshold = thresholds[nextLevel.toLowerCase() as keyof typeof thresholds];
-                                  
-                                  if (record.weight < nextThreshold) {
-                                    const range = nextThreshold - currentThreshold;
-                                    const progress = record.weight - currentThreshold;
-                                    const percentage = range > 0 ? (progress / range) * 100 : 0;
-                                    
-                                    progressData = { value: percentage };
-
-                                    if (record.weight >= nextThreshold * 0.9) {
-                                        const weightToGo = nextThreshold - record.weight;
-                                        progressData.text = `Only ${weightToGo} ${record.weightUnit} to ${nextLevel}!`;
-                                    }
-                                  }
-                                }
-
-                                return (
-                                    <Card key={record.id} className="bg-secondary/50 flex flex-col justify-between p-4">
-                                      {isEditing ? (
-                                        <div className="flex flex-col gap-2 h-full">
-                                          <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                          <div className="flex items-center gap-2">
-                                            <StepperInput
-                                              value={editedWeight}
-                                              onChange={setEditedWeight}
-                                              step={1}
-                                              className="w-full"
-                                              aria-label="Edit weight"
-                                            />
-                                            <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span>
-                                          </div>
-                                          <Input 
-                                              type="date" 
-                                              value={editedDate} 
-                                              onChange={(e) => setEditedDate(e.target.value)}
-                                              aria-label="Edit date"
-                                          />
-                                          <div className="flex justify-end items-center gap-2 mt-auto pt-2">
-                                            <Button variant="ghost" size="icon" onClick={handleCancelEdit} aria-label="Cancel edit">
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                            <Button size="icon" onClick={() => handleSaveEdit(record.id)} aria-label="Save changes" disabled={updateRecordMutation.isPending}>
-                                                {updateRecordMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-4 w-4" />}
-                                            </Button>
-                                          </div>
-                                        </div>
-                                      ) : (
-                                        <div className="flex flex-col h-full">
-                                            <div>
-                                                <div className="flex justify-between items-start">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                            <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>
-                                                            {level !== 'N/A' && (
-                                                                <Badge variant={levelToBadgeVariant(level)}>{level}</Badge>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-2xl font-black text-accent">{record.weight} <span className="text-lg font-bold text-muted-foreground">{record.weightUnit}</span></p>
-                                                    </div>
-                                                    <Button variant="ghost" size="icon" onClick={() => handleEditClick(record)} aria-label={`Edit ${record.exerciseName} PR`}>
-                                                        <Edit2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-1">Achieved on: {format(record.date, "MMM d, yyyy")}</p>
-                                            </div>
-                                            
-                                            <div className="flex-grow my-3">
-                                              {needsSmmData ? (
-                                                <div className="p-2 my-2 text-center text-xs text-muted-foreground bg-background/50 border rounded-md">
-                                                  <Info className="h-4 w-4 mx-auto mb-1" />
-                                                  <p>This exercise requires your Skeletal Muscle Mass to classify your strength level. Please update your profile.</p>
-                                                </div>
-                                              ) : progressData ? (
-                                                <div className="space-y-1.5">
-                                                    <Progress value={progressData.value} className="h-2 [&>div]:bg-accent" />
-                                                    {progressData.text && (
-                                                        <p className="text-xs font-medium text-center text-accent">{progressData.text}</p>
-                                                    )}
-                                                </div>
-                                              ) : null}
-                                            </div>
-                                            
-                                            {thresholds && level !== 'N/A' && (
-                                              <div className="mt-auto pt-3 border-t border-muted/20 text-xs space-y-1">
-                                                {level !== 'Elite' && level !== 'Advanced' && (
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="font-medium text-muted-foreground">Intermediate</span>
-                                                        <span className="font-semibold text-foreground">{thresholds.intermediate} {record.weightUnit}</span>
-                                                    </div>
-                                                )}
-                                                {level !== 'Elite' && (
-                                                     <div className="flex justify-between items-center">
-                                                        <span className="font-medium text-muted-foreground">Advanced</span>
-                                                        <span className="font-semibold text-foreground">{thresholds.advanced} {record.weightUnit}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-medium text-muted-foreground">Elite</span>
-                                                    <span className="font-semibold text-foreground">{thresholds.elite} {record.weightUnit}</span>
-                                                </div>
-                                                {standardType && (
-                                                    <div className="text-center text-muted-foreground/80 text-[10px] pt-2">
-                                                        <p className="uppercase tracking-wider">
-                                                            Based on {standardType === 'smm' ? 'Skeletal Muscle Mass' : 'Bodyweight'}
-                                                        </p>
-                                                        {isTricepsExercise && (
-                                                            <p className="normal-case italic tracking-normal">*Machine is Seated Dip</p>
-                                                        )}
-                                                    </div>
-                                                )}
-                                              </div>
-                                            )}
-                                        </div>
-                                      )}
-                                    </Card>
-                                )
-                            })}
-                        </div>
-                    </div>
-                  )
-                ))}
+            <div className="space-y-8">
+              {CATEGORY_ORDER.map(category =>
+                groupedRecords[category] && groupedRecords[category].length > 0 ? (
+                  <PrCategorySection
+                    key={category}
+                    category={category}
+                    records={groupedRecords[category]}
+                    userProfile={userProfile}
+                    isEditing={isEditing}
+                    editedWeight={editState.weight}
+                    editedDate={editState.date}
+                    onEditClick={handleEditClick}
+                    onSaveEdit={handleSaveEdit}
+                    onCancelEdit={cancelEdit}
+                    onWeightChange={updateWeight}
+                    onDateChange={updateDate}
+                    isUpdating={updateRecordMutation.isPending}
+                  />
+                ) : null
+              )}
             </div>
           ) : (
              <div className="flex flex-col items-center justify-center h-40 text-center">
@@ -555,7 +298,7 @@ export default function MilestonesPage() {
             Completed Goals
           </CardTitle>
           <CardDescription>
-            All the goals you've set and conquered.
+            All the goals you&apos;ve set and conquered.
           </CardDescription>
         </CardHeader>
         <CardContent>

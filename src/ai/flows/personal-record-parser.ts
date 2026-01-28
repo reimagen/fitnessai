@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { ExerciseCategory } from '@/lib/types';
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
@@ -103,9 +102,10 @@ const parsePersonalRecordsFlow = ai.defineFlow(
       // Try with the default flash model first. It's cheaper and has higher rate limits.
       const result = await prompt(input);
       output = result.output;
-    } catch (e: any) {
+    } catch (error: unknown) {
       // If Flash fails (due to complexity, overload, or anything else), log it and try Pro.
-      console.warn(`Default model failed for parsePersonalRecords. Retrying with ${FALLBACK_MODEL}. Error: ${e.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Default model failed for parsePersonalRecords. Retrying with ${FALLBACK_MODEL}. Error: ${message}`);
       const result = await prompt(input, { model: FALLBACK_MODEL });
       output = result.output;
     }

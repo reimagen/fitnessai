@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { StrengthLevel, UserProfile } from '@/lib/types';
+import type { StrengthLevel } from '@/lib/types';
 
 
 // --- Zod Schemas and Types ---

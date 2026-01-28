@@ -55,21 +55,10 @@ export default function AnalysisPage() {
   const analysisToRender = userProfile?.strengthAnalysis?.result;
   const generatedDate = userProfile?.strengthAnalysis?.generatedDate;
 
-  const selectedLiftKey = getNormalizedExerciseName(selectedLift);
-  const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
-
   // Custom hooks for data processing
   const clientSideFindings = useStrengthFindings(personalRecords, userProfile || undefined);
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
-  const progressionChartData = useLiftProgression(selectedLift, selectedLiftKey, workoutLogs, personalRecords);
-  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(
-    selectedLift,
-    selectedLiftKey,
-    progressionChartData,
-    personalRecords,
-    userProfile || undefined
-  );
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
   // Handler for strength analysis
@@ -122,12 +111,17 @@ export default function AnalysisPage() {
       .map(([name]: [string, number]) => name);
   }, [workoutLogs]);
 
-  // Set default lift when available
-  useEffect(() => {
-    if (frequentlyLoggedLifts.length > 0 && !selectedLift) {
-      setSelectedLift(frequentlyLoggedLifts[0]);
-    }
-  }, [frequentlyLoggedLifts, selectedLift]);
+  const resolvedSelectedLift = selectedLift || frequentlyLoggedLifts[0] || '';
+  const selectedLiftKey = getNormalizedExerciseName(resolvedSelectedLift);
+  const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
+  const progressionChartData = useLiftProgression(resolvedSelectedLift, selectedLiftKey, workoutLogs, personalRecords);
+  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(
+    resolvedSelectedLift,
+    selectedLiftKey,
+    progressionChartData,
+    personalRecords,
+    userProfile || undefined
+  );
 
   // Handle lift progression analysis
   const handleAnalyzeProgression = () => {
@@ -152,7 +146,7 @@ export default function AnalysisPage() {
       );
 
     const analysisInput: AnalyzeLiftProgressionInput = {
-      exerciseName: selectedLift,
+      exerciseName: resolvedSelectedLift,
       exerciseHistory,
       userProfile: {
         age: userProfile.age,
@@ -329,7 +323,7 @@ export default function AnalysisPage() {
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
                   personalRecords={personalRecords}
-                  selectedLift={selectedLift}
+                  selectedLift={resolvedSelectedLift}
                   setSelectedLift={setSelectedLift}
                   frequentlyLoggedLifts={frequentlyLoggedLifts}
                 />

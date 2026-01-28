@@ -459,8 +459,8 @@ export function getStrengthThresholds(
   }
 
   const calculateThreshold = (ratio: number) => {
-    let weightInKg = (ratio * baseValueInKg) / ageFactor;
-    let finalWeight = (outputUnit === 'lbs') ? weightInKg / LBS_TO_KG : weightInKg;
+    const weightInKg = (ratio * baseValueInKg) / ageFactor;
+    const finalWeight = (outputUnit === 'lbs') ? weightInKg / LBS_TO_KG : weightInKg;
     // Use Math.ceil to ensure that if the threshold is e.g. 105.1, it becomes 106,
     // so a lift of 106 is correctly classified as meeting the threshold.
     return Math.ceil(finalWeight);

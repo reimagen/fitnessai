@@ -121,14 +121,15 @@ const weeklyWorkoutPlannerFlow = ai.defineFlow(
     try {
       // Try with the default flash model first
       result = await weeklyWorkoutPlannerPrompt(input);
-    } catch (e: any) {
+    } catch (error: unknown) {
       // If it fails with a 503-style error, try the pro model as a fallback
-      if (e.message?.includes('503') || e.message?.toLowerCase().includes('overloaded') || e.message?.toLowerCase().includes('unavailable')) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (message.includes('503') || message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('unavailable')) {
         console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
         result = await weeklyWorkoutPlannerPrompt(input, { model: FALLBACK_MODEL });
       } else {
         // Re-throw other errors
-        throw e;
+        throw error;
       }
     }
     

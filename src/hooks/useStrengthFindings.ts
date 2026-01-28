@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PersonalRecord, StrengthFinding } from '@/lib/types';
+import type { PersonalRecord, StrengthFinding, StrengthLevel } from '@/lib/types';
 import type { ImbalanceType } from '@/lib/analysis.config';
 import { IMBALANCE_TYPES, IMBALANCE_CONFIG, findBestPr, toTitleCase } from '@/lib/analysis.config';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
@@ -50,14 +50,13 @@ export function useStrengthFindings(
       const rank1 = strengthLevelRanks[lift1Level];
       const rank2 = strengthLevelRanks[lift2Level];
       const guidingLevelRank = (rank1 === -1 || rank2 === -1) ? -1 : Math.min(rank1, rank2);
-      const guidingLevel = Object.keys(strengthLevelRanks).find(
-        key => strengthLevelRanks[key] === guidingLevelRank
-      ) as string || 'N/A';
+      const guidingLevel =
+        (Object.entries(strengthLevelRanks).find(([, rank]) => rank === guidingLevelRank)?.[0] as StrengthLevel) || 'N/A';
 
       const ratioStandards = getStrengthRatioStandards(
         type,
         userProfile.gender as 'Male' | 'Female',
-        guidingLevel as any
+        guidingLevel
       );
 
       const balancedRangeDisplay = ratioStandards
