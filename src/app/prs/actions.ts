@@ -33,7 +33,7 @@ export async function parsePersonalRecordsAction(
   
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const { allowed, error } = await checkRateLimit(userId, "prParses", 10);
+    const { allowed, error } = await checkRateLimit(userId, "prParses");
     if (!allowed) {
       return { success: false, error };
     }

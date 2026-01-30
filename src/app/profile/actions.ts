@@ -6,7 +6,7 @@ import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftP
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
-import { format } from 'date-fns';
+import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 
 // Server Actions must be explicitly defined as async functions in this file.
@@ -41,12 +41,9 @@ export async function analyzeLiftProgressionAction(
 
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfileFromServer(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.liftProgressionAnalyses;
-
-    if (usage && usage.date === today && usage.count >= 20) {
-      return { success: false, error: "You have reached your daily limit of 20 analyses." };
+    const { allowed, error } = await checkRateLimit(userId, "liftProgressionAnalyses");
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 
@@ -104,12 +101,9 @@ export async function analyzeGoalsAction(
 
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfileFromServer(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.goalAnalyses;
-
-    if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 goal refinements." };
+    const { allowed, error } = await checkRateLimit(userId, "goalAnalyses");
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 

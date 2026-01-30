@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 const WeeklyWorkoutPlanInputSchema = z.object({
   userId: z.string().describe('The unique identifier for the user.'),
@@ -99,16 +101,9 @@ After analyzing and designing the plan based on the above, generate the full wee
 Generate the weekly workout plan string as the 'weeklyPlan' field in the output.
 `,
   config: {
-    safetySettings: [
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-    ],
+    safetySettings: DEFAULT_SAFETY_SETTINGS,
   },
 });
-
-const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const weeklyWorkoutPlannerFlow = ai.defineFlow(
   {
@@ -117,23 +112,12 @@ const weeklyWorkoutPlannerFlow = ai.defineFlow(
     outputSchema: WeeklyWorkoutPlanOutputSchema,
   },
   async (input) => {
-    let result;
-    try {
-      // Try with the default flash model first
-      result = await weeklyWorkoutPlannerPrompt(input);
-    } catch (error: unknown) {
-      // If it fails with a 503-style error, try the pro model as a fallback
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('503') || message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('unavailable')) {
-        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
-        result = await weeklyWorkoutPlannerPrompt(input, { model: FALLBACK_MODEL });
-      } else {
-        // Re-throw other errors
-        throw error;
-      }
-    }
-    
-    const {output} = result;
+    const output = await executePromptWithFallback(
+      weeklyWorkoutPlannerPrompt,
+      input,
+      { flowName: 'weeklyWorkoutPlanner' }
+    );
+
     if (!output?.weeklyPlan) {
       throw new Error('AI failed to generate a weekly workout plan string.');
     }

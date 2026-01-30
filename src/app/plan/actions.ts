@@ -2,8 +2,8 @@
 "use server";
 
 import { generateWeeklyWorkoutPlan, type WeeklyWorkoutPlanInput, type WeeklyWorkoutPlanOutput } from "@/ai/flows/weekly-workout-planner";
-import { getUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
-import { format } from "date-fns";
+import { incrementUsageCounter } from "@/lib/firestore-server";
+import { checkRateLimit } from "@/app/prs/rate-limiting";
 import { z } from "zod";
 
 const WeeklyPlanActionInputSchema = z.object({
@@ -34,12 +34,9 @@ export async function generateWeeklyWorkoutPlanAction(
 
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfile(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.planGenerations;
-
-    if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 plans generated." };
+    const { allowed, error } = await checkRateLimit(userId, "planGenerations");
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 

@@ -11,6 +11,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 const ParseWorkoutScreenshotInputSchema = z.object({
   photoDataUri: z
@@ -153,24 +155,9 @@ Here is the screenshot:
 {{media url=photoDataUri}}
 `,
   config: {
-    safetySettings: [
-      {
-        category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_HATE_SPEECH',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-      {
-        category: 'HARM_CATEGORY_HARASSMENT',
-        threshold: 'BLOCK_ONLY_HIGH',
-      },
-    ],
+    safetySettings: DEFAULT_SAFETY_SETTINGS,
   },
 });
-
-const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const parseWorkoutScreenshotFlow = ai.defineFlow(
   {
@@ -179,28 +166,22 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
     outputSchema: ParseWorkoutScreenshotOutputSchema,
   },
   async (input) => {
-    let output;
-    
-    // Step 1: Check if a date exists using the simple prompt.
-    const { output: dateCheckResult } = await dateCheckPrompt(input);
+    // Step 1: Check if a date exists using the simple prompt with fallback.
+    const dateCheckResult = await executePromptWithFallback(
+      dateCheckPrompt,
+      input,
+      { flowName: 'screenshotParser.dateCheck' }
+    );
     const shouldParseDate = dateCheckResult?.dateExists === 'Yes';
 
     const promptInputWithFlag = { ...input, parseDate: shouldParseDate };
 
-    try {
-      // Step 2: Call the main parser, telling it whether to look for a date.
-      const result = await mainParserPrompt(promptInputWithFlag);
-      output = result.output;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (message.includes('503') || message.toLowerCase().includes('overloaded') || message.toLowerCase().includes('unavailable')) {
-        console.log(`Default model unavailable, trying fallback: ${FALLBACK_MODEL}`);
-        const result = await mainParserPrompt(promptInputWithFlag, { model: FALLBACK_MODEL });
-        output = result.output;
-      } else {
-        throw error;
-      }
-    }
+    // Step 2: Call the main parser with fallback, telling it whether to look for a date.
+    const output = await executePromptWithFallback(
+      mainParserPrompt,
+      promptInputWithFlag,
+      { flowName: 'screenshotParser.mainParser' }
+    );
 
     if (!output) {
       throw new Error("AI failed to generate a response.");

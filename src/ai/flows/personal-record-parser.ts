@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
@@ -79,16 +81,9 @@ Here is the screenshot to parse:
 {{media url=photoDataUri}}
 `,
   config: {
-    safetySettings: [
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-    ],
+    safetySettings: DEFAULT_SAFETY_SETTINGS,
   },
 });
-
-const FALLBACK_MODEL = 'googleai/gemini-1.5-pro-latest';
 
 const parsePersonalRecordsFlow = ai.defineFlow(
   {
@@ -97,19 +92,12 @@ const parsePersonalRecordsFlow = ai.defineFlow(
     outputSchema: ParsePersonalRecordsOutputSchema,
   },
   async input => {
-    let output;
-    try {
-      // Try with the default flash model first. It's cheaper and has higher rate limits.
-      const result = await prompt(input);
-      output = result.output;
-    } catch (error: unknown) {
-      // If Flash fails (due to complexity, overload, or anything else), log it and try Pro.
-      const message = error instanceof Error ? error.message : String(error);
-      console.warn(`Default model failed for parsePersonalRecords. Retrying with ${FALLBACK_MODEL}. Error: ${message}`);
-      const result = await prompt(input, { model: FALLBACK_MODEL });
-      output = result.output;
-    }
-    
+    const output = await executePromptWithFallback(
+      prompt,
+      input,
+      { flowName: 'parsePersonalRecords' }
+    );
+
     if (!output) {
       throw new Error("AI failed to generate a response from either model. The model returned no output.");
     }

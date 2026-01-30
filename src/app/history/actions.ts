@@ -2,16 +2,15 @@
 "use server";
 
 import { parseWorkoutScreenshot, type ParseWorkoutScreenshotInput, type ParseWorkoutScreenshotOutput } from "@/ai/flows/screenshot-workout-parser";
-import { 
+import {
   addWorkoutLog as serverAddWorkoutLog,
   updateWorkoutLog as serverUpdateWorkoutLog,
   deleteWorkoutLog as serverDeleteWorkoutLog,
   getWorkoutLogs as serverGetWorkoutLogs,
-  getUserProfile,
   incrementUsageCounter,
 } from "@/lib/firestore-server";
 import type { WorkoutLog } from "@/lib/types";
-import { format } from "date-fns";
+import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 export async function parseWorkoutScreenshotAction(
   userId: string,
@@ -33,12 +32,9 @@ export async function parseWorkoutScreenshotAction(
 
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfile(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.screenshotParses;
-
-    if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 parses." };
+    const { allowed, error } = await checkRateLimit(userId, "screenshotParses");
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 
