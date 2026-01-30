@@ -22,6 +22,9 @@ import { Card } from "@/components/ui/card";
 import { useEffect } from "react";
 import { startOfDay } from 'date-fns';
 import { StepperInput } from "@/components/ui/stepper-input";
+import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
+import { useExerciseSuggestions } from "@/hooks/useExerciseSuggestions";
+import { getNormalizedExerciseName, classifiedExercises } from "@/lib/strength-standards";
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
@@ -54,6 +57,7 @@ type WorkoutLogFormProps = {
   editingLogId?: string | null;
   onCancelEdit?: () => void;
   isSubmitting?: boolean;
+  workoutLogs?: WorkoutLog[];
 };
 
 const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
@@ -70,10 +74,12 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   calories: 0
 };
 
-export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting }: WorkoutLogFormProps) {
+export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting, workoutLogs = [] }: WorkoutLogFormProps) {
+  const suggestions = useExerciseSuggestions(workoutLogs);
+
   const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
-    defaultValues: { 
+    defaultValues: {
       date: new Date().toISOString().split('T')[0],
       notes: "",
       exercises: [defaultExerciseValues],
@@ -122,23 +128,26 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     // Use replace() to hint local timezone parsing, then startOfDay to normalize
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
+    // Normalize exercise names
+    const normalizedExercises = values.exercises.map(ex => ({
+      id: ex.id || Math.random().toString(36).substring(2,9),
+      name: getNormalizedExerciseName(ex.name),
+      category: ex.category,
+      sets: ex.sets ?? 0,
+      reps: ex.reps ?? 0,
+      weight: ex.weight ?? 0,
+      weightUnit: ex.weightUnit || 'lbs',
+      distance: ex.distance ?? 0,
+      distanceUnit: ex.distanceUnit || 'mi',
+      duration: ex.duration ?? 0,
+      durationUnit: ex.durationUnit || 'min',
+      calories: ex.calories ?? 0,
+    }));
+
     onSubmitLog({
         date: normalizedDate,
         notes: values.notes,
-        exercises: values.exercises.map(ex => ({
-          id: ex.id || Math.random().toString(36).substring(2,9),
-          name: ex.name,
-          category: ex.category, 
-          sets: ex.sets ?? 0,
-          reps: ex.reps ?? 0,
-          weight: ex.weight ?? 0,
-          weightUnit: ex.weightUnit || 'lbs',
-          distance: ex.distance ?? 0,
-          distanceUnit: ex.distanceUnit || 'mi',
-          duration: ex.duration ?? 0,
-          durationUnit: ex.durationUnit || 'min',
-          calories: ex.calories ?? 0,
-        }))
+        exercises: normalizedExercises
     });
 
     if (!editingLogId) {
@@ -188,7 +197,13 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                       <FormItem className="md:col-span-2 lg:col-span-1">
                         <FormLabel>Exercise Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Bench Press" {...field} />
+                          <ExerciseCombobox
+                            value={field.value}
+                            onChange={field.onChange}
+                            suggestions={suggestions}
+                            classifiedExercises={classifiedExercises}
+                            placeholder="e.g., Bench Press"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -12,6 +12,7 @@ type HistoryManualLogCardProps = {
   onClose: () => void;
   onSubmitLog: (data: Omit<WorkoutLog, "id" | "userId">) => void;
   onCancelEdit: () => void;
+  workoutLogs: WorkoutLog[];
 };
 
 export function HistoryManualLogCard({
@@ -22,6 +23,7 @@ export function HistoryManualLogCard({
   onClose,
   onSubmitLog,
   onCancelEdit,
+  workoutLogs,
 }: HistoryManualLogCardProps) {
   if (!isOpen) return null;
 
@@ -52,6 +54,7 @@ export function HistoryManualLogCard({
           editingLogId={editingLogId}
           onCancelEdit={onCancelEdit}
           isSubmitting={isSubmitting}
+          workoutLogs={workoutLogs}
         />
       </CardContent>
     </Card>
