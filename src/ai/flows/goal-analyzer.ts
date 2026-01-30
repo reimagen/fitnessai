@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 // --- Zod Schemas and Types ---
 
@@ -105,21 +107,20 @@ const analyzeFitnessGoalsFlow = ai.defineFlow(
             *   **suggestedTimelineInDays**: (Optional) number.
         `,
         config: {
-          safetySettings: [
-            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-          ],
+          safetySettings: DEFAULT_SAFETY_SETTINGS,
         },
     });
 
-    const { output } = await prompt(input);
-    
+    const output = await executePromptWithFallback(
+      prompt,
+      input,
+      { flowName: 'analyzeFitnessGoals' }
+    );
+
     if (!output) {
       throw new Error("AI failed to generate a response for the goal analysis.");
     }
-    
+
     return output;
   }
 );

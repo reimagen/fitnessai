@@ -11,6 +11,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { StrengthLevel } from '@/lib/types';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 
 // --- Zod Schemas and Types ---
@@ -85,6 +87,9 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
     const prompt = ai.definePrompt({
         name: 'liftProgressionInsightPrompt',
         output: { schema: AnalyzeLiftProgressionOutputSchema },
+        config: {
+          safetySettings: DEFAULT_SAFETY_SETTINGS,
+        },
         prompt: `You are an expert strength and conditioning coach. Your task is to provide a qualitative, insightful, and actionable assessment. **You MUST NOT perform any calculations.** Your entire analysis MUST be based on the pre-calculated data and workout history provided below.
 
         **User Context:**
@@ -140,18 +145,22 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
         `,
     });
 
-    const { output } = await prompt({
+    const output = await executePromptWithFallback(
+      prompt,
+      {
         ...input,
         currentLevel: input.currentLevel || 'N/A',
         trendPercentage: input.trendPercentage ? input.trendPercentage.toFixed(1) : undefined,
         volumeTrendPercentage: input.volumeTrendPercentage ? input.volumeTrendPercentage.toFixed(1) : undefined,
         exerciseHistory: input.exerciseHistory.map(h => ({ ...h, date: new Date(h.date).toLocaleDateString() }))
-    });
-    
+      },
+      { flowName: 'analyzeLiftProgression' }
+    );
+
     if (!output) {
       throw new Error("AI failed to generate a response for the lift progression analysis.");
     }
-    
+
     return output;
   }
 );

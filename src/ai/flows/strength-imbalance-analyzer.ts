@@ -11,6 +11,8 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import type { StrengthLevel } from '@/lib/types';
+import { executePromptWithFallback } from '@/ai/utils';
+import { DEFAULT_SAFETY_SETTINGS } from '@/ai/config';
 
 const FitnessGoalForAnalysisSchema = z.object({
   description: z.string().describe("A specific fitness goal for the user."),
@@ -121,6 +123,9 @@ const bulkInsightPrompt = ai.definePrompt({
       }),
     },
     output: { schema: z.object({ analyses: z.array(AIAnalysisResultSchema) }) },
+    config: {
+      safetySettings: DEFAULT_SAFETY_SETTINGS,
+    },
     prompt: `You are an expert fitness coach acting as an analyst. Your role is to provide qualitative insights and recommendations based on pre-calculated data. **You MUST NOT perform any calculations or verify the data provided.** Your sole responsibility is to generate insightful, human-like commentary based on the data given to you.
 
 **User's Stats & Goals:**
@@ -261,13 +266,17 @@ const strengthImbalanceFlow = ai.defineFlow(
         };
     }
 
-    const { output: aiAnalyses } = await bulkInsightPrompt({
-        imbalances: imbalancesForAI,
-        userProfile: input.userProfile,
-    });
+    const aiAnalyses = await executePromptWithFallback(
+        bulkInsightPrompt,
+        {
+          imbalances: imbalancesForAI,
+          userProfile: input.userProfile,
+        },
+        { flowName: 'analyzeStrengthImbalances' }
+    );
     
     const finalFindings = input.clientSideFindings.map(finding => {
-        const aiResult = aiAnalyses?.analyses.find(a => a.imbalanceType === finding.imbalanceType && a.imbalanceFocus === finding.imbalanceFocus);
+        const aiResult = aiAnalyses?.analyses?.find(a => a.imbalanceType === finding.imbalanceType && a.imbalanceFocus === finding.imbalanceFocus);
         return {
             ...finding,
             insight: aiResult?.insight || "AI analysis could not be generated for this pair.",
