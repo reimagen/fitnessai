@@ -30,6 +30,7 @@ type LiftProgressionChartProps = {
   currentLiftLevel: StrengthLevel | null;
   trendImprovement: number | null;
   volumeTrend: number | null;
+  avgE1RM: number | null;
 };
 
 type TrophyShapeProps = {
@@ -137,6 +138,7 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
   currentLiftLevel,
   trendImprovement,
   volumeTrend,
+  avgE1RM,
 }) => {
   if (!selectedLift || chartData.length <= 1) {
     return null;
@@ -150,6 +152,11 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
           {currentLiftLevel && currentLiftLevel !== "N/A" && (
             <span>
               Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
+            </span>
+          )}
+          {avgE1RM !== null && (
+            <span>
+              e1RM: <Badge variant={getLevelBadgeVariant('Beginner')}>{Math.round(avgE1RM)} lbs</Badge>
             </span>
           )}
           {trendImprovement !== null && (

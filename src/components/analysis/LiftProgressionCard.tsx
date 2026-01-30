@@ -39,12 +39,13 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
     personalRecords
   );
 
-  const { currentLiftLevel, trendImprovement, volumeTrend } = useLiftTrends(
+  const { currentLiftLevel, trendImprovement, volumeTrend, avgE1RM } = useLiftTrends(
     selectedLift,
     selectedLiftKey,
     progressionChartData,
     personalRecords,
-    userProfile
+    userProfile,
+    workoutLogs
   );
 
   const { handleAnalyzeProgression, isPending } = useLiftProgressionAnalysis({
@@ -107,6 +108,7 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
           currentLiftLevel={currentLiftLevel}
           trendImprovement={trendImprovement}
           volumeTrend={volumeTrend}
+          avgE1RM={avgE1RM}
         />
 
         <div className="pt-4 border-t">
