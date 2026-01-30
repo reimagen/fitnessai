@@ -11,7 +11,7 @@ const PUBLIC_ROUTES = ["/signin"];
 const PENDING_ROUTE = "/pending";
 
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, hasInitialized } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [whitelistStatus, setWhitelistStatus] = useState<{ email: string; status: boolean } | null>(null);
@@ -36,8 +36,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [isCheckingWhitelist, user?.email]);
 
   useEffect(() => {
-    // Don't perform redirects until all loading is complete
-    if (isLoading || isCheckingWhitelist) {
+    // Don't perform redirects until auth has initialized and all loading is complete
+    if (!hasInitialized || isLoading || isCheckingWhitelist) {
       return;
     }
 
@@ -53,7 +53,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       }
       return;
     }
-    
+
     // --- User is Authenticated from here on ---
 
     // 2. User is on a public route (e.g., /signin), redirect away.
@@ -71,10 +71,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
       router.push("/");
     }
 
-  }, [user, isLoading, isWhitelisted, isCheckingWhitelist, router, pathname]);
+  }, [user, isLoading, isWhitelisted, isCheckingWhitelist, hasInitialized, router, pathname]);
 
-  // While loading authentication state or whitelist status, show a full-page loader
-  if (isLoading || isCheckingWhitelist) {
+  // While loading authentication state, whitelist status, or waiting for initial auth check, show a full-page loader
+  if (!hasInitialized || isLoading || isCheckingWhitelist) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />

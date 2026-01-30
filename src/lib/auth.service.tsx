@@ -10,6 +10,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  hasInitialized: boolean;
   signUpWithEmail: (email:string, password:string) => Promise<void>;
   signInWithEmail: (email:string, password:string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const lastSessionUid = useRef<string | null>(null);
 
   useEffect(() => {
@@ -39,16 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser && lastSessionUid.current !== currentUser.uid) {
         lastSessionUid.current = currentUser.uid;
-        void ensureSessionCookie(currentUser);
+        await ensureSessionCookie(currentUser);
       }
       if (!currentUser) {
         lastSessionUid.current = null;
       }
+      setUser(currentUser);
+      setIsLoading(false);
+      setHasInitialized(true);
     });
 
     // Cleanup subscription on unmount
@@ -72,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await sendPasswordResetEmail(auth, email);
   };
 
-  const value: AuthContextType = { user, isLoading, signUpWithEmail, signInWithEmail, signOut: signOutUser, sendPasswordReset };
+  const value: AuthContextType = { user, isLoading, hasInitialized, signUpWithEmail, signInWithEmail, signOut: signOutUser, sendPasswordReset };
 
   return (
     <AuthContext.Provider value={value}>
