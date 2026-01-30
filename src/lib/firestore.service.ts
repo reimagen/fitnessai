@@ -91,7 +91,10 @@ export function useCurrentWeekWorkouts(enabled: boolean = true) {
         queryKey,
         queryFn: () => getWorkoutLogs(user!.uid, { startDate: weekStartDate, endDate: weekEndDate }),
         enabled: !!user && enabled,
-        staleTime: 1000 * 60 * 60, // 1 hour cache
+        staleTime: 1000 * 60 * 2, // 2 minutes instead of 1 hour
+        gcTime: 1000 * 60 * 10,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: false,
     });
 }
 

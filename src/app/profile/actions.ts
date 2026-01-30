@@ -1,6 +1,7 @@
 
 'use server';
 
+import { revalidateTag } from 'next/cache';
 import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
@@ -24,6 +25,9 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
         throw new Error("User not authenticated.");
     }
     await updateUserProfileFromServer(userId, data);
+
+    // Invalidate server-side cache so next request fetches fresh data
+    revalidateTag(`user-profile-${userId}`);
 }
 
 export async function analyzeLiftProgressionAction(
@@ -64,9 +68,12 @@ export async function analyzeLiftProgressionAction(
     };
     
     await updateUserProfileFromServer(userId, updatePayload);
-    
+
     // Increment usage counter on success
     await incrementUsageCounter(userId, 'liftProgressionAnalyses');
+
+    // Invalidate server-side cache
+    revalidateTag(`user-profile-${userId}`);
 
     return { success: true, data: analysisData };
   } catch (error) {
@@ -120,6 +127,8 @@ export async function analyzeGoalsAction(
     // Save the analysis result to the user's profile
     await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
 
+    // Invalidate server-side cache
+    revalidateTag(`user-profile-${userId}`);
 
     return { success: true, data: analysisData };
   } catch (error) {
