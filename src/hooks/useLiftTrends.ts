@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import type { PersonalRecord, UserProfile, StrengthLevel } from '@/lib/types';
+import type { PersonalRecord, UserProfile, StrengthLevel, WorkoutLog } from '@/lib/types';
 import { getStrengthLevel } from '@/lib/strength-standards';
-import { findBestPr } from '@/analysis/analysis.config';
+import { findBestPr, find6WeekAvgE1RM } from '@/analysis/analysis.config';
 
 interface ProgressionChartData {
   chartData: Array<{
@@ -19,6 +19,7 @@ interface LiftTrendsResult {
   currentLiftLevel: StrengthLevel | null;
   trendImprovement: number | null;
   volumeTrend: number | null;
+  avgE1RM: number | null;
 }
 
 export function useLiftTrends(
@@ -26,7 +27,8 @@ export function useLiftTrends(
   selectedLiftKey: string,
   progressionChartData: ProgressionChartData | undefined,
   personalRecords: PersonalRecord[] | undefined,
-  userProfile: UserProfile | undefined
+  userProfile: UserProfile | undefined,
+  workoutLogs: WorkoutLog[] | undefined
 ): LiftTrendsResult {
   return useMemo(() => {
     if (!selectedLift || !progressionChartData?.chartData || progressionChartData.chartData.length < 2) {
@@ -79,10 +81,19 @@ export function useLiftTrends(
       return null;
     };
 
+    let avgE1RM: number | null = null;
+    if (workoutLogs) {
+      const result = find6WeekAvgE1RM(workoutLogs, [selectedLiftKey]);
+      if (result) {
+        avgE1RM = result.weight;
+      }
+    }
+
     return {
       currentLiftLevel,
       trendImprovement: calculateTrend('e1RM'),
       volumeTrend: calculateTrend('volume'),
+      avgE1RM,
     };
-  }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile]);
+  }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile, workoutLogs]);
 }

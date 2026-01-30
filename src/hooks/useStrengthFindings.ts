@@ -1,18 +1,18 @@
 import { useMemo } from 'react';
-import type { PersonalRecord, StrengthFinding, StrengthLevel } from '@/lib/types';
+import type { PersonalRecord, StrengthFinding, StrengthLevel, WorkoutLog } from '@/lib/types';
 import type { ImbalanceType } from '@/analysis/analysis.config';
-import { IMBALANCE_TYPES, IMBALANCE_CONFIG, findBestPr } from '@/analysis/analysis.config';
+import { IMBALANCE_TYPES, IMBALANCE_CONFIG, find6WeekAvgE1RM } from '@/analysis/analysis.config';
 import { toTitleCase } from '@/lib/utils';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import type { UserProfile } from '@/lib/types';
 import type { ImbalanceFocus } from '@/analysis/analysis.utils';
 
 export function useStrengthFindings(
-  personalRecords: PersonalRecord[] | undefined,
+  workoutLogs: WorkoutLog[] | undefined,
   userProfile: UserProfile | undefined
 ) {
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
-    if (!personalRecords || !userProfile || !userProfile.gender) {
+    if (!workoutLogs || !userProfile || !userProfile.gender) {
       return [];
     }
 
@@ -27,16 +27,31 @@ export function useStrengthFindings(
 
     IMBALANCE_TYPES.forEach(type => {
       const config = IMBALANCE_CONFIG[type];
-      const lift1 = findBestPr(personalRecords, config.lift1Options);
-      const lift2 = findBestPr(personalRecords, config.lift2Options);
+      const lift1 = find6WeekAvgE1RM(workoutLogs, config.lift1Options);
+      const lift2 = find6WeekAvgE1RM(workoutLogs, config.lift2Options);
 
       if (!lift1 || !lift2) {
         findings.push({ imbalanceType: type, hasData: false });
         return;
       }
 
-      const lift1Level = getStrengthLevel(lift1, userProfile);
-      const lift2Level = getStrengthLevel(lift2, userProfile);
+      const lift1Level = getStrengthLevel({
+        id: 'synthetic',
+        userId: '',
+        exerciseName: lift1.exerciseName,
+        weight: lift1.weight,
+        weightUnit: lift1.weightUnit,
+        date: new Date(),
+      } as PersonalRecord, userProfile);
+
+      const lift2Level = getStrengthLevel({
+        id: 'synthetic',
+        userId: '',
+        exerciseName: lift2.exerciseName,
+        weight: lift2.weight,
+        weightUnit: lift2.weightUnit,
+        date: new Date(),
+      } as PersonalRecord, userProfile);
 
       const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
       const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
@@ -84,9 +99,11 @@ export function useStrengthFindings(
         lift1Name: toTitleCase(lift1.exerciseName),
         lift1Weight: lift1.weight,
         lift1Unit: lift1.weightUnit,
+        lift1SessionCount: lift1.sessionCount,
         lift2Name: toTitleCase(lift2.exerciseName),
         lift2Weight: lift2.weight,
         lift2Unit: lift2.weightUnit,
+        lift2SessionCount: lift2.sessionCount,
         userRatio: `${ratio.toFixed(2)}:1`,
         targetRatio: targetRatioDisplay,
         balancedRange: balancedRangeDisplay,
@@ -97,7 +114,7 @@ export function useStrengthFindings(
     });
 
     return findings;
-  }, [personalRecords, userProfile]);
+  }, [workoutLogs, userProfile]);
 
   return clientSideFindings;
 }

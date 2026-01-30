@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Zap, Lightbulb, Scale } from 'lucide-react';
 import { format } from 'date-fns/format';
 import React from 'react';
-import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput } from '@/lib/types';
+import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput, WorkoutLog } from '@/lib/types';
 import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/useToast';
-import { IMBALANCE_CONFIG, IMBALANCE_TYPES, findBestPr } from '@/analysis/analysis.config';
+import { IMBALANCE_CONFIG, IMBALANCE_TYPES, find6WeekAvgE1RM } from '@/analysis/analysis.config';
 import { toTitleCase } from '@/lib/utils';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/analysis/analysis.utils';
@@ -16,6 +16,7 @@ import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/anal
 interface StrengthBalanceCardProps {
   isLoading: boolean;
   userProfile: UserProfile | undefined;
+  workoutLogs: WorkoutLog[] | undefined;
   personalRecords: PersonalRecord[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
 }
@@ -38,8 +39,8 @@ const getNextStrengthLevel = (currentLevel: StrengthLevel) => {
   return null;
 };
 
-const buildClientSideFindings = (personalRecords: PersonalRecord[] | undefined, userProfile: UserProfile | undefined) => {
-  if (!personalRecords || !userProfile || !userProfile.gender) {
+const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProfile: UserProfile | undefined) => {
+  if (!workoutLogs || !userProfile || !userProfile.gender) {
     return [];
   }
 
@@ -47,16 +48,31 @@ const buildClientSideFindings = (personalRecords: PersonalRecord[] | undefined, 
 
   IMBALANCE_TYPES.forEach(type => {
     const config = IMBALANCE_CONFIG[type];
-    const lift1 = findBestPr(personalRecords, config.lift1Options);
-    const lift2 = findBestPr(personalRecords, config.lift2Options);
+    const lift1 = find6WeekAvgE1RM(workoutLogs, config.lift1Options);
+    const lift2 = find6WeekAvgE1RM(workoutLogs, config.lift2Options);
 
     if (!lift1 || !lift2) {
       findings.push({ imbalanceType: type, hasData: false });
       return;
     }
 
-    const lift1Level = getStrengthLevel(lift1, userProfile);
-    const lift2Level = getStrengthLevel(lift2, userProfile);
+    const lift1Level = getStrengthLevel({
+      id: 'synthetic',
+      userId: '',
+      exerciseName: lift1.exerciseName,
+      weight: lift1.weight,
+      weightUnit: lift1.weightUnit,
+      date: new Date(),
+    } as PersonalRecord, userProfile);
+
+    const lift2Level = getStrengthLevel({
+      id: 'synthetic',
+      userId: '',
+      exerciseName: lift2.exerciseName,
+      weight: lift2.weight,
+      weightUnit: lift2.weightUnit,
+      date: new Date(),
+    } as PersonalRecord, userProfile);
 
     const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
     const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;
@@ -94,9 +110,11 @@ const buildClientSideFindings = (personalRecords: PersonalRecord[] | undefined, 
       lift1Name: toTitleCase(lift1.exerciseName),
       lift1Weight: lift1.weight,
       lift1Unit: lift1.weightUnit,
+      lift1SessionCount: lift1.sessionCount,
       lift2Name: toTitleCase(lift2.exerciseName),
       lift2Weight: lift2.weight,
       lift2Unit: lift2.weightUnit,
+      lift2SessionCount: lift2.sessionCount,
       userRatio: `${ratio.toFixed(2)}:1`,
       targetRatio: targetRatioDisplay,
       balancedRange: balancedRangeDisplay,
@@ -150,8 +168,8 @@ const StrengthBalanceFindingCard: React.FC<{
         </CardTitle>
         <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
           <Scale className="h-8 w-8 text-muted-foreground/50 mb-2" />
-          <p className="text-sm font-semibold">Log PRs to analyze</p>
-          <p className="text-xs mt-1">{requirements}</p>
+          <p className="text-sm font-semibold">Log workouts to analyze</p>
+          <p className="text-xs text-muted-foreground mt-1">Requires 6 weeks of data</p>
         </div>
       </Card>
     );
@@ -165,8 +183,28 @@ const StrengthBalanceFindingCard: React.FC<{
     <Card className="p-4 bg-secondary/50 flex flex-col">
       <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
       <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
-        <p>{dataFinding.lift1Name}: <span className="font-bold text-foreground">{dataFinding.lift1Weight} {dataFinding.lift1Unit}</span></p>
-        <p>{dataFinding.lift2Name}: <span className="font-bold text-foreground">{dataFinding.lift2Weight} {dataFinding.lift2Unit}</span></p>
+        <p>
+          {dataFinding.lift1Name}:{' '}
+          <span className="font-bold text-foreground">
+            {dataFinding.lift1Weight} {dataFinding.lift1Unit}
+          </span>
+          {dataFinding.lift1SessionCount && (
+            <span className="text-xs text-muted-foreground ml-1">
+              ({dataFinding.lift1SessionCount} sessions)
+            </span>
+          )}
+        </p>
+        <p>
+          {dataFinding.lift2Name}:{' '}
+          <span className="font-bold text-foreground">
+            {dataFinding.lift2Weight} {dataFinding.lift2Unit}
+          </span>
+          {dataFinding.lift2SessionCount && (
+            <span className="text-xs text-muted-foreground ml-1">
+              ({dataFinding.lift2SessionCount} sessions)
+            </span>
+          )}
+        </p>
         <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift1Level !== 'N/A' ? dataFinding.lift1Level : 'N/A'}</span></p>
         <p>Level: <span className="font-medium text-foreground capitalize">{dataFinding.lift2Level !== 'N/A' ? dataFinding.lift2Level : 'N/A'}</span></p>
         <p>Your Ratio: <span className="font-bold text-foreground">{dataFinding.userRatio}</span></p>
@@ -220,6 +258,7 @@ const StrengthBalanceFindingCard: React.FC<{
 const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   isLoading,
   userProfile,
+  workoutLogs,
   personalRecords,
   strengthAnalysis,
 }) => {
@@ -227,8 +266,8 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   const analyzeStrengthMutation = useAnalyzeStrength();
 
   const clientSideFindings = React.useMemo(
-    () => buildClientSideFindings(personalRecords, userProfile),
-    [personalRecords, userProfile],
+    () => buildClientSideFindings(workoutLogs, userProfile),
+    [workoutLogs, userProfile],
   );
 
   const handleAnalyzeStrength = () => {
@@ -254,7 +293,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
               <Scale className="h-6 w-6 text-primary" />Strength Balance Analysis
             </CardTitle>
             <CardDescription className="mt-2">
-              Applying a balanced approach to strength training protects you from injury. Uses your PRs for analysis.
+              Uses 6-week average e1RM for analysis. Requires consistent workout logging.
               {generatedDate && (
                 <span className="block text-xs mt-1 text-muted-foreground/80">
                   Last analysis on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}

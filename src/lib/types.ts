@@ -6,9 +6,11 @@ export interface StrengthFinding {
   lift1Name: string;
   lift1Weight: number;
   lift1Unit: 'kg' | 'lbs';
+  lift1SessionCount?: number;
   lift2Name: string;
   lift2Weight: number;
   lift2Unit: 'kg' | 'lbs';
+  lift2SessionCount?: number;
   userRatio: string;
   targetRatio: string;
   balancedRange: string;

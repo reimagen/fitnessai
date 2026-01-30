@@ -199,12 +199,6 @@ export default function AnalysisPage() {
                   timeRange={timeRange}
                 />
 
-                <StrengthBalanceCard
-                  isLoading={isLoading}
-                  userProfile={userProfile!}
-                  personalRecords={personalRecords}
-                  strengthAnalysis={userProfile?.strengthAnalysis}
-                />
                 <LiftProgressionCard
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
@@ -212,6 +206,13 @@ export default function AnalysisPage() {
                   selectedLift={resolvedSelectedLift}
                   setSelectedLift={setSelectedLift}
                   frequentlyLoggedLifts={frequentlyLoggedLifts}
+                />
+                <StrengthBalanceCard
+                  isLoading={isLoading}
+                  userProfile={userProfile!}
+                  workoutLogs={workoutLogs}
+                  personalRecords={personalRecords}
+                  strengthAnalysis={userProfile?.strengthAnalysis}
                 />
                 <CardioAnalysisCard
                   cardioAnalysisData={cardioAnalysisData}
