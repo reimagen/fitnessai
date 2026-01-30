@@ -108,7 +108,7 @@ export function find6WeekAvgE1RM(
 
   return {
     exerciseName: result.exerciseName,
-    weight: displayWeight,
+    weight: Math.round(displayWeight),
     weightUnit: result.displayUnit,
     sessionCount: result.sessionCount,
   };
