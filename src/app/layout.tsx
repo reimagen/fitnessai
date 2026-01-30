@@ -7,6 +7,8 @@ import { BottomNavigationBar } from '@/components/layout/BottomNavigationBar';
 import { AuthProvider } from '@/lib/auth.service';
 import { AuthGate } from '@/components/auth/AuthGate';
 
+export const dynamic = 'force-dynamic';
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
