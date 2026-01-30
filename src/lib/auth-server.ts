@@ -1,5 +1,7 @@
 
 import { cookies } from 'next/headers';
+import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { getAdminAuth, getAdminDb } from './firebase-admin';
 import { UserProfile } from './types';
 import { userProfileConverter } from './firestore-server';
@@ -25,21 +27,32 @@ export async function getAuthenticatedUser(): Promise<{ id: string; email: strin
   }
 }
 
-export async function getCurrentUserProfile(): Promise<{ data: UserProfile | null, notFound: boolean }> {
+export const getCurrentUserProfile = cache(async (): Promise<{ data: UserProfile | null, notFound: boolean }> => {
     const user = await getAuthenticatedUser();
     if (!user) {
         return { data: null, notFound: true };
     }
 
-    const adminDb = getAdminDb();
-    const profileDocRef = adminDb.collection('users').doc(user.id).withConverter(userProfileConverter);
-    const docSnap = await profileDocRef.get();
+    const getCachedProfile = unstable_cache(
+        async (userId: string) => {
+            const adminDb = getAdminDb();
+            const profileDocRef = adminDb.collection('users').doc(userId).withConverter(userProfileConverter);
+            const docSnap = await profileDocRef.get();
 
-    if (!docSnap.exists) {
-        // We have an authenticated user, but no profile document yet.
-        return { data: null, notFound: true };
-    }
-    
-    // We have a user and a profile
-    return { data: docSnap.data() as UserProfile, notFound: false };
-}
+            if (!docSnap.exists) {
+                // We have an authenticated user, but no profile document yet.
+                return { data: null, notFound: true };
+            }
+
+            // We have a user and a profile
+            return { data: docSnap.data() as UserProfile, notFound: false };
+        },
+        ['user-profile'],
+        {
+            revalidate: 300, // 5 minutes
+            tags: [`user-profile-${user.id}`]
+        }
+    );
+
+    return getCachedProfile(user.id);
+});
