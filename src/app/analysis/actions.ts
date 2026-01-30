@@ -2,9 +2,9 @@
 'use server';
 
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
-import { updateUserProfile, getUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
+import { updateUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
 import type { StoredStrengthAnalysis } from "@/lib/types";
-import { format } from "date-fns";
+import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 
 export async function analyzeStrengthAction(
@@ -22,12 +22,9 @@ export async function analyzeStrengthAction(
 
   // Bypass limit check in development environment
   if (process.env.NODE_ENV !== 'development') {
-    const userProfile = await getUserProfile(userId);
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const usage = userProfile?.aiUsage?.strengthAnalyses;
-
-    if (usage && usage.date === today && usage.count >= 5) {
-      return { success: false, error: "You have reached your daily limit of 5 analyses." };
+    const { allowed, error } = await checkRateLimit(userId, "strengthAnalyses");
+    if (!allowed) {
+      return { success: false, error };
     }
   }
 
