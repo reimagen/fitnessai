@@ -95,6 +95,7 @@ export function HistoryPageContent() {
           onClose={() => setActiveForm("none")}
           onSubmitLog={handleManualLogSubmit}
           onCancelEdit={handleCancelEdit}
+          workoutLogs={workoutLogs || []}
         />
       </div>
 

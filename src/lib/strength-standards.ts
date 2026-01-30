@@ -291,12 +291,47 @@ export function getStrengthRatioStandards(
  * A map of common exercise name variations to their canonical names.
  */
 export const LIFT_NAME_ALIASES: Record<string, string> = {
+  // Existing aliases
   'lat pull': 'lat pulldown',
   'biceps curl': 'bicep curl',
   'reverse fly': 'reverse flys',
   'tricep extension': 'triceps',
   'tricep pushdown': 'triceps',
   'squats': 'squat',
+
+  // Plural/singular variations
+  'abdominal crunches': 'abdominal crunch',
+  'abdominal crunch': 'abdominal crunch',
+  'abductors': 'abductor',
+  'adductors': 'adductor',
+  'back extensions': 'back extension',
+  'bench presses': 'bench press',
+  'bicep curls': 'bicep curl',
+  'butterflies': 'butterfly',
+  'butterfly': 'butterfly',
+  'chest presses': 'chest press',
+  'hip thrusts': 'hip thrust',
+  'lat pulldowns': 'lat pulldown',
+  'leg curls': 'leg curl',
+  'leg extensions': 'leg extension',
+  'leg presses': 'leg press',
+  'overhead presses': 'overhead press',
+  'rotary torsos': 'rotary torso',
+  'seated rows': 'seated row',
+  'shoulder presses': 'shoulder press',
+
+  // Common abbreviations
+  'db': 'dumbbell',
+  'dbs': 'dumbbell',
+  'bb': 'barbell',
+  'bbs': 'barbell',
+
+  // Equipment prefix normalization (these help standardize equipment descriptors)
+  'cable glute kickbacks': 'cable glute kickback',
+  'cable glute kickback': 'cable glute kickback',
+  'cable glute raises': 'cable glute raises',
+  'bulgarian split squats': 'bulgarian split squat',
+  'bulgarian split squat': 'bulgarian split squat',
 };
 
 /**
