@@ -3,6 +3,7 @@ import {
   CARDIO_HEALTH_BASELINE,
   WEIGHT_GOAL_MULTIPLIERS,
   CARDIO_EXPERIENCE_MULTIPLIERS,
+  CARDIO_ACTIVITY_LEVEL_MULTIPLIERS,
   CARDIO_STRETCH_MULTIPLIERS,
   CARDIO_TARGET_BOUNDS,
 } from './constants';
@@ -18,9 +19,10 @@ export interface CardioTargets {
  * Formula:
  * 1. Health Baseline: 600 kcal/week (equivalent to CDC's 150 min moderate cardio/week)
  * 2. Weight Goal Adjustment (lose: 1.4x, maintain: 1.0x, gain: 0.8x)
- * 3. Experience Level Adjustment (beginner: 0.8x, intermediate: 1.0x, advanced: 1.2x)
- * 4. Stretch Goal Multiplier (beginner: 1.20x, intermediate: 1.25x, advanced: 1.30x)
- * 5. Safety Bounds: 400-2500 kcal base, 500-3000 kcal stretch
+ * 3. Activity Level Adjustment (sedentary: 0.6x, lightly_active: 0.8x, moderately_active: 1.0x, very_active: 1.2x, extremely_active: 1.4x)
+ * 4. Experience Level Adjustment (beginner: 0.8x, intermediate: 1.0x, advanced: 1.2x)
+ * 5. Stretch Goal Multiplier (beginner: 1.20x, intermediate: 1.25x, advanced: 1.30x)
+ * 6. Safety Bounds: 400-2500 kcal base, 500-3000 kcal stretch
  */
 export function calculateWeeklyCardioTargets(profile: UserProfile): CardioTargets {
   let baseGoal = CARDIO_HEALTH_BASELINE;
@@ -28,6 +30,11 @@ export function calculateWeeklyCardioTargets(profile: UserProfile): CardioTarget
   // Apply weight goal adjustment
   if (profile.weightGoal) {
     baseGoal *= WEIGHT_GOAL_MULTIPLIERS[profile.weightGoal];
+  }
+
+  // Apply activity level adjustment
+  if (profile.activityLevel) {
+    baseGoal *= CARDIO_ACTIVITY_LEVEL_MULTIPLIERS[profile.activityLevel];
   }
 
   // Apply experience level adjustment

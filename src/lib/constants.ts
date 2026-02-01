@@ -36,6 +36,14 @@ export const CARDIO_EXPERIENCE_MULTIPLIERS = {
   advanced: 1.2,
 } as const;
 
+export const CARDIO_ACTIVITY_LEVEL_MULTIPLIERS = {
+  sedentary: 0.6,
+  lightly_active: 0.8,
+  moderately_active: 1.0,
+  very_active: 1.2,
+  extremely_active: 1.4,
+} as const;
+
 export const CARDIO_STRETCH_MULTIPLIERS = {
   beginner: 1.20,
   intermediate: 1.25,
