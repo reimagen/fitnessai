@@ -11,6 +11,7 @@ import { DEFAULT_WEEKLY_CARDIO_MIN_GOAL, DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL, CAR
 import { cn } from '@/lib/utils';
 import { Flame, Info } from 'lucide-react';
 import { calculateExerciseCalories, calculateWeeklyCardioTarget } from '@/lib/calorie-calculator';
+import { calculateWeeklyCardioTargets } from '@/lib/cardio-target-calculator';
 
 type WeeklyCardioTrackerProps = {
   workoutLogs: WorkoutLog[];
@@ -105,15 +106,22 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
   const hasEstimatedInWeek = Array.from(weeklyData.values()).some(day => day.hasEstimatedCalories);
 
-  // Determine goals based on cardio goal mode
+  // Determine goals based on calculation method
   let minGoal: number;
   let maxGoal: number;
 
-  if (userProfile?.cardioGoalMode === 'auto') {
+  if (userProfile?.cardioCalculationMethod === 'auto') {
+    // Use new simplified calculation method
+    const calculatedTargets = calculateWeeklyCardioTargets(userProfile);
+    minGoal = calculatedTargets.baseGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
+    maxGoal = calculatedTargets.stretchGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
+  } else if (userProfile?.cardioGoalMode === 'auto') {
+    // Fall back to legacy calculation method for backward compatibility
     const calculatedTargets = calculateWeeklyCardioTarget(userProfile);
     minGoal = calculatedTargets?.baseTarget || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
     maxGoal = calculatedTargets?.stretchTarget || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
   } else {
+    // Manual entry - use saved values
     minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
     maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
   }
@@ -171,7 +179,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
         <CardDescription className="flex flex-col gap-2">
           <div>
             {userProfile
-              ? `${userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
+              ? `${userProfile.cardioCalculationMethod === 'auto' ? 'Personalized targets based on your activity level and goals.' : userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
               : "Set your profile goals to track your weekly cardio."}
           </div>
           {userProfile?.cardioCalculationMethod === 'auto' && (
