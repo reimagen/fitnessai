@@ -9,7 +9,7 @@ import type { UserProfile } from "@/lib/types";
 export const buildParsedExercises = (parsedData: ParseWorkoutScreenshotOutput): Exercise[] => {
   return parsedData.exercises.map((ex) => {
     // Determine calorie source: manual if calories were in parsed data, otherwise will be estimated
-    const caloriesSource = ((ex.calories ?? 0) > 0 ? 'manual' : 'estimated') as const;
+    const caloriesSource: Exercise["caloriesSource"] = (ex.calories ?? 0) > 0 ? "manual" : "estimated";
 
     const exercise: Exercise = {
       id: Math.random().toString(36).substring(2, 9),
@@ -76,7 +76,7 @@ export const buildWorkoutLogPayload = (
         (!ex.caloriesSource && ex.calories && ex.calories > 0);
       const calculatedCalories = userProfile ? calculateExerciseCalories(ex, userProfile, workoutLogs || []) : 0;
       const finalCalories = hasManualCalories ? ex.calories : calculatedCalories;
-      const finalCaloriesSource = (hasManualCalories ? 'manual' : 'estimated') as const;
+      const finalCaloriesSource: Exercise["caloriesSource"] = hasManualCalories ? "manual" : "estimated";
 
       return {
         ...ex,

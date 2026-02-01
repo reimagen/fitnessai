@@ -1,5 +1,6 @@
 import { isWithinInterval, startOfWeek, subDays, subWeeks } from "date-fns";
 import type { UserProfile, WorkoutLog } from "@/lib/types";
+import { calculateRecentWeeklyCardioAverage, resolveWeeklyCardioGoal } from "@/lib/cardio-target-calculator";
 import { FOUR_WEEKS } from "@/lib/constants";
 
 export type WeeklyCardioSummary = { label: string; calories: number };
@@ -9,7 +10,9 @@ export const calculateWeeklyCardioSummaries = (
   userProfile: UserProfile,
   today = new Date()
 ) => {
-  if (!userProfile.weeklyCardioCalorieGoal) return null;
+  const recentWeeklyAverage = calculateRecentWeeklyCardioAverage(workoutLogs) ?? undefined;
+  const weeklyGoal = resolveWeeklyCardioGoal(userProfile, { recentWeeklyAverage });
+  if (!weeklyGoal) return null;
 
   const startOfThisWeek = startOfWeek(today, { weekStartsOn: 0 });
   const endOfLastCompletedWeek = subDays(startOfThisWeek, 1);
@@ -42,6 +45,6 @@ export const calculateWeeklyCardioSummaries = (
   return {
     summaries,
     totalCalories,
-    weeklyGoal: userProfile.weeklyCardioCalorieGoal,
+    weeklyGoal,
   };
 };

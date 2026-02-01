@@ -211,7 +211,6 @@ export default function AnalysisPage() {
                   isLoading={isLoading}
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
-                  personalRecords={personalRecords}
                   strengthAnalysis={userProfile?.strengthAnalysis}
                 />
                 <CardioAnalysisCard

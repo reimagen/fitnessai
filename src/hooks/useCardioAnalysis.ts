@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { Exercise, WorkoutLog, UserProfile } from '@/lib/types';
 import { toTitleCase } from '@/lib/utils';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
+import { calculateRecentWeeklyCardioAverage, resolveWeeklyCardioGoal } from '@/lib/cardio-target-calculator';
 import {
   format,
   startOfMonth,
@@ -146,7 +147,10 @@ export function useCardioAnalysis(
     }));
 
     let calorieSummary = '';
-    const weeklyGoal = userProfile?.weeklyCardioCalorieGoal;
+    const recentWeeklyAverage = workoutLogs
+      ? calculateRecentWeeklyCardioAverage(workoutLogs) ?? undefined
+      : undefined;
+    const weeklyGoal = resolveWeeklyCardioGoal(userProfile, { recentWeeklyAverage });
     let weeklyAverage = 0;
 
     if (timeRange === 'weekly') {

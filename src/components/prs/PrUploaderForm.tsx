@@ -88,11 +88,11 @@ export function PrUploaderForm({ onParse }: PrUploaderFormProps) {
     } else {
       const isDailyLimit = result.error?.startsWith('DAILY_LIMIT_REACHED:');
       const errorMessage = isDailyLimit
-        ? result.error.replace('DAILY_LIMIT_REACHED: ', '')
+        ? result.error?.replace('DAILY_LIMIT_REACHED: ', '')
         : result.error;
       toast({
         title: isDailyLimit ? "Daily Limit Reached" : "Parsing Error",
-        description: errorMessage,
+        description: errorMessage || "Unable to parse the screenshot. Please try again.",
         variant: "destructive"
       });
     }

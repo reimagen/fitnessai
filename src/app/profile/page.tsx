@@ -4,6 +4,7 @@
 import { UserDetailsCard } from "@/components/profile/UserDetailsCard";
 import { GoalSetterCard } from "@/components/profile/GoalSetterCard";
 import { WorkoutPreferencesCard } from "@/components/profile/WorkoutPreferencesCard";
+import { WeeklyCardioTargetsCard } from "@/components/profile/WeeklyCardioTargetsCard";
 import { ProfileCompletionNotice } from "@/components/profile/ProfileCompletionNotice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,11 +37,19 @@ export default function ProfilePage() {
     );
   };
 
-  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal' | 'cardioGoalMode' | 'stretchGoalMultiplier' | 'activityLevel' | 'weightGoal' | 'cardioCalculationMethod'>>) => {
+  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes'>>) => {
     if (!user) return;
     updateProfile(
       updatedPreferences,
       { successTitle: "Preferences Updated!", successDescription: "Your workout preferences have been saved." }
+    );
+  };
+
+  const handleCardioTargetsUpdate = (updatedTargets: Partial<Pick<UserProfile, 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal' | 'cardioCalculationMethod' | 'activityLevel' | 'weightGoal'>>) => {
+    if (!user) return;
+    updateProfile(
+      updatedTargets,
+      { successTitle: "Cardio Targets Updated!", successDescription: "Your weekly cardio targets have been saved." }
     );
   };
 
@@ -84,18 +93,21 @@ export default function ProfilePage() {
               sessionTimeMinutes: userProfile.sessionTimeMinutes,
               experienceLevel: userProfile.experienceLevel,
               aiPreferencesNotes: userProfile.aiPreferencesNotes,
-              weeklyCardioCalorieGoal: userProfile.weeklyCardioCalorieGoal,
-              weeklyCardioStretchCalorieGoal: userProfile.weeklyCardioStretchCalorieGoal,
-              cardioGoalMode: userProfile.cardioGoalMode,
-              stretchGoalMultiplier: userProfile.stretchGoalMultiplier,
-              weightValue: userProfile.weightValue,
-              weightUnit: userProfile.weightUnit,
-              fitnessGoals: userProfile.fitnessGoals,
-              activityLevel: userProfile.activityLevel,
-              weightGoal: userProfile.weightGoal,
-              cardioCalculationMethod: userProfile.cardioCalculationMethod,
             }}
             onUpdate={handlePreferencesUpdate}
+          />
+          <WeeklyCardioTargetsCard
+            targets={{
+              weeklyCardioCalorieGoal: userProfile.weeklyCardioCalorieGoal,
+              weeklyCardioStretchCalorieGoal: userProfile.weeklyCardioStretchCalorieGoal,
+              cardioCalculationMethod: userProfile.cardioCalculationMethod,
+              activityLevel: userProfile.activityLevel,
+              weightGoal: userProfile.weightGoal,
+              experienceLevel: userProfile.experienceLevel,
+              weightValue: userProfile.weightValue,
+              weightUnit: userProfile.weightUnit,
+            }}
+            onUpdate={handleCardioTargetsUpdate}
           />
           <div id="goals">
             <GoalSetterCard

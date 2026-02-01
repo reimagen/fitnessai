@@ -221,8 +221,6 @@ export const userProfileConverter = {
             aiPreferencesNotes: data.aiPreferencesNotes,
             weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
             weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
-            cardioGoalMode: data.cardioGoalMode,
-            stretchGoalMultiplier: data.stretchGoalMultiplier,
             activityLevel: data.activityLevel,
             weightGoal: data.weightGoal,
             cardioCalculationMethod: data.cardioCalculationMethod,

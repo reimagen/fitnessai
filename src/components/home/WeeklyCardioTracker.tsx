@@ -10,8 +10,8 @@ import { useCurrentWeek } from '@/hooks/useCurrentWeek';
 import { DEFAULT_WEEKLY_CARDIO_MIN_GOAL, DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL, CARDIO_RUN_THRESHOLD_MPH, MILES_PER_KM, MILES_PER_FEET } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Flame, Info } from 'lucide-react';
-import { calculateExerciseCalories, calculateWeeklyCardioTarget } from '@/lib/calorie-calculator';
-import { calculateWeeklyCardioTargets } from '@/lib/cardio-target-calculator';
+import { calculateExerciseCalories } from '@/lib/calorie-calculator';
+import { calculateRecentWeeklyCardioAverage, calculateWeeklyCardioTargets } from '@/lib/cardio-target-calculator';
 
 type WeeklyCardioTrackerProps = {
   workoutLogs: WorkoutLog[];
@@ -59,6 +59,10 @@ const getDistanceInMiles = (distance?: number, unit?: string): number => {
 
 export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTrackerProps) {
   const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
+  const recentWeeklyAverage = useMemo(() => {
+    const average = calculateRecentWeeklyCardioAverage(workoutLogs);
+    return average ?? undefined;
+  }, [workoutLogs]);
 
   const weeklyData = useMemo(() => {
     const dataMap = new Map<string, DailyCardioData>();
@@ -112,14 +116,9 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
 
   if (userProfile?.cardioCalculationMethod === 'auto') {
     // Use new simplified calculation method
-    const calculatedTargets = calculateWeeklyCardioTargets(userProfile);
+    const calculatedTargets = calculateWeeklyCardioTargets(userProfile, { recentWeeklyAverage });
     minGoal = calculatedTargets.baseGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
     maxGoal = calculatedTargets.stretchGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
-  } else if (userProfile?.cardioGoalMode === 'auto') {
-    // Fall back to legacy calculation method for backward compatibility
-    const calculatedTargets = calculateWeeklyCardioTarget(userProfile);
-    minGoal = calculatedTargets?.baseTarget || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
-    maxGoal = calculatedTargets?.stretchTarget || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
   } else {
     // Manual entry - use saved values
     minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
@@ -179,7 +178,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
         <CardDescription className="flex flex-col gap-2">
           <div>
             {userProfile
-              ? `${userProfile.cardioCalculationMethod === 'auto' ? 'Personalized targets based on your activity level and goals.' : userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
+              ? `${userProfile.cardioCalculationMethod === 'auto' ? 'Personalized targets based on your activity level and goals.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
               : "Set your profile goals to track your weekly cardio."}
           </div>
           {userProfile?.cardioCalculationMethod === 'auto' && (

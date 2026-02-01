@@ -8,8 +8,8 @@ export const DEFAULT_WORKOUTS_PER_WEEK = 3;
 /**
  * Cardio goal constants (in calories)
  */
-export const DEFAULT_WEEKLY_CARDIO_MIN_GOAL = 1000;
-export const DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL = 1200;
+export const DEFAULT_WEEKLY_CARDIO_MIN_GOAL = 600;
+export const DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL = 750;
 
 /**
  * CDC and auto-calculation constants
@@ -22,7 +22,7 @@ export const DEFAULT_CARDIO_GOAL_MODE: 'auto' | 'manual' = 'auto';
 /**
  * Cardio target calculation (simplified health-based formula)
  */
-export const CARDIO_HEALTH_BASELINE = 600; // 150 min moderate cardio
+export const CARDIO_HEALTH_BASELINE = 600; // 150 min moderate cardio at ~70kg baseline
 
 export const WEIGHT_GOAL_MULTIPLIERS = {
   lose: 1.4,
@@ -31,9 +31,9 @@ export const WEIGHT_GOAL_MULTIPLIERS = {
 } as const;
 
 export const CARDIO_EXPERIENCE_MULTIPLIERS = {
-  beginner: 0.8,
+  beginner: 0.9,
   intermediate: 1.0,
-  advanced: 1.2,
+  advanced: 1.05,
 } as const;
 
 export const CARDIO_ACTIVITY_LEVEL_MULTIPLIERS = {
@@ -47,7 +47,7 @@ export const CARDIO_ACTIVITY_LEVEL_MULTIPLIERS = {
 export const CARDIO_STRETCH_MULTIPLIERS = {
   beginner: 1.20,
   intermediate: 1.25,
-  advanced: 1.30,
+  advanced: 1.25,
 } as const;
 
 export const CARDIO_TARGET_BOUNDS = {
