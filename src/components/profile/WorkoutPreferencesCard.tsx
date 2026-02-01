@@ -192,9 +192,15 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
     let cardioStretchGoal: number | undefined;
 
     // Use simplified calculation if that method is selected
-    if (editedCardioMethod === 'auto' && simplifiedCalculatedTargets) {
-      cardioGoal = simplifiedCalculatedTargets.base;
-      cardioStretchGoal = simplifiedCalculatedTargets.stretch;
+    if (editedCardioMethod === 'auto') {
+      // Recalculate if not already calculated
+      const targets = simplifiedCalculatedTargets || calculateWeeklyCardioTargets({
+        experienceLevel: editedExperienceLevel,
+        weightGoal: editedWeightGoal,
+        activityLevel: editedActivityLevel,
+      } as UserProfile);
+      cardioGoal = targets.base;
+      cardioStretchGoal = targets.stretch;
     } else if (cardioGoalMode === 'auto' && !editedCardioMethod) {
       // Fall back to legacy calculation if only legacy mode is set (backwards compatibility)
       cardioGoal = calculatedTargets?.baseTarget;
