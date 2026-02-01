@@ -106,13 +106,15 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
 
   // Auto-calculate cardio targets using simplified formula when method/inputs change
   useEffect(() => {
-    if (editedCardioMethod === 'auto') {
+    if (editedCardioMethod === 'auto' && editedActivityLevel && editedWeightGoal) {
       const targets = calculateWeeklyCardioTargets({
         experienceLevel: editedExperienceLevel,
         weightGoal: editedWeightGoal,
         activityLevel: editedActivityLevel,
       } as UserProfile);
       setSimplifiedCalculatedTargets(targets);
+    } else if (editedCardioMethod !== 'auto') {
+      setSimplifiedCalculatedTargets(null);
     }
   }, [editedActivityLevel, editedWeightGoal, editedExperienceLevel, editedCardioMethod]);
 
@@ -409,7 +411,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                       </div>
                     </div>
 
-                    {simplifiedCalculatedTargets && (
+                    {simplifiedCalculatedTargets && simplifiedCalculatedTargets.base && simplifiedCalculatedTargets.stretch && (
                       <div className="p-2 bg-white rounded border border-amber-200 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">Recommended targets:</p>
                         <p className="font-semibold">

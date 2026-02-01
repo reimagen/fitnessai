@@ -36,7 +36,7 @@ export default function ProfilePage() {
     );
   };
 
-  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal'>>) => {
+  const handlePreferencesUpdate = (updatedPreferences: Partial<Pick<UserProfile, 'workoutsPerWeek' | 'sessionTimeMinutes' | 'experienceLevel' | 'aiPreferencesNotes' | 'weeklyCardioCalorieGoal' | 'weeklyCardioStretchCalorieGoal' | 'cardioGoalMode' | 'stretchGoalMultiplier' | 'activityLevel' | 'weightGoal' | 'cardioCalculationMethod'>>) => {
     if (!user) return;
     updateProfile(
       updatedPreferences,
@@ -91,6 +91,9 @@ export default function ProfilePage() {
               weightValue: userProfile.weightValue,
               weightUnit: userProfile.weightUnit,
               fitnessGoals: userProfile.fitnessGoals,
+              activityLevel: userProfile.activityLevel,
+              weightGoal: userProfile.weightGoal,
+              cardioCalculationMethod: userProfile.cardioCalculationMethod,
             }}
             onUpdate={handlePreferencesUpdate}
           />
