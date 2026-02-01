@@ -67,7 +67,7 @@ export function ExerciseCombobox({
 
   return (
     <div className="relative w-full">
-      <Command className="border rounded-md">
+      <Command className="border rounded-xl">
         <CommandInput
           placeholder={placeholder}
           value={inputValue}
@@ -105,7 +105,7 @@ export function ExerciseCombobox({
                           <span className="flex-1">{exercise}</span>
                           <div className="flex gap-2 ml-2">
                             {classified && (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                 Standard
                               </span>
                             )}

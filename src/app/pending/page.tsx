@@ -15,12 +15,12 @@ export default function PendingAccessPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md text-center">
+        <div className="w-full max-w-md">
             <header className="mb-8">
                 <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">FitnessAI</h1>
                 <p className="mt-2 text-lg text-muted-foreground">Your personal AI fitness companion.</p>
             </header>
-            <Card>
+            <Card className="shadow-lg">
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl">Access Restricted</CardTitle>
                     <CardDescription>

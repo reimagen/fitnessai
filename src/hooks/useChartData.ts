@@ -210,12 +210,25 @@ export function useChartData(
       core: 0,
       other: 0,
     };
+    const hasEstimatedCaloriesByCat: Record<ExerciseCategoryKey, boolean> = {
+      upperBody: false,
+      lowerBody: false,
+      fullBody: false,
+      cardio: false,
+      core: false,
+      other: false,
+    };
 
     logsForPeriod.forEach((log: WorkoutLog) => {
       log.exercises.forEach((ex) => {
         const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
         repsByCat[camelCaseCategory] += (ex.reps || 0) * (ex.sets || 0);
         caloriesByCat[camelCaseCategory] += ex.calories || 0;
+
+        // Track if any exercise in this category has estimated calories
+        if (ex.caloriesSource === 'estimated' || (ex.calories && ex.calories > 0 && !ex.caloriesSource)) {
+          hasEstimatedCaloriesByCat[camelCaseCategory] = true;
+        }
       });
     });
 
@@ -235,6 +248,7 @@ export function useChartData(
         name: (chartConfig[name as ChartDataKey]?.label || name) as string,
         value,
         fill: `var(--color-${name})`,
+        hasEstimatedCalories: hasEstimatedCaloriesByCat[name as ExerciseCategoryKey],
       }));
 
     const uniqueWorkoutDates = new Set<string>();

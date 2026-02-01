@@ -74,7 +74,7 @@ export default async function HomePage() {
       <section>
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline text-xl">Quick Actions</CardTitle>
+            <CardTitle className="font-headline text-2xl">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
@@ -101,9 +101,9 @@ export default async function HomePage() {
 
       <Suspense fallback={
         <div className="mt-12 space-y-12">
-          <div className="h-48 w-full bg-muted rounded-lg animate-pulse" />
-          <div className="h-64 w-full bg-muted rounded-lg animate-pulse" />
-          <div className="h-64 w-full bg-muted rounded-lg animate-pulse" />
+          <div className="h-48 w-full bg-muted rounded-lg animate-pulse shadow-lg" />
+          <div className="h-64 w-full bg-muted rounded-lg animate-pulse shadow-lg" />
+          <div className="h-64 w-full bg-muted rounded-lg animate-pulse shadow-lg" />
         </div>
       }>
         <div className="mt-12">

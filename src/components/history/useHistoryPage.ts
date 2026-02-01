@@ -59,18 +59,37 @@ export function useHistoryPage() {
         },
       );
     } else {
-      addWorkoutMutation.mutate(
-        { userId: user.uid, data: finalData },
-        {
-          onSuccess: () => {
-            toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
-            setActiveForm("none");
+      // Check if a log already exists for this date and merge if so
+      const existingLog = findExistingLogForDate(workoutLogs, data.date);
+
+      if (existingLog) {
+        const { updatedLog, addedCount } = mergeParsedExercises(existingLog, finalData.exercises);
+        updateWorkoutMutation.mutate(
+          { userId: user.uid, id: existingLog.id, data: updatedLog },
+          {
+            onSuccess: () => {
+              toast({ title: "Log Updated", description: `Added ${addedCount} exercise(s) to your existing workout.` });
+              setActiveForm("none");
+            },
+            onError: (error) => {
+              toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+            },
           },
-          onError: (error) => {
-            toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+        );
+      } else {
+        addWorkoutMutation.mutate(
+          { userId: user.uid, data: finalData },
+          {
+            onSuccess: () => {
+              toast({ title: "Workout Logged!", description: "Your new workout session has been saved." });
+              setActiveForm("none");
+            },
+            onError: (error) => {
+              toast({ title: "Save Failed", description: error.message, variant: "destructive" });
+            },
           },
-        },
-      );
+        );
+      }
     }
   };
 
@@ -92,8 +111,9 @@ export function useHistoryPage() {
 
     if (existingLog) {
       const { updatedLog, addedCount } = mergeParsedExercises(existingLog, parsedExercises);
+      const finalData = buildWorkoutLogPayload(updatedLog, userProfile, workoutLogs);
       updateWorkoutMutation.mutate(
-        { userId: user.uid, id: existingLog.id, data: updatedLog },
+        { userId: user.uid, id: existingLog.id, data: finalData },
         {
           onSuccess: () => {
             toast({ title: "Log Updated", description: `Merged parsed data, adding ${addedCount} new exercise(s).` });
@@ -109,8 +129,9 @@ export function useHistoryPage() {
         date: targetDate,
         exercises: parsedExercises,
       };
+      const finalData = buildWorkoutLogPayload(newLog, userProfile, workoutLogs);
       addWorkoutMutation.mutate(
-        { userId: user.uid, data: newLog },
+        { userId: user.uid, data: finalData },
         {
           onSuccess: () => {
             toast({ title: "Log Created", description: "Successfully created a new log from the screenshot." });

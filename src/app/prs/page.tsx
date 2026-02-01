@@ -27,7 +27,7 @@ export default function MilestonesPage() {
 
   if (isLoadingProfile) {
       return (
-          <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+          <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
           </div>
       );
@@ -71,9 +71,7 @@ export default function MilestonesPage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-4">
-        <h1 className="font-headline text-3xl font-bold text-primary flex items-center">
-          <Award className="mr-3 h-8 w-8" /> Milestones & Achievements
-        </h1>
+        <h1 className="font-headline text-3xl font-bold text-primary">Milestones & Achievements</h1>
         <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
       </header>
 

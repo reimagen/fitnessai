@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const userProfile = profileResult?.data;
   const { updateProfile, isPending } = useProfileUpdate();
   const { user, signOut: handleSignOut } = useAuth();
-  
+
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     if (!user) return;
     updateProfile(
@@ -72,19 +72,19 @@ export default function ProfilePage() {
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Your Profile</h1>
+        <h1 className="font-headline text-3xl font-bold text-primary">Profile</h1>
         <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
       </header>
 
-      {isLoadingProfile ? ( 
+      {isLoadingProfile ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
       ) : userProfile ? (
         <>
           <ProfileCompletionNotice profile={userProfile} />
-          <UserDetailsCard 
-            user={userProfile} 
+          <UserDetailsCard
+            user={userProfile}
             onUpdate={handleProfileDetailsUpdate}
           />
           <WorkoutPreferencesCard
@@ -118,28 +118,28 @@ export default function ProfilePage() {
           </div>
         </>
       ) : (
-          <Card className="shadow-lg border-primary">
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2">
-                <AlertTriangle className="h-6 w-6 text-primary" />
-                Welcome! Let&apos;s Create Your Profile
-              </CardTitle>
-              <CardDescription>
-                It looks like you&apos;re new here. Create a profile to get started.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Creating a profile will allow you to save your workout data and track your progress.
-              </p>
-              <Button onClick={handleCreateProfile} disabled={isPending}>
-                {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <UserPlus className="mr-2 h-4 w-4"/>}
-                Create My Profile
-              </Button>
-            </CardContent>
-          </Card>
+        <Card className="shadow-lg border-primary">
+          <CardHeader>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <AlertTriangle className="h-6 w-6 text-primary" />
+              Welcome! Let&apos;s Create Your Profile
+            </CardTitle>
+            <CardDescription>
+              It looks like you&apos;re new here. Create a profile to get started.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground mb-4">
+              Creating a profile will allow you to save your workout data and track your progress.
+            </p>
+            <Button onClick={handleCreateProfile} disabled={isPending}>
+              {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+              Create My Profile
+            </Button>
+          </CardContent>
+        </Card>
       )}
-      
+
       <Card className="shadow-lg">
         <CardContent className="pt-6">
           <Button variant="destructive" className="w-full" onClick={handleSignOut}>

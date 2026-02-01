@@ -65,7 +65,7 @@ export function GoalFormSection({
               // In edit mode, we show active goals for editing
               if (!isAchieved) {
                 return (
-                  <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30 relative">
+                  <Card key={field.id} className="p-4 border rounded-2xl shadow-sm bg-secondary/30 relative">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -172,11 +172,11 @@ export function GoalFormSection({
               // Display mode for active goals
               if (!field.achieved) {
                 return (
-                  <Card key={field.id} className="p-4 border rounded-md shadow-sm bg-secondary/30">
+                  <Card key={field.id} className="p-4 border rounded-2xl shadow-sm bg-secondary/30">
                     <div className="text-sm">
                       <div className="flex justify-between items-start">
                         <p className="font-semibold text-primary">
-                          {field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />} {field.description}
+                          {field.isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-amber-400 text-amber-500" />} {field.description}
                         </p>
                       </div>
                       <p className="text-muted-foreground mt-1">

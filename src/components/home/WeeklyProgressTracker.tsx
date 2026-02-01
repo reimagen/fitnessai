@@ -64,7 +64,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="font-headline">Weekly Progress</CardTitle>
+        <CardTitle className="font-headline text-2xl">Weekly Progress</CardTitle>
         <CardDescription>
           {userProfile ? `You've completed ${completedThisWeek} of your ${workoutGoal} workout goal this week.` : "Your weekly workout progress will appear here once you set your goals."}
         </CardDescription>
@@ -80,7 +80,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center border-2",
                 isCompleted 
-                  ? "bg-yellow-400 border-yellow-500"
+                  ? "bg-amber-400 border-amber-500"
                   : "bg-secondary border-secondary-foreground/10",
                 isCurrentDay && "border-primary"
               )}>

@@ -8,6 +8,7 @@ interface PieChartData {
   name: string;
   value: number;
   fill: string;
+  hasEstimatedCalories?: boolean;
 }
 
 interface CardioByActivityChartProps {
@@ -33,7 +34,7 @@ export const CardioByActivityChart: React.FC<CardioByActivityChartProps> = ({ pi
             cy="50%"
             outerRadius={isMobile ? 60 : 80}
             labelLine={false}
-            label={(props) => renderPieLabel(props, 'kcal', isMobile, true)}
+            label={(props) => renderPieLabel(props, 'kcal', isMobile, (props.payload as any)?.hasEstimatedCalories ?? true)}
           >
             {pieChartData.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.fill} />

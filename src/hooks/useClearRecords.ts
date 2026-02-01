@@ -7,6 +7,9 @@ export function useClearRecords(userId: string) {
 
   const handleClear = (recordCount: number) => {
     if (recordCount <= 0) return;
+    if (!window.confirm("Are you sure you want to clear all records? This action cannot be undone.")) {
+      return;
+    }
 
     clearAllRecordsMutation.mutate(userId, {
       onSuccess: () => {

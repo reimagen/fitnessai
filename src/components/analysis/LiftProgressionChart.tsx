@@ -61,7 +61,7 @@ const TrophyShape: React.FC<TrophyShapeProps> = ({ cx, cy, payload }) => {
     <g transform={`translate(${cx - 12}, ${cy - 12})`}>
       <foreignObject x={0} y={0} width={24} height={24}>
         <Trophy
-          className="h-6 w-6 text-yellow-500 fill-yellow-400 stroke-yellow-600"
+          className="h-6 w-6 text-amber-500 fill-amber-400 stroke-amber-600"
           strokeWidth={1.5}
         />
       </foreignObject>
@@ -76,7 +76,7 @@ const ProgressionTooltip: React.FC<ProgressionTooltipProps> = ({ active, payload
       <div className="p-2 bg-background border rounded-md shadow-lg text-xs space-y-1">
         <p className="font-bold">{data.name}</p>
         {data.isActualPR && (
-          <p className="font-bold text-yellow-500 flex items-center gap-1">
+          <p className="font-bold text-amber-500 flex items-center gap-1">
             <Trophy className="h-4 w-4" />
             Personal Record: {data.actualPR?.toLocaleString()} lbs
           </p>
@@ -114,7 +114,7 @@ const ProgressionChartLegend: React.FC<ProgressionChartLegendProps> = ({ payload
         return (
           <div key={`item-${index}`} className="flex items-center gap-1.5">
             {entry.dataKey === "actualPR" ? (
-              <Trophy className="h-4 w-4 text-yellow-500" />
+              <Trophy className="h-4 w-4 text-amber-500" />
             ) : isTrend ? (
               <span className="w-4 h-px border-t-2 border-dashed" style={{ borderColor: entry.color }} />
             ) : (
