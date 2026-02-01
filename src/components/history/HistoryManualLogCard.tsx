@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Edit, X } from "lucide-react";
 import { WorkoutLogForm } from "@/components/history/WorkoutLogForm";
-import type { WorkoutLog } from "@/lib/types";
+import type { WorkoutLog, UserProfile } from "@/lib/types";
 
 type HistoryManualLogCardProps = {
   isOpen: boolean;
@@ -13,6 +13,7 @@ type HistoryManualLogCardProps = {
   onSubmitLog: (data: Omit<WorkoutLog, "id" | "userId">) => void;
   onCancelEdit: () => void;
   workoutLogs: WorkoutLog[];
+  userProfile?: UserProfile;
 };
 
 export function HistoryManualLogCard({
@@ -24,6 +25,7 @@ export function HistoryManualLogCard({
   onSubmitLog,
   onCancelEdit,
   workoutLogs,
+  userProfile,
 }: HistoryManualLogCardProps) {
   if (!isOpen) return null;
 
@@ -55,6 +57,7 @@ export function HistoryManualLogCard({
           onCancelEdit={onCancelEdit}
           isSubmitting={isSubmitting}
           workoutLogs={workoutLogs}
+          userProfile={userProfile}
         />
       </CardContent>
     </Card>

@@ -36,6 +36,7 @@ export function HistoryPageContent() {
     handleCancelEdit,
     handleTabChange,
     setActiveForm,
+    userProfile,
   } = useHistoryPage();
 
   if (isLoadingProfile) {
@@ -96,6 +97,7 @@ export function HistoryPageContent() {
           onSubmitLog={handleManualLogSubmit}
           onCancelEdit={handleCancelEdit}
           workoutLogs={workoutLogs || []}
+          userProfile={userProfile}
         />
       </div>
 

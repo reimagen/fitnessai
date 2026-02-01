@@ -17,14 +17,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, Loader2 } from "lucide-react";
-import type { WorkoutLog, ExerciseCategory } from "@/lib/types";
+import type { WorkoutLog, ExerciseCategory, UserProfile } from "@/lib/types";
 import { Card } from "@/components/ui/card";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { startOfDay } from 'date-fns';
 import { StepperInput } from "@/components/ui/stepper-input";
 import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
 import { useExerciseSuggestions } from "@/hooks/useExerciseSuggestions";
-import { getNormalizedExerciseName, classifiedExercises } from "@/lib/strength-standards";
+import { getExerciseCategory, getNormalizedExerciseName, classifiedExercises } from "@/lib/strength-standards";
+import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
@@ -58,6 +59,7 @@ type WorkoutLogFormProps = {
   onCancelEdit?: () => void;
   isSubmitting?: boolean;
   workoutLogs?: WorkoutLog[];
+  userProfile?: UserProfile;
 };
 
 const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
@@ -74,8 +76,9 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   calories: 0
 };
 
-export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting, workoutLogs = [] }: WorkoutLogFormProps) {
+export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting, workoutLogs = [], userProfile }: WorkoutLogFormProps) {
   const suggestions = useExerciseSuggestions(workoutLogs);
+  const [autoFocusIndex, setAutoFocusIndex] = useState(0);
 
   const form = useForm<WorkoutLogFormData>({
     resolver: zodResolver(workoutLogSchema),
@@ -128,21 +131,39 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     // Use replace() to hint local timezone parsing, then startOfDay to normalize
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
-    // Normalize exercise names
-    const normalizedExercises = values.exercises.map(ex => ({
-      id: ex.id || Math.random().toString(36).substring(2,9),
-      name: getNormalizedExerciseName(ex.name),
-      category: ex.category,
-      sets: ex.sets ?? 0,
-      reps: ex.reps ?? 0,
-      weight: ex.weight ?? 0,
-      weightUnit: ex.weightUnit || 'lbs',
-      distance: ex.distance ?? 0,
-      distanceUnit: ex.distanceUnit || 'mi',
-      duration: ex.duration ?? 0,
-      durationUnit: ex.durationUnit || 'min',
-      calories: ex.calories ?? 0,
-    }));
+    // Normalize exercise names and track calorie source
+    const normalizedExercises = values.exercises.map(ex => {
+      const normalizedName = getNormalizedExerciseName(ex.name);
+
+      // Determine calorie source and value
+      let caloriesSource: 'manual' | 'estimated' = 'estimated';
+      let calories = ex.calories ?? 0;
+
+      if (ex.calories && ex.calories > 0) {
+        // User manually entered calories
+        caloriesSource = 'manual';
+      } else if (userProfile) {
+        // Calculate calories for both strength and cardio exercises
+        const exercise = { name: ex.name, category: ex.category, weight: ex.weight, weightUnit: ex.weightUnit, sets: ex.sets, reps: ex.reps, distance: ex.distance, distanceUnit: ex.distanceUnit, duration: ex.duration, durationUnit: ex.durationUnit } as Parameters<typeof calculateExerciseCalories>[0];
+        calories = calculateExerciseCalories(exercise, userProfile, workoutLogs);
+      }
+
+      return {
+        id: ex.id || Math.random().toString(36).substring(2,9),
+        name: normalizedName,
+        category: ex.category,
+        sets: ex.sets ?? 0,
+        reps: ex.reps ?? 0,
+        weight: ex.weight ?? 0,
+        weightUnit: ex.weightUnit || 'lbs',
+        distance: ex.distance ?? 0,
+        distanceUnit: ex.distanceUnit || 'mi',
+        duration: ex.duration ?? 0,
+        durationUnit: ex.durationUnit || 'min',
+        calories,
+        caloriesSource,
+      };
+    });
 
     onSubmitLog({
         date: normalizedDate,
@@ -199,10 +220,23 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                         <FormControl>
                           <ExerciseCombobox
                             value={field.value}
-                            onChange={field.onChange}
+                            onChange={(value) => {
+                              field.onChange(value);
+                              const mappedCategory = getExerciseCategory(value);
+                              const currentCategory = form.getValues(`exercises.${index}.category`);
+                              if (mappedCategory && (!currentCategory || currentCategory === "Other")) {
+                                form.setValue(`exercises.${index}.category`, mappedCategory, {
+                                  shouldDirty: true,
+                                  shouldTouch: true,
+                                });
+                              }
+                            }}
                             suggestions={suggestions}
                             classifiedExercises={classifiedExercises}
                             placeholder="e.g., Bench Press"
+                            autoFocus={index === autoFocusIndex}
+                            name={field.name}
+                            inputRef={field.ref}
                           />
                         </FormControl>
                         <FormMessage />
@@ -382,7 +416,11 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           <Button
             type="button"
             variant="outline"
-            onClick={() => append(defaultExerciseValues)} 
+            onClick={() => {
+              const newIndex = fields.length;
+              append(defaultExerciseValues, { shouldFocus: false });
+              setAutoFocusIndex(newIndex);
+            }}
             className="mt-2"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise

@@ -34,6 +34,57 @@ const CYCLING_MET_VALUE = 8.0; // General, moderate intensity (approx 12-14 mph)
 const SWIMMING_MET_VALUE = 7.0; // General, freestyle, moderate effort
 const CLIMBMILL_MET_VALUE = 9.0; // Stairmaster / Climbmill
 
+// Strength exercise calorie factors (calories per 100 lbs moved)
+// Accounts for exercise type and muscle group involved
+const STRENGTH_CALORIE_FACTORS: { [key: string]: number } = {
+  // Compound Lower Body (higher calorie burn due to large muscle groups)
+  'squat': 0.65,
+  'leg press': 0.65,
+  'deadlift': 0.70,
+  'leg curl': 0.50,
+  'leg extension': 0.45,
+  'lunges': 0.60,
+  'bulgarian split squat': 0.60,
+  'hack squat': 0.60,
+  'smith machine squat': 0.60,
+  'leg raise': 0.40,
+  'calf raise': 0.30,
+
+  // Compound Upper Body Push
+  'bench press': 0.45,
+  'incline bench': 0.45,
+  'dumbbell bench press': 0.45,
+  'push-ups': 0.40,
+  'shoulder press': 0.50,
+  'military press': 0.50,
+  'overhead press': 0.50,
+  'dips': 0.50,
+
+  // Compound Upper Body Pull
+  'pull-ups': 0.50,
+  'pull up': 0.50,
+  'pullup': 0.50,
+  'chin-ups': 0.50,
+  'chin up': 0.50,
+  'chinup': 0.50,
+  'rows': 0.45,
+  'barbell row': 0.50,
+  'dumbbell row': 0.45,
+  'lat pulldown': 0.40,
+  'cable row': 0.40,
+
+  // Isolation exercises (lower calorie burn)
+  'bicep curl': 0.25,
+  'tricep': 0.25,
+  'lateral raise': 0.20,
+  'front raise': 0.20,
+  'face pull': 0.25,
+  'cable': 0.25,
+  'machine': 0.30,
+};
+
+const DEFAULT_STRENGTH_CALORIE_FACTOR = 0.40; // Default for unrecognized exercises
+
 // --- Fallback pace constants ---
 const DEFAULT_AVG_RUNNING_PACE_MIN_PER_MILE = 10; // 10 min/mile
 const DEFAULT_AVG_WALKING_PACE_MIN_PER_MILE = 20; // 20 min/mile
@@ -97,6 +148,83 @@ const getDistanceInMiles = (distance?: number, unit?: Exercise['distanceUnit']):
     }
 };
 
+function getStrengthCalorieFactor(exerciseName: string): number {
+    const nameLower = exerciseName.toLowerCase();
+
+    // Check for exact matches or keywords
+    for (const [key, factor] of Object.entries(STRENGTH_CALORIE_FACTORS)) {
+        if (nameLower.includes(key)) {
+            return factor;
+        }
+    }
+
+    return DEFAULT_STRENGTH_CALORIE_FACTOR;
+}
+
+function calculateStrengthExerciseCalories(
+    exercise: Omit<Exercise, 'id'>,
+    userProfile: UserProfile
+): number {
+    // Strength exercises require: reps and sets
+    if (!exercise.reps || exercise.reps <= 0 || !exercise.sets || exercise.sets <= 0) {
+        return 0;
+    }
+
+    if (!userProfile.weightValue || userProfile.weightValue <= 0 || !userProfile.gender) {
+        return 0;
+    }
+
+    // Convert user weight to lbs for calculation
+    const userWeightLbs = userProfile.weightUnit === 'kg'
+        ? (userProfile.weightValue || 0) * 2.20462
+        : (userProfile.weightValue || 0);
+
+    // For bodyweight exercises (pull-ups, chin-ups, dips, etc.), use user's body weight
+    // Otherwise use the exercise weight
+    const nameLower = exercise.name.toLowerCase();
+    const isBodyweightExercise =
+        nameLower.includes('pull-up') ||
+        nameLower.includes('pull up') ||
+        nameLower.includes('pullup') ||
+        nameLower.includes('chin-up') ||
+        nameLower.includes('chin up') ||
+        nameLower.includes('chinup') ||
+        nameLower.includes('dip') ||
+        nameLower.includes('push-up') ||
+        nameLower.includes('push up') ||
+        nameLower.includes('pushup');
+
+    const exerciseWeightLbs = isBodyweightExercise
+        ? userWeightLbs
+        : (exercise.weight || 0) > 0
+            ? (exercise.weightUnit === 'kg'
+                ? (exercise.weight || 0) * 2.20462
+                : (exercise.weight || 0))
+            : 0;
+
+    // If still no weight and not bodyweight, can't calculate
+    if (exerciseWeightLbs <= 0) {
+        return 0;
+    }
+
+    // Calculate total weight moved
+    const totalWeightMoved = exerciseWeightLbs * exercise.reps * exercise.sets;
+
+    // Get exercise-specific calorie factor
+    const baseFactor = getStrengthCalorieFactor(exercise.name);
+
+    // Adjust for body weight (baseline 150 lbs)
+    const bodyWeightMultiplier = userWeightLbs / 150;
+
+    // Adjust for gender (women burn ~8% fewer calories)
+    const genderMultiplier = userProfile.gender.toLowerCase() === 'female' ? 0.92 : 1.0;
+
+    // Calculate calories
+    const calories = (totalWeightMoved / 100) * baseFactor * bodyWeightMultiplier * genderMultiplier;
+
+    return Math.round(calories);
+}
+
 
 export function calculateExerciseCalories(
   exercise: Omit<Exercise, 'id'>,
@@ -107,8 +235,9 @@ export function calculateExerciseCalories(
         return exercise.calories;
     }
 
+    // Calculate strength exercise calories (non-cardio)
     if (exercise.category !== 'Cardio') {
-        return 0;
+        return calculateStrengthExerciseCalories(exercise, userProfile);
     }
 
     if (!userProfile.weightValue || userProfile.weightValue <= 0) {

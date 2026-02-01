@@ -36,7 +36,22 @@ export function useFilteredData(
       else interval = { start: startOfYear(today), end: endOfYear(today) };
 
       logsForPeriod = (workoutLogs || []).filter((log: WorkoutLog) => isWithinInterval(log.date, interval));
-      prsForPeriod = (personalRecords || []).filter((pr: PersonalRecord) => isWithinInterval(pr.date, interval));
+
+      // Filter PRs by date AND ensure each is an all-time PR for its exercise
+      const allPersonalRecords = personalRecords || [];
+      prsForPeriod = allPersonalRecords
+        .filter((pr: PersonalRecord) => isWithinInterval(pr.date, interval))
+        .filter((pr: PersonalRecord) => {
+          // Check if this PR is the all-time highest for its exercise
+          const prWeightInLbs = pr.weightUnit === 'kg' ? pr.weight * 2.20462 : pr.weight;
+          const isAllTimeBest = !allPersonalRecords.some((otherPr: PersonalRecord) => {
+            if (otherPr.exerciseName !== pr.exerciseName) return false;
+            const otherWeightInLbs = otherPr.weightUnit === 'kg' ? otherPr.weight * 2.20462 : otherPr.weight;
+            return otherWeightInLbs > prWeightInLbs;
+          });
+          return isAllTimeBest;
+        });
+
       goalsForPeriod = goalsForPeriod.filter((g: FitnessGoal) => isWithinInterval(g.dateAchieved!, interval));
     }
 

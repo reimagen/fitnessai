@@ -41,7 +41,7 @@ export const CardioActivitySummary: React.FC<CardioActivitySummaryProps> = ({ st
                   You completed {stats.count} session{stats.count > 1 ? 's' : ''}
                   {stats.totalDistanceMi > 0 && `, covering ${stats.totalDistanceMi.toFixed(1)} mi`}
                   {stats.totalDurationMin > 0 && ` in ${formattedDuration}`}
-                  , burning {Math.round(stats.totalCalories).toLocaleString()} kcal.
+                  , burning {Math.round(stats.totalCalories).toLocaleString()} kcal est.
                   {avgDistance && ` Your average distance was ${avgDistance} mi.`}
                 </p>
               </div>
