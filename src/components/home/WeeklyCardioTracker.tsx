@@ -10,7 +10,7 @@ import { useCurrentWeek } from '@/hooks/useCurrentWeek';
 import { DEFAULT_WEEKLY_CARDIO_MIN_GOAL, DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL, CARDIO_RUN_THRESHOLD_MPH, MILES_PER_KM, MILES_PER_FEET } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Flame, Info } from 'lucide-react';
-import { calculateExerciseCalories } from '@/lib/calorie-calculator';
+import { calculateExerciseCalories, calculateWeeklyCardioTarget } from '@/lib/calorie-calculator';
 
 type WeeklyCardioTrackerProps = {
   workoutLogs: WorkoutLog[];
@@ -104,8 +104,19 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
   const hasEstimatedInWeek = Array.from(weeklyData.values()).some(day => day.hasEstimatedCalories);
-  const minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
-  const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
+
+  // Determine goals based on cardio goal mode
+  let minGoal: number;
+  let maxGoal: number;
+
+  if (userProfile?.cardioGoalMode === 'auto') {
+    const calculatedTargets = calculateWeeklyCardioTarget(userProfile);
+    minGoal = calculatedTargets?.baseTarget || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
+    maxGoal = calculatedTargets?.stretchTarget || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
+  } else {
+    minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
+    maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
+  }
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
 
   const caloriesPerMile = useMemo(() => {
@@ -158,7 +169,9 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
         <CardDescription>
-          {userProfile ? `To support your cardio health, your weekly target is to burn ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.` : "Set your profile goals to track your weekly cardio."}
+          {userProfile
+            ? `${userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
+            : "Set your profile goals to track your weekly cardio."}
         </CardDescription>
       </CardHeader>
       <CardContent>

@@ -12,6 +12,25 @@ export const DEFAULT_WEEKLY_CARDIO_MIN_GOAL = 1000;
 export const DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL = 1200;
 
 /**
+ * CDC and auto-calculation constants
+ */
+export const CDC_RECOMMENDED_CARDIO_MINUTES = 150;
+export const MODERATE_CARDIO_MET_VALUE = 5.0;
+export const DEFAULT_STRETCH_MULTIPLIER = 1.2;
+export const DEFAULT_CARDIO_GOAL_MODE: 'auto' | 'manual' = 'auto';
+
+export const EXPERIENCE_LEVEL_MULTIPLIERS = {
+  beginner: 1.0,
+  intermediate: 1.15,
+  advanced: 1.3,
+} as const;
+
+export const WORKOUTS_PER_WEEK_MULTIPLIERS = {
+  low: 0.85,    // < 3 workouts
+  high: 1.1,    // >= 5 workouts
+} as const;
+
+/**
  * Speed thresholds for cardio activity classification (mph)
  */
 export const CARDIO_RUN_THRESHOLD_MPH = 4.0;

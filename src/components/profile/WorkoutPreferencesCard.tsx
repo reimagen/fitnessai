@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useState } from "react";
-import type { ExperienceLevel, SessionTime, UserProfile } from "@/lib/types";
+import { useState, useEffect } from "react";
+import type { ExperienceLevel, SessionTime, UserProfile, CardioGoalMode } from "@/lib/types";
+import { calculateWeeklyCardioTarget, type WeeklyCardioTargets } from "@/lib/calorie-calculator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,13 +14,18 @@ import { Edit2, Save, XCircle, Zap } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
 import { useIsMobile } from "@/hooks/useMobile";
 
-type WorkoutPreferences = Pick<UserProfile, 
-  'workoutsPerWeek' | 
-  'sessionTimeMinutes' | 
-  'experienceLevel' | 
-  'aiPreferencesNotes' | 
-  'weeklyCardioCalorieGoal' | 
-  'weeklyCardioStretchCalorieGoal'
+type WorkoutPreferences = Pick<UserProfile,
+  'workoutsPerWeek' |
+  'sessionTimeMinutes' |
+  'experienceLevel' |
+  'aiPreferencesNotes' |
+  'weeklyCardioCalorieGoal' |
+  'weeklyCardioStretchCalorieGoal' |
+  'cardioGoalMode' |
+  'stretchGoalMultiplier' |
+  'weightValue' |
+  'weightUnit' |
+  'fitnessGoals'
 >;
 
 type WorkoutPreferencesCardProps = {
@@ -51,6 +57,37 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
   const [editedAiPreferencesNotes, setEditedAiPreferencesNotes] = useState(preferences.aiPreferencesNotes || "");
   const [editedCardioGoal, setEditedCardioGoal] = useState(preferences.weeklyCardioCalorieGoal?.toString() || "");
   const [editedCardioStretchGoal, setEditedCardioStretchGoal] = useState(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
+  const [cardioGoalMode, setCardioGoalMode] = useState<CardioGoalMode>(preferences.cardioGoalMode || 'auto');
+  const [stretchMultiplier, setStretchMultiplier] = useState(preferences.stretchGoalMultiplier || 1.2);
+  const [calculatedTargets, setCalculatedTargets] = useState<WeeklyCardioTargets | null>(null);
+
+  // Auto-calculate cardio targets when dependencies change
+  useEffect(() => {
+    if (cardioGoalMode === 'auto') {
+      const targets = calculateWeeklyCardioTarget(preferences as UserProfile);
+      setCalculatedTargets(targets);
+      // Update the displayed values to match calculated targets
+      if (targets) {
+        setEditedCardioGoal(targets.baseTarget.toString());
+        setEditedCardioStretchGoal(targets.stretchTarget.toString());
+      }
+    }
+  }, [
+    cardioGoalMode,
+    preferences.weightValue,
+    preferences.weightUnit,
+    preferences.experienceLevel,
+    preferences.fitnessGoals,
+    preferences.workoutsPerWeek,
+    stretchMultiplier,
+  ]);
+
+  // Backwards compatibility migration: if user has manual goals but no mode set, default to manual
+  useEffect(() => {
+    if (preferences.weeklyCardioCalorieGoal && !preferences.cardioGoalMode) {
+      setCardioGoalMode('manual');
+    }
+  }, [preferences.weeklyCardioCalorieGoal, preferences.cardioGoalMode]);
 
   const syncEditFields = () => {
     setEditedWorkoutsPerWeek(preferences.workoutsPerWeek?.toString() || "3");
@@ -59,6 +96,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
     setEditedAiPreferencesNotes(preferences.aiPreferencesNotes || "");
     setEditedCardioGoal(preferences.weeklyCardioCalorieGoal?.toString() || "");
     setEditedCardioStretchGoal(preferences.weeklyCardioStretchCalorieGoal?.toString() || "");
+    setCardioGoalMode(preferences.cardioGoalMode || 'auto');
+    setStretchMultiplier(preferences.stretchGoalMultiplier || 1.2);
   };
 
   const handleEditClick = () => {
@@ -77,9 +116,31 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       });
       return;
     }
-    
-    const cardioGoal = editedCardioGoal ? parseInt(editedCardioGoal, 10) : undefined;
-    const cardioStretchGoal = editedCardioStretchGoal ? parseInt(editedCardioStretchGoal, 10) : undefined;
+
+    // Validate stretch multiplier
+    if (cardioGoalMode === 'auto') {
+      if (isNaN(stretchMultiplier) || stretchMultiplier < 1.0 || stretchMultiplier > 2.0) {
+        toast({
+          title: "Invalid Stretch Multiplier",
+          description: "Stretch multiplier must be between 1.0 and 2.0.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Validate weight is set for auto mode
+    if (cardioGoalMode === 'auto' && (!preferences.weightValue || preferences.weightValue <= 0)) {
+      toast({
+        title: "Weight Required",
+        description: "Please set your weight in the profile to enable auto-calculation mode.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cardioGoal = cardioGoalMode === 'auto' ? calculatedTargets?.baseTarget : (editedCardioGoal ? parseInt(editedCardioGoal, 10) : undefined);
+    const cardioStretchGoal = cardioGoalMode === 'auto' ? calculatedTargets?.stretchTarget : (editedCardioStretchGoal ? parseInt(editedCardioStretchGoal, 10) : undefined);
 
     if (cardioGoal !== undefined && (isNaN(cardioGoal) || cardioGoal < 0)) {
         toast({ title: "Invalid Cardio Goal", description: "Weekly cardio goal must be a positive number.", variant: "destructive" });
@@ -101,6 +162,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       aiPreferencesNotes: editedAiPreferencesNotes,
       weeklyCardioCalorieGoal: cardioGoal,
       weeklyCardioStretchCalorieGoal: cardioStretchGoal,
+      cardioGoalMode: cardioGoalMode,
+      stretchGoalMultiplier: cardioGoalMode === 'auto' ? stretchMultiplier : undefined,
+      weightValue: preferences.weightValue,
+      weightUnit: preferences.weightUnit,
+      fitnessGoals: preferences.fitnessGoals,
     });
     setIsEditing(false);
   };
@@ -205,34 +271,99 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
               </div>
             </div>
             
-            <div className="space-y-2 pt-2">
-                <Label className="text-sm font-medium">Weekly Cardio Calories</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <Label htmlFor="cardio-goal-input" className="text-xs font-normal text-muted-foreground">Base Target</Label>
+            <div className="space-y-3 pt-2">
+              <Label className="text-sm font-medium">Weekly Cardio Calories</Label>
+              <div className="flex gap-2 mb-3">
+                <Button
+                  variant={cardioGoalMode === 'auto' ? 'default' : 'outline'}
+                  onClick={() => setCardioGoalMode('auto')}
+                  className="flex-1"
+                >
+                  Auto Calculate
+                </Button>
+                <Button
+                  variant={cardioGoalMode === 'manual' ? 'default' : 'outline'}
+                  onClick={() => setCardioGoalMode('manual')}
+                  className="flex-1"
+                >
+                  Manual Override
+                </Button>
+              </div>
+
+              {cardioGoalMode === 'auto' ? (
+                <div className="space-y-3 p-3 rounded-md bg-blue-50 border border-blue-200">
+                  {preferences.weightValue && preferences.weightValue > 0 ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs font-normal text-muted-foreground">Base Target (calculated)</Label>
+                          <div className="mt-1 p-2 bg-white border rounded text-sm font-medium">
+                            {calculatedTargets?.baseTarget.toLocaleString() || '—'} kcal
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-xs font-normal text-muted-foreground">Stretch Goal (calculated)</Label>
+                          <div className="mt-1 p-2 bg-white border rounded text-sm font-medium">
+                            {calculatedTargets?.stretchTarget.toLocaleString() || '—'} kcal
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="stretch-multiplier-input" className="text-xs font-normal text-muted-foreground">
+                          Stretch Goal Multiplier (1.0-2.0)
+                        </Label>
                         <Input
-                            id="cardio-goal-input"
-                            type="number"
-                            min="0"
-                            value={editedCardioGoal}
-                            onChange={(e) => setEditedCardioGoal(e.target.value)}
-                            placeholder="e.g., 1000 kcal"
-                            className="mt-1"
+                          id="stretch-multiplier-input"
+                          type="number"
+                          step="0.1"
+                          min="1.0"
+                          max="2.0"
+                          value={stretchMultiplier}
+                          onChange={(e) => setStretchMultiplier(parseFloat(e.target.value) || 1.2)}
+                          className="mt-1"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {stretchMultiplier}x of base target = {calculatedTargets ? Math.round(calculatedTargets.baseTarget * stretchMultiplier).toLocaleString() : '—'} kcal
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground italic pt-1">
+                        Based on CDC guidelines (150 min/week moderate cardio) adjusted for your experience level, fitness goals, and workout frequency.
+                      </p>
+                    </>
+                  ) : (
+                    <div className="text-sm text-yellow-700 p-2">
+                      Set your weight in the profile to enable auto-calculation.
                     </div>
-                    <div>
-                        <Label htmlFor="cardio-stretch-goal-input" className="text-xs font-normal text-muted-foreground">Stretch Goal</Label>
-                        <Input
-                            id="cardio-stretch-goal-input"
-                            type="number"
-                            min="0"
-                            value={editedCardioStretchGoal}
-                            onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
-                            placeholder="e.g., 1200 kcal"
-                            className="mt-1"
-                        />
-                    </div>
+                  )}
                 </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="cardio-goal-input" className="text-xs font-normal text-muted-foreground">Base Target</Label>
+                    <Input
+                      id="cardio-goal-input"
+                      type="number"
+                      min="0"
+                      value={editedCardioGoal}
+                      onChange={(e) => setEditedCardioGoal(e.target.value)}
+                      placeholder="e.g., 1000 kcal"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="cardio-stretch-goal-input" className="text-xs font-normal text-muted-foreground">Stretch Goal</Label>
+                    <Input
+                      id="cardio-stretch-goal-input"
+                      type="number"
+                      min="0"
+                      value={editedCardioStretchGoal}
+                      onChange={(e) => setEditedCardioStretchGoal(e.target.value)}
+                      placeholder="e.g., 1200 kcal"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
@@ -267,6 +398,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
               </div>
               <div className="space-y-3">
                 <h4 className="font-medium text-muted-foreground">Weekly Cardio Calories</h4>
+                <div className="space-y-1 text-xs mb-2">
+                  <span className="inline-block px-2 py-1 rounded-md bg-blue-100 text-blue-800">
+                    {preferences.cardioGoalMode === 'auto' ? 'Auto-calculated' : 'Custom'}
+                  </span>
+                </div>
                  <div className="space-y-3">
                     <div>
                         <span className="font-medium text-muted-foreground">Base Target: </span>
