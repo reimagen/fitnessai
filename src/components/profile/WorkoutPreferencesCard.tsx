@@ -602,11 +602,27 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 <div className="space-y-1 text-xs">
                   <div>
                       <span className="font-medium text-muted-foreground">Base Target: </span>
-                      <span>{preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal.toLocaleString()} kcal` : "Not set"}</span>
+                      <span>
+                        {preferences.cardioCalculationMethod === 'auto' && preferences.experienceLevel && preferences.weightGoal && preferences.activityLevel
+                          ? `${calculateWeeklyCardioTargets({
+                              experienceLevel: preferences.experienceLevel,
+                              weightGoal: preferences.weightGoal,
+                              activityLevel: preferences.activityLevel,
+                            } as UserProfile).base.toLocaleString()} kcal`
+                          : preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal.toLocaleString()} kcal` : "Not set"}
+                      </span>
                   </div>
                   <div>
                       <span className="font-medium text-muted-foreground">Stretch Goal: </span>
-                      <span>{preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal.toLocaleString()} kcal` : "Not set"}</span>
+                      <span>
+                        {preferences.cardioCalculationMethod === 'auto' && preferences.experienceLevel && preferences.weightGoal && preferences.activityLevel
+                          ? `${calculateWeeklyCardioTargets({
+                              experienceLevel: preferences.experienceLevel,
+                              weightGoal: preferences.weightGoal,
+                              activityLevel: preferences.activityLevel,
+                            } as UserProfile).stretch.toLocaleString()} kcal`
+                          : preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal.toLocaleString()} kcal` : "Not set"}
+                      </span>
                   </div>
                 </div>
               </div>
