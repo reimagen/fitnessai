@@ -393,14 +393,16 @@ Exercise Data Migration to Firebase
  5. Implement equipment filtering logic              
  6. Test autocomplete with various equipment types   
                                                      
- Phase 5: Screenshot Parser Update                   
+Phase 5: Screenshot Parser Update                   
                                                      
  Goal: Detect and store equipment type from          
  screenshots                                         
                                                      
- Files to Modify:                                    
- - /src/ai/flows/screenshot-workout-parser.ts -      
- Update prompt to detect equipment                   
+Files to Modify:                                    
+- /src/ai/flows/screenshot-workout-parser.ts -      
+Update prompt to detect equipment                   
+- /src/ai/flows/personal-record-parser.ts -         
+Update prompt to detect equipment                   
                                                      
  Changes:                                            
  // Update Exercise schema in prompt                 
@@ -423,13 +425,16 @@ Exercise Data Migration to Firebase
  - Default to 'machine' for gym machine exercises    
  - Use 'other' if equipment type is unclear          
                                                      
- Tasks:                                              
+Tasks:                                              
  1. Add equipment field to Exercise schema in parser 
  2. Update AI prompt with equipment detection        
  instructions                                        
- 3. Test with EGYM screenshots (should detect        
+ 3. Apply the same changes to the PRs parser         
+ 4. Test workout screenshots with EGYM (should detect 
  "machine")                                          
- 4. Test with various equipment types if screenshots 
+ 5. Test PR screenshots with EGYM (should detect     
+ "machine")                                          
+ 6. Test with various equipment types if screenshots 
   available                                          
                                                      
  Phase 6: Cleanup & Testing                          
