@@ -81,7 +81,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
   const [editedActivityLevel, setEditedActivityLevel] = useState<ActivityLevel>(preferences.activityLevel || 'moderately_active');
   const [editedWeightGoal, setEditedWeightGoal] = useState<WeightGoal>(preferences.weightGoal || 'maintain');
   const [editedCardioMethod, setEditedCardioMethod] = useState<CardioCalculationMethod>(preferences.cardioCalculationMethod || 'auto');
-  const [simplifiedCalculatedTargets, setSimplifiedCalculatedTargets] = useState<{ base: number; stretch: number } | null>(null);
+  const [simplifiedCalculatedTargets, setSimplifiedCalculatedTargets] = useState<{ baseGoal: number; stretchGoal: number } | null>(null);
 
   // Auto-calculate cardio targets when dependencies change (legacy complex formula)
   useEffect(() => {
@@ -199,8 +199,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
         weightGoal: editedWeightGoal,
         activityLevel: editedActivityLevel,
       } as UserProfile);
-      cardioGoal = targets.base;
-      cardioStretchGoal = targets.stretch;
+      cardioGoal = targets.baseGoal;
+      cardioStretchGoal = targets.stretchGoal;
     } else if (cardioGoalMode === 'auto' && !editedCardioMethod) {
       // Fall back to legacy calculation if only legacy mode is set (backwards compatibility)
       cardioGoal = calculatedTargets?.baseTarget;
@@ -373,6 +373,29 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                 {editedCardioMethod === 'auto' && (
                   <div className="space-y-3 mt-3 pt-3 border-t border-amber-200">
                     <p className="text-xs text-amber-900">Set your activity level and weight goal:</p>
+
+                    {/* Help card for activity level selection */}
+                    <details className="bg-blue-50 border border-blue-200 rounded p-3 text-xs">
+                      <summary className="cursor-pointer font-medium text-blue-900 hover:text-blue-800">ℹ️ How to choose your activity level</summary>
+                      <div className="mt-3 space-y-2 text-blue-800">
+                        <div>
+                          <span className="font-semibold">Sedentary:</span> Minimal exercise, mostly desk/indoor work
+                        </div>
+                        <div>
+                          <span className="font-semibold">Lightly Active:</span> 1-3 workouts per week, some daily movement
+                        </div>
+                        <div>
+                          <span className="font-semibold">Moderately Active:</span> 3-5 workouts per week (balanced routine)
+                        </div>
+                        <div>
+                          <span className="font-semibold">Very Active:</span> 5-6 workouts per week or physically demanding job
+                        </div>
+                        <div>
+                          <span className="font-semibold">Extremely Active:</span> Daily intense training or manual labor job
+                        </div>
+                      </div>
+                    </details>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <Label htmlFor="activity-level-select" className="text-xs font-normal text-muted-foreground">
@@ -417,11 +440,11 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                       </div>
                     </div>
 
-                    {simplifiedCalculatedTargets && simplifiedCalculatedTargets.base && simplifiedCalculatedTargets.stretch && (
+                    {simplifiedCalculatedTargets && simplifiedCalculatedTargets.baseGoal && simplifiedCalculatedTargets.stretchGoal && (
                       <div className="p-2 bg-white rounded border border-amber-200 text-sm">
                         <p className="text-xs text-muted-foreground mb-1">Recommended targets:</p>
                         <p className="font-semibold">
-                          {simplifiedCalculatedTargets.base.toLocaleString()} - {simplifiedCalculatedTargets.stretch.toLocaleString()} kcal/week
+                          {simplifiedCalculatedTargets.baseGoal.toLocaleString()} - {simplifiedCalculatedTargets.stretchGoal.toLocaleString()} kcal/week
                         </p>
                       </div>
                     )}
@@ -608,7 +631,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                               experienceLevel: preferences.experienceLevel,
                               weightGoal: preferences.weightGoal,
                               activityLevel: preferences.activityLevel,
-                            } as UserProfile).base.toLocaleString()} kcal`
+                            } as UserProfile).baseGoal.toLocaleString()} kcal`
                           : preferences.weeklyCardioCalorieGoal !== undefined ? `${preferences.weeklyCardioCalorieGoal.toLocaleString()} kcal` : "Not set"}
                       </span>
                   </div>
@@ -620,7 +643,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
                               experienceLevel: preferences.experienceLevel,
                               weightGoal: preferences.weightGoal,
                               activityLevel: preferences.activityLevel,
-                            } as UserProfile).stretch.toLocaleString()} kcal`
+                            } as UserProfile).stretchGoal.toLocaleString()} kcal`
                           : preferences.weeklyCardioStretchCalorieGoal !== undefined ? `${preferences.weeklyCardioStretchCalorieGoal.toLocaleString()} kcal` : "Not set"}
                       </span>
                   </div>
