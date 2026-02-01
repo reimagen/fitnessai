@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { cn } from "@/lib/utils"
 import { fuzzyMatch } from "@/lib/fuzzy-match"
 
 interface ExerciseComboboxProps {

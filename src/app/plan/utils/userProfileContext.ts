@@ -7,6 +7,7 @@ import type {
 } from "@/lib/types";
 import { getNormalizedExerciseName, getStrengthLevel } from "@/lib/strength-standards";
 import { calculateWeeklyCardioSummaries } from "./cardio";
+import { resolveWeeklyCardioGoal } from "@/lib/cardio-target-calculator";
 import { FOUR_WEEKS, FT_TO_INCHES, INCH_TO_CM, LBS_TO_KG } from "@/lib/constants";
 import { toTitleCase } from "@/lib/utils";
 
@@ -102,8 +103,11 @@ const buildWorkoutPreferencesSection = (userProfile: UserProfile) => {
   );
   lines.push(`- Experience Level: ${userProfile.experienceLevel || "Not specified"}`);
 
-  if (userProfile.weeklyCardioCalorieGoal) {
-    lines.push(`- Weekly Cardio Goal: ${userProfile.weeklyCardioCalorieGoal.toLocaleString()} kcal`);
+  const weeklyGoal = resolveWeeklyCardioGoal(userProfile);
+  if (weeklyGoal) {
+    const goalLabel =
+      userProfile.cardioCalculationMethod === "auto" ? "Weekly Cardio Goal (Auto)" : "Weekly Cardio Goal (Manual)";
+    lines.push(`- ${goalLabel}: ${weeklyGoal.toLocaleString()} kcal`);
   }
   if (userProfile.aiPreferencesNotes) {
     lines.push(`- Additional Notes for AI: ${userProfile.aiPreferencesNotes}`);

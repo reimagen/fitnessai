@@ -36,6 +36,7 @@ export function useLiftTrends(
         currentLiftLevel: null,
         trendImprovement: null,
         volumeTrend: null,
+        avgE1RM: null,
       };
     }
 

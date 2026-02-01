@@ -17,7 +17,6 @@ interface StrengthBalanceCardProps {
   isLoading: boolean;
   userProfile: UserProfile | undefined;
   workoutLogs: WorkoutLog[] | undefined;
-  personalRecords: PersonalRecord[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
 }
 
@@ -159,8 +158,6 @@ const StrengthBalanceFindingCard: React.FC<{
   isAnalyzing: boolean;
 }> = ({ type, finding, aiFinding, isAnalyzing }) => {
   if ('hasData' in finding && !finding.hasData) {
-    const config = IMBALANCE_CONFIG[type];
-    const requirements = `Requires: ${config.lift1Options.map(toTitleCase).join('/')} & ${config.lift2Options.map(toTitleCase).join('/')}`;
     return (
       <Card className="p-4 bg-secondary/50 flex flex-col">
         <CardTitle className="text-base flex items-center justify-between">
@@ -259,7 +256,6 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   isLoading,
   userProfile,
   workoutLogs,
-  personalRecords,
   strengthAnalysis,
 }) => {
   const { toast } = useToast();

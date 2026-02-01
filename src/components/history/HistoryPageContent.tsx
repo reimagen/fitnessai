@@ -97,7 +97,7 @@ export function HistoryPageContent() {
           onSubmitLog={handleManualLogSubmit}
           onCancelEdit={handleCancelEdit}
           workoutLogs={workoutLogs || []}
-          userProfile={userProfile}
+          userProfile={userProfile ?? undefined}
         />
       </div>
 

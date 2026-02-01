@@ -54,6 +54,9 @@ export interface FitnessGoal {
 
 export type ExperienceLevel = 'beginner' | 'intermediate' | 'advanced';
 export type SessionTime = 15 | 30 | 45 | 60;
+export type ActivityLevel = 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active';
+export type WeightGoal = 'lose' | 'maintain' | 'gain';
+export type CardioCalculationMethod = 'auto' | 'manual';
 
 export interface StoredStrengthAnalysis {
   result: StrengthImbalanceOutput;
@@ -214,6 +217,9 @@ export interface UserProfile {
   weeklyPlan?: StoredWeeklyPlan;
   weeklyCardioCalorieGoal?: number;
   weeklyCardioStretchCalorieGoal?: number;
+  activityLevel?: ActivityLevel;
+  weightGoal?: WeightGoal;
+  cardioCalculationMethod?: CardioCalculationMethod;
   aiUsage?: AIUsageStats;
 }
 

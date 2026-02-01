@@ -76,9 +76,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       }
     } else if (isWhitelisted === true && isPendingRoute) {
       // If a whitelisted user somehow lands on the pending page, move them home.
-      if (pathname !== "/") {
-        router.push("/");
-      }
+      router.push("/");
     }
 
   }, [user, isLoading, isWhitelisted, isCheckingWhitelist, hasInitialized, router, pathname]);

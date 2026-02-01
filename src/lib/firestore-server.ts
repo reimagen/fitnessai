@@ -218,9 +218,12 @@ export const userProfileConverter = {
             workoutsPerWeek: data.workoutsPerWeek,
             sessionTimeMinutes: data.sessionTimeMinutes,
             experienceLevel: data.experienceLevel,
-aiPreferencesNotes: data.aiPreferencesNotes,
+            aiPreferencesNotes: data.aiPreferencesNotes,
             weeklyCardioCalorieGoal: data.weeklyCardioCalorieGoal,
             weeklyCardioStretchCalorieGoal: data.weeklyCardioStretchCalorieGoal,
+            activityLevel: data.activityLevel,
+            weightGoal: data.weightGoal,
+            cardioCalculationMethod: data.cardioCalculationMethod,
             aiUsage: aiUsage,
         };
     }
