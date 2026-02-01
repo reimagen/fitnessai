@@ -168,10 +168,19 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
-        <CardDescription>
-          {userProfile
-            ? `${userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
-            : "Set your profile goals to track your weekly cardio."}
+        <CardDescription className="flex flex-col gap-2">
+          <div>
+            {userProfile
+              ? `${userProfile.cardioGoalMode === 'auto' ? 'Auto-calculated based on CDC guidelines for your weight.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
+              : "Set your profile goals to track your weekly cardio."}
+          </div>
+          {userProfile?.cardioCalculationMethod === 'auto' && (
+            <div className="inline-flex w-fit">
+              <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
+                ✨ Simplified Auto-Calculated
+              </span>
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>

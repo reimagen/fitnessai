@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { ExperienceLevel, SessionTime, UserProfile, CardioGoalMode } from "@/lib/types";
+import type { ExperienceLevel, SessionTime, UserProfile, CardioGoalMode, ActivityLevel, WeightGoal, CardioCalculationMethod } from "@/lib/types";
 import { calculateWeeklyCardioTarget, type WeeklyCardioTargets } from "@/lib/calorie-calculator";
+import { calculateWeeklyCardioTargets } from "@/lib/cardio-target-calculator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

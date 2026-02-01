@@ -19,6 +19,36 @@ export const MODERATE_CARDIO_MET_VALUE = 5.0;
 export const DEFAULT_STRETCH_MULTIPLIER = 1.2;
 export const DEFAULT_CARDIO_GOAL_MODE: 'auto' | 'manual' = 'auto';
 
+/**
+ * Cardio target calculation (simplified health-based formula)
+ */
+export const CARDIO_HEALTH_BASELINE = 600; // 150 min moderate cardio
+
+export const WEIGHT_GOAL_MULTIPLIERS = {
+  lose: 1.4,
+  maintain: 1.0,
+  gain: 0.8,
+} as const;
+
+export const CARDIO_EXPERIENCE_MULTIPLIERS = {
+  beginner: 0.8,
+  intermediate: 1.0,
+  advanced: 1.2,
+} as const;
+
+export const CARDIO_STRETCH_MULTIPLIERS = {
+  beginner: 1.20,
+  intermediate: 1.25,
+  advanced: 1.30,
+} as const;
+
+export const CARDIO_TARGET_BOUNDS = {
+  minBase: 400,
+  maxBase: 2500,
+  minStretch: 500,
+  maxStretch: 3000,
+} as const;
+
 export const EXPERIENCE_LEVEL_MULTIPLIERS = {
   beginner: 1.0,
   intermediate: 1.15,

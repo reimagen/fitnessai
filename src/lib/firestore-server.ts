@@ -224,6 +224,8 @@ export const userProfileConverter = {
             cardioGoalMode: data.cardioGoalMode,
             stretchGoalMultiplier: data.stretchGoalMultiplier,
             activityLevel: data.activityLevel,
+            weightGoal: data.weightGoal,
+            cardioCalculationMethod: data.cardioCalculationMethod,
             aiUsage: aiUsage,
         };
     }

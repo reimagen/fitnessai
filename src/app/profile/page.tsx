@@ -86,6 +86,11 @@ export default function ProfilePage() {
               aiPreferencesNotes: userProfile.aiPreferencesNotes,
               weeklyCardioCalorieGoal: userProfile.weeklyCardioCalorieGoal,
               weeklyCardioStretchCalorieGoal: userProfile.weeklyCardioStretchCalorieGoal,
+              cardioGoalMode: userProfile.cardioGoalMode,
+              stretchGoalMultiplier: userProfile.stretchGoalMultiplier,
+              weightValue: userProfile.weightValue,
+              weightUnit: userProfile.weightUnit,
+              fitnessGoals: userProfile.fitnessGoals,
             }}
             onUpdate={handlePreferencesUpdate}
           />
