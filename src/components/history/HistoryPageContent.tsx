@@ -82,7 +82,7 @@ export function HistoryPageContent() {
     <div className="container mx-auto px-4 py-8 space-y-8">
       <header className="mb-8">
         <h1 className="font-headline text-3xl font-bold text-primary">Workout History</h1>
-        <p className="text-muted-foreground">Log your sessions and review past performance.</p>
+        <p className="text-muted-foreground">Log your sessions and review exercise lists.</p>
       </header>
 
       {activeForm === "none" && <HistoryFormSelector onSelect={handleTabChange} />}

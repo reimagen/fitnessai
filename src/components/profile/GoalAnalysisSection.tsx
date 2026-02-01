@@ -26,8 +26,7 @@ export function GoalAnalysisSection({
 }: GoalAnalysisSectionProps) {
   return (
     <div className="pt-6 mt-6 border-t">
-      <h4 className="font-headline flex items-center gap-2 text-lg mb-2 text-primary">
-        <Zap className="h-5 w-5" />
+      <h4 className="font-headline text-xl font-semibold mb-2 text-primary">
         AI Goal Analysis
       </h4>
       <p className="text-sm text-muted-foreground mb-4">
@@ -70,11 +69,11 @@ export function GoalAnalysisSection({
                 const wasSuggestionAccepted = acceptedSuggestions.includes(insight.originalGoalDescription);
 
                 return (
-                  <div key={index} className="p-3 border rounded-md bg-background/50">
+                  <div key={index} className="p-3 border rounded-2xl bg-background/50">
                     <div className="relative">
                       <div className="md:pr-36">
                         <p className="text-sm font-semibold text-muted-foreground">
-                          {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-yellow-400 text-yellow-500" />}
+                          {isPrimary && <Star className="inline-block h-4 w-4 mr-2 fill-amber-400 text-amber-500" />}
                           Original Goal: &quot;{insight.originalGoalDescription}&quot;
                         </p>
                       </div>

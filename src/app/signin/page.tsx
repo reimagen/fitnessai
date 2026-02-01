@@ -70,13 +70,13 @@ export default function SignInPage() {
     return (
        <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
-          <header className="mb-8 text-center">
+          <header className="mb-8">
               <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">FitnessAI</h1>
               <p className="mt-2 text-lg text-muted-foreground">Your personal AI fitness companion.</p>
           </header>
-          <Card>
+          <Card className="shadow-lg">
             <CardHeader>
-              <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+              <CardTitle className="font-headline text-2xl">Reset Your Password</CardTitle>
               <CardDescription>
                 Enter your email address and we&apos;ll send you a link to reset your password.
               </CardDescription>
@@ -130,13 +130,13 @@ export default function SignInPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        <header className="mb-8 text-center">
+        <header className="mb-8">
             <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">FitnessAI</h1>
             <p className="mt-2 text-lg text-muted-foreground">Your personal AI fitness companion.</p>
         </header>
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="text-2xl">{isSigningUp ? 'Create an Account' : 'Sign In'}</CardTitle>
+            <CardTitle className="font-headline text-2xl">{isSigningUp ? 'Create an Account' : 'Sign In'}</CardTitle>
             <CardDescription>
               {isSigningUp ? 'Enter your email and password to get started.' : 'Enter your credentials to access your account.'}
             </CardDescription>

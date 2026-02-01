@@ -97,7 +97,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-start justify-between pb-4">
         <div>
-          <CardTitle className="font-headline flex items-center gap-2 text-xl">
+          <CardTitle className="font-headline flex items-center gap-2 text-2xl">
             <Zap className="h-5 w-5 text-primary" />
             Workout Preferences
           </CardTitle>
@@ -123,7 +123,7 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
       <CardContent className="space-y-4">
         {isEditing ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="workouts-per-week-input" className="text-sm font-medium">
                   Workouts Per Week
@@ -195,8 +195,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             </div>
           </>
         ) : (
-          <div className="space-y-4">
-            <div className="space-y-3 text-sm">
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3">
               <div>
                 <span className="font-medium text-muted-foreground">Workouts/Week: </span>
                 <span>{preferences.workoutsPerWeek !== undefined ? preferences.workoutsPerWeek : "Not set"}</span>
@@ -212,8 +212,8 @@ export function WorkoutPreferencesCard({ preferences, onUpdate }: WorkoutPrefere
             </div>
 
             {preferences.aiPreferencesNotes && (
-              <div className="pt-2">
-                <h4 className="font-semibold text-sm text-muted-foreground mt-2">Additional Preferences for AI:</h4>
+              <div className="pt-1">
+                <h4 className="font-semibold text-sm text-muted-foreground mt-1">Additional Preferences for AI:</h4>
                 <p className="text-sm whitespace-pre-wrap">{preferences.aiPreferencesNotes}</p>
               </div>
             )}

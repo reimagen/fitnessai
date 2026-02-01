@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Edit2, Save, XCircle, Flame } from "lucide-react";
 import { useToast } from "@/hooks/useToast";
@@ -189,7 +190,7 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
     <Card className="shadow-lg">
       <CardHeader className="flex flex-row items-start justify-between pb-4">
         <div>
-          <CardTitle className="font-headline flex items-center gap-2 text-xl">
+          <CardTitle className="font-headline flex items-center gap-2 text-2xl">
             <Flame className="h-5 w-5 text-primary" />
             Weekly Cardio Targets
           </CardTitle>
@@ -216,35 +217,25 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
         {isEditing ? (
           <div className="space-y-3">
             <Label className="text-sm font-medium">Calculation Method</Label>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={editedMethod === "auto" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditedMethod("auto")}
-                className="flex-1"
-              >
-                ✨ Smart Auto
-              </Button>
-              <Button
-                type="button"
-                variant={editedMethod === "manual" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setEditedMethod("manual")}
-                className="flex-1"
-              >
-                Manual Entry
-              </Button>
-            </div>
+            <Tabs value={editedMethod} onValueChange={(value) => setEditedMethod(value as CardioCalculationMethod)}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="auto" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Smart Auto
+                </TabsTrigger>
+                <TabsTrigger value="manual" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  Manual Entry
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             {editedMethod === "auto" ? (
               <div className="space-y-3 pt-2">
-                <p className="text-xs text-muted-foreground">Set your activity level and weight goal:</p>
-                <details className="bg-blue-50 border border-blue-200 rounded p-3 text-xs">
-                  <summary className="cursor-pointer font-medium text-blue-900 hover:text-blue-800">
+                <p className="text-sm text-muted-foreground">Set your activity level and weight goal:</p>
+                <details className="bg-primary/10 border border-primary/20 rounded p-3 text-sm">
+                  <summary className="cursor-pointer font-medium text-primary hover:text-primary/80">
                     ℹ️ How to choose your activity level
                   </summary>
-                  <div className="mt-3 space-y-2 text-blue-800">
+                  <div className="mt-3 space-y-2 text-foreground/80">
                     <div>
                       <span className="font-semibold">Sedentary:</span> Minimal exercise, mostly desk/indoor work
                     </div>
@@ -265,7 +256,7 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cardio-activity-level" className="text-xs font-normal text-muted-foreground">
+                    <Label htmlFor="cardio-activity-level" className="text-sm font-normal text-muted-foreground">
                       Activity Level
                     </Label>
                     <Select
@@ -286,7 +277,7 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
                   </div>
 
                   <div>
-                    <Label htmlFor="cardio-weight-goal" className="text-xs font-normal text-muted-foreground">
+                    <Label htmlFor="cardio-weight-goal" className="text-sm font-normal text-muted-foreground">
                       Weight Goal
                     </Label>
                     <Select
@@ -308,20 +299,29 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
                 </div>
 
                 {autoPreview && (
-                  <div className="p-2 bg-white rounded border border-amber-200 text-sm">
-                    <p className="text-xs text-muted-foreground mb-1">Recommended targets:</p>
-                    <p className="font-semibold">
-                      {autoPreview.baseGoal.toLocaleString()} - {autoPreview.stretchGoal.toLocaleString()} kcal/week
-                    </p>
+                  <div className="p-2 bg-white rounded border border-primary/30 text-sm">
+                    <span className="inline-block px-3 py-1 rounded-full bg-amber-200 text-amber-800 font-medium mb-2">
+                      Smart Auto-Calculated
+                    </span>
+                    <div className="space-y-1 text-sm">
+                      <div>
+                        <span className="font-medium text-muted-foreground">Base Target: </span>
+                        <span className="font-semibold">{autoPreview.baseGoal.toLocaleString()} kcal/week</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-muted-foreground">Stretch Goal: </span>
+                        <span className="font-semibold">{autoPreview.stretchGoal.toLocaleString()} kcal/week</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-3 pt-2">
-                <p className="text-xs text-muted-foreground">Enter your targets manually:</p>
+                <p className="text-sm text-muted-foreground">Enter your targets manually:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="cardio-manual-base" className="text-xs font-normal text-muted-foreground">
+                    <Label htmlFor="cardio-manual-base" className="text-sm font-normal text-muted-foreground">
                       Base Target
                     </Label>
                     <Input
@@ -335,7 +335,7 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cardio-manual-stretch" className="text-xs font-normal text-muted-foreground">
+                    <Label htmlFor="cardio-manual-stretch" className="text-sm font-normal text-muted-foreground">
                       Stretch Goal
                     </Label>
                     <Input
@@ -354,49 +354,53 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
           </div>
         ) : (
           <div className="space-y-3 text-sm">
-            <div className="space-y-1 text-xs">
+            <div className="space-y-1 text-sm">
               {targets.cardioCalculationMethod === "auto" ? (
-                <span className="inline-block px-2 py-1 rounded-md bg-amber-100 text-amber-800 font-medium">
-                  ✨ Smart Auto-Calculated
+                <span className="inline-block px-3 py-1 rounded-full bg-amber-200 text-amber-800 font-medium">
+                  Smart Auto-Calculated
                 </span>
               ) : (
-                <span className="inline-block px-2 py-1 rounded-md bg-slate-100 text-slate-800">
+                <span className="inline-block px-3 py-1 rounded-full bg-slate-100 text-slate-800">
                   Manual Entry
                 </span>
               )}
             </div>
 
-            {targets.cardioCalculationMethod === "auto" && (
-              <div className="space-y-1 text-xs">
+            {targets.cardioCalculationMethod === "auto" ? (
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium text-muted-foreground">Activity Level: </span>
+                    <span>{ACTIVITY_LEVEL_OPTIONS.find((opt) => opt.value === targets.activityLevel)?.label || "Not set"}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Weight Goal: </span>
+                    <span>{WEIGHT_GOAL_OPTIONS.find((opt) => opt.value === targets.weightGoal)?.label || "Not set"}</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium text-muted-foreground">Base Target: </span>
+                    <span>{autoDisplay.base}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Stretch Goal: </span>
+                    <span>{autoDisplay.stretch}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                 <div>
-                  <span className="font-medium text-muted-foreground">Activity Level: </span>
-                  <span>{ACTIVITY_LEVEL_OPTIONS.find((opt) => opt.value === targets.activityLevel)?.label || "Not set"}</span>
+                  <span className="font-medium text-muted-foreground">Base Target: </span>
+                  <span>{renderGoalValue(targets.weeklyCardioCalorieGoal)}</span>
                 </div>
                 <div>
-                  <span className="font-medium text-muted-foreground">Weight Goal: </span>
-                  <span>{WEIGHT_GOAL_OPTIONS.find((opt) => opt.value === targets.weightGoal)?.label || "Not set"}</span>
+                  <span className="font-medium text-muted-foreground">Stretch Goal: </span>
+                  <span>{renderGoalValue(targets.weeklyCardioStretchCalorieGoal)}</span>
                 </div>
               </div>
             )}
-
-            <div className="space-y-1 text-xs">
-              <div>
-                <span className="font-medium text-muted-foreground">Base Target: </span>
-                <span>
-                  {targets.cardioCalculationMethod === "auto"
-                    ? autoDisplay.base
-                    : renderGoalValue(targets.weeklyCardioCalorieGoal)}
-                </span>
-              </div>
-              <div>
-                <span className="font-medium text-muted-foreground">Stretch Goal: </span>
-                <span>
-                  {targets.cardioCalculationMethod === "auto"
-                    ? autoDisplay.stretch
-                    : renderGoalValue(targets.weeklyCardioStretchCalorieGoal)}
-                </span>
-              </div>
-            </div>
           </div>
         )}
       </CardContent>

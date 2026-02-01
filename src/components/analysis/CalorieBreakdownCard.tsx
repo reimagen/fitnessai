@@ -16,6 +16,7 @@ interface CategoryChartData {
   name: string;
   value: number;
   fill: string;
+  hasEstimatedCalories?: boolean;
 }
 
 interface CalorieBreakdownCardProps {
@@ -62,7 +63,7 @@ export function CalorieBreakdownCard({ isLoading, isError, categoryCalorieData, 
                   cy="50%"
                   outerRadius={isMobile ? 60 : 80}
                   labelLine={false}
-                  label={(props) => renderPieLabel(props, 'kcal', isMobile, true)}
+                  label={(props) => renderPieLabel(props, 'kcal', isMobile, (props.payload as any)?.hasEstimatedCalories ?? true)}
                 >
                   {categoryCalorieData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} stroke={entry.fill} />

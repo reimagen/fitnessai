@@ -30,18 +30,19 @@ import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
 
 const exerciseSchema = z.object({
-  id: z.string().optional(), 
+  id: z.string().optional(),
   name: z.string().min(1, "Exercise name is required.").default(""),
   sets: z.coerce.number().min(0).optional().default(0),
   reps: z.coerce.number().min(0).optional().default(0),
   weight: z.coerce.number().min(0).optional().default(0),
   weightUnit: z.enum(['kg', 'lbs']).optional().default('lbs'),
-  category: z.enum(CATEGORY_OPTIONS).default("Other"), 
+  category: z.enum(CATEGORY_OPTIONS).default("Other"),
   distance: z.coerce.number().min(0).optional().default(0),
   distanceUnit: z.enum(['mi', 'km', 'ft', 'm']).optional().default('mi'),
   duration: z.coerce.number().min(0).optional().default(0),
   durationUnit: z.enum(['min', 'hr', 'sec']).optional().default('min'),
   calories: z.coerce.number().min(0).optional().default(0),
+  caloriesSource: z.enum(['manual', 'estimated']).optional(),
 });
 
 const workoutLogSchema = z.object({
@@ -68,12 +69,13 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
   reps: 0,
   weight: 0,
   weightUnit: "lbs",
-  category: "Other", 
+  category: "Other",
   distance: 0,
   distanceUnit: "mi",
   duration: 0,
   durationUnit: "min",
-  calories: 0
+  calories: 0,
+  caloriesSource: undefined,
 };
 
 export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting, workoutLogs = [], userProfile }: WorkoutLogFormProps) {
@@ -108,12 +110,13 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
             reps: ex.reps ?? 0,
             weight: ex.weight ?? 0,
             weightUnit: ex.weightUnit || 'lbs',
-            category: categoryIsValid ? ex.category as ExerciseCategory : "Other", 
+            category: categoryIsValid ? ex.category as ExerciseCategory : "Other",
             distance: ex.distance ?? 0,
             distanceUnit: ex.distanceUnit || 'mi',
             duration: ex.duration ?? 0,
             durationUnit: ex.durationUnit || "min",
             calories: ex.calories ?? 0,
+            caloriesSource: ex.caloriesSource,
           };
         }) || [defaultExerciseValues],
       });
@@ -136,16 +139,19 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
       const normalizedName = getNormalizedExerciseName(ex.name);
 
       // Determine calorie source and value
-      let caloriesSource: 'manual' | 'estimated' = 'estimated';
+      let caloriesSource: 'manual' | 'estimated' = ex.caloriesSource || 'estimated';
       let calories = ex.calories ?? 0;
 
-      if (ex.calories && ex.calories > 0) {
-        // User manually entered calories
+      if (ex.calories && ex.calories > 0 && !ex.caloriesSource) {
+        // User manually entered calories (and no existing source was set)
         caloriesSource = 'manual';
-      } else if (userProfile) {
-        // Calculate calories for both strength and cardio exercises
-        const exercise = { name: ex.name, category: ex.category, weight: ex.weight, weightUnit: ex.weightUnit, sets: ex.sets, reps: ex.reps, distance: ex.distance, distanceUnit: ex.distanceUnit, duration: ex.duration, durationUnit: ex.durationUnit } as Parameters<typeof calculateExerciseCalories>[0];
-        calories = calculateExerciseCalories(exercise, userProfile, workoutLogs);
+      } else if (!ex.calories || ex.calories === 0) {
+        // No manual calories, calculate them if user profile exists
+        if (userProfile) {
+          const exercise = { name: ex.name, category: ex.category, weight: ex.weight, weightUnit: ex.weightUnit, sets: ex.sets, reps: ex.reps, distance: ex.distance, distanceUnit: ex.distanceUnit, duration: ex.duration, durationUnit: ex.durationUnit } as Parameters<typeof calculateExerciseCalories>[0];
+          calories = calculateExerciseCalories(exercise, userProfile, workoutLogs);
+          caloriesSource = 'estimated';
+        }
       }
 
       return {
@@ -187,7 +193,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                 <FormItem>
                 <FormLabel>Date</FormLabel>
                 <FormControl>
-                    <Input type="date" {...field} />
+                    <Input type="date" className="appearance-none" {...field} />
                 </FormControl>
                 <FormMessage />
                 </FormItem>
@@ -199,7 +205,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
           {fields.map((field, index) => {
             return (
-              <Card key={field.id} className="mb-4 p-4 border rounded-md shadow-sm relative">
+              <Card key={field.id} className="mb-4 p-4 border rounded-2xl shadow-sm relative">
                 <Button
                   type="button"
                   variant="ghost"

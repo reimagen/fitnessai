@@ -69,10 +69,9 @@ export function PlanGeneratorSection({
     <Card className="shadow-lg">
       <CardHeader>
         <CardTitle className="font-headline flex items-center gap-2">
-          <Zap className="h-6 w-6 text-accent" />
           Generate New Weekly Plan
         </CardTitle>
-        <CardDescription>Your plan is tailored based on your profile, goals, and recent activity.</CardDescription>
+        <CardDescription>Your plan is tailored to your profile, goals, and recent activity.</CardDescription>
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -82,7 +81,7 @@ export function PlanGeneratorSection({
         ) : isError ? (
           <ErrorState message="Could not load the necessary data to generate a plan. Please check your connection and try again." />
         ) : !hasMinimumProfileForPlan ? (
-          <div className="flex items-center gap-2 p-4 rounded-md border border-yellow-500 bg-yellow-500/10 text-yellow-700">
+          <div className="flex items-center gap-2 p-4 rounded-md border border-amber-500 bg-amber-500/10 text-amber-700">
             <Info className="h-5 w-5" />
             <div>
               <p className="font-semibold">Complete Your Profile</p>
@@ -110,7 +109,7 @@ export function PlanGeneratorSection({
             <Button
               onClick={handleGeneratePlan}
               disabled={isGenerating || isLoading || isSavingPlan}
-              className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+              className="w-full"
             >
               {isGenerating || isSavingPlan ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -68,7 +68,7 @@ export default function AnalysisPage() {
 
   if (isLoadingProfile) {
     return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-full">
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
@@ -112,7 +112,7 @@ export default function AnalysisPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Your Progress</h1>
+        <h1 className="font-headline text-3xl font-bold text-primary">Workout Analysis</h1>
         <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
       </header>
       <div className="mb-6">
@@ -167,59 +167,59 @@ export default function AnalysisPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
         {isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </Card>
-            ))
+            <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </Card>
+          ))
           : !isError && (
-              <>
-                <ExerciseVarietyCard
-                  isLoading={isLoading}
-                  isError={isError}
-                  workoutFrequencyData={chartData.workoutFrequencyData}
-                  timeRange={timeRange}
-                />
-                <MilestonesCard
-                  isLoading={isLoading}
-                  isError={isError}
-                  newPrsData={chartData.newPrsData}
-                  achievedGoalsData={chartData.achievedGoalsData}
-                  timeRange={timeRange}
-                />
-                <CalorieBreakdownCard
-                  isLoading={isLoading}
-                  isError={isError}
-                  categoryCalorieData={chartData.categoryCalorieData}
-                  timeRange={timeRange}
-                />
-                <RepetitionBreakdownCard
-                  isLoading={isLoading}
-                  isError={isError}
-                  categoryRepData={chartData.categoryRepData}
-                  timeRange={timeRange}
-                />
+            <>
+              <ExerciseVarietyCard
+                isLoading={isLoading}
+                isError={isError}
+                workoutFrequencyData={chartData.workoutFrequencyData}
+                timeRange={timeRange}
+              />
+              <MilestonesCard
+                isLoading={isLoading}
+                isError={isError}
+                newPrsData={chartData.newPrsData}
+                achievedGoalsData={chartData.achievedGoalsData}
+                timeRange={timeRange}
+              />
+              <CalorieBreakdownCard
+                isLoading={isLoading}
+                isError={isError}
+                categoryCalorieData={chartData.categoryCalorieData}
+                timeRange={timeRange}
+              />
+              <RepetitionBreakdownCard
+                isLoading={isLoading}
+                isError={isError}
+                categoryRepData={chartData.categoryRepData}
+                timeRange={timeRange}
+              />
 
-                <LiftProgressionCard
-                  userProfile={userProfile!}
-                  workoutLogs={workoutLogs}
-                  personalRecords={personalRecords}
-                  selectedLift={resolvedSelectedLift}
-                  setSelectedLift={setSelectedLift}
-                  frequentlyLoggedLifts={frequentlyLoggedLifts}
-                />
-                <StrengthBalanceCard
-                  isLoading={isLoading}
-                  userProfile={userProfile!}
-                  workoutLogs={workoutLogs}
-                  strengthAnalysis={userProfile?.strengthAnalysis}
-                />
-                <CardioAnalysisCard
-                  cardioAnalysisData={cardioAnalysisData}
-                  timeRange={timeRange}
-                  timeRangeDisplayNames={timeRangeDisplayNames}
-                />
-              </>
-            )}
+              <LiftProgressionCard
+                userProfile={userProfile!}
+                workoutLogs={workoutLogs}
+                personalRecords={personalRecords}
+                selectedLift={resolvedSelectedLift}
+                setSelectedLift={setSelectedLift}
+                frequentlyLoggedLifts={frequentlyLoggedLifts}
+              />
+              <StrengthBalanceCard
+                isLoading={isLoading}
+                userProfile={userProfile!}
+                workoutLogs={workoutLogs}
+                strengthAnalysis={userProfile?.strengthAnalysis}
+              />
+              <CardioAnalysisCard
+                cardioAnalysisData={cardioAnalysisData}
+                timeRange={timeRange}
+                timeRangeDisplayNames={timeRangeDisplayNames}
+              />
+            </>
+          )}
       </div>
     </div>
   );

@@ -19,12 +19,14 @@ interface CardioStats {
   totalDistanceMi: number;
   totalDurationMin: number;
   totalCalories: number;
+  hasEstimatedCalories: boolean;
 }
 
 interface PieChartData {
   name: string;
   value: number;
   fill: string;
+  hasEstimatedCalories?: boolean;
 }
 
 interface CardioAmountChartPoint {
@@ -113,11 +115,16 @@ export function useCardioAnalysis(
     const statsByActivity = cardioExercises.reduce(
       (acc: Record<string, CardioStats>, ex) => {
         if (!acc[ex.name]) {
-          acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0 };
+          acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0, hasEstimatedCalories: false };
         }
         const stats = acc[ex.name];
         stats.count++;
         stats.totalCalories += ex.calories || 0;
+
+        // Track if any exercise in this activity has estimated calories
+        if (ex.caloriesSource === 'estimated' || (ex.calories && ex.calories > 0 && !ex.caloriesSource)) {
+          stats.hasEstimatedCalories = true;
+        }
 
         let distanceMi = 0;
         if (ex.distance) {
@@ -144,6 +151,7 @@ export function useCardioAnalysis(
       name: `${name} `,
       value: Math.round(stats.totalCalories),
       fill: `var(--color-${name})`,
+      hasEstimatedCalories: stats.hasEstimatedCalories,
     }));
 
     let calorieSummary = '';
@@ -164,8 +172,8 @@ export function useCardioAnalysis(
       weeklyAverage = weeksSoFar > 0 ? totalCalories / weeksSoFar : 0;
       calorieSummary = `This month you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else if (timeRange === 'yearly') {
-      const uniqueMonthsWithData = new Set(cardioExercises.map(ex => format(ex.date, 'yyyy-MM'))).size;
-      const weeksWithData = uniqueMonthsWithData * 4.345;
+      const yearStart = new Date(today.getFullYear(), 0, 1); // Jan 1 of current year
+      const weeksWithData = Math.max(1, differenceInWeeks(today, yearStart) + 1);
       weeklyAverage = weeksWithData > 0 ? totalCalories / weeksWithData : 0;
       calorieSummary = `This year you've burned ${Math.round(totalCalories).toLocaleString()} cardio calories, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     } else {

@@ -22,7 +22,7 @@ export function AchievedGoalsSection({ fields, isEditing, onUnachieve, onRemove 
 
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="achieved-goals" className="border rounded-md px-4 bg-secondary/30">
+      <AccordionItem value="achieved-goals" className="border rounded-2xl px-4 bg-secondary/30">
         <AccordionTrigger className="hover:no-underline">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -36,7 +36,7 @@ export function AchievedGoalsSection({ fields, isEditing, onUnachieve, onRemove 
             {fields.map((field, index) => {
               if (!field.achieved) return null;
               return (
-                <div key={field.id} className="flex items-center justify-between p-3 rounded-md bg-background/50 border">
+                <div key={field.id} className="flex items-center justify-between p-3 rounded-2xl bg-background/50 border">
                   <div className="flex flex-col">
                     <p className="font-medium text-foreground">{field.description}</p>
                     <p className="text-xs text-muted-foreground">

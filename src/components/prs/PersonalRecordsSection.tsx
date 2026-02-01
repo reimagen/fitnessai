@@ -46,22 +46,6 @@ export function PersonalRecordsSection({
           Body-weight based levels use ratios from strengthlevel.com. Otherwise, level calculations are based on
           your skeletal muscle mass.
         </CardDescription>
-        {recordCount > 0 && (
-          <Button
-            variant="destructive"
-            size="sm"
-            className="w-full mt-4"
-            onClick={() => handleClear(recordCount)}
-            disabled={isClearing}
-          >
-            {isClearing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
-            )}
-            Clear All Records
-          </Button>
-        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -98,6 +82,25 @@ export function PersonalRecordsSection({
             <p className="text-muted-foreground">
               No personal records logged yet. Add a PR or upload a screenshot to get started!
             </p>
+          </div>
+        )}
+        {recordCount > 0 && (
+          <div className="pt-6 mt-6 border-t">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full"
+              onClick={() => handleClear(recordCount)}
+              disabled={isClearing}
+            >
+              {isClearing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              Clear All Records
+            </Button>
+            <p className="mt-2 text-xs text-muted-foreground">This action cannot be undone.</p>
           </div>
         )}
       </CardContent>

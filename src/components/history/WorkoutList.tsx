@@ -201,7 +201,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
       {groupedExercisesByLog.map((log) => (
-        <AccordionItem value={log.id} key={log.id} className="border rounded-lg shadow-sm bg-card overflow-hidden">
+        <AccordionItem value={log.id} key={log.id} className="border rounded-2xl shadow-sm bg-card overflow-hidden">
           <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4">
             <AccordionPrimitive.Trigger className={cn(
               "flex flex-1 items-center justify-between p-0 text-left font-medium transition-all hover:underline rounded-sm",

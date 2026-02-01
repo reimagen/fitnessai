@@ -146,47 +146,55 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       const caloriesToStretch = Math.round(maxGoal - totalWeeklyCalories);
       const milesToStretch = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToStretch / caloriesPerMile).toFixed(1) : null;
       if (milesToStretch) {
-        return `Congrats on hitting your minimum goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch.toLocaleString()} calories, only a ${milesToStretch} mi run.`;
+        return `Congrats on hitting your base goal! To reach your stretch goal, you only need to burn another ${caloriesToStretch.toLocaleString()} calories, only a ${milesToStretch} mi run.`;
       }
-      return `Congrats on hitting your minimum goal! You only need another ${caloriesToStretch.toLocaleString()} calories to hit your stretch goal.`;
+      return `Congrats on hitting your base goal! You only need another ${caloriesToStretch.toLocaleString()} calories to hit your stretch goal.`;
     }
 
     if (totalWeeklyCalories >= minGoal * 0.5) {
       const caloriesToMin = Math.round(minGoal - totalWeeklyCalories);
       const milesToMin = caloriesPerMile && caloriesPerMile > 0 ? (caloriesToMin / caloriesPerMile).toFixed(1) : null;
       if (milesToMin) {
-        return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Run ${milesToMin} more miles to achieve this goal.`;
+        return `You're only ${caloriesToMin.toLocaleString()} calories away from your base goal. Run ${milesToMin} more miles to achieve this goal.`;
       }
-      return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Keep pushing!`;
+      return `You're only ${caloriesToMin.toLocaleString()} calories away from your base goal. Keep pushing!`;
     }
 
     const caloriesRemaining = minGoal - totalWeeklyCalories;
     const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (caloriesRemaining / caloriesPerMile).toFixed(1) : null;
 
     if (milesForMinGoal && parseFloat(milesForMinGoal) > 0) {
-      return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
+      return `Your base goal is to burn ${minGoal.toLocaleString()} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
     }
 
-    return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Get started to make progress!`;
+    return `Your base goal is to burn ${minGoal.toLocaleString()} calories. Get started to make progress!`;
   };
 
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
+      <CardHeader className="relative">
+        {userProfile?.cardioCalculationMethod === 'auto' && (
+          <div className="absolute right-6 top-6">
+            <span className="text-sm px-3 py-1 rounded-full bg-amber-200 text-amber-800 font-medium">
+              Smart Auto-Calculated
+            </span>
+          </div>
+        )}
         <CardTitle className="font-headline text-2xl font-semibold">Weekly Cardio</CardTitle>
-        <CardDescription className="flex flex-col gap-2">
+          <CardDescription className="flex flex-col gap-1">
           <div>
             {userProfile
-              ? `${userProfile.cardioCalculationMethod === 'auto' ? 'Personalized targets based on your activity level and goals.' : 'Custom targets.'} Weekly goal: ${minGoal.toLocaleString()}-${maxGoal.toLocaleString()} calories.`
+              ? userProfile.cardioCalculationMethod === 'auto'
+                ? 'Personalized targets based on your activity level and goals.'
+                : 'Custom targets.'
               : "Set your profile goals to track your weekly cardio."}
           </div>
-          {userProfile?.cardioCalculationMethod === 'auto' && (
-            <div className="inline-flex w-fit">
-              <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700 font-medium">
-                ✨ Simplified Auto-Calculated
-              </span>
-            </div>
+          {userProfile && (
+            <>
+              <div>Base goal: {minGoal.toLocaleString()} calories.</div>
+              <div>Stretch goal: {maxGoal.toLocaleString()} calories.</div>
+            </>
           )}
         </CardDescription>
       </CardHeader>
@@ -195,22 +203,27 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           <div className="space-y-4">
             <div className="flex justify-between items-baseline mb-1">
               <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories).toLocaleString()} kcal{hasEstimatedInWeek ? ' est.' : ''}</span>
-              <span className="text-sm text-muted-foreground">/ {maxGoal.toLocaleString()} kcal</span>
             </div>
             <div className="relative h-4 w-full">
               <Progress value={progressPercentage} className="h-full" />
               <div
                 className="absolute top-0 h-full w-1 bg-muted-foreground/50"
                 style={{ left: `${(minGoal / maxGoal) * 100}%` }}
-                title={`Minimum goal: ${minGoal} kcal`}
+                title={`Base goal: ${minGoal} kcal`}
               ></div>
+              <div
+                className="absolute -top-6 text-xs text-muted-foreground whitespace-nowrap"
+                style={{ left: `${(minGoal / maxGoal) * 100}%`, transform: "translateX(-50%)" }}
+              >
+                Base
+              </div>
             </div>
             <p className="text-sm text-muted-foreground text-center w-full pt-2">
               {getMotivationalMessage()}
             </p>
           </div>
         ) : (
-          <div className="flex items-center gap-2 p-4 rounded-md border border-yellow-500 bg-yellow-500/10 text-yellow-700 text-sm">
+          <div className="flex items-center gap-2 p-4 rounded-md border border-amber-500 bg-amber-500/10 text-amber-700 text-sm">
             <Info className="h-5 w-5 flex-shrink-0" />
             <p>{getMotivationalMessage()}</p>
           </div>
@@ -228,7 +241,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-lg border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
+                  "rounded-2xl border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >
@@ -245,7 +258,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                       <div className="flex items-center justify-center font-bold text-accent md:h-8 md:mb-2">
                         <div className="flex items-center gap-1">
                           <Flame className="h-4 w-4" />
-                          <span>{Math.round(totalCalories)} kcal{dayData.hasEstimatedCalories ? ' est.' : ''}</span>
+                          <span>{Math.round(totalCalories)}{dayData.hasEstimatedCalories ? ' est.' : ''}</span>
                         </div>
                       </div>
                       <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">

@@ -12,6 +12,7 @@ interface CardioStats {
   totalDistanceMi: number;
   totalDurationMin: number;
   totalCalories: number;
+  hasEstimatedCalories: boolean;
 }
 
 interface PieChartData {
@@ -56,13 +57,17 @@ export const CardioAnalysisCard: React.FC<CardioAnalysisCardProps> = ({
             <CardContent>
                 {cardioAnalysisData.totalCalories > 0 ? (
                     <div className="space-y-4">
-                        <p className="text-center text-muted-foreground text-sm">{cardioAnalysisData.calorieSummary}</p>
+                        <p className="text-center text-muted-foreground">{cardioAnalysisData.calorieSummary}</p>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
                             <CardioActivitySummary statsByActivity={cardioAnalysisData.statsByActivity} />
                             <Tabs defaultValue="types" className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="types">Cardio By Activity</TabsTrigger>
-                                    <TabsTrigger value="amount">Cardio Over Time</TabsTrigger>
+                                    <TabsTrigger value="types" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                        Cardio By Activity
+                                    </TabsTrigger>
+                                    <TabsTrigger value="amount" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                                        Cardio Over Time
+                                    </TabsTrigger>
                                 </TabsList>
                                 <TabsContent value="types">
                                     <CardioByActivityChart pieChartData={cardioAnalysisData.pieChartData} isMobile={isMobile} />
