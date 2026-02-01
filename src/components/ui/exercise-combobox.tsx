@@ -11,6 +11,9 @@ interface ExerciseComboboxProps {
   suggestions: string[]
   classifiedExercises: string[]
   placeholder?: string
+  autoFocus?: boolean
+  name?: string
+  inputRef?: React.Ref<HTMLInputElement>
 }
 
 export function ExerciseCombobox({
@@ -19,6 +22,9 @@ export function ExerciseCombobox({
   suggestions,
   classifiedExercises,
   placeholder = "e.g., Bench Press",
+  autoFocus = false,
+  name,
+  inputRef,
 }: ExerciseComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState(value)
@@ -70,6 +76,9 @@ export function ExerciseCombobox({
           onFocus={() => setOpen(!!inputValue || suggestions.length > 0)}
           onBlur={() => setTimeout(() => setOpen(false), 200)}
           className="h-10"
+          autoFocus={autoFocus}
+          name={name}
+          ref={inputRef}
         />
         {open && (
           <CommandList>

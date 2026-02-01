@@ -23,7 +23,8 @@ type ActivityStats = {
 };
 type DailyCardioData = {
   totalCalories: number;
-  activities: Map<CardioActivity, ActivityStats>; 
+  hasEstimatedCalories: boolean;
+  activities: Map<CardioActivity, ActivityStats>;
 };
 
 const normalizeCardioActivity = (exerciseName: string, distanceMi: number, durationHours: number): CardioActivity | null => {
@@ -47,11 +48,11 @@ const normalizeCardioActivity = (exerciseName: string, distanceMi: number, durat
 };
 
 const getDistanceInMiles = (distance?: number, unit?: string): number => {
-    if (!distance) return 0;
-    if (unit === 'mi') return distance;
-    if (unit === 'km') return distance * MILES_PER_KM;
-    if (unit === 'ft') return distance * MILES_PER_FEET;
-    return 0;
+  if (!distance) return 0;
+  if (unit === 'mi') return distance;
+  if (unit === 'km') return distance * MILES_PER_KM;
+  if (unit === 'ft') return distance * MILES_PER_FEET;
+  return 0;
 };
 
 
@@ -66,7 +67,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
         const dateKey = format(log.date, 'yyyy-MM-dd');
 
         if (!dataMap.has(dateKey)) {
-          dataMap.set(dateKey, { totalCalories: 0, activities: new Map() });
+          dataMap.set(dateKey, { totalCalories: 0, hasEstimatedCalories: false, activities: new Map() });
         }
         const dayData = dataMap.get(dateKey)!;
 
@@ -84,8 +85,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
             if (!activityType) return;
 
             const calories = ex.calories || 0;
-            
+
             dayData.totalCalories += calories;
+            if (ex.caloriesSource === 'estimated' || (ex.calories && ex.calories > 0 && !ex.caloriesSource)) {
+              dayData.hasEstimatedCalories = true;
+            }
 
             const currentStats = dayData.activities.get(activityType) || { distanceMi: 0 };
             currentStats.distanceMi += distanceMi;
@@ -99,10 +103,11 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
   }, [workoutLogs, weekStart, weekEnd]);
 
   const totalWeeklyCalories = Array.from(weeklyData.values()).reduce((sum, day) => sum + day.totalCalories, 0);
+  const hasEstimatedInWeek = Array.from(weeklyData.values()).some(day => day.hasEstimatedCalories);
   const minGoal = userProfile?.weeklyCardioCalorieGoal || DEFAULT_WEEKLY_CARDIO_MIN_GOAL;
   const maxGoal = userProfile?.weeklyCardioStretchCalorieGoal || DEFAULT_WEEKLY_CARDIO_STRETCH_GOAL;
   const progressPercentage = (totalWeeklyCalories / maxGoal) * 100;
-  
+
   const caloriesPerMile = useMemo(() => {
     if (!userProfile) return null;
     const oneMileRun = { name: 'run', category: 'Cardio' as const, distance: 1, distanceUnit: 'mi' as const, sets: 0, reps: 0, weight: 0 };
@@ -134,16 +139,16 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
       if (milesToMin) {
         return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Run ${milesToMin} more miles to achieve this goal.`;
       }
-       return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Keep pushing!`;
+      return `You're only ${caloriesToMin.toLocaleString()} calories away from your minimum goal. Keep pushing!`;
     }
-    
+
     const caloriesRemaining = minGoal - totalWeeklyCalories;
     const milesForMinGoal = caloriesPerMile && caloriesPerMile > 0 ? (caloriesRemaining / caloriesPerMile).toFixed(1) : null;
-    
+
     if (milesForMinGoal && parseFloat(milesForMinGoal) > 0) {
       return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Run ${milesForMinGoal} more miles to achieve this goal.`;
     }
-    
+
     return `Your minimum goal is to burn ${minGoal.toLocaleString()} calories. Get started to make progress!`;
   };
 
@@ -160,13 +165,13 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
         {userProfile ? (
           <div className="space-y-4">
             <div className="flex justify-between items-baseline mb-1">
-              <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories).toLocaleString()} kcal</span>
+              <span className="font-bold text-primary text-lg">{Math.round(totalWeeklyCalories).toLocaleString()} kcal{hasEstimatedInWeek ? ' est.' : ''}</span>
               <span className="text-sm text-muted-foreground">/ {maxGoal.toLocaleString()} kcal</span>
             </div>
             <div className="relative h-4 w-full">
               <Progress value={progressPercentage} className="h-full" />
-              <div 
-                className="absolute top-0 h-full w-1 bg-muted-foreground/50" 
+              <div
+                className="absolute top-0 h-full w-1 bg-muted-foreground/50"
                 style={{ left: `${(minGoal / maxGoal) * 100}%` }}
                 title={`Minimum goal: ${minGoal} kcal`}
               ></div>
@@ -177,8 +182,8 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
           </div>
         ) : (
           <div className="flex items-center gap-2 p-4 rounded-md border border-yellow-500 bg-yellow-500/10 text-yellow-700 text-sm">
-              <Info className="h-5 w-5 flex-shrink-0"/> 
-              <p>{getMotivationalMessage()}</p>
+            <Info className="h-5 w-5 flex-shrink-0" />
+            <p>{getMotivationalMessage()}</p>
           </div>
         )}
 
@@ -202,28 +207,28 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
                   <p className="text-xs font-medium text-muted-foreground">{format(day, 'E')}</p>
                   <p className="font-bold text-lg">{format(day, 'd')}</p>
                 </div>
-                
+
                 <div className="h-full w-px bg-border mx-2 md:h-px md:w-full md:my-2 md:mx-0"></div>
-                
+
                 <div className="flex-grow flex items-center md:flex-col md:items-stretch md:justify-center text-center">
                   {totalCalories > 0 && activities ? (
                     <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">
-                       <div className="flex items-center justify-center font-bold text-accent md:h-8 md:mb-2">
-                            <div className="flex items-center gap-1">
-                                <Flame className="h-4 w-4" />
-                                <span>{Math.round(totalCalories)}</span>
-                            </div>
+                      <div className="flex items-center justify-center font-bold text-accent md:h-8 md:mb-2">
+                        <div className="flex items-center gap-1">
+                          <Flame className="h-4 w-4" />
+                          <span>{Math.round(totalCalories)} kcal{dayData.hasEstimatedCalories ? ' est.' : ''}</span>
                         </div>
-                        <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
-                             {Array.from(activities.entries()).map(([activity, stats]) => (
-                                <p key={activity} className="w-full text-left md:text-center truncate font-semibold text-foreground">
-                                    {activity}
-                                    {stats.distanceMi > 0 && (
-                                        <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
-                                    )}
-                                </p>
-                            ))}
-                        </div>
+                      </div>
+                      <div className="flex-grow flex flex-col items-start md:items-center justify-center text-xs text-muted-foreground space-y-1 w-full overflow-hidden pl-2 md:pl-0">
+                        {Array.from(activities.entries()).map(([activity, stats]) => (
+                          <p key={activity} className="w-full text-left md:text-center truncate font-semibold text-foreground">
+                            {activity}
+                            {stats.distanceMi > 0 && (
+                              <span className="font-normal text-muted-foreground"> {stats.distanceMi.toFixed(1)} mi</span>
+                            )}
+                          </p>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 items-center flex-grow w-full md:grid-cols-1">

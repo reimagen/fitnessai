@@ -8,6 +8,9 @@ import type { UserProfile } from "@/lib/types";
 
 export const buildParsedExercises = (parsedData: ParseWorkoutScreenshotOutput): Exercise[] => {
   return parsedData.exercises.map((ex) => {
+    // Determine calorie source: manual if calories were in parsed data, otherwise will be estimated
+    const caloriesSource = ((ex.calories ?? 0) > 0 ? 'manual' : 'estimated') as const;
+
     const exercise: Exercise = {
       id: Math.random().toString(36).substring(2, 9),
       name: getNormalizedExerciseName(ex.name),
@@ -18,6 +21,7 @@ export const buildParsedExercises = (parsedData: ParseWorkoutScreenshotOutput): 
       distance: ex.distance ?? 0,
       duration: ex.duration ?? 0,
       calories: ex.calories ?? 0,
+      caloriesSource,
     };
 
     if (exercise.weight > 0) {
@@ -67,8 +71,18 @@ export const buildWorkoutLogPayload = (
   return {
     ...data,
     exercises: data.exercises.map((ex) => {
+      const hasManualCalories =
+        ex.caloriesSource === 'manual' ||
+        (!ex.caloriesSource && ex.calories && ex.calories > 0);
       const calculatedCalories = userProfile ? calculateExerciseCalories(ex, userProfile, workoutLogs || []) : 0;
-      return { ...ex, calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories };
+      const finalCalories = hasManualCalories ? ex.calories : calculatedCalories;
+      const finalCaloriesSource = (hasManualCalories ? 'manual' : 'estimated') as const;
+
+      return {
+        ...ex,
+        calories: finalCalories,
+        caloriesSource: finalCaloriesSource,
+      };
     }),
   };
 };

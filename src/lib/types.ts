@@ -32,6 +32,7 @@ export interface Exercise {
   duration?: number;
   durationUnit?: 'min' | 'hr' | 'sec';
   calories?: number;
+  caloriesSource?: 'manual' | 'estimated'; // Track whether calories are manually entered or calculated
 }
 
 export interface WorkoutLog {

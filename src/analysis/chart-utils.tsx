@@ -33,7 +33,7 @@ type PieLabelProps = {
   value: number;
 };
 
-export const renderPieLabel = (props: PieLabelProps, unit?: 'reps' | 'kcal', isMobile: boolean = false) => {
+export const renderPieLabel = (props: PieLabelProps, unit?: 'reps' | 'kcal', isMobile: boolean = false, showEstimated: boolean = false) => {
   const { cx, cy, midAngle, innerRadius, outerRadius, percent, name, value } = props;
   if (percent < 0.05) return null;
 
@@ -47,7 +47,7 @@ export const renderPieLabel = (props: PieLabelProps, unit?: 'reps' | 'kcal', isM
   const y = cy + labelRadius * sin;
 
   const displayValue = unit === 'kcal' ? Math.round(value).toLocaleString() : value.toLocaleString();
-  const unitString = unit ? ` ${unit}` : '';
+  const unitString = unit ? ` ${unit}${showEstimated && unit === 'kcal' ? ' est.' : ''}` : '';
 
   return (
     <text

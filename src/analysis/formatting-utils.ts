@@ -4,5 +4,5 @@ export const formatCardioDuration = (totalMinutes: number): string => {
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
-  return `${minutes}m`;
+  return `${minutes} mins`;
 };

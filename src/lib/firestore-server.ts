@@ -46,6 +46,7 @@ const workoutLogConverter = {
             duration: Number(ex.duration || 0),
             durationUnit: ex.durationUnit === 'min' || ex.durationUnit === 'hr' || ex.durationUnit === 'sec' ? ex.durationUnit : 'min',
             calories: Number(ex.calories || 0),
+            caloriesSource: ex.caloriesSource === 'manual' || ex.caloriesSource === 'estimated' ? ex.caloriesSource : undefined,
           };
         })
       : [];
@@ -321,49 +322,32 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
         if (!normalizedName) continue;
 
         const newRecordWeightInKg = newRecord.weightUnit === 'lbs' ? newRecord.weight * LBS_TO_KG : newRecord.weight;
-        
-        // Find all existing records for this specific exercise to perform migration/consolidation
-        const q = personalRecordsCollection.where('exerciseName', '==', newRecord.exerciseName);
-        const existingRecordsSnapshot = await q.get();
-        
-        let bestExistingRecord: PersonalRecord | null = null;
-        const oldRecordRefsToDelete: FirebaseFirestore.DocumentReference[] = [];
-        let bestExistingWeightInKg = -1;
 
-        if (!existingRecordsSnapshot.empty) {
-            existingRecordsSnapshot.forEach(doc => {
-                const docData = personalRecordConverter.fromFirestore(doc as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
-                oldRecordRefsToDelete.push(doc.ref);
-                const existingWeightInKg = docData.weightUnit === 'lbs' ? docData.weight * LBS_TO_KG : docData.weight;
-                
-                if (!bestExistingRecord || existingWeightInKg > bestExistingWeightInKg) {
-                    bestExistingRecord = docData;
-                    bestExistingWeightInKg = existingWeightInKg;
-                }
-            });
+        // Find existing record by normalized name (the document ID)
+        const existingDocRef = personalRecordsCollection.doc(normalizedName);
+        const existingDocSnapshot = await existingDocRef.get();
+
+        let bestExistingWeightInKg = -1;
+        if (existingDocSnapshot.exists) {
+            const existingData = personalRecordConverter.fromFirestore(existingDocSnapshot as QueryDocumentSnapshot<Omit<PersonalRecord, 'id'>>);
+            bestExistingWeightInKg = existingData.weightUnit === 'lbs' ? existingData.weight * LBS_TO_KG : existingData.weight;
         }
 
+        // Only save if new record is better than existing
         if (newRecordWeightInKg > bestExistingWeightInKg) {
             recordsAddedOrUpdated++;
-            const batch = adminDb.batch();
 
-            // Delete all old, fragmented records for this exercise
-            oldRecordRefsToDelete.forEach(ref => batch.delete(ref));
-            
-            // Create a single new record with the normalized name as the ID
-            const newDocRef = personalRecordsCollection.doc(normalizedName);
             const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
                 ...newRecord,
                 strengthLevel: getStrengthLevel({ ...newRecord, userId } as PersonalRecord, userProfile),
             };
 
-            batch.set(newDocRef, personalRecordConverter.toFirestore(recordWithLevel));
-            await batch.commit();
+            await existingDocRef.set(personalRecordConverter.toFirestore(recordWithLevel));
         } else {
             recordsNotImproved++;
         }
     }
-    
+
     if (recordsAddedOrUpdated > 0) {
         const notImprovedMessage = recordsNotImproved > 0 ? ` ${recordsNotImproved} record(s) were not an improvement.` : '';
         return { success: true, message: `Successfully added or updated ${recordsAddedOrUpdated} personal record(s).${notImprovedMessage}` };

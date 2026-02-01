@@ -49,7 +49,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
     // 1. No User Logic
     if (!user) {
       if (!isPublicRoute) {
-        router.push("/signin");
+        // Only redirect if not already on signin
+        if (pathname !== "/signin") {
+          router.push("/signin");
+        }
       }
       return;
     }
@@ -58,17 +61,24 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
     // 2. User is on a public route (e.g., /signin), redirect away.
     if (isPublicRoute) {
-      router.push("/");
+      // Only redirect if not already home
+      if (pathname !== "/") {
+        router.push("/");
+      }
       return;
     }
 
     // 3. Whitelist Check
     if (isWhitelisted === false && !isPendingRoute) {
       // If user is not whitelisted and not on the pending page, redirect them.
-      router.push(PENDING_ROUTE);
+      if (pathname !== PENDING_ROUTE) {
+        router.push(PENDING_ROUTE);
+      }
     } else if (isWhitelisted === true && isPendingRoute) {
       // If a whitelisted user somehow lands on the pending page, move them home.
-      router.push("/");
+      if (pathname !== "/") {
+        router.push("/");
+      }
     }
 
   }, [user, isLoading, isWhitelisted, isCheckingWhitelist, hasInitialized, router, pathname]);
