@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "fitnessai-dev-dummy",
+    "prod": "fitnessai-prod"
+  },
+  "targets": {},
+  "etags": {}
+}

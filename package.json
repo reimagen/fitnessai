@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "migrate-exercises": "tsx scripts/migrate-exercises.ts",
+    "add-cardio-aliases": "tsx scripts/add-cardio-aliases.ts",
     "postinstall": "rm -rf .next"
   },
   "dependencies": {

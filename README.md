@@ -34,12 +34,22 @@ To run this project locally, follow these steps:
     ```
 
 2.  **Set Up Environment Variables**:
-    The application requires an API key for its AI features.
+    The application requires Firebase web app config values and an API key for AI features.
     - Create a file named `.env.local` in the root of the project.
-    - Go to [Google AI Studio](https://aistudio.google.com/app/apikey) to get a Gemini API Key.
-    - Add the following line to your `.env.local` file, replacing `YOUR_API_KEY_HERE` with your actual key:
+    - Add Firebase web app config (from Firebase console -> Project settings -> Web app):
+      ```
+      NEXT_PUBLIC_FIREBASE_API_KEY=...
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+      NEXT_PUBLIC_FIREBASE_APP_ID=...
+      ```
+    - Add a Gemini API Key (or Google API key) for AI features:
       ```
       GEMINI_API_KEY=YOUR_API_KEY_HERE
+      # or
+      GOOGLE_API_KEY=YOUR_API_KEY_HERE
       ```
 
 3.  **Run the Development Server**:
@@ -57,7 +67,16 @@ The application is organized into the following pages, accessible via the bottom
 
 - **Home**: Dashboard with quick actions and weekly progress summaries.
 - **Analysis**: Visualize your workout data, running progression, strength balance, and individual lift progression trends.
-- **Milestones**: View and upload your personal records (PRs).
+- **Milestones (PRs)**: View and upload your personal records (PRs).
 - **Plan**: Generate a personalized AI workout plan for the week.
 - **History**: Log new workouts or view your past session history.
 - **Profile**: Manage your personal details, workout preferences, and fitness goals.
+
+Additional routes:
+- **Sign In**: Email/password authentication.
+- **Pending**: Auth-gated loading state for session checks.
+
+## Notes
+
+- Exercise library migration is in progress (see `docs/firebase-exercise-lib.md`).
+- Firebase App Hosting provides `FIREBASE_WEBAPP_CONFIG` at build time; local dev uses `NEXT_PUBLIC_FIREBASE_*` values.

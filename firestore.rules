@@ -21,6 +21,22 @@ service cloud.firestore {
       }
     }
 
+    // Shared exercise library (read-only for clients)
+    match /exercises/{exerciseId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /exerciseAliases/{aliasId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Explicitly deny access to any other collection by default.
     // This is good practice, though Firestore denies by default if no rule matches.
     match /{document=**} {

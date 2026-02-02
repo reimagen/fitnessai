@@ -2,6 +2,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import {
     getWorkoutLogs,
     addWorkoutLog,
@@ -21,10 +22,44 @@ import {
     analyzeGoalsAction,
 } from '@/app/profile/actions';
 import { analyzeStrengthAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory } from './types';
+import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
+import { db } from './firebase';
+
+const EXERCISE_CATEGORIES: ExerciseCategory[] = [
+  'Cardio',
+  'Lower Body',
+  'Upper Body',
+  'Full Body',
+  'Core',
+  'Other',
+];
+
+const EQUIPMENT_TYPES: EquipmentType[] = [
+  'machine',
+  'barbell',
+  'dumbbell',
+  'cable',
+  'bodyweight',
+  'band',
+  'kettlebell',
+  'other',
+];
+
+function toExerciseCategory(value: unknown): ExerciseCategory {
+  return EXERCISE_CATEGORIES.includes(value as ExerciseCategory)
+    ? (value as ExerciseCategory)
+    : 'Other';
+}
+
+function toEquipmentType(value: unknown): EquipmentType {
+  return EQUIPMENT_TYPES.includes(value as EquipmentType)
+    ? (value as EquipmentType)
+    : 'other';
+}
 
 
 // --- React Query Hooks ---
@@ -72,6 +107,61 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
     },
     enabled: !!user && enabled,
     staleTime: staleTime,
+  });
+}
+
+export function useExercises(enabled: boolean = true) {
+  return useQuery<ExerciseDocument[], Error>({
+    queryKey: ['exercises'],
+    queryFn: async () => {
+      const exercisesQuery = query(
+        collection(db, 'exercises'),
+        where('isActive', '==', true)
+      );
+      const snapshot = await getDocs(exercisesQuery);
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        const name = typeof data.name === 'string' ? data.name : '';
+        const normalizedName =
+          typeof data.normalizedName === 'string' ? data.normalizedName : name.toLowerCase();
+        const category = toExerciseCategory(data.category);
+        const type = data.type === 'cardio' ? 'cardio' : 'strength';
+        const strengthStandards =
+          typeof data.strengthStandards === 'object' ? data.strengthStandards : undefined;
+        return {
+          id: doc.id,
+          name,
+          normalizedName,
+          equipment: toEquipmentType(data.equipment),
+          category,
+          type,
+          strengthStandards,
+          isActive: data.isActive !== false,
+          legacyNames: Array.isArray(data.legacyNames) ? data.legacyNames : undefined,
+        };
+      });
+    },
+    enabled,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useExerciseAliases(enabled: boolean = true) {
+  return useQuery<AliasDocument[], Error>({
+    queryKey: ['exercise-aliases'],
+    queryFn: async () => {
+      const snapshot = await getDocs(collection(db, 'exerciseAliases'));
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          alias: typeof data.alias === 'string' ? data.alias : doc.id,
+          canonicalId: typeof data.canonicalId === 'string' ? data.canonicalId : '',
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : undefined,
+        };
+      });
+    },
+    enabled,
+    staleTime: 1000 * 60 * 60,
   });
 }
 

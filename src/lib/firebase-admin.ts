@@ -1,6 +1,7 @@
 import { initializeApp, getApps, App, cert, applicationDefault } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import type { AliasDocument, ExerciseDocument } from './exercise-types';
 
 let adminApp: App | null = null;
 
@@ -55,3 +56,43 @@ export function getAdminDb() {
 export function getAdminAuth() {
   return getAuth(getAdminApp());
 }
+
+type FirestoreExerciseDocument = Omit<ExerciseDocument, 'createdAt' | 'updatedAt'> & {
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+};
+
+type FirestoreAliasDocument = Omit<AliasDocument, 'createdAt'> & {
+  createdAt?: Timestamp;
+};
+
+export const exerciseConverter = {
+  toFirestore: (exercise: ExerciseDocument): FirestoreExerciseDocument => ({
+    ...exercise,
+    createdAt: exercise.createdAt ? Timestamp.fromDate(exercise.createdAt) : undefined,
+    updatedAt: exercise.updatedAt ? Timestamp.fromDate(exercise.updatedAt) : undefined,
+  }),
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): ExerciseDocument => {
+    const data = snapshot.data() as FirestoreExerciseDocument;
+    return {
+      ...data,
+      id: data.id || snapshot.id,
+      createdAt: data.createdAt ? data.createdAt.toDate() : undefined,
+      updatedAt: data.updatedAt ? data.updatedAt.toDate() : undefined,
+    };
+  },
+};
+
+export const exerciseAliasConverter = {
+  toFirestore: (aliasDoc: AliasDocument): FirestoreAliasDocument => ({
+    ...aliasDoc,
+    createdAt: aliasDoc.createdAt ? Timestamp.fromDate(aliasDoc.createdAt) : undefined,
+  }),
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): AliasDocument => {
+    const data = snapshot.data() as FirestoreAliasDocument;
+    return {
+      ...data,
+      createdAt: data.createdAt ? data.createdAt.toDate() : undefined,
+    };
+  },
+};

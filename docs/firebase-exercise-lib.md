@@ -10,6 +10,25 @@ Exercise Data Migration to Firebase
  migrating existing 22 exercises with backwards      
  compatibility, then expanding gradually.            
                                                      
+ Current Status                                      
+                                                     
+ Completed:                                          
+ - Phase 1: Schema/types + Firestore rules/converters
+ - Phase 2: Migration script + dry-run/apply         
+ - Phase 3: Server data access + fallback            
+ - Client lists now read from Firestore (with        
+   alias-based canonical display)                    
+ - Cardio alias normalization via                   
+   /scripts/add-cardio-aliases.ts                    
+                                                     
+ In Progress:                                        
+ - Phase 4: Equipment-aware autocomplete and         
+   filters (not started)                             
+                                                     
+ Pending:                                            
+ - Phase 5: Screenshot parser equipment detection   
+ - Phase 6: Cleanup + remove hardcoded fallback      
+                                                     
  User Decisions                                      
                                                      
  - Equipment UX: Optional filter chips above         
@@ -116,7 +135,8 @@ Exercise Data Migration to Firebase
    { fields: ['normalizedName', 'isActive'] },       
    { fields: ['equipment', 'category', 'isActive']   
  },                                                  
-   { fields: ['type', 'isActive'] }                  
+   { fields: ['type', 'isActive'] },                 
+   { fields: ['legacyNames', 'isActive'] }           
  ]                                                   
                                                      
  Collection: exerciseAliases (top-level)             
@@ -178,6 +198,8 @@ Exercise Data Migration to Firebase
  5. Update security rules for read-only public       
  access                                              
                                                      
+ Status: Completed                                   
+                                                     
  Phase 2: Migration Script                           
                                                      
  Goal: Populate Firebase with existing 22 exercises  
@@ -235,6 +257,11 @@ Exercise Data Migration to Firebase
  4. Run in staging environment                       
  5. Validate all data migrated correctly             
  6. Run in production                                
+                                                     
+ Status: Completed                                   
+ Notes:                                              
+ - Added /scripts/add-cardio-aliases.ts for cardio   
+   alias upserts                                     
                                                      
  Phase 3: Data Access Layer                          
                                                      
@@ -323,6 +350,12 @@ Exercise Data Migration to Firebase
  resolution                                          
  5. Add revalidation tags for cache invalidation     
                                                      
+ Status: Completed (server) / Partial (client)       
+ Notes:                                              
+ - Server uses Firestore with fallback               
+ - Client lists read from Firestore + alias-based    
+   canonical display                                
+                                                     
  Phase 4: Equipment-Aware Autocomplete               
                                                      
  Goal: Update UI with equipment filters and grouped  
@@ -393,14 +426,18 @@ Exercise Data Migration to Firebase
  5. Implement equipment filtering logic              
  6. Test autocomplete with various equipment types   
                                                      
- Phase 5: Screenshot Parser Update                   
+ Status: Pending                                     
+                                                     
+Phase 5: Screenshot Parser Update                   
                                                      
  Goal: Detect and store equipment type from          
  screenshots                                         
                                                      
- Files to Modify:                                    
- - /src/ai/flows/screenshot-workout-parser.ts -      
- Update prompt to detect equipment                   
+Files to Modify:                                    
+- /src/ai/flows/screenshot-workout-parser.ts -      
+Update prompt to detect equipment                   
+- /src/ai/flows/personal-record-parser.ts -         
+Update prompt to detect equipment                   
                                                      
  Changes:                                            
  // Update Exercise schema in prompt                 
@@ -423,14 +460,19 @@ Exercise Data Migration to Firebase
  - Default to 'machine' for gym machine exercises    
  - Use 'other' if equipment type is unclear          
                                                      
- Tasks:                                              
+Tasks:                                              
  1. Add equipment field to Exercise schema in parser 
  2. Update AI prompt with equipment detection        
  instructions                                        
- 3. Test with EGYM screenshots (should detect        
+ 3. Apply the same changes to the PRs parser         
+ 4. Test workout screenshots with EGYM (should detect 
  "machine")                                          
- 4. Test with various equipment types if screenshots 
+ 5. Test PR screenshots with EGYM (should detect     
+ "machine")                                          
+ 6. Test with various equipment types if screenshots 
   available                                          
+                                                     
+ Status: Pending                                     
                                                      
  Phase 6: Cleanup & Testing                          
                                                      
@@ -460,6 +502,8 @@ Exercise Data Migration to Firebase
  4. Remove hardcoded fallback after 1 week of stable 
   operation                                          
  5. Archive exercise-data.ts with deprecation notice 
+                                                     
+ Status: Pending                                     
                                                      
  ---                                                 
  Adding New Exercises (Post-Migration)               
@@ -503,6 +547,8 @@ Exercise Data Migration to Firebase
                                                      
  - /scripts/migrate-exercises.ts - Migration script  
  for initial data population                         
+ - /scripts/add-cardio-aliases.ts - Cardio alias     
+ upsert script                                       
  - /scripts/add-exercises.ts - Template for adding   
  new exercises                                       
                                                      
@@ -538,15 +584,18 @@ Exercise Data Migration to Firebase
  End-to-End Verification Steps                       
                                                      
  1. Migration Verification:                          
- # Run migration script in dry-run mode              
- npm run migrate-exercises -- --dry-run              
-                                                     
+  # Run migration script in dry-run mode              
+  npm run migrate-exercises                           
+                                                      
  # Check output for all 22 exercises + aliases       
  # Verify document IDs follow pattern:               
  machine-{exercise-name}                             
                                                      
- # Run actual migration                              
- npm run migrate-exercises                           
+  # Run actual migration                              
+  npm run migrate-exercises -- --apply                
+                                                      
+  # Upsert cardio aliases                             
+  npm run add-cardio-aliases                          
  2. Data Access Verification:                        
    - Open app in browser                             
    - Check browser console for Firestore read counts 
@@ -612,21 +661,18 @@ Exercise Data Migration to Firebase
  ---                                                 
  Success Criteria                                    
                                                      
- ✅ All 22 existing exercises migrated to Firebase   
- ✅ All 43 aliases working correctly                 
- ✅ Backwards compatibility maintained (old exercise 
-  names resolve)                                     
- ✅ Personal records display correctly               
- ✅ Equipment-aware autocomplete with optional       
- filtering                                           
- ✅ Screenshot parser detects equipment type         
- ✅ No increase in Firestore costs (aggressive       
+✅ Initial exercises migrated to Firebase           
+✅ Strength aliases migrated; cardio aliases         
+ added via script                                   
+✅ Backwards compatibility maintained (old exercise 
+ names resolve)                                     
+✅ Personal records display correctly               
+⏳ Equipment-aware autocomplete + filters           
+⏳ Screenshot parser detects equipment type         
+✅ No increase in Firestore costs (aggressive       
  caching)                                            
- ✅ Easy to add new exercises via script             
- ✅ Foundation ready for future admin UI             
-╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-
+✅ Easy to add new exercises via script             
+✅ Foundation ready for future admin UI             
 
 ~/.claude/plans/drifting-mapping-comet.md   
 /Users/lisagu/.claude/plans/drifting-mapping-comet.md                          
-                             

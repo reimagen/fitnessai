@@ -262,7 +262,6 @@ export const CARDIO_EXERCISES: ExerciseCategoryMap = {
   'swimming': 'Cardio',
   'swim': 'Cardio',
   'jump rope': 'Cardio',
-  'skipping': 'Cardio',
   'sprinting': 'Cardio',
   'sprint': 'Cardio',
   'stair climbing': 'Cardio',
