@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Trash2, Loader2 } from "lucide-react";
-import type { PersonalRecord, UserProfile } from "@/lib/types";
+import type { ExerciseCategory, PersonalRecord, UserProfile } from "@/lib/types";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { CATEGORY_ORDER } from "@/lib/constants";
 import { PrCategorySection } from "@/components/prs/PrCategorySection";
@@ -10,6 +10,7 @@ import { getBestRecords, groupRecordsByCategory } from "@/app/prs/pr-utils";
 import { Button } from "@/components/ui/button";
 import { useRecordUpdate } from "@/hooks/useRecordUpdate";
 import { useClearRecords } from "@/hooks/useClearRecords";
+import { useExercises } from "@/lib/firestore.service";
 
 type PersonalRecordsSectionProps = {
   userId: string;
@@ -26,12 +27,38 @@ export function PersonalRecordsSection({
   isLoading,
   isError,
 }: PersonalRecordsSectionProps) {
+  const { data: exerciseLibrary = [] } = useExercises();
   const { editState, isEditing, startEdit, cancelEdit, updateWeight, updateDate } = usePrEdit();
   const { handleSaveEdit, isPending: isUpdating } = useRecordUpdate(userId, editState, { onSuccess: cancelEdit });
   const { handleClear, isPending: isClearing } = useClearRecords(userId);
 
+  const normalizeForLookup = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/^egym\s+/, '')
+      .replace(/[()]/g, '')
+      .replace(/\s+/g, ' ');
+
+  const categoryByExercise = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, ExerciseCategory>>((acc, exercise) => {
+      acc[exercise.normalizedName.toLowerCase()] = exercise.category;
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+
   const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
-  const groupedRecords = useMemo(() => groupRecordsByCategory(bestRecords), [bestRecords]);
+  const categorizedRecords = useMemo(() => {
+    return bestRecords.map(record => {
+      const normalizedName = normalizeForLookup(record.exerciseName);
+      const category = categoryByExercise[normalizedName] || record.category;
+      if (category === record.category) {
+        return record;
+      }
+      return { ...record, category };
+    });
+  }, [bestRecords, categoryByExercise]);
+  const groupedRecords = useMemo(() => groupRecordsByCategory(categorizedRecords), [categorizedRecords]);
   const recordCount = allRecords?.length ?? 0;
 
   return (

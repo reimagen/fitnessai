@@ -1,6 +1,9 @@
 import { Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { useMemo } from "react";
 import type { PersonalRecord, StrengthLevel, UserProfile } from "@/lib/types";
+import { LBS_TO_KG } from "@/lib/constants";
+import { useExercises } from "@/lib/firestore.service";
 import { getStrengthStandardType, getStrengthThresholds } from "@/lib/strength-standards";
 
 type PrProgressProps = {
@@ -10,10 +13,72 @@ type PrProgressProps = {
 };
 
 export function PrProgress({ record, userProfile, level }: PrProgressProps) {
-  const standardType = getStrengthStandardType(record.exerciseName);
+  const { data: exerciseLibrary = [] } = useExercises();
+  const normalizeForLookup = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/^egym\s+/, "")
+      .replace(/[()]/g, "")
+      .replace(/\s+/g, " ");
+
+  const exercise = useMemo(() => {
+    const normalizedName = normalizeForLookup(record.exerciseName);
+    return exerciseLibrary.find(
+      item => item.normalizedName.toLowerCase() === normalizedName
+    );
+  }, [exerciseLibrary, record.exerciseName]);
+
+  const standardType = exercise?.strengthStandards?.baseType || getStrengthStandardType(record.exerciseName);
   const isSmmExercise = standardType === "smm";
   const needsSmmData = isSmmExercise && (!userProfile?.skeletalMuscleMassValue || !userProfile.gender);
-  const thresholds = userProfile && !needsSmmData ? getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit) : null;
+
+  const thresholds = useMemo(() => {
+    if (!userProfile || needsSmmData) return null;
+    if (exercise?.strengthStandards) {
+      const standards = exercise.strengthStandards.standards;
+      const genderKey = userProfile.gender as "Male" | "Female";
+      const genderStandards = standards[genderKey];
+      if (!genderStandards) return null;
+
+      let baseValueInKg: number;
+      if (exercise.strengthStandards.baseType === "bw") {
+        if (!userProfile.weightValue || !userProfile.weightUnit) return null;
+        baseValueInKg =
+          userProfile.weightUnit === "lbs"
+            ? userProfile.weightValue * LBS_TO_KG
+            : userProfile.weightValue;
+      } else {
+        if (!userProfile.skeletalMuscleMassValue || !userProfile.skeletalMuscleMassUnit) return null;
+        baseValueInKg =
+          userProfile.skeletalMuscleMassUnit === "lbs"
+            ? userProfile.skeletalMuscleMassValue * LBS_TO_KG
+            : userProfile.skeletalMuscleMassValue;
+      }
+
+      if (baseValueInKg <= 0) return null;
+
+      let ageFactor = 1.0;
+      if (userProfile.age && userProfile.age > 40) {
+        ageFactor = 1 + (userProfile.age - 40) * 0.01;
+      }
+
+      const convertToOutput = (ratio: number) => {
+        const weightInKg = (ratio * baseValueInKg) / ageFactor;
+        const finalWeight =
+          record.weightUnit === "lbs" ? weightInKg / LBS_TO_KG : weightInKg;
+        return Math.ceil(finalWeight);
+      };
+
+      return {
+        intermediate: convertToOutput(genderStandards.intermediate),
+        advanced: convertToOutput(genderStandards.advanced),
+        elite: convertToOutput(genderStandards.elite),
+      };
+    }
+
+    return getStrengthThresholds(record.exerciseName, userProfile, record.weightUnit);
+  }, [exercise, needsSmmData, record.exerciseName, record.weightUnit, userProfile]);
   const isTricepsExercise = ["tricep extension", "tricep pushdown", "triceps"].includes(
     record.exerciseName.trim().toLowerCase()
   );

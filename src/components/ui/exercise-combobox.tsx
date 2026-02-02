@@ -13,6 +13,8 @@ interface ExerciseComboboxProps {
   autoFocus?: boolean
   name?: string
   inputRef?: React.Ref<HTMLInputElement>
+  showUsage?: boolean
+  showStandardBadge?: boolean
 }
 
 export function ExerciseCombobox({
@@ -24,6 +26,8 @@ export function ExerciseCombobox({
   autoFocus = false,
   name,
   inputRef,
+  showUsage = true,
+  showStandardBadge = true,
 }: ExerciseComboboxProps) {
   const [open, setOpen] = React.useState(false)
   const [inputValue, setInputValue] = React.useState(value)
@@ -90,13 +94,13 @@ export function ExerciseCombobox({
             ) : (
               <>
                 <CommandGroup heading="Suggestions">
-                  {filteredSuggestions.map((exercise) => {
+                  {filteredSuggestions.map((exercise, index) => {
                     const count = usageCount[exercise.toLowerCase()] || 0
                     const classified = isClassified(exercise)
 
                     return (
                       <CommandItem
-                        key={exercise}
+                        key={`${exercise}-${index}`}
                         value={exercise}
                         onSelect={handleSelect}
                         className="cursor-pointer"
@@ -104,12 +108,12 @@ export function ExerciseCombobox({
                         <div className="flex items-center justify-between w-full">
                           <span className="flex-1">{exercise}</span>
                           <div className="flex gap-2 ml-2">
-                            {classified && (
+                            {showStandardBadge && classified && (
                               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                 Standard
                               </span>
                             )}
-                            {count > 0 && (
+                            {showUsage && count > 0 && (
                               <span className="text-xs text-gray-500">
                                 used {count > 1 ? `${count} times` : "once"}
                               </span>

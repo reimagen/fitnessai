@@ -25,6 +25,7 @@ import { toTitleCase } from "@/lib/utils";
 import { StepperInput } from "../ui/stepper-input";
 import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
 import { formatExerciseDisplayName } from "@/lib/exercise-display";
+import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -78,6 +79,10 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
     }, {});
   }, [exercisesForDropdown]);
 
+  const exerciseSuggestions = useMemo(() => {
+    return exercisesForDropdown.map(exercise => exercise.name);
+  }, [exercisesForDropdown]);
+
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
     defaultValues: { 
@@ -88,8 +93,16 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
     }
   });
 
+  const normalizeForLookup = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/^egym\s+/, '')
+      .replace(/[()]/g, '')
+      .replace(/\s+/g, ' ');
+
   function onSubmit(values: ManualPrFormData) {
-    const normalizedName = values.exerciseName.trim().toLowerCase();
+    const normalizedName = normalizeForLookup(values.exerciseName);
     const category = exerciseCategories[normalizedName] || getExerciseCategory(values.exerciseName);
     const selectedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
@@ -106,81 +119,80 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="exerciseName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Exercise</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="exerciseName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Exercise</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a classifiable exercise" />
-                  </SelectTrigger>
+                  <ExerciseCombobox
+                    value={field.value}
+                    onChange={field.onChange}
+                    suggestions={exerciseSuggestions}
+                    classifiedExercises={exerciseSuggestions}
+                    placeholder="Start typing an exercise"
+                    showStandardBadge={false}
+                    showUsage={false}
+                  />
                 </FormControl>
-                <SelectContent>
-                  {exercisesForDropdown.map(exercise => (
-                    <SelectItem key={exercise.normalizedName} value={exercise.name}>
-                      {exercise.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date Achieved</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
-            <FormField
+          <FormField
             control={form.control}
             name="weight"
             render={({ field }) => (
-                <FormItem>
+              <FormItem>
                 <FormLabel>Weight</FormLabel>
                 <FormControl>
-                    <StepperInput {...field} onChange={field.onChange} step={1} />
+                  <StepperInput {...field} onChange={field.onChange} step={1} />
                 </FormControl>
                 <FormMessage />
-                </FormItem>
+              </FormItem>
             )}
-            />
-             <FormField
-                control={form.control}
-                name="weightUnit"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Unit</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || "lbs"}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Unit" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="kg">kg</SelectItem>
-                        <SelectItem value="lbs">lbs</SelectItem>
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+          />
+          <FormField
+            control={form.control}
+            name="weightUnit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unit</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value || "lbs"}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Unit" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="lbs">lbs</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Date Achieved</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         
         <Button type="submit" className="w-full" disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
