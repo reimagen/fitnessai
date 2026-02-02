@@ -71,7 +71,7 @@ export function PrsFormSection({ onParse }: PrsFormSectionProps) {
                 Log PR Manually
               </CardTitle>
               <CardDescription>
-                Log a single personal record for a classifiable exercise.
+                Log a single personal record for an exercise. Must be an exercise from our strength standards library, select from the dropdown list.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -85,8 +85,8 @@ export function PrsFormSection({ onParse }: PrsFormSectionProps) {
                 Upload Screenshot
               </CardTitle>
               <CardDescription>
-                Upload an image and let AI extract your PRs. Must be a classifiable exercise,
-                list available in manual PR entry tab.
+                Upload an image and let AI extract your PRs. Must be an exercise from our strength standards library,
+                list available in the Log PR Manually tab.
               </CardDescription>
             </CardHeader>
           </Card>

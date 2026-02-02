@@ -25,6 +25,7 @@ export function normalizeExerciseName(input: string): string {
     .trim()
     .toLowerCase()
     .replace(/^egym\s+/, '')
+    .replace(/[()]/g, '')
     .replace(/\s+/g, ' ');
 }
 
@@ -159,7 +160,37 @@ export async function getExerciseStandard(
   exerciseName: string
 ): Promise<ExerciseStandardData | undefined> {
   const standards = await getStrengthStandards();
-  return standards[exerciseName];
+  const normalized = normalizeExerciseName(exerciseName);
+  const cached = standards[normalized];
+  if (cached) {
+    return cached;
+  }
+
+  try {
+    const db = getAdminDb();
+    const snapshot = await db
+      .collection('exercises')
+      .withConverter(exerciseConverter)
+      .where('normalizedName', '==', normalized)
+      .where('isActive', '==', true)
+      .limit(1)
+      .get();
+
+    if (!snapshot.empty) {
+      const exercise = snapshot.docs[0].data();
+      if (exercise.type === 'strength' && exercise.strengthStandards) {
+        return {
+          type: exercise.strengthStandards.baseType,
+          category: exercise.category,
+          standards: exercise.strengthStandards.standards,
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load exercise standard from Firestore:', error);
+  }
+
+  return undefined;
 }
 
 export async function getCardioExercises(): Promise<ExerciseCategoryMap> {

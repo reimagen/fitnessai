@@ -196,6 +196,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         .trim()
         .toLowerCase()
         .replace(/^egym\s+/, '')
+        .replace(/[()]/g, '')
         .replace(/\s+/g, ' ');
 
     // Normalize exercise names and track calorie source
