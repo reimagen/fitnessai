@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Award, Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus } from "lucide-react";
 import { parsePersonalRecordsAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { usePersonalRecords, useUserProfile } from "@/lib/firestore.service";

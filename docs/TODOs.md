@@ -5,10 +5,11 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 ## P0: Data & Core Functionality
 
 - Exercise library migration: implement Phases 1–6 in `docs/firebase-exercise-lib.md`
-- Screenshot parsing updates (workouts + PRs) for EGYM -> machine detection per `docs/firebase-exercise-lib.md`
-- Firestore rules: add read-only rules for shared exercise collections + required indexes
 - Migration scripts: add and run `scripts/migrate-exercises.ts` (dry run + staging + prod)
+- Firestore rules: add read-only rules for shared exercise collections + required indexes
 - Backwards compatibility verification for existing logs/PRs after migration
+- Expand exercise library after migration verification
+- Screenshot parsing updates (workouts + PRs) for EGYM -> machine detection per `docs/firebase-exercise-lib.md`
 
 ## P0: Reliability & Observability
 

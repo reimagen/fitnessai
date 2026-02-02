@@ -19,12 +19,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PlusCircle, Trash2, Loader2 } from "lucide-react";
 import type { WorkoutLog, ExerciseCategory, UserProfile } from "@/lib/types";
 import { Card } from "@/components/ui/card";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { startOfDay } from 'date-fns';
 import { StepperInput } from "@/components/ui/stepper-input";
 import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
 import { useExerciseSuggestions } from "@/hooks/useExerciseSuggestions";
-import { getExerciseCategory, getNormalizedExerciseName, classifiedExercises } from "@/lib/strength-standards";
+import { getExerciseCategory, getNormalizedExerciseName, classifiedExercises as fallbackClassifiedExercises } from "@/lib/strength-standards";
+import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
+import { formatExerciseDisplayName } from "@/lib/exercise-display";
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
@@ -79,7 +81,62 @@ const defaultExerciseValues: z.infer<typeof exerciseSchema> = {
 };
 
 export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCancelEdit, isSubmitting, workoutLogs = [], userProfile }: WorkoutLogFormProps) {
-  const suggestions = useExerciseSuggestions(workoutLogs);
+  const { data: exerciseLibrary = [] } = useExercises();
+  const { data: exerciseAliases = [] } = useExerciseAliases();
+  const aliasMap = useMemo(() => {
+    return exerciseAliases.reduce<Record<string, string>>((acc, alias) => {
+      acc[alias.alias.toLowerCase()] = alias.canonicalId;
+      return acc;
+    }, {});
+  }, [exerciseAliases]);
+  const exerciseById = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, (typeof exerciseLibrary)[number]>>((acc, exercise) => {
+      acc[exercise.id] = exercise;
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+  const canonicalNameByNormalized = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, string>>((acc, exercise) => {
+      acc[exercise.normalizedName.toLowerCase()] = formatExerciseDisplayName(exercise.name);
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+  const canonicalNameById = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, string>>((acc, exercise) => {
+      acc[exercise.id] = formatExerciseDisplayName(exercise.name);
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+  const classifiedExercises = useMemo(() => {
+    if (exerciseLibrary.length > 0) {
+      return exerciseLibrary
+        .filter(exercise => exercise.type === 'strength')
+        .filter(exercise => !aliasMap[exercise.normalizedName.toLowerCase()])
+        .map(exercise => formatExerciseDisplayName(exercise.name));
+    }
+    return fallbackClassifiedExercises;
+  }, [exerciseLibrary, aliasMap]);
+  const allExerciseNames = useMemo(() => {
+    if (exerciseLibrary.length > 0) {
+      return exerciseLibrary
+        .filter(exercise => !aliasMap[exercise.normalizedName.toLowerCase()])
+        .map(exercise => formatExerciseDisplayName(exercise.name));
+    }
+    return fallbackClassifiedExercises;
+  }, [exerciseLibrary, aliasMap]);
+  const exerciseCategories = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, ExerciseCategory>>((acc, exercise) => {
+      acc[exercise.normalizedName.toLowerCase()] = exercise.category;
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+  const suggestions = useExerciseSuggestions(
+    workoutLogs,
+    allExerciseNames,
+    aliasMap,
+    canonicalNameById,
+    canonicalNameByNormalized
+  );
   const [autoFocusIndex, setAutoFocusIndex] = useState(0);
 
   const form = useForm<WorkoutLogFormData>({
@@ -134,9 +191,24 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     // Use replace() to hint local timezone parsing, then startOfDay to normalize
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
+    const normalizeForLookup = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .replace(/^egym\s+/, '')
+        .replace(/\s+/g, ' ');
+
     // Normalize exercise names and track calorie source
     const normalizedExercises = values.exercises.map(ex => {
-      const normalizedName = getNormalizedExerciseName(ex.name);
+      const lookupKey = normalizeForLookup(ex.name);
+      const canonicalId = aliasMap[lookupKey];
+      const canonicalExercise = canonicalId ? exerciseById[canonicalId] : null;
+      const canonicalName =
+        canonicalExercise?.name || canonicalNameByNormalized[lookupKey] || formatExerciseDisplayName(ex.name);
+      const resolvedCategory =
+        canonicalExercise?.category ||
+        exerciseCategories[lookupKey] ||
+        ex.category;
 
       // Determine calorie source and value
       let caloriesSource: 'manual' | 'estimated' = ex.caloriesSource || 'estimated';
@@ -156,8 +228,8 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
 
       return {
         id: ex.id || Math.random().toString(36).substring(2,9),
-        name: normalizedName,
-        category: ex.category,
+        name: canonicalName,
+        category: resolvedCategory,
         sets: ex.sets ?? 0,
         reps: ex.reps ?? 0,
         weight: ex.weight ?? 0,
@@ -228,7 +300,13 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                             value={field.value}
                             onChange={(value) => {
                               field.onChange(value);
-                              const mappedCategory = getExerciseCategory(value);
+                              const normalizedValue = getNormalizedExerciseName(value).toLowerCase();
+                              const canonicalId = aliasMap[normalizedValue];
+                              const canonicalExercise = canonicalId ? exerciseById[canonicalId] : null;
+                              const mappedCategory =
+                                canonicalExercise?.category ||
+                                exerciseCategories[normalizedValue] ||
+                                getExerciseCategory(value);
                               const currentCategory = form.getValues(`exercises.${index}.category`);
                               if (mappedCategory && (!currentCategory || currentCategory === "Other")) {
                                 form.setValue(`exercises.${index}.category`, mappedCategory, {

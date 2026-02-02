@@ -31,6 +31,9 @@ type PieLabelProps = {
   percent: number;
   name: string;
   value: number;
+  payload?: {
+    hasEstimatedCalories?: boolean;
+  };
 };
 
 export const renderPieLabel = (props: PieLabelProps, unit?: 'reps' | 'kcal', isMobile: boolean = false, showEstimated: boolean = false) => {

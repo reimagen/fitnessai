@@ -5,7 +5,7 @@ import { getAdminDb } from './firebase-admin';
 import { Timestamp, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
 import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
 import { format } from 'date-fns';
-import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards';
+import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards.server';
 import { cache } from 'react';
 
 // --- Data Converters ---
@@ -321,7 +321,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
     let recordsNotImproved = 0;
 
     for (const newRecord of records) {
-        const normalizedName = getNormalizedExerciseName(newRecord.exerciseName);
+        const normalizedName = await getNormalizedExerciseName(newRecord.exerciseName);
         if (!normalizedName) continue;
 
         const newRecordWeightInKg = newRecord.weightUnit === 'lbs' ? newRecord.weight * LBS_TO_KG : newRecord.weight;
@@ -342,7 +342,7 @@ export const addPersonalRecords = async (userId: string, records: Omit<PersonalR
 
             const recordWithLevel: Omit<PersonalRecord, 'id' | 'userId'> = {
                 ...newRecord,
-                strengthLevel: getStrengthLevel({ ...newRecord, userId } as PersonalRecord, userProfile),
+                strengthLevel: await getStrengthLevel({ ...newRecord, userId } as PersonalRecord, userProfile),
             };
 
             await existingDocRef.set(personalRecordConverter.toFirestore(recordWithLevel));
@@ -376,7 +376,7 @@ export const updatePersonalRecord = async (userId: string, id: string, recordDat
   
   const updatedDataForCalc = { ...currentData, ...recordData };
   
-  const newLevel = getStrengthLevel(updatedDataForCalc, userProfile);
+  const newLevel = await getStrengthLevel(updatedDataForCalc, userProfile);
   
   const dataToUpdate: Record<string, unknown> = { ...recordData, strengthLevel: newLevel };
   if (recordData.date) {
@@ -494,7 +494,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Omi
             if (allRecords.length > 0 && updatedProfile) {
                 const batch = adminDb.batch();
                 for (const record of allRecords) {
-                    const newLevel = getStrengthLevel(record, updatedProfile);
+                    const newLevel = await getStrengthLevel(record, updatedProfile);
                     if (newLevel !== record.strengthLevel) {
                         const recordRef = personalRecordsCollection.doc(record.id);
                         batch.update(recordRef, { strengthLevel: newLevel });

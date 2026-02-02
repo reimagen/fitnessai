@@ -2,6 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Loader2 } from "lucide-react";
-import type { PersonalRecord } from "@/lib/types";
+import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { startOfDay } from 'date-fns';
-import { classifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
+import { classifiedExercises as fallbackClassifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
 import { PR_EXERCISES_TO_HIDE } from "@/lib/constants";
 import { toTitleCase } from "@/lib/utils";
 import { StepperInput } from "../ui/stepper-input";
+import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
+import { formatExerciseDisplayName } from "@/lib/exercise-display";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -37,10 +40,44 @@ type ManualPrFormProps = {
   isSubmitting?: boolean;
 };
 
-// Filter the exercise list to hide aliases from the dropdown
-const exercisesForDropdown = classifiedExercises.filter(exercise => !PR_EXERCISES_TO_HIDE.includes(exercise));
-
 export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
+  const { data: exerciseLibrary = [] } = useExercises();
+  const { data: exerciseAliases = [] } = useExerciseAliases();
+  const aliasMap = useMemo(() => {
+    return exerciseAliases.reduce<Record<string, string>>((acc, alias) => {
+      acc[alias.alias.toLowerCase()] = alias.canonicalId;
+      return acc;
+    }, {});
+  }, [exerciseAliases]);
+  const exercisesForDropdown = useMemo(() => {
+    if (exerciseLibrary.length > 0) {
+      return exerciseLibrary
+        .filter(exercise => exercise.type === 'strength')
+        .filter(exercise => !aliasMap[exercise.normalizedName.toLowerCase()])
+        .filter(exercise => !PR_EXERCISES_TO_HIDE.includes(exercise.normalizedName))
+        .map(exercise => ({
+          name: formatExerciseDisplayName(exercise.name),
+          normalizedName: exercise.normalizedName,
+          category: exercise.category,
+        }));
+    }
+
+    return fallbackClassifiedExercises
+      .filter(exercise => !PR_EXERCISES_TO_HIDE.includes(exercise))
+      .map(exercise => ({
+        name: formatExerciseDisplayName(toTitleCase(exercise)),
+        normalizedName: exercise,
+        category: getExerciseCategory(exercise) || 'Other',
+      }));
+  }, [exerciseLibrary, aliasMap]);
+
+  const exerciseCategories = useMemo(() => {
+    return exercisesForDropdown.reduce<Record<string, ExerciseCategory>>((acc, exercise) => {
+      acc[exercise.normalizedName.toLowerCase()] = exercise.category;
+      return acc;
+    }, {});
+  }, [exercisesForDropdown]);
+
   const form = useForm<ManualPrFormData>({
     resolver: zodResolver(manualPrSchema),
     defaultValues: { 
@@ -52,7 +89,8 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   });
 
   function onSubmit(values: ManualPrFormData) {
-    const category = getExerciseCategory(values.exerciseName);
+    const normalizedName = values.exerciseName.trim().toLowerCase();
+    const category = exerciseCategories[normalizedName] || getExerciseCategory(values.exerciseName);
     const selectedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
     onAdd({
@@ -82,7 +120,9 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
                 </FormControl>
                 <SelectContent>
                   {exercisesForDropdown.map(exercise => (
-                    <SelectItem key={exercise} value={exercise}>{toTitleCase(exercise)}</SelectItem>
+                    <SelectItem key={exercise.normalizedName} value={exercise.name}>
+                      {exercise.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>

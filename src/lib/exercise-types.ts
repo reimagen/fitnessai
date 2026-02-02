@@ -57,3 +57,36 @@ export type ExerciseCategoryMap = Record<string, ExerciseCategory>;
  * Map of exercise name aliases/variations to canonical names
  */
 export type ExerciseAliasMap = Record<string, string>;
+
+export type EquipmentType =
+  | 'machine'
+  | 'barbell'
+  | 'dumbbell'
+  | 'cable'
+  | 'bodyweight'
+  | 'band'
+  | 'kettlebell'
+  | 'other';
+
+export type ExerciseDocument = {
+  id: string;
+  name: string;
+  normalizedName: string;
+  equipment: EquipmentType;
+  category: ExerciseCategory;
+  type: 'strength' | 'cardio';
+  strengthStandards?: {
+    baseType: 'bw' | 'smm';
+    standards: GenderStandards;
+  };
+  isActive: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  legacyNames?: string[];
+};
+
+export type AliasDocument = {
+  alias: string;
+  canonicalId: string;
+  createdAt?: Date;
+};

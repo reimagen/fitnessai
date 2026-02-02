@@ -6,7 +6,7 @@ import { getUserProfile as getUserProfileFromServer, updateUserProfile as update
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
-import { getNormalizedExerciseName } from "@/lib/strength-standards";
+import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 
@@ -59,7 +59,7 @@ export async function analyzeLiftProgressionAction(
       generatedDate: new Date(),
     };
 
-    const exerciseKey = getNormalizedExerciseName(values.exerciseName);
+    const exerciseKey = await getNormalizedExerciseName(values.exerciseName);
 
     const updatePayload = {
       liftProgressionAnalysis: {
