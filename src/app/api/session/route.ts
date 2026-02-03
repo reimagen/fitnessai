@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { getAdminAuth } from "@/lib/firebase-admin";
+import { logger } from "@/lib/logging/logger";
+import { createRequestContext } from "@/lib/logging/request-context";
 
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 5;
 
 export async function POST(request: Request) {
+  const traceHeader = request.headers.get("x-cloud-trace-context") ?? undefined;
+  const context = createRequestContext({ route: "/api/session", feature: "session" });
+
   try {
     const { idToken } = (await request.json()) as { idToken?: string };
     if (!idToken) {
@@ -24,14 +29,21 @@ export async function POST(request: Request) {
       maxAge: SESSION_MAX_AGE_SECONDS,
     });
 
+    await logger.info("Session created", context, traceHeader);
     return response;
   } catch (error) {
-    console.error("Failed to create session cookie:", error);
+    await logger.error("Failed to create session cookie", {
+      ...context,
+      error: String(error),
+    }, traceHeader);
     return NextResponse.json({ error: "Failed to create session cookie." }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  const traceHeader = request.headers.get("x-cloud-trace-context") ?? undefined;
+  const context = createRequestContext({ route: "/api/session", feature: "session" });
+
   const response = NextResponse.json({ status: "ok" });
   response.cookies.set("__session", "", {
     httpOnly: true,
@@ -40,5 +52,6 @@ export async function DELETE() {
     path: "/",
     maxAge: 0,
   });
+  await logger.info("Session cleared", context, traceHeader);
   return response;
 }

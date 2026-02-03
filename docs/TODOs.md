@@ -18,6 +18,9 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - Capture and classify AI errors (quota, overload, validation) consistently
 - Add basic uptime/health check and log it in hosting monitoring
 
+## PO.5: Collections-split.md
+- /Users/lisagu/Projects/fitnessai-1/docs/collections-split.md
+
 ## P1: Security & Privacy
 
 - Review Firestore rules against every collection and subcollection in use
@@ -35,7 +38,7 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
   - strength analysis + plan generation
 - Add CI checks: `lint`, `typecheck`, `build`
 
-## P1: Performance & Cost Control
+## P1: Performance & Cost Control 
 
 - Add caching + TTL verification for exercise registry reads
 - Monitor Firestore read/write costs in prod (dashboard + alerts)
