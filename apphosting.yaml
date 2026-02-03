@@ -8,4 +8,4 @@ env:
   - variable: GEMINI_API_KEY
     secret: gemini-api-key
   - variable: LOG_INFO_SAMPLE_RATE
-    value: "0.01"
+    value: "1"
