@@ -25,7 +25,7 @@ const ParsePersonalRecordsInputSchema = z.object({
 export type ParsePersonalRecordsInput = z.infer<typeof ParsePersonalRecordsInputSchema>;
 
 const PersonalRecordSchema = z.object({
-    exerciseName: z.string().describe("The name of the exercise. If the original name starts with 'EGYM ', remove this prefix."),
+    exerciseName: z.string().describe("The name of the exercise. If the original name starts with 'EGYM ', replace it with 'Machine ' to indicate machine equipment."),
     weight: z.number().describe("The weight lifted for the record."),
     weightUnit: z.enum(['kg', 'lbs']).describe("The unit for the weight (kg or lbs)."),
     dateString: z.string().describe("The date the record was achieved, formatted as YYYY-MM-DD. Omit if the date is not explicitly shown (e.g., if it says 'Today').").optional(),
@@ -65,9 +65,11 @@ The most important part of your task is to correctly categorize each exercise.
 
 **OTHER INSTRUCTIONS:**
 *   **Extract Each Record**: The screenshot contains multiple lines, each representing a different personal record. You must parse each one.
-*   **Exercise Name**:
+*   **Exercise Name and Equipment Detection**:
     *   Extract the name of the exercise.
-    *   If an exercise name begins with "EGYM " (case-insensitive), you must remove this prefix. For example, "EGYM Chest Press" becomes "Chest Press".
+    *   **EGYM Brand Replacement**: If an exercise name begins with "EGYM " (case-insensitive), replace it with "Machine ". For example, "EGYM Chest Press" becomes "Machine Chest Press".
+    *   **Other Machine Brands**: If the exercise contains other machine brand indicators (e.g., "Smith Machine Bench Press"), normalize to "Machine [Exercise]" format. For example, "Smith Machine Bench Press" → "Machine Bench Press".
+    *   **Equipment in Name**: Preserve equipment type for non-machine exercises (e.g., "Barbell Bench Press", "Dumbbell Curl").
 *   **Weight and Unit**: Extract the numerical weight value and its unit (kg or lbs).
 *   **Date - CRITICAL**:
 *   You must extract the date (year and month and day) associated with each specific record.

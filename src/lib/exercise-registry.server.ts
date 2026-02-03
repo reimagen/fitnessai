@@ -44,10 +44,11 @@ function buildFallbackExercises(): ExerciseDocument[] {
   const strengthExercises: ExerciseDocument[] = Object.entries(STRENGTH_STANDARDS).map(
     ([name, data]) => {
       const normalizedName = normalizeExerciseName(name);
+      const machineNormalizedName = `machine ${normalizedName}`;
       return {
         id: `machine-${toSlug(name)}`,
-        name: toTitleCase(name),
-        normalizedName,
+        name: `Machine ${toTitleCase(name)}`,
+        normalizedName: machineNormalizedName,
         equipment: 'machine',
         category: data.category,
         type: 'strength',
@@ -56,7 +57,7 @@ function buildFallbackExercises(): ExerciseDocument[] {
           standards: data.standards,
         },
         isActive: true,
-        legacyNames: [normalizedName],
+        legacyNames: [normalizedName, machineNormalizedName],
       };
     }
   );
