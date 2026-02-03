@@ -27,7 +27,7 @@ const ParseWorkoutScreenshotOutputSchema = z.object({
   workoutDate: z.string().optional().describe("The date of the workout extracted from the screenshot, formatted as YYYY-MM-DD. This field is only present if a date was found."),
   exercises: z.array(
     z.object({
-      name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", remove this prefix.'),
+      name: z.string().describe('The name of the exercise. If the original name starts with "EGYM ", replace it with "Machine " to indicate machine equipment.'),
       sets: z.number().describe('The number of sets performed. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
       reps: z.number().describe('The number of repetitions performed for each set. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
       weight: z.number().describe('The weight used for each set. For Cardio exercises, this should typically be 0 unless explicitly stated otherwise.'),
@@ -58,9 +58,11 @@ const COMMON_INSTRUCTIONS = `
         *   If you see "000- 5383 ft", the distance is '5383' and unit is 'ft'. The "000-" prefix is an artifact.
         *   If you see "566 sec0", the duration is '566' and unit is 'sec'. The trailing "0" is an artifact.
         *   Ensure all numerical fields in your output are actual numbers, not strings containing numbers and artifacts.
-2.  **Exercise Name**:
+2.  **Exercise Name and Equipment Detection**:
     *   Extract the name of the exercise.
-    *   If an exercise name begins with "EGYM " (case-insensitive), remove this prefix. For example, "EGYM Leg Press" should become "Leg Press".
+    *   **EGYM Brand Replacement**: If an exercise name begins with "EGYM " (case-insensitive), replace it with "Machine ". For example, "EGYM Leg Press" should become "Machine Leg Press".
+    *   **Other Machine Brands**: If the exercise contains other machine brand indicators (e.g., "Smith Machine Bench Press", "Hammer Strength Row"), normalize to "Machine [Exercise]" format. For example, "Smith Machine Bench Press" → "Machine Bench Press".
+    *   **Equipment in Name**: Preserve equipment type for non-machine exercises (e.g., "Barbell Bench Press", "Dumbbell Curl").
 3.  **Exercise Category**:
     *   For each exercise, you MUST assign a category. The category MUST be one of the following: "Cardio", "Lower Body", "Upper Body", "Full Body", "Core", or "Other".
     *   You MUST infer the category from the exercise name based on the guide below.
@@ -193,7 +195,7 @@ const parseWorkoutScreenshotFlow = ai.defineFlow(
       const modifiedExercises = output.exercises.map(ex => {
         let name = ex.name;
         if (name.toLowerCase().startsWith('egym ')) {
-          name = name.substring(5);
+          name = 'Machine ' + name.substring(5);
         }
         
         let correctedWeightUnit: 'kg' | 'lbs' | undefined;

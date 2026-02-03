@@ -47,7 +47,7 @@ export function PersonalRecordsSection({
     }, {});
   }, [exerciseLibrary]);
 
-  const bestRecords = useMemo(() => getBestRecords(allRecords || []), [allRecords]);
+  const bestRecords = useMemo(() => getBestRecords(allRecords || [], exerciseLibrary), [allRecords, exerciseLibrary]);
   const categorizedRecords = useMemo(() => {
     return bestRecords.map(record => {
       const normalizedName = normalizeForLookup(record.exerciseName);
