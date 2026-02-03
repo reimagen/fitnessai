@@ -9,7 +9,7 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - ✅ Firestore rules: add read-only rules for shared exercise collections + required indexes
 - ✅ Backwards compatibility verification for existing logs/PRs after migration
 - ✅ Screenshot parsing updates (workouts + PRs) for EGYM -> machine detection per `docs/firebase-exercise-lib.md`
-- (Optional) Expand exercise library after migration verification
+- (Optional) Expand exercise library after migration verification (smith machine, preacher curl, etc.)
 
 ## P0: Reliability & Observability
 
