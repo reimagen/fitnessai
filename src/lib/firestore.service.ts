@@ -378,23 +378,34 @@ export function useAnalyzeLiftProgression() {
     const { user } = useAuth();
     const { toast } = useToast();
 
-    return useMutation<void, Error, AnalyzeLiftProgressionInput>({
-        mutationFn: (values: AnalyzeLiftProgressionInput) => 
-            analyzeLiftProgressionAction(user!.uid, values).then(result => {
-                if (!result.success) {
-                    throw new Error(result.error || "An unknown error occurred during analysis.");
-                }
-            }),
-        onSuccess: () => {
+    return useMutation<{ success: boolean; data?: unknown }, Error, AnalyzeLiftProgressionInput>({
+        mutationFn: async (values: AnalyzeLiftProgressionInput) => {
+            const result = await analyzeLiftProgressionAction(user!.uid, values);
+            if (!result.success) {
+                throw new Error(result.error || "An unknown error occurred during analysis.");
+            }
+            return result;
+        },
+        onSuccess: async (result, variables) => {
             toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
+
+            // Immediately invalidate the profile cache to force a fresh fetch
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+
+            // Wait a moment for the server to be updated, then refetch
+            // This ensures we get the latest data from Firebase
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await queryClient.refetchQueries({
+                queryKey: ['profile', user?.uid],
+                type: 'active'
+            });
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
-            toast({ 
+            toast({
                 title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
-                description: error.message, 
-                variant: "destructive" 
+                description: error.message,
+                variant: "destructive"
             });
         }
     });

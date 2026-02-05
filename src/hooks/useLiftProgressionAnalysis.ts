@@ -3,6 +3,7 @@ import { useToast } from "@/hooks/useToast";
 import { useAnalyzeLiftProgression } from "@/lib/firestore.service";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import type { AnalyzeLiftProgressionInput, StrengthLevel, UserProfile, WorkoutLog } from "@/lib/types";
+import type { ExerciseDocument } from "@/lib/exercise-types";
 
 type UseLiftProgressionAnalysisArgs = {
   userProfile: UserProfile | undefined;
@@ -12,6 +13,7 @@ type UseLiftProgressionAnalysisArgs = {
   currentLiftLevel: StrengthLevel | null;
   trendImprovement: number | null;
   volumeTrend: number | null;
+  exercises?: ExerciseDocument[];
 };
 
 export function useLiftProgressionAnalysis({
@@ -22,6 +24,7 @@ export function useLiftProgressionAnalysis({
   currentLiftLevel,
   trendImprovement,
   volumeTrend,
+  exercises = [],
 }: UseLiftProgressionAnalysisArgs) {
   const { toast } = useToast();
   const analyzeProgressionMutation = useAnalyzeLiftProgression();

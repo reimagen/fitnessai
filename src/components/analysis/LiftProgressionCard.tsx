@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, TrendingUp, Zap } from "lucide-react";
 import type { WorkoutLog, PersonalRecord, UserProfile } from "@/lib/types";
+import type { ExerciseDocument } from "@/lib/exercise-types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { toTitleCase } from "@/lib/utils";
 import { useLiftProgression } from "@/hooks/useLiftProgression";
@@ -19,7 +20,36 @@ interface LiftProgressionCardProps {
   selectedLift: string;
   setSelectedLift: (lift: string) => void;
   frequentlyLoggedLifts: string[];
+  exercises: ExerciseDocument[];
 }
+
+/**
+ * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
+ */
+const normalizeForLookup = (name: string): string =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/^(egym|machine)\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
+
+/**
+ * Resolves exercise name to its canonical name using the exercise library.
+ * If the normalized name matches a legacyName, uses the canonical exercise name.
+ */
+const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
+  const normalized = normalizeForLookup(exerciseName);
+
+  // Try to find the exercise by normalized name or in legacyNames
+  const exercise = exerciseLibrary.find(e => {
+    if (e.normalizedName.toLowerCase() === normalized) return true;
+    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
+    return false;
+  });
+
+  return exercise?.normalizedName || exerciseName;
+};
 
 export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
   userProfile,
@@ -28,15 +58,23 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
   selectedLift,
   setSelectedLift,
   frequentlyLoggedLifts,
+  exercises,
 }) => {
-  const selectedLiftKey = getNormalizedExerciseName(selectedLift);
-  const progressionAnalysisToRender = userProfile?.liftProgressionAnalysis?.[selectedLiftKey];
+  const canonicalLiftName = resolveCanonicalName(selectedLift, exercises);
+  const selectedLiftKey = getNormalizedExerciseName(canonicalLiftName);
+
+  // Check for analysis under both new (canonical) and old (original) keys
+  // to handle migrations when exercise names were updated
+  const progressionAnalysisToRender =
+    userProfile?.liftProgressionAnalysis?.[selectedLiftKey] ||
+    userProfile?.liftProgressionAnalysis?.[getNormalizedExerciseName(selectedLift)];
 
   const progressionChartData = useLiftProgression(
     selectedLift,
     selectedLiftKey,
     workoutLogs,
-    personalRecords
+    personalRecords,
+    exercises
   );
 
   const { currentLiftLevel, trendImprovement, volumeTrend, avgE1RM } = useLiftTrends(
@@ -45,17 +83,19 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
     progressionChartData,
     personalRecords,
     userProfile,
-    workoutLogs
+    workoutLogs,
+    exercises
   );
 
   const { handleAnalyzeProgression, isPending } = useLiftProgressionAnalysis({
     userProfile,
     workoutLogs,
-    selectedLift,
+    selectedLift: canonicalLiftName,
     selectedLiftKey,
     currentLiftLevel,
     trendImprovement,
     volumeTrend,
+    exercises,
   });
 
   const showProgressionReanalyze = !!progressionAnalysisToRender;

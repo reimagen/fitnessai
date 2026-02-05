@@ -9,6 +9,7 @@ import { useUserProfile, useWorkouts, usePersonalRecords } from "@/lib/firestore
 import Link from "next/link";
 import { PlanGeneratorSection } from "@/components/plan/PlanGeneratorSection";
 import { GeneratedPlanSection } from "@/components/plan/GeneratedPlanSection";
+import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 
 
 export default function PlanPage() {
@@ -56,28 +57,30 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8">
-      <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Weekly Plan</h1>
-        <p className="text-muted-foreground">Workouts are based on your recent 6-week progress and workout preferences.</p>
-      </header>
+    <ErrorBoundary feature="plan">
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        <header className="mb-8">
+          <h1 className="font-headline text-3xl font-bold text-primary">Weekly Plan</h1>
+          <p className="text-muted-foreground">Workouts are based on your recent 6-week progress and workout preferences.</p>
+        </header>
 
-      <PlanGeneratorSection
-        userProfile={userProfile}
-        workoutLogs={workoutLogs}
-        personalRecords={personalRecords}
-        isLoadingProfile={isLoadingProfile}
-        isLoadingWorkouts={isLoadingWorkouts}
-        isLoadingPrs={isLoadingPrs}
-        isErrorProfile={isErrorProfile}
-        isErrorWorkouts={isErrorWorkouts}
-        isErrorPrs={isErrorPrs}
-      />
+        <PlanGeneratorSection
+          userProfile={userProfile}
+          workoutLogs={workoutLogs}
+          personalRecords={personalRecords}
+          isLoadingProfile={isLoadingProfile}
+          isLoadingWorkouts={isLoadingWorkouts}
+          isLoadingPrs={isLoadingPrs}
+          isErrorProfile={isErrorProfile}
+          isErrorWorkouts={isErrorWorkouts}
+          isErrorPrs={isErrorPrs}
+        />
 
-      {generatedPlan && (
-        <GeneratedPlanSection generatedPlan={generatedPlan} />
-      )}
+        {generatedPlan && (
+          <GeneratedPlanSection generatedPlan={generatedPlan} />
+        )}
 
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

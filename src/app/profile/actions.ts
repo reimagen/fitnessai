@@ -8,6 +8,7 @@ import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoal
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
+import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
@@ -45,7 +46,7 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
     await updateUserProfileFromServer(userId, data);
 
     // Invalidate server-side cache so next request fetches fresh data
-    revalidateTag(`user-profile-${userId}`, {});
+    revalidateTag(`user-profile-${userId}`);
   });
 }
 
@@ -92,32 +93,44 @@ export async function analyzeLiftProgressionAction(
           [exerciseKey]: storedAnalysis
         }
       };
-      
+
+      await logger.info("Saving lift progression analysis", {
+        ...context,
+        exerciseKey,
+        updatePayload: JSON.stringify(updatePayload),
+      });
+
       await updateUserProfileFromServer(userId, updatePayload);
+
+      await logger.info("Lift progression analysis saved successfully", {
+        ...context,
+        exerciseKey,
+      });
 
       // Increment usage counter on success
       await incrementUsageCounter(userId, 'liftProgressionAnalyses');
 
       // Invalidate server-side cache
-      revalidateTag(`user-profile-${userId}`, {});
+      revalidateTag(`user-profile-${userId}`);
 
       return { success: true, data: analysisData };
     } catch (error) {
+      const classified = classifyAIError(error);
       await logger.error("Error analyzing lift progression", {
         ...context,
-        error: String(error),
+        errorType: classified.category,
+        statusCode: classified.statusCode,
       });
-      let userFriendlyError = "An unknown error occurred while analyzing your lift progression. This attempt did not count against your daily limit.";
-      if (error instanceof Error) {
-          if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-              userFriendlyError = "Analysis failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
-          } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-              userFriendlyError = "Analysis failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
-          } else {
-              userFriendlyError = `Failed to analyze progression: ${error.message}. This attempt did not count against your daily limit.`;
-          }
+
+      // Don't count against limit if it's a service error
+      if (!classified.shouldCountAgainstLimit) {
+        await logger.info("Skipping usage counter increment due to service error", {
+          ...context,
+          errorType: classified.category,
+        });
       }
-      return { success: false, error: userFriendlyError };
+
+      return { success: false, error: classified.userMessage };
     }
   });
 }
@@ -165,25 +178,26 @@ export async function analyzeGoalsAction(
       await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
 
       // Invalidate server-side cache
-      revalidateTag(`user-profile-${userId}`, {});
+      revalidateTag(`user-profile-${userId}`);
 
       return { success: true, data: analysisData };
     } catch (error) {
+      const classified = classifyAIError(error);
       await logger.error("Error analyzing fitness goals", {
         ...context,
-        error: String(error),
+        errorType: classified.category,
+        statusCode: classified.statusCode,
       });
-      let userFriendlyError = "An unknown error occurred while analyzing your goals. This attempt did not count against your daily limit.";
-      if (error instanceof Error) {
-          if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-              userFriendlyError = "Analysis failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
-          } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-              userFriendlyError = "Analysis failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
-          } else {
-              userFriendlyError = `Failed to analyze goals: ${error.message}. This attempt did not count against your daily limit.`;
-          }
+
+      // Don't count against limit if it's a service error
+      if (!classified.shouldCountAgainstLimit) {
+        await logger.info("Skipping usage counter increment due to service error", {
+          ...context,
+          errorType: classified.category,
+        });
       }
-      return { success: false, error: userFriendlyError };
+
+      return { success: false, error: classified.userMessage };
     }
   });
 }

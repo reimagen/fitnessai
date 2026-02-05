@@ -7,6 +7,8 @@ import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, E
 import { format } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards.server';
 import { cache } from 'react';
+import { logger } from '@/lib/logging/logger';
+import { redactPII } from '@/lib/logging/data-redactor';
 
 // --- Data Converters ---
 // These converters handle the transformation between Firestore's data format (e.g., Timestamps)
@@ -258,54 +260,132 @@ export const getWorkoutLogs = async (userId: string, options?: { startDate?: Dat
     return snapshot.docs.map(doc => doc.data());
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 5 && 'details' in error && typeof (error as { details?: string }).details === 'string' && (error as { details?: string }).details?.includes('requires an index')) {
-        console.warn(`Firestore index missing for workoutLogs query for user ${userId}. Returning empty list. Please create the required index in the Firebase console.`);
+        await logger.warn(
+          'Firestore index missing for workoutLogs query. Returning empty list.',
+          redactPII({
+            route: 'firestore/getWorkoutLogs',
+            feature: 'workoutLogs',
+            userId,
+            error: (error as { details?: string }).details,
+          }) as Record<string, unknown>
+        );
         return [];
     }
     if (error && typeof error === 'object' && ('code' in error || 'details' in error)) {
       const code = (error as { code?: number }).code;
       const details = (error as { details?: string }).details;
       if (code === 7 || (details && details.includes('Permission denied'))) {
-      console.log(`Gracefully handling Firestore permission error for user ${userId}. Returning empty log list.`);
-      return [];
+        await logger.warn(
+          'Firestore permission error for workoutLogs. Returning empty list.',
+          redactPII({
+            route: 'firestore/getWorkoutLogs',
+            feature: 'workoutLogs',
+            userId,
+            error: details,
+          }) as Record<string, unknown>
+        );
+        return [];
       }
     }
-    console.error("Error fetching workout logs:", error);
+    await logger.error(
+      'Error fetching workout logs.',
+      redactPII({
+        route: 'firestore/getWorkoutLogs',
+        feature: 'workoutLogs',
+        userId,
+        error: String(error),
+      }) as Record<string, unknown>
+    );
     throw error;
   }
 };
 
 
 export const addWorkoutLog = async (userId: string, log: Omit<WorkoutLog, 'id' | 'userId'>) => {
+  try {
     const adminDb = getAdminDb();
     const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter);
     const docRef = await workoutLogsCollection.add(log);
     return { id: docRef.id };
+  } catch (error) {
+    await logger.error(
+      'Error adding workout log.',
+      redactPII({
+        route: 'firestore/addWorkoutLog',
+        feature: 'workoutLogs',
+        userId,
+        error: String(error),
+      }) as Record<string, unknown>
+    );
+    throw error;
+  }
 };
 
 export const updateWorkoutLog = async (userId: string, id: string, log: Partial<Omit<WorkoutLog, 'id' | 'userId'>>) => {
-  const adminDb = getAdminDb();
-  const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
+  try {
+    const adminDb = getAdminDb();
+    const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
 
-  const dataToUpdate: Record<string, unknown> = { ...log };
-  if (log.date) {
-    dataToUpdate.date = Timestamp.fromDate(log.date);
+    const dataToUpdate: Record<string, unknown> = { ...log };
+    if (log.date) {
+      dataToUpdate.date = Timestamp.fromDate(log.date);
+    }
+    await logDoc.update(dataToUpdate);
+  } catch (error) {
+    await logger.error(
+      'Error updating workout log.',
+      redactPII({
+        route: 'firestore/updateWorkoutLog',
+        feature: 'workoutLogs',
+        userId,
+        workoutLogId: id,
+        error: String(error),
+      }) as Record<string, unknown>
+    );
+    throw error;
   }
-  await logDoc.update(dataToUpdate);
 };
 
 export const deleteWorkoutLog = async (userId: string, id: string): Promise<void> => {
-  const adminDb = getAdminDb();
-  const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
-  await logDoc.delete();
+  try {
+    const adminDb = getAdminDb();
+    const logDoc = adminDb.collection(`users/${userId}/workoutLogs`).doc(id);
+    await logDoc.delete();
+  } catch (error) {
+    await logger.error(
+      'Error deleting workout log.',
+      redactPII({
+        route: 'firestore/deleteWorkoutLog',
+        feature: 'workoutLogs',
+        userId,
+        workoutLogId: id,
+        error: String(error),
+      }) as Record<string, unknown>
+    );
+    throw error;
+  }
 };
 
 // Personal Records
 export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
-  const adminDb = getAdminDb();
-  const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
-  // No ordering needed as we just want all records for client-side processing
-  const snapshot = await personalRecordsCollection.get();
-  return snapshot.docs.map(doc => doc.data());
+  try {
+    const adminDb = getAdminDb();
+    const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
+    // No ordering needed as we just want all records for client-side processing
+    const snapshot = await personalRecordsCollection.get();
+    return snapshot.docs.map(doc => doc.data());
+  } catch (error) {
+    await logger.error(
+      'Error fetching personal records.',
+      redactPII({
+        route: 'firestore/getPersonalRecords',
+        feature: 'personalRecords',
+        userId,
+        error: String(error),
+      }) as Record<string, unknown>
+    );
+    throw error;
+  }
 });
 
 export const addPersonalRecords = async (userId: string, records: Omit<PersonalRecord, 'id' | 'userId'>[]): Promise<{ success: boolean; message: string }> => {

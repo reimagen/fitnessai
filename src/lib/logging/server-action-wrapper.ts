@@ -1,4 +1,5 @@
 import { performance } from "node:perf_hooks";
+import { headers } from "next/headers";
 
 import { logger } from "@/lib/logging/logger";
 import type { RequestContext } from "@/lib/logging/request-context";
@@ -13,6 +14,16 @@ export async function withServerActionLogging<T>(
 ): Promise<T> {
   const start = performance.now();
 
+  // Extract trace header from request context
+  let traceHeader: string | undefined = undefined;
+  try {
+    const headersList = await headers();
+    traceHeader = headersList.get("x-cloud-trace-context") ?? undefined;
+  } catch (err) {
+    // headers() may fail in some contexts; log and continue
+    console.error("Failed to extract trace header:", err);
+  }
+
   try {
     const result = await action();
     const duration = Math.round(performance.now() - start);
@@ -22,20 +33,28 @@ export async function withServerActionLogging<T>(
         : undefined;
     const level = success === false ? "warn" : "info";
 
-    await logger[level]("Server action completed", {
-      ...context,
-      duration,
-      success,
-    });
+    await logger[level](
+      "Server action completed",
+      {
+        ...context,
+        duration,
+        success,
+      },
+      traceHeader
+    );
 
     return result;
   } catch (error) {
     const duration = Math.round(performance.now() - start);
-    await logger.error("Server action failed", {
-      ...context,
-      duration,
-      error: String(error),
-    });
+    await logger.error(
+      "Server action failed",
+      {
+        ...context,
+        duration,
+        error: String(error),
+      },
+      traceHeader
+    );
     throw error;
   }
 }
