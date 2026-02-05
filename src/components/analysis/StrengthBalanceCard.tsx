@@ -5,6 +5,7 @@ import { Loader2, Zap, Lightbulb, Scale } from 'lucide-react';
 import { format } from 'date-fns/format';
 import React from 'react';
 import type { PersonalRecord, StrengthFinding, StrengthImbalanceOutput, UserProfile, StrengthLevel, StrengthImbalanceInput, WorkoutLog } from '@/lib/types';
+import type { ExerciseDocument } from '@/lib/exercise-types';
 import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/useToast';
@@ -18,9 +19,41 @@ interface StrengthBalanceCardProps {
   userProfile: UserProfile | undefined;
   workoutLogs: WorkoutLog[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
+  exercises: ExerciseDocument[];
 }
 
 type ClientSideFinding = StrengthFinding | { imbalanceType: ImbalanceType; hasData: false };
+
+/**
+ * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
+ */
+const normalizeForLookup = (name: string): string =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/^(egym|machine)\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
+
+/**
+ * Resolves exercise name to its canonical name using the exercise library.
+ */
+const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
+  const normalized = normalizeForLookup(exerciseName);
+  const exercise = exerciseLibrary.find(e => {
+    if (e.normalizedName.toLowerCase() === normalized) return true;
+    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
+    return false;
+  });
+  return exercise?.normalizedName || exerciseName;
+};
+
+/**
+ * Resolves exercise options to canonical names
+ */
+const resolveExerciseOptions = (options: string[], exerciseLibrary: ExerciseDocument[]): string[] => {
+  return options.map(name => resolveCanonicalName(name, exerciseLibrary));
+};
 
 const getGuidingLevel = (lift1Level: StrengthLevel, lift2Level: StrengthLevel) => {
   const rank1 = strengthLevelRanks[lift1Level];
@@ -38,7 +71,7 @@ const getNextStrengthLevel = (currentLevel: StrengthLevel) => {
   return null;
 };
 
-const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProfile: UserProfile | undefined) => {
+const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProfile: UserProfile | undefined, exercises: ExerciseDocument[]) => {
   if (!workoutLogs || !userProfile || !userProfile.gender) {
     return [];
   }
@@ -47,8 +80,10 @@ const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProf
 
   IMBALANCE_TYPES.forEach(type => {
     const config = IMBALANCE_CONFIG[type];
-    const lift1 = find6WeekAvgE1RM(workoutLogs, config.lift1Options);
-    const lift2 = find6WeekAvgE1RM(workoutLogs, config.lift2Options);
+    const resolvedLift1Options = resolveExerciseOptions(config.lift1Options, exercises);
+    const resolvedLift2Options = resolveExerciseOptions(config.lift2Options, exercises);
+    const lift1 = find6WeekAvgE1RM(workoutLogs, resolvedLift1Options, exercises);
+    const lift2 = find6WeekAvgE1RM(workoutLogs, resolvedLift2Options, exercises);
 
     if (!lift1 || !lift2) {
       findings.push({ imbalanceType: type, hasData: false });
@@ -257,13 +292,14 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   userProfile,
   workoutLogs,
   strengthAnalysis,
+  exercises,
 }) => {
   const { toast } = useToast();
   const analyzeStrengthMutation = useAnalyzeStrength();
 
   const clientSideFindings = React.useMemo(
-    () => buildClientSideFindings(workoutLogs, userProfile),
-    [workoutLogs, userProfile],
+    () => buildClientSideFindings(workoutLogs, userProfile, exercises),
+    [workoutLogs, userProfile, exercises],
   );
 
   const handleAnalyzeStrength = () => {

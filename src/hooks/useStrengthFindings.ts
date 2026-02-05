@@ -6,10 +6,43 @@ import { toTitleCase } from '@/lib/utils';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import type { UserProfile } from '@/lib/types';
 import type { ImbalanceFocus } from '@/analysis/analysis.utils';
+import type { ExerciseDocument } from '@/lib/exercise-types';
+
+/**
+ * Normalizes exercise name for lookup
+ */
+const normalizeForLookup = (name: string): string =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/^(egym|machine)\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
+
+/**
+ * Resolves exercise name to its canonical name using the exercise library
+ */
+const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
+  const normalized = normalizeForLookup(exerciseName);
+  const exercise = exerciseLibrary.find(e => {
+    if (e.normalizedName.toLowerCase() === normalized) return true;
+    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
+    return false;
+  });
+  return exercise?.normalizedName || exerciseName;
+};
+
+/**
+ * Resolves exercise options to canonical names
+ */
+const resolveExerciseOptions = (options: string[], exerciseLibrary: ExerciseDocument[]): string[] => {
+  return options.map(name => resolveCanonicalName(name, exerciseLibrary));
+};
 
 export function useStrengthFindings(
   workoutLogs: WorkoutLog[] | undefined,
-  userProfile: UserProfile | undefined
+  userProfile: UserProfile | undefined,
+  exercises: ExerciseDocument[] = []
 ) {
   const clientSideFindings = useMemo<(StrengthFinding | { imbalanceType: ImbalanceType; hasData: false })[]>(() => {
     if (!workoutLogs || !userProfile || !userProfile.gender) {
@@ -27,8 +60,10 @@ export function useStrengthFindings(
 
     IMBALANCE_TYPES.forEach(type => {
       const config = IMBALANCE_CONFIG[type];
-      const lift1 = find6WeekAvgE1RM(workoutLogs, config.lift1Options);
-      const lift2 = find6WeekAvgE1RM(workoutLogs, config.lift2Options);
+      const resolvedLift1Options = resolveExerciseOptions(config.lift1Options, exercises);
+      const resolvedLift2Options = resolveExerciseOptions(config.lift2Options, exercises);
+      const lift1 = find6WeekAvgE1RM(workoutLogs, resolvedLift1Options, exercises);
+      const lift2 = find6WeekAvgE1RM(workoutLogs, resolvedLift2Options, exercises);
 
       if (!lift1 || !lift2) {
         findings.push({ imbalanceType: type, hasData: false });
@@ -114,7 +149,7 @@ export function useStrengthFindings(
     });
 
     return findings;
-  }, [workoutLogs, userProfile]);
+  }, [workoutLogs, userProfile, exercises]);
 
   return clientSideFindings;
 }

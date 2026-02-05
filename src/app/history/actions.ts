@@ -12,6 +12,7 @@ import {
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
+import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { WorkoutLog } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
@@ -53,21 +54,22 @@ export async function parseWorkoutScreenshotAction(
       await incrementUsageCounter(userId, 'screenshotParses');
       return { success: true, data: parsedData };
     } catch (error) {
+      const classified = classifyAIError(error);
       await logger.error("Error parsing workout screenshot", {
         ...context,
-        error: String(error),
+        errorType: classified.category,
+        statusCode: classified.statusCode,
       });
-      let userFriendlyError = "An unknown error occurred while parsing the screenshot. This attempt did not count against your daily limit.";
-      if (error instanceof Error) {
-          if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-              userFriendlyError = "Parsing failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
-          } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-              userFriendlyError = "Parsing failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
-          } else {
-              userFriendlyError = `Failed to parse screenshot: ${error.message}. This attempt did not count against your daily limit.`;
-          }
+
+      // Don't count against limit if it's a service error
+      if (!classified.shouldCountAgainstLimit) {
+        await logger.info("Skipping usage counter increment due to service error", {
+          ...context,
+          errorType: classified.category,
+        });
       }
-      return { success: false, error: userFriendlyError };
+
+      return { success: false, error: classified.userMessage };
     }
   });
 }

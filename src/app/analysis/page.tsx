@@ -4,7 +4,8 @@
 import { Loader2, UserPlus, TrendingUp } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import type { WorkoutLog } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile } from '@/lib/firestore.service';
+import { useWorkouts, usePersonalRecords, useUserProfile, useExercises } from '@/lib/firestore.service';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,21 +37,44 @@ export default function AnalysisPage() {
   const enableDataFetching = !isLoadingProfile && !!userProfile;
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
+  const { data: exercises = [] } = useExercises(enableDataFetching);
 
   // Custom hooks for data processing
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
-  // Get frequently logged lifts
+  // Helper function to normalize for lookup
+  const normalizeForLookup = (name: string): string =>
+    name
+      .trim()
+      .toLowerCase()
+      .replace(/^(egym|machine)\s+/, '')
+      .replace(/[()]/g, '')
+      .replace(/\s+/g, ' ');
+
+  // Helper function to resolve canonical name
+  const resolveCanonicalName = (exerciseName: string): string => {
+    const normalized = normalizeForLookup(exerciseName);
+    const exercise = exercises.find(e => {
+      if (e.normalizedName.toLowerCase() === normalized) return true;
+      if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
+      return false;
+    });
+    return exercise?.normalizedName || exerciseName;
+  };
+
+  // Get frequently logged lifts - resolve to canonical exercise names from library
   const frequentlyLoggedLifts = useMemo(() => {
-    if (!workoutLogs) return [];
+    if (!workoutLogs || exercises.length === 0) return [];
     const weightedExercises = new Map<string, number>();
     workoutLogs.forEach((log: WorkoutLog) => {
       log.exercises.forEach((ex) => {
         if (ex.weight && ex.weight > 0 && ex.category !== 'Cardio') {
-          const name = getNormalizedExerciseName(ex.name);
-          weightedExercises.set(name, (weightedExercises.get(name) || 0) + 1);
+          // Resolve to canonical name from exercise library
+          // This handles "machine bicep curl" as its own exercise distinct from "bicep curl"
+          const canonical = resolveCanonicalName(ex.name);
+          weightedExercises.set(canonical, (weightedExercises.get(canonical) || 0) + 1);
         }
       });
     });
@@ -58,7 +82,7 @@ export default function AnalysisPage() {
       .filter(([, count]: [string, number]) => count > 1)
       .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .map(([name]: [string, number]) => name);
-  }, [workoutLogs]);
+  }, [workoutLogs, exercises]);
 
   const resolvedSelectedLift = selectedLift || frequentlyLoggedLifts[0] || '';
 
@@ -110,11 +134,12 @@ export default function AnalysisPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Workout Analysis</h1>
-        <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
-      </header>
+    <ErrorBoundary feature="analysis">
+      <div className="container mx-auto px-4 py-8">
+        <header className="mb-8">
+          <h1 className="font-headline text-3xl font-bold text-primary">Workout Analysis</h1>
+          <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
+        </header>
       <div className="mb-6">
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[180px] bg-card shadow">
@@ -206,12 +231,14 @@ export default function AnalysisPage() {
                 selectedLift={resolvedSelectedLift}
                 setSelectedLift={setSelectedLift}
                 frequentlyLoggedLifts={frequentlyLoggedLifts}
+                exercises={exercises}
               />
               <StrengthBalanceCard
                 isLoading={isLoading}
                 userProfile={userProfile!}
                 workoutLogs={workoutLogs}
                 strengthAnalysis={userProfile?.strengthAnalysis}
+                exercises={exercises}
               />
               <CardioAnalysisCard
                 cardioAnalysisData={cardioAnalysisData}
@@ -221,6 +248,7 @@ export default function AnalysisPage() {
             </>
           )}
       </div>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 }

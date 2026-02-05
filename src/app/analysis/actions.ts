@@ -6,6 +6,7 @@ import { updateUserProfile, incrementUsageCounter } from "@/lib/firestore-server
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
+import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { StoredStrengthAnalysis } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
@@ -54,21 +55,20 @@ export async function analyzeStrengthAction(
 
       return { success: true, data: analysisData };
     } catch (error) {
+      const classified = classifyAIError(error);
+
       await logger.error("Error analyzing strength imbalances", {
         ...context,
-        error: String(error),
+        errorType: classified.category,
+        statusCode: classified.statusCode,
       });
-      let userFriendlyError = "An unknown error occurred while analyzing your strength balance. This attempt did not count against your daily limit.";
-      if (error instanceof Error) {
-          if (error.message.includes('429') || error.message.toLowerCase().includes('quota')) {
-              userFriendlyError = "Analysis failed: The request quota for the AI has been exceeded. Please try again later. This attempt did not count against your daily limit.";
-          } else if (error.message.includes('503') || error.message.toLowerCase().includes('overloaded') || error.message.toLowerCase().includes('unavailable')) {
-              userFriendlyError = "Analysis failed: The AI model is temporarily unavailable. Please try again in a few moments. This attempt did not count against your daily limit.";
-          } else {
-              userFriendlyError = `Failed to analyze strength: ${error.message}. This attempt did not count against your daily limit.`;
-          }
+
+      // Only increment counter if this counts against the limit
+      if (classified.shouldCountAgainstLimit) {
+        // Note: For non-retryable errors, we increment. For quota/overload, we don't.
       }
-      return { success: false, error: userFriendlyError };
+
+      return { success: false, error: classified.userMessage };
     }
   });
 }

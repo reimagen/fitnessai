@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { PersonalRecord, UserProfile, StrengthLevel, WorkoutLog } from '@/lib/types';
+import type { ExerciseDocument } from '@/lib/exercise-types';
 import { getStrengthLevel } from '@/lib/strength-standards';
 import { findBestPr, find6WeekAvgE1RM } from '@/analysis/analysis.config';
 
@@ -28,7 +29,8 @@ export function useLiftTrends(
   progressionChartData: ProgressionChartData | undefined,
   personalRecords: PersonalRecord[] | undefined,
   userProfile: UserProfile | undefined,
-  workoutLogs: WorkoutLog[] | undefined
+  workoutLogs: WorkoutLog[] | undefined,
+  exercises: ExerciseDocument[] = []
 ): LiftTrendsResult {
   return useMemo(() => {
     if (!selectedLift || !progressionChartData?.chartData || progressionChartData.chartData.length < 2) {
@@ -84,7 +86,7 @@ export function useLiftTrends(
 
     let avgE1RM: number | null = null;
     if (workoutLogs) {
-      const result = find6WeekAvgE1RM(workoutLogs, [selectedLiftKey]);
+      const result = find6WeekAvgE1RM(workoutLogs, [selectedLiftKey], exercises);
       if (result) {
         avgE1RM = result.weight;
       }

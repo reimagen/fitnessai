@@ -1,7 +1,32 @@
 
 import type { PersonalRecord, WorkoutLog } from "@/lib/types";
+import type { ExerciseDocument } from "@/lib/exercise-types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { subWeeks, isAfter } from 'date-fns';
+
+/**
+ * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
+ */
+const normalizeForLookup = (name: string): string =>
+  name
+    .trim()
+    .toLowerCase()
+    .replace(/^(egym|machine)\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
+
+/**
+ * Resolves exercise name to its canonical name using the exercise library
+ */
+const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
+  const normalized = normalizeForLookup(exerciseName);
+  const exercise = exerciseLibrary.find(e => {
+    if (e.normalizedName.toLowerCase() === normalized) return true;
+    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
+    return false;
+  });
+  return exercise?.normalizedName || exerciseName;
+};
 
 export type ImbalanceType = 'Horizontal Push vs. Pull' | 'Vertical Push vs. Pull' | 'Hamstring vs. Quad' | 'Adductor vs. Abductor';
 
@@ -45,7 +70,8 @@ interface AvgE1RMResult {
 export function calculateAvgE1RM(
   workoutLogs: WorkoutLog[],
   exerciseNameOptions: string[],
-  weeksBack: number = 6
+  weeksBack: number = 6,
+  exercises: ExerciseDocument[] = []
 ): AvgE1RMResult | null {
   const cutoffDate = subWeeks(new Date(), weeksBack);
   const e1RMs: number[] = [];
@@ -56,7 +82,9 @@ export function calculateAvgE1RM(
     if (!isAfter(log.date, cutoffDate)) return;
 
     log.exercises.forEach(ex => {
-      const normalizedName = getNormalizedExerciseName(ex.name);
+      // Resolve exercise name to canonical form to match options
+      const resolvedExerciseName = resolveCanonicalName(ex.name, exercises);
+      const normalizedName = getNormalizedExerciseName(resolvedExerciseName);
       const matchesExercise = exerciseNameOptions.some(
         opt => opt.trim().toLowerCase() === normalizedName
       );
@@ -96,9 +124,10 @@ export function calculateAvgE1RM(
 // Get 6-week average e1RM for specified exercises
 export function find6WeekAvgE1RM(
   workoutLogs: WorkoutLog[],
-  exerciseNameOptions: string[]
+  exerciseNameOptions: string[],
+  exercises: ExerciseDocument[] = []
 ): { exerciseName: string; weight: number; weightUnit: 'kg' | 'lbs'; sessionCount: number } | null {
-  const result = calculateAvgE1RM(workoutLogs, exerciseNameOptions, 6);
+  const result = calculateAvgE1RM(workoutLogs, exerciseNameOptions, 6, exercises);
   if (!result) return null;
 
   // Convert to display unit

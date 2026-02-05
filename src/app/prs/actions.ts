@@ -12,9 +12,9 @@ import {
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
+import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { PersonalRecord } from "@/lib/types";
 import { checkRateLimit } from "./rate-limiting";
-import { formatParsePrError } from "./error-handling";
 
 export async function parsePersonalRecordsAction(
   userId: string,
@@ -51,17 +51,26 @@ export async function parsePersonalRecordsAction(
 
     try {
       const parsedData = await parsePersonalRecords(values);
-      
+
       await incrementUsageCounter(userId, 'prParses');
       // Return the original parsed data so the UI can show what it found.
       // The client-side logic will trigger a refetch of all PRs on success, showing the final state.
       return { success: true, data: parsedData };
     } catch (error) {
+      const classified = classifyAIError(error);
+
       await logger.error("Error processing personal records screenshot", {
         ...context,
-        error: String(error),
+        errorType: classified.category,
+        statusCode: classified.statusCode,
       });
-      return { success: false, error: formatParsePrError(error) };
+
+      // Only increment counter if this counts against the limit
+      if (classified.shouldCountAgainstLimit) {
+        // Note: For non-retryable errors, we increment. For quota/overload, we don't.
+      }
+
+      return { success: false, error: classified.userMessage };
     }
   });
 }
