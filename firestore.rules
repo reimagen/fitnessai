@@ -8,25 +8,59 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == userId;
     }
 
-    // Match any document in the 'users' collection
+    // ========================================
+    // STAGE 1: User-Isolated Collections
+    // ========================================
+
+    // Users collection: User account data (email, name, created timestamp)
     match /users/{userId} {
       // Allow users to read and write (create, update, delete) their own profile document.
       allow read, write: if isOwner(userId);
 
-      // Custom exercises created by individual users
+      // Profiles subcollection: User profile (age, weight, height, muscle mass)
+      match /profiles/{profileId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Workouts subcollection: Workout logs with exercise details
+      match /workouts/{workoutId} {
+        allow read, write: if isOwner(userId);
+
+        // Nested subcollection: Sets within a workout
+        match /sets/{setId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Nested subcollection: Exercises within a workout
+        match /exercises/{exerciseId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+
+      // Personal Records subcollection: PR tracking per user
+      match /personalRecords/{recordId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Custom exercises created by individual users (Stage 1)
       match /exercises/{exerciseName} {
         allow read, write: if isOwner(userId);
       }
 
-      // Match any document in any subcollection under a user's document
-      // This covers workoutLogs, personalRecords, etc.
-      match /{subcollection}/{docId} {
+      // Generic wildcard for any other user subcollections
+      // Provides fallback isolation for new/unmapped subcollections
+      match /{document=**} {
         // Allow users to read and write documents in their own subcollections.
         allow read, write: if isOwner(userId);
       }
     }
 
-    // Shared exercise library (read-only for authenticated clients)
+    // ========================================
+    // Shared Collections (Authenticated Required)
+    // ========================================
+
+    // Shared exercise library: Global exercise definitions
+    // Read-only for regular clients; admin writes via service account
     match /exercises/{exerciseId} {
       allow read: if request.auth != null;
       allow write: if false;
@@ -41,6 +75,10 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false;
     }
+
+    // ========================================
+    // Default Deny
+    // ========================================
 
     // Explicitly deny access to any other collection by default.
     // This is good practice, though Firestore denies by default if no rule matches.
