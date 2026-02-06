@@ -13,6 +13,11 @@ service cloud.firestore {
       // Allow users to read and write (create, update, delete) their own profile document.
       allow read, write: if isOwner(userId);
 
+      // Custom exercises created by individual users
+      match /exercises/{exerciseName} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Match any document in any subcollection under a user's document
       // This covers workoutLogs, personalRecords, etc.
       match /{subcollection}/{docId} {
@@ -21,19 +26,19 @@ service cloud.firestore {
       }
     }
 
-    // Shared exercise library (read-only for clients)
+    // Shared exercise library (read-only for authenticated clients)
     match /exercises/{exerciseId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if false;
     }
 
     match /exerciseAliases/{aliasId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if false;
     }
 
     match /config/{configId} {
-      allow read: if true;
+      allow read: if request.auth != null;
       allow write: if false;
     }
 
