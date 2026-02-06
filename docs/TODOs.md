@@ -20,10 +20,10 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 ## P1: Security & Privacy
 
-- Review Firestore rules against every collection and subcollection in use
-- Verify session cookie handling and secure flags in production
-- Add input validation on all server actions (Zod schemas where missing)
-- Add audit logging for admin-only scripts (migrations, data fixes)
+- ✅ Review Firestore rules against every collection and subcollection in use
+- ✅ Verify session cookie handling and secure flags in production (strict sameSite, httpOnly)
+- ✅ Add input validation on all server actions (Zod schemas where missing)
+- ✅ Add audit logging for admin-only scripts (migrations, data fixes)
 
 ## P1: Testing & QA
 

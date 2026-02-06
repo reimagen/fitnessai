@@ -15,8 +15,6 @@ import { z } from 'zod';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { logger } from '@/lib/logging/logger';
-import { redactPII } from '@/lib/logging/data-redactor';
-import type { ClientError } from '@/lib/logging/types';
 
 // Must use Node.js runtime for Firebase Admin SDK
 export const runtime = 'nodejs';
@@ -112,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     // Log to Cloud Logging
     const traceHeader = req.headers.get('x-cloud-trace-context') ?? undefined;
-    await logger.error('Client-side error', redactedError as any, traceHeader);
+    await logger.error('Client-side error', redactedError, traceHeader);
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (err) {

@@ -5,7 +5,7 @@ export async function checkFirestore(): Promise<"ok" | "degraded"> {
   try {
     await getAdminDb().collection("_health").limit(1).get();
     return "ok";
-  } catch (error) {
+  } catch {
     return "degraded";
   }
 }
@@ -25,7 +25,7 @@ export async function checkRedis(): Promise<"ok" | "degraded"> {
     const redis = Redis.fromEnv();
     await redis.ping();
     return "ok";
-  } catch (error) {
+  } catch {
     return "degraded";
   }
 }

@@ -1,6 +1,7 @@
 
 'use server';
 
+import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
 import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
@@ -9,9 +10,73 @@ import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
 import { classifyAIError } from "@/lib/logging/error-classifier";
-import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
+import type {
+  FitnessGoal,
+  UserProfile,
+  StoredLiftProgressionAnalysis,
+  StoredGoalAnalysis,
+} from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
+
+// Zod schemas for input validation
+const FitnessGoalSchema: z.ZodType<FitnessGoal, z.ZodTypeDef, unknown> = z.object({
+  id: z.string().min(1, "Goal ID is required"),
+  description: z.string().min(1, "Goal description is required"),
+  targetDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+  achieved: z.boolean(),
+  dateAchieved: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)).optional(),
+  isPrimary: z.boolean().optional(),
+});
+
+const UpdateUserProfileSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  age: z.number().positive().optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  weightValue: z.number().positive().optional(),
+  weightUnit: z.enum(['lbs', 'kg']).optional(),
+  skeletalMuscleMassValue: z.number().positive().optional(),
+  skeletalMuscleMassUnit: z.enum(['lbs', 'kg']).optional(),
+  fitnessGoals: z.array(FitnessGoalSchema).optional(),
+}).passthrough();
+
+const AnalyzeLiftProgressionInputSchema: z.ZodType<AnalyzeLiftProgressionInput> = z.object({
+  exerciseName: z.string().min(1, "Exercise name is required"),
+  exerciseHistory: z.array(
+    z.object({
+      date: z.string().min(1, "Date is required"),
+      weight: z.number(),
+      sets: z.number(),
+      reps: z.number(),
+    })
+  ),
+  userProfile: z.object({
+    age: z.number().optional(),
+    gender: z.string().optional(),
+    heightValue: z.number().optional(),
+    heightUnit: z.enum(["cm", "ft/in"]).optional(),
+    weightValue: z.number().optional(),
+    weightUnit: z.enum(["kg", "lbs"]).optional(),
+    skeletalMuscleMassValue: z.number().optional(),
+    skeletalMuscleMassUnit: z.enum(["kg", "lbs"]).optional(),
+    fitnessGoals: z
+      .array(
+        z.object({
+          description: z.string(),
+          isPrimary: z.boolean().optional(),
+        })
+      )
+      .optional(),
+  }),
+  currentLevel: z.enum(["Beginner", "Intermediate", "Advanced", "Elite", "N/A"]).optional(),
+  trendPercentage: z.number().optional(),
+  volumeTrendPercentage: z.number().optional(),
+});
+
+const AnalyzeFitnessGoalsInputSchema = z.object({
+  userProfileContext: z.string().min(1, "User profile context is required"),
+});
 
 
 // Server Actions must be explicitly defined as async functions in this file.
@@ -40,10 +105,16 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedData = UpdateUserProfileSchema.safeParse(data);
+    if (!validatedData.success) {
+      throw new Error(`Invalid profile data: ${validatedData.error.message}`);
+    }
+
     if (!userId) {
       throw new Error("User not authenticated.");
     }
-    await updateUserProfileFromServer(userId, data);
+    await updateUserProfileFromServer(userId, validatedData.data);
 
     // Invalidate server-side cache so next request fetches fresh data
     revalidateTag(`user-profile-${userId}`, "max");
@@ -61,6 +132,12 @@ export async function analyzeLiftProgressionAction(
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedInput = AnalyzeLiftProgressionInputSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
+    }
+
     if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
       await logger.error("Missing API Key", { ...context, error: errorMessage });
@@ -79,7 +156,7 @@ export async function analyzeLiftProgressionAction(
     }
 
     try {
-      const analysisData = await analyzeLiftProgressionFlow(values);
+      const analysisData = await analyzeLiftProgressionFlow(validatedInput.data);
 
       const storedAnalysis: StoredLiftProgressionAnalysis = {
         result: analysisData,
@@ -147,6 +224,12 @@ export async function analyzeGoalsAction(
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedInput = AnalyzeFitnessGoalsInputSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
+    }
+
     if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
       await logger.error("Missing API Key", { ...context, error: errorMessage });
@@ -165,7 +248,7 @@ export async function analyzeGoalsAction(
     }
 
     try {
-      const analysisData = await analyzeFitnessGoalsFlow(values);
+      const analysisData = await analyzeFitnessGoalsFlow(validatedInput.data);
 
       const storedAnalysis: StoredGoalAnalysis = {
         result: analysisData,

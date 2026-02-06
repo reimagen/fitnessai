@@ -37,7 +37,6 @@ function getFixedId(id: string): { original: string; fixed: string; hasIssue: bo
     }
 
     // Check for prefix appearing twice anywhere in the id (e.g., dumbbell-incline-dumbbell-*)
-    const prefixWithoutDash = prefix.slice(0, -1); // 'dumbbell' from 'dumbbell-'
     const firstIndex = id.indexOf(prefix);
     if (firstIndex >= 0) {
       const secondIndex = id.indexOf(prefix, firstIndex + prefix.length);
