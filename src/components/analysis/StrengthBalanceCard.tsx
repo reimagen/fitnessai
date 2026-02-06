@@ -10,8 +10,10 @@ import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/useToast';
 import { IMBALANCE_CONFIG, IMBALANCE_TYPES, find6WeekAvgE1RM } from '@/analysis/analysis.config';
+import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
+import { LBS_TO_KG } from '@/lib/constants';
 import { toTitleCase } from '@/lib/utils';
-import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
+import { getStrengthRatioStandards } from '@/lib/strength-standards';
 import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/analysis/analysis.utils';
 
 interface StrengthBalanceCardProps {
@@ -25,34 +27,10 @@ interface StrengthBalanceCardProps {
 type ClientSideFinding = StrengthFinding | { imbalanceType: ImbalanceType; hasData: false };
 
 /**
- * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
- */
-const normalizeForLookup = (name: string): string =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/^(egym|machine)\s+/, '')
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ');
-
-/**
- * Resolves exercise name to its canonical name using the exercise library.
- */
-const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
-  const normalized = normalizeForLookup(exerciseName);
-  const exercise = exerciseLibrary.find(e => {
-    if (e.normalizedName.toLowerCase() === normalized) return true;
-    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
-    return false;
-  });
-  return exercise?.normalizedName || exerciseName;
-};
-
-/**
  * Resolves exercise options to canonical names
  */
 const resolveExerciseOptions = (options: string[], exerciseLibrary: ExerciseDocument[]): string[] => {
-  return options.map(name => resolveCanonicalName(name, exerciseLibrary));
+  return options.map(name => resolveCanonicalExerciseName(name, exerciseLibrary));
 };
 
 const getGuidingLevel = (lift1Level: StrengthLevel, lift2Level: StrengthLevel) => {
@@ -69,6 +47,59 @@ const getNextStrengthLevel = (currentLevel: StrengthLevel) => {
   if (currentLevel === 'Intermediate') return 'Advanced';
   if (currentLevel === 'Advanced') return 'Elite';
   return null;
+};
+
+const getStrengthLevelFromExerciseLibrary = (
+  record: PersonalRecord,
+  profile: UserProfile,
+  exerciseLibrary: ExerciseDocument[]
+): StrengthLevel => {
+  const canonicalName = resolveCanonicalExerciseName(record.exerciseName, exerciseLibrary);
+  const exercise = exerciseLibrary.find(
+    candidate => candidate.normalizedName.toLowerCase() === canonicalName.toLowerCase()
+  );
+
+  if (!exercise || exercise.type !== 'strength' || !exercise.strengthStandards) {
+    return 'N/A';
+  }
+
+  if (!profile.gender || (profile.gender !== 'Male' && profile.gender !== 'Female')) {
+    return 'N/A';
+  }
+
+  let baseValueInKg: number;
+  if (exercise.strengthStandards.baseType === 'bw') {
+    if (!profile.weightValue || !profile.weightUnit) return 'N/A';
+    baseValueInKg = profile.weightUnit === 'lbs'
+      ? profile.weightValue * LBS_TO_KG
+      : profile.weightValue;
+  } else {
+    if (!profile.skeletalMuscleMassValue || !profile.skeletalMuscleMassUnit) return 'N/A';
+    baseValueInKg = profile.skeletalMuscleMassUnit === 'lbs'
+      ? profile.skeletalMuscleMassValue * LBS_TO_KG
+      : profile.skeletalMuscleMassValue;
+  }
+
+  if (baseValueInKg <= 0) return 'N/A';
+
+  const liftedWeightInKg = record.weightUnit === 'lbs'
+    ? record.weight * LBS_TO_KG
+    : record.weight;
+  const rawRatio = liftedWeightInKg / baseValueInKg;
+
+  let ageAdjustedRatio = rawRatio;
+  if (profile.age && profile.age > 40) {
+    const ageFactor = 1 + (profile.age - 40) * 0.01;
+    ageAdjustedRatio *= ageFactor;
+  }
+
+  const standards = exercise.strengthStandards.standards[profile.gender];
+  if (!standards) return 'N/A';
+
+  if (ageAdjustedRatio >= standards.elite) return 'Elite';
+  if (ageAdjustedRatio >= standards.advanced) return 'Advanced';
+  if (ageAdjustedRatio >= standards.intermediate) return 'Intermediate';
+  return 'Beginner';
 };
 
 const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProfile: UserProfile | undefined, exercises: ExerciseDocument[]) => {
@@ -90,23 +121,23 @@ const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProf
       return;
     }
 
-    const lift1Level = getStrengthLevel({
+    const lift1Level = getStrengthLevelFromExerciseLibrary({
       id: 'synthetic',
       userId: '',
       exerciseName: lift1.exerciseName,
       weight: lift1.weight,
       weightUnit: lift1.weightUnit,
       date: new Date(),
-    } as PersonalRecord, userProfile);
+    } as PersonalRecord, userProfile, exercises);
 
-    const lift2Level = getStrengthLevel({
+    const lift2Level = getStrengthLevelFromExerciseLibrary({
       id: 'synthetic',
       userId: '',
       exerciseName: lift2.exerciseName,
       weight: lift2.weight,
       weightUnit: lift2.weightUnit,
       date: new Date(),
-    } as PersonalRecord, userProfile);
+    } as PersonalRecord, userProfile, exercises);
 
     const lift1WeightKg = lift1.weightUnit === 'lbs' ? lift1.weight * 0.453592 : lift1.weight;
     const lift2WeightKg = lift2.weightUnit === 'lbs' ? lift2.weight * 0.453592 : lift2.weight;

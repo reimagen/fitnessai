@@ -47,8 +47,8 @@ const AnalyzeLiftProgressionInputSchema = z.object({
   exerciseHistory: z.array(ExerciseHistoryEntrySchema).describe("An array of all logged performances for this exercise from the trailing 6 weeks. This is for context only; do not perform calculations on it."),
   userProfile: UserProfileForAnalysisSchema.describe("The user's personal statistics and goals."),
   currentLevel: z.custom<StrengthLevel>().optional().describe("The user's current strength level for this specific exercise (e.g., 'Beginner', 'Advanced')."),
-  trendPercentage: z.number().optional().describe("The calculated e1RM trend percentage over the last 6 weeks, e.g., 15.2 for +15.2%."),
-  volumeTrendPercentage: z.number().optional().describe("The calculated total volume trend percentage over the last 6 weeks, e.g., -5.1 for -5.1%."),
+  trendPercentage: z.number().optional().describe("The rounded e1RM trend percentage over the last 6 weeks, e.g., 15 for +15%."),
+  volumeTrendPercentage: z.number().optional().describe("The rounded total volume trend percentage over the last 6 weeks, e.g., -5 for -5%."),
 });
 export type AnalyzeLiftProgressionInput = z.infer<typeof AnalyzeLiftProgressionInputSchema>;
 
@@ -150,8 +150,8 @@ const analyzeLiftProgressionFlow = ai.defineFlow(
       {
         ...input,
         currentLevel: input.currentLevel || 'N/A',
-        trendPercentage: input.trendPercentage ? input.trendPercentage.toFixed(1) : undefined,
-        volumeTrendPercentage: input.volumeTrendPercentage ? input.volumeTrendPercentage.toFixed(1) : undefined,
+        trendPercentage: input.trendPercentage !== undefined ? Math.round(input.trendPercentage).toString() : undefined,
+        volumeTrendPercentage: input.volumeTrendPercentage !== undefined ? Math.round(input.volumeTrendPercentage).toString() : undefined,
         exerciseHistory: input.exerciseHistory.map(h => ({ ...h, date: new Date(h.date).toLocaleDateString() }))
       },
       { flowName: 'analyzeLiftProgression' }

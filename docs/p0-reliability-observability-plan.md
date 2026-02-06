@@ -1,9 +1,9 @@
 # P0 Reliability & Observability Implementation Plan
 
-## ✅ COMPLETION STATUS: Phases 1, 2, 3, 4 COMPLETE | Phase 5 READY
+## ✅ COMPLETION STATUS: Phases 1, 2, 3, 4, 5 COMPLETE
 
 **Last Updated**: 2026-02-05 (Session 3 + Manual Testing Completed)
-**Current Focus**: Phase 5 - Deployment & Monitoring
+**Current Focus**: Closed (All phases complete)
 **Build Status**: ✅ Compiles successfully with no errors
 **ErrorBoundary Wrapping**: ✅ All 3 critical pages (History, Analysis, Plan) wrapped
 
@@ -54,7 +54,7 @@
   - ✅ /src/app/plan/actions.ts
   - ✅ /src/app/profile/actions.ts
   - ✅ /src/app/history/actions.ts
-- ✅ Structured logging verified in dev; production verification pending in Phase 5
+- ✅ Structured logging verified in dev and production
 
 ### Phase 2: Error Classification & Client-Side Error Reporting - ✅ COMPLETE
 
@@ -65,7 +65,7 @@
 - ✅ `/src/lib/logging/data-redactor.ts` - PII redaction with email, phone, token patterns
 - ✅ `/src/lib/logging/types.ts` - Complete TypeScript type definitions
 - ✅ `/src/lib/logging/error-reporter.ts` - Non-blocking client-side error reporting
-- ✅ `/src/app/api/client-errors/route.ts` - Server endpoint with in-memory rate limiting
+- ✅ `/src/app/api/client-errors/route.ts` - Server endpoint with Upstash rate limiting (fallback to in-memory)
 - ✅ All 5 server actions using `classifyAIError`:
   - `/src/app/prs/actions.ts`
   - `/src/app/analysis/actions.ts`
@@ -92,8 +92,8 @@
 - ✅ Test error capture in History, Analysis, Plan pages
 - ✅ Verify client error reporting to `/api/client-errors`
 - ✅ Test retry logic for quota/overload errors
-- ✅ Verify logs appear in dev terminal (Cloud Logging requires production deploy)
-  - Notes: Verified error boundary UI on History/Analysis/Plan. Confirmed `/api/client-errors` POST returns 200 and logs in dev terminal. Quota error retry tested via simulated 429 during plan generation.
+- ✅ Verify logs appear in dev terminal and production Cloud Logging
+  - Notes: Verified error boundary UI on History/Analysis/Plan. Confirmed `/api/client-errors` POST returns 200 and logs in dev and production. Quota error retry tested via simulated 429 during plan generation.
 
 ### Phase 4: Testing & Refinement - ✅ COMPLETED
 
@@ -121,22 +121,25 @@
 - None
 
 **Acceptance Criteria**:
-- All error paths logged (dev terminal); Cloud Logging visibility requires prod deploy
+- All error paths logged (dev + production Cloud Logging verified)
 - Client errors successfully posted to server
 - Error boundaries gracefully handle and recover from errors
 - Quota/overload errors show appropriate retry UI
 - Performance impact <10ms for successful operations (via sampling)
 
-### Phase 5: Deployment & Monitoring - 🔄 READY
+### Phase 5: Deployment & Monitoring - ✅ COMPLETED
 
-**Status**: Ready to begin (2026-02-05)
+**Status**: Completed and closed (2026-02-05)
 
 **Tasks**:
-- ⏳ Deploy to Firebase App Hosting
-- ⏳ Verify Cloud Logging integration with live environment
-- ⏳ Set up Cloud Monitoring alerts (high error rate, AI unavailable, database issues)
-- ⏳ Configure Cloud Scheduler for health check endpoint (every 5 minutes)
-- ⏳ Document for operations team
+- ✅ Deploy to Firebase App Hosting
+- ✅ Verify Cloud Logging integration with live environment
+- ✅ Set up Cloud Monitoring alerts (high error rate, AI unavailable, database issues)
+- ✅ Configure Cloud Scheduler for health check endpoint (hourly)
+- ✅ Document for operations team
+
+**Ops Runbook**:
+- See `docs/ops-runbook.md`
 
 ---
 
@@ -914,7 +917,7 @@ Reason: Health check must be accessible to external monitors; no sensitive data 
 - Development mode shows full error details
 
 ### Phase 4: Testing & Refinement (1-2 days)
-**Note**: Manual testing is completed. Error simulation endpoint is available at `/api/dev/error-sim` (development only). Live health check testing is still pending.
+**Note**: Manual testing is completed. Error simulation endpoint is available at `/api/dev/error-sim` (development only). Health check tested in production via Cloud Scheduler.
 1. Add error simulation endpoints for testing (development-only, gated by NODE_ENV check)
 2. Test each error path (quota, overload, validation, etc.)
 3. Verify logging completeness
@@ -943,11 +946,11 @@ if (process.env.NODE_ENV === 'development') {
 
 **Acceptance Criteria**:
 - All error paths tested and logged (dev confirmed)
-- Health check endpoint functional (live test pending)
+- Health check endpoint functional (live test verified)
 - Logging includes required context (requestId, route, timestamp; userId optional for unauth)
 - Performance impact: <10ms for successful operations (via sampling), <20ms for errors (with batching)
 - Error simulation endpoints only available in development (implemented)
-- Trace IDs present in Cloud Logging for error correlation (pending production verification)
+- Trace IDs present in Cloud Logging for error correlation (not verified)
 
 **Performance Notes**:
 - `logger.info()` for successful operations should be sampled (e.g., 1 in 100 requests) to reduce overhead

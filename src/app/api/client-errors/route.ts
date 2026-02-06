@@ -11,6 +11,7 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { logger } from '@/lib/logging/logger';
@@ -19,6 +20,22 @@ import type { ClientError } from '@/lib/logging/types';
 
 // Must use Node.js runtime for Firebase Admin SDK
 export const runtime = 'nodejs';
+
+/**
+ * Zod schema for validating client error payload
+ */
+const ClientErrorSchema = z.object({
+  message: z.string().min(1).max(500),
+  error: z.string().min(1).max(5000),
+  stack: z.string().optional(),
+  url: z.string().url().optional(),
+  userId: z.string().optional(),
+  feature: z.string().optional(),
+  timestamp: z.string().datetime().optional(),
+  metadata: z.record(z.any()).optional(),
+});
+
+type ValidatedClientError = z.infer<typeof ClientErrorSchema>;
 
 /**
  * POST /api/client-errors
@@ -66,28 +83,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Parse request body
-    let clientError: ClientError;
+    // Parse and validate request body
+    let clientError: ValidatedClientError;
     try {
-      clientError = await req.json();
-    } catch {
+      const body = await req.json();
+      clientError = ClientErrorSchema.parse(body);
+    } catch (err) {
+      const message = err instanceof z.ZodError
+        ? `Validation failed: ${err.errors.map(e => `${e.path.join('.')} - ${e.message}`).join('; ')}`
+        : 'Invalid request format';
       return NextResponse.json(
-        { error: 'Invalid request format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate required fields
-    if (!clientError.message || !clientError.error) {
-      return NextResponse.json(
-        { error: 'Missing required fields: message, error' },
+        { error: message },
         { status: 400 }
       );
     }
 
     // Redact PII before logging
     const redactedError = {
-      message: clientError.message,
+      errorMessage: clientError.message,
       error: clientError.error,
       stack: clientError.stack,
       url: clientError.url,
@@ -98,7 +111,7 @@ export async function POST(req: NextRequest) {
     };
 
     // Log to Cloud Logging
-    const traceHeader = req.headers.get('x-cloud-trace-context');
+    const traceHeader = req.headers.get('x-cloud-trace-context') ?? undefined;
     await logger.error('Client-side error', redactedError as any, traceHeader);
 
     return NextResponse.json({ ok: true }, { status: 200 });

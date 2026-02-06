@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { WorkoutLog, PersonalRecord } from '@/lib/types';
 import type { ExerciseDocument } from '@/lib/exercise-types';
+import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
 import { getNormalizedExerciseName } from '@/lib/strength-standards';
 import { format, subWeeks, isAfter } from 'date-fns';
 
@@ -36,30 +37,6 @@ const calculateE1RM = (weight: number, reps: number): number => {
   return weight * (1 + reps / 30);
 };
 
-/**
- * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
- */
-const normalizeForLookup = (name: string): string =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/^(egym|machine)\s+/, '')
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ');
-
-/**
- * Resolves exercise name to its canonical name using the exercise library
- */
-const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
-  const normalized = normalizeForLookup(exerciseName);
-  const exercise = exerciseLibrary.find(e => {
-    if (e.normalizedName.toLowerCase() === normalized) return true;
-    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
-    return false;
-  });
-  return exercise?.normalizedName || exerciseName;
-};
-
 export function useLiftProgression(
   selectedLift: string,
   selectedLiftKey: string,
@@ -80,7 +57,7 @@ export function useLiftProgression(
 
       log.exercises.forEach((ex) => {
         // Resolve exercise name to canonical form to match selectedLiftKey
-        const resolvedExerciseName = resolveCanonicalName(ex.name, exercises);
+        const resolvedExerciseName = resolveCanonicalExerciseName(ex.name, exercises);
         const normalizedExerciseName = getNormalizedExerciseName(resolvedExerciseName);
 
         if (normalizedExerciseName === selectedLiftKey && ex.weight && ex.reps && ex.sets) {
@@ -108,7 +85,7 @@ export function useLiftProgression(
 
     const bestPR = personalRecords
       ?.filter(pr => {
-        const resolvedPRName = resolveCanonicalName(pr.exerciseName, exercises);
+        const resolvedPRName = resolveCanonicalExerciseName(pr.exerciseName, exercises);
         const normalizedPRName = getNormalizedExerciseName(resolvedPRName);
         return normalizedPRName === selectedLiftKey;
       })

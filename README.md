@@ -51,6 +51,13 @@ To run this project locally, follow these steps:
       # or
       GOOGLE_API_KEY=YOUR_API_KEY_HERE
       ```
+    - Optional (production/ops):
+      ```
+      GOOGLE_CLOUD_PROJECT=YOUR_GCP_PROJECT_ID
+      LOG_INFO_SAMPLE_RATE=0.01
+      UPSTASH_REDIS_REST_URL=...
+      UPSTASH_REDIS_REST_TOKEN=...
+      ```
 
 3.  **Run the Development Server**:
     Now you can start the development server.
@@ -80,3 +87,8 @@ Additional routes:
 
 - Exercise library migration is in progress (see `docs/firebase-exercise-lib.md`).
 - Firebase App Hosting provides `FIREBASE_WEBAPP_CONFIG` at build time; local dev uses `NEXT_PUBLIC_FIREBASE_*` values.
+- Observability:
+  - Health check endpoint: `/api/health`
+  - Client error reporting endpoint: `/api/client-errors`
+  - Cloud Logging log name: `fitnessai`
+- Ops runbook: `docs/ops-runbook.md`

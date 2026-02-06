@@ -21,8 +21,8 @@ import {
     analyzeLiftProgressionAction,
     analyzeGoalsAction,
 } from '@/app/profile/actions';
-import { analyzeStrengthAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory } from './types';
+import { analyzeStrengthAction, getLiftStrengthLevelAction } from '@/app/analysis/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -386,7 +386,7 @@ export function useAnalyzeLiftProgression() {
             }
             return result;
         },
-        onSuccess: async (result, variables) => {
+        onSuccess: async () => {
             toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
 
             // Immediately invalidate the profile cache to force a fresh fetch
@@ -465,4 +465,58 @@ export function useAnalyzeGoals() {
             });
         },
     });
+}
+
+export function useLiftStrengthLevelFromE1RM(
+  params: {
+    exerciseName: string;
+    weight: number;
+    weightUnit: 'kg' | 'lbs';
+    userProfile: UserProfile | undefined;
+  }
+) {
+  const { user } = useAuth();
+
+  return useQuery<StrengthLevel, Error>({
+    queryKey: [
+      'lift-level-from-e1rm',
+      user?.uid,
+      params.exerciseName,
+      params.weight,
+      params.weightUnit,
+      params.userProfile?.age,
+      params.userProfile?.gender,
+      params.userProfile?.weightValue,
+      params.userProfile?.weightUnit,
+      params.userProfile?.skeletalMuscleMassValue,
+      params.userProfile?.skeletalMuscleMassUnit,
+    ],
+    queryFn: async () => {
+      if (!user) {
+        throw new Error('User not authenticated.');
+      }
+
+      const input: GetLiftStrengthLevelInput = {
+        exerciseName: params.exerciseName,
+        weight: params.weight,
+        weightUnit: params.weightUnit,
+        userProfile: {
+          age: params.userProfile?.age,
+          gender: params.userProfile?.gender,
+          weightValue: params.userProfile?.weightValue,
+          weightUnit: params.userProfile?.weightUnit,
+          skeletalMuscleMassValue: params.userProfile?.skeletalMuscleMassValue,
+          skeletalMuscleMassUnit: params.userProfile?.skeletalMuscleMassUnit,
+        },
+      };
+
+      const result = await getLiftStrengthLevelAction(user.uid, input);
+      if (!result.success) {
+        throw new Error(result.error || 'Could not calculate lift level.');
+      }
+      return result.data || 'N/A';
+    },
+    enabled: !!user && !!params.exerciseName && params.weight > 0,
+    staleTime: 1000 * 60 * 10,
+  });
 }

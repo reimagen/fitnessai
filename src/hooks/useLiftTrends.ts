@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import type { PersonalRecord, UserProfile, StrengthLevel, WorkoutLog } from '@/lib/types';
+import type { WorkoutLog } from '@/lib/types';
 import type { ExerciseDocument } from '@/lib/exercise-types';
-import { getStrengthLevel } from '@/lib/strength-standards';
-import { findBestPr, find6WeekAvgE1RM } from '@/analysis/analysis.config';
+import { find6WeekAvgE1RM } from '@/analysis/analysis.config';
 
 interface ProgressionChartData {
   chartData: Array<{
@@ -17,37 +16,27 @@ type TrendPoint = {
 };
 
 interface LiftTrendsResult {
-  currentLiftLevel: StrengthLevel | null;
   trendImprovement: number | null;
   volumeTrend: number | null;
   avgE1RM: number | null;
+  avgE1RMUnit: 'kg' | 'lbs' | null;
 }
 
 export function useLiftTrends(
   selectedLift: string,
   selectedLiftKey: string,
   progressionChartData: ProgressionChartData | undefined,
-  personalRecords: PersonalRecord[] | undefined,
-  userProfile: UserProfile | undefined,
   workoutLogs: WorkoutLog[] | undefined,
   exercises: ExerciseDocument[] = []
 ): LiftTrendsResult {
   return useMemo(() => {
     if (!selectedLift || !progressionChartData?.chartData || progressionChartData.chartData.length < 2) {
       return {
-        currentLiftLevel: null,
         trendImprovement: null,
         volumeTrend: null,
         avgE1RM: null,
+        avgE1RMUnit: null,
       };
-    }
-
-    let currentLiftLevel: StrengthLevel | null = null;
-    if (userProfile && personalRecords) {
-      const bestPRforLift = findBestPr(personalRecords, [selectedLiftKey]);
-      if (bestPRforLift) {
-        currentLiftLevel = getStrengthLevel(bestPRforLift, userProfile);
-      }
     }
 
     const { chartData: data } = progressionChartData;
@@ -85,18 +74,20 @@ export function useLiftTrends(
     };
 
     let avgE1RM: number | null = null;
+    let avgE1RMUnit: 'kg' | 'lbs' | null = null;
     if (workoutLogs) {
       const result = find6WeekAvgE1RM(workoutLogs, [selectedLiftKey], exercises);
       if (result) {
         avgE1RM = result.weight;
+        avgE1RMUnit = result.weightUnit;
       }
     }
 
     return {
-      currentLiftLevel,
       trendImprovement: calculateTrend('e1RM'),
       volumeTrend: calculateTrend('volume'),
       avgE1RM,
+      avgE1RMUnit,
     };
-  }, [selectedLift, selectedLiftKey, progressionChartData, personalRecords, userProfile, workoutLogs]);
+  }, [selectedLift, selectedLiftKey, progressionChartData, workoutLogs, exercises]);
 }

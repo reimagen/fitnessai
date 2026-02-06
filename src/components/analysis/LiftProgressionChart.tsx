@@ -149,7 +149,7 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
       <div className="text-center mb-2">
         <h4 className="font-semibold capitalize">{toTitleCase(selectedLift)} - Strength & Volume Trend (Last 6 Weeks)</h4>
         <div className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-x-4 gap-y-1 flex-wrap min-h-[24px]">
-          {currentLiftLevel && currentLiftLevel !== "N/A" && (
+          {currentLiftLevel && (
             <span>
               Current Level: <Badge variant={getLevelBadgeVariant(currentLiftLevel)}>{currentLiftLevel}</Badge>
             </span>

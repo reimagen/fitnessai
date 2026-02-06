@@ -46,7 +46,7 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
     await updateUserProfileFromServer(userId, data);
 
     // Invalidate server-side cache so next request fetches fresh data
-    revalidateTag(`user-profile-${userId}`);
+    revalidateTag(`user-profile-${userId}`, "max");
   });
 }
 
@@ -111,7 +111,7 @@ export async function analyzeLiftProgressionAction(
       await incrementUsageCounter(userId, 'liftProgressionAnalyses');
 
       // Invalidate server-side cache
-      revalidateTag(`user-profile-${userId}`);
+      revalidateTag(`user-profile-${userId}`, "max");
 
       return { success: true, data: analysisData };
     } catch (error) {
@@ -178,7 +178,7 @@ export async function analyzeGoalsAction(
       await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
 
       // Invalidate server-side cache
-      revalidateTag(`user-profile-${userId}`);
+      revalidateTag(`user-profile-${userId}`, "max");
 
       return { success: true, data: analysisData };
     } catch (error) {
