@@ -1,6 +1,7 @@
 
 'use server';
 
+import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
 import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
@@ -12,6 +13,49 @@ import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
+
+// Zod schemas for input validation
+const UpdateUserProfileSchema = z.object({
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  age: z.number().positive().optional(),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  weightValue: z.number().positive().optional(),
+  weightUnit: z.enum(['lbs', 'kg']).optional(),
+  skeletalMuscleMassValue: z.number().positive().optional(),
+  skeletalMuscleMassUnit: z.enum(['lbs', 'kg']).optional(),
+  fitnessGoals: z.array(z.string()).optional(),
+});
+
+const AnalyzeLiftProgressionInputSchema = z.object({
+  exerciseName: z.string().min(1, "Exercise name is required"),
+  exerciseHistory: z.array(z.object({
+    date: z.string(),
+    weight: z.number().positive(),
+    sets: z.number().positive(),
+    reps: z.number().positive(),
+  })),
+  userProfile: z.object({
+    age: z.number().positive().optional(),
+    gender: z.string().optional(),
+    heightValue: z.number().positive().optional(),
+    heightUnit: z.enum(['cm', 'ft/in']).optional(),
+    weightValue: z.number().positive().optional(),
+    weightUnit: z.enum(['kg', 'lbs']).optional(),
+    skeletalMuscleMassValue: z.number().positive().optional(),
+    skeletalMuscleMassUnit: z.enum(['kg', 'lbs']).optional(),
+    fitnessGoals: z.array(z.object({
+      description: z.string(),
+      isPrimary: z.boolean().optional(),
+    })).optional(),
+  }),
+  currentLevel: z.string().optional(),
+  trendPercentage: z.number().optional(),
+});
+
+const AnalyzeFitnessGoalsInputSchema = z.object({
+  userProfileContext: z.string().min(1, "User profile context is required"),
+});
 
 
 // Server Actions must be explicitly defined as async functions in this file.
@@ -40,10 +84,16 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<UserP
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedData = UpdateUserProfileSchema.safeParse(data);
+    if (!validatedData.success) {
+      throw new Error(`Invalid profile data: ${validatedData.error.message}`);
+    }
+
     if (!userId) {
       throw new Error("User not authenticated.");
     }
-    await updateUserProfileFromServer(userId, data);
+    await updateUserProfileFromServer(userId, validatedData.data);
 
     // Invalidate server-side cache so next request fetches fresh data
     revalidateTag(`user-profile-${userId}`, "max");
@@ -61,6 +111,12 @@ export async function analyzeLiftProgressionAction(
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedInput = AnalyzeLiftProgressionInputSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
+    }
+
     if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
       await logger.error("Missing API Key", { ...context, error: errorMessage });
@@ -79,7 +135,7 @@ export async function analyzeLiftProgressionAction(
     }
 
     try {
-      const analysisData = await analyzeLiftProgressionFlow(values);
+      const analysisData = await analyzeLiftProgressionFlow(validatedInput.data);
 
       const storedAnalysis: StoredLiftProgressionAnalysis = {
         result: analysisData,
@@ -147,6 +203,12 @@ export async function analyzeGoalsAction(
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input schema
+    const validatedInput = AnalyzeFitnessGoalsInputSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
+    }
+
     if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
       await logger.error("Missing API Key", { ...context, error: errorMessage });
@@ -165,7 +227,7 @@ export async function analyzeGoalsAction(
     }
 
     try {
-      const analysisData = await analyzeFitnessGoalsFlow(values);
+      const analysisData = await analyzeFitnessGoalsFlow(validatedInput.data);
 
       const storedAnalysis: StoredGoalAnalysis = {
         result: analysisData,
