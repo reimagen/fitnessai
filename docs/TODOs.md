@@ -13,13 +13,10 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 ## P0: Reliability & Observability
 
-- Centralize server error logging with request context (user ID, route, feature)
-- Add client-side error boundaries for critical routes (History, Analysis, Plan)
-- Capture and classify AI errors (quota, overload, validation) consistently
-- Add basic uptime/health check and log it in hosting monitoring
-
-## PO.5: Collections-split.md
-- /Users/lisagu/Projects/fitnessai-1/docs/collections-split.md
+- ✅ Centralize server error logging with request context (user ID, route, feature)
+- ✅ Add client-side error boundaries for critical routes (History, Analysis, Plan)
+- ✅ Capture and classify AI errors (quota, overload, validation) consistently
+- ✅ Add basic uptime/health check and log it in hosting monitoring
 
 ## P1: Security & Privacy
 
@@ -44,13 +41,16 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - Monitor Firestore read/write costs in prod (dashboard + alerts)
 - Add rate limits for AI features (already present) and confirm limits in prod
 
+## P1.5: Collections-split.md
+- /Users/lisagu/Projects/fitnessai-1/docs/collections-split.md
+
 ## P2: Product & Operations
 
 - App store-grade UX polish passes (empty states, error copy, edge cases)
 - Add in-app help/FAQ and user-facing troubleshooting for AI failures
 - Verify onboarding flow and first-session success path (log 1 workout, view analysis)
 
-- Create production runbook (deploy, rollback, incident handling)
+- Create production runbook (deploy, rollback, incident handling) - partially complete for error handling in /Users/lisagu/Projects/fitnessai-1/docs/ops-runbook.md
 - Add analytics to measure feature usage and drop-offs
 - Add user support path (feedback / contact)
 

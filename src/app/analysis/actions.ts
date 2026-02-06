@@ -3,11 +3,12 @@
 
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
 import { updateUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
+import { getStrengthLevel } from "@/lib/strength-standards.server";
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
 import { classifyAIError } from "@/lib/logging/error-classifier";
-import type { StoredStrengthAnalysis } from "@/lib/types";
+import type { GetLiftStrengthLevelInput, PersonalRecord, StoredStrengthAnalysis, StrengthLevel, UserProfile } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 
@@ -70,5 +71,52 @@ export async function analyzeStrengthAction(
 
       return { success: false, error: classified.userMessage };
     }
+  });
+}
+
+export async function getLiftStrengthLevelAction(
+  userId: string,
+  values: GetLiftStrengthLevelInput
+): Promise<{ success: boolean; data?: StrengthLevel; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "analysis/getLiftStrengthLevelAction",
+    feature: "strengthLevelLookups",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    if (!values.exerciseName || values.weight <= 0) {
+      return { success: false, error: "Invalid lift level input." };
+    }
+
+    const syntheticRecord: PersonalRecord = {
+      id: 'synthetic-e1rm',
+      userId,
+      exerciseName: values.exerciseName,
+      weight: values.weight,
+      weightUnit: values.weightUnit,
+      date: new Date(),
+      category: 'Other',
+    };
+
+    const profileForLevel: UserProfile = {
+      id: userId,
+      name: '',
+      email: '',
+      fitnessGoals: [],
+      age: values.userProfile.age,
+      gender: values.userProfile.gender,
+      weightValue: values.userProfile.weightValue,
+      weightUnit: values.userProfile.weightUnit,
+      skeletalMuscleMassValue: values.userProfile.skeletalMuscleMassValue,
+      skeletalMuscleMassUnit: values.userProfile.skeletalMuscleMassUnit,
+    };
+
+    const level = await getStrengthLevel(syntheticRecord, profileForLevel);
+    return { success: true, data: level };
   });
 }

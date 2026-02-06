@@ -149,6 +149,20 @@ export interface AnalyzeLiftProgressionOutput {
   recommendation: string;
 }
 
+export interface GetLiftStrengthLevelInput {
+  exerciseName: string;
+  weight: number;
+  weightUnit: 'kg' | 'lbs';
+  userProfile: {
+    age?: number;
+    gender?: string;
+    weightValue?: number;
+    weightUnit?: 'kg' | 'lbs';
+    skeletalMuscleMassValue?: number;
+    skeletalMuscleMassUnit?: 'kg' | 'lbs';
+  };
+}
+
 export interface StoredLiftProgressionAnalysis {
   result: AnalyzeLiftProgressionOutput;
   generatedDate: Date;

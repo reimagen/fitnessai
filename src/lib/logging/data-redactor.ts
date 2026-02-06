@@ -57,6 +57,7 @@ function isSafeField(fieldName: string): boolean {
     'feature',
     'level',
     'message',
+    'errorMessage',
     'errorType',
     'statusCode',
     'duration',

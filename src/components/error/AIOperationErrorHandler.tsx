@@ -156,7 +156,7 @@ export function AIOperationErrorHandler({
             {isDevelopment && (
               <button
                 onClick={() => {
-                  const errorStr = error instanceof Error ? error.stack : String(error);
+                  const errorStr = error instanceof Error ? (error.stack ?? error.message) : String(error);
                   navigator.clipboard.writeText(errorStr);
                   alert('Error copied to clipboard');
                 }}

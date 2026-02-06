@@ -20,6 +20,7 @@ import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
 import { startOfDay } from 'date-fns';
 import { classifiedExercises as fallbackClassifiedExercises, getExerciseCategory } from "@/lib/strength-standards";
+import { resolveCanonicalExerciseName } from "@/lib/exercise-normalization";
 import { PR_EXERCISES_TO_HIDE } from "@/lib/constants";
 import { toTitleCase } from "@/lib/utils";
 import { StepperInput } from "../ui/stepper-input";
@@ -93,21 +94,22 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
     }
   });
 
-  const normalizeForLookup = (value: string) =>
-    value
-      .trim()
-      .toLowerCase()
-      .replace(/^egym\s+/, '')
-      .replace(/[()]/g, '')
-      .replace(/\s+/g, ' ');
-
   function onSubmit(values: ManualPrFormData) {
-    const normalizedName = normalizeForLookup(values.exerciseName);
-    const category = exerciseCategories[normalizedName] || getExerciseCategory(values.exerciseName);
+    const normalizedName = resolveCanonicalExerciseName(values.exerciseName, exerciseLibrary);
+    const canonicalExercise = exerciseLibrary.find(
+      exercise => exercise.normalizedName.toLowerCase() === normalizedName
+    );
+    const canonicalName = canonicalExercise
+      ? formatExerciseDisplayName(canonicalExercise.name)
+      : values.exerciseName;
+    const category =
+      canonicalExercise?.category ||
+      exerciseCategories[normalizedName] ||
+      getExerciseCategory(normalizedName);
     const selectedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
 
     onAdd({
-      exerciseName: values.exerciseName,
+      exerciseName: canonicalName,
       weight: values.weight,
       weightUnit: values.weightUnit,
       date: selectedDate,

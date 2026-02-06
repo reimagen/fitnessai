@@ -5,6 +5,9 @@
 - Stack: Next.js (app router), TypeScript, Tailwind, Shadcn UI
 - Data: Firestore hooks in `src/lib/firestore.service`
 - Brand guidelines: `docs/brand-guidelines.md` (tokens in `src/app/globals.css`)
+- Ops runbook: `docs/ops-runbook.md`
+- Observability: Cloud Logging + client error reporting (`/api/client-errors`) + health check (`/api/health`)
+- Dev-only error simulation: `/api/dev/error-sim`
 
 ## UI patterns (from analysis page)
 - Use `container mx-auto px-4 py-8` page shells and `shadow-lg` cards.

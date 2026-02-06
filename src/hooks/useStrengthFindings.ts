@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { PersonalRecord, StrengthFinding, StrengthLevel, WorkoutLog } from '@/lib/types';
 import type { ImbalanceType } from '@/analysis/analysis.config';
 import { IMBALANCE_TYPES, IMBALANCE_CONFIG, find6WeekAvgE1RM } from '@/analysis/analysis.config';
+import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
 import { toTitleCase } from '@/lib/utils';
 import { getStrengthLevel, getStrengthRatioStandards } from '@/lib/strength-standards';
 import type { UserProfile } from '@/lib/types';
@@ -9,34 +10,10 @@ import type { ImbalanceFocus } from '@/analysis/analysis.utils';
 import type { ExerciseDocument } from '@/lib/exercise-types';
 
 /**
- * Normalizes exercise name for lookup
- */
-const normalizeForLookup = (name: string): string =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/^(egym|machine)\s+/, '')
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ');
-
-/**
- * Resolves exercise name to its canonical name using the exercise library
- */
-const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
-  const normalized = normalizeForLookup(exerciseName);
-  const exercise = exerciseLibrary.find(e => {
-    if (e.normalizedName.toLowerCase() === normalized) return true;
-    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
-    return false;
-  });
-  return exercise?.normalizedName || exerciseName;
-};
-
-/**
  * Resolves exercise options to canonical names
  */
 const resolveExerciseOptions = (options: string[], exerciseLibrary: ExerciseDocument[]): string[] => {
-  return options.map(name => resolveCanonicalName(name, exerciseLibrary));
+  return options.map(name => resolveCanonicalExerciseName(name, exerciseLibrary));
 };
 
 export function useStrengthFindings(

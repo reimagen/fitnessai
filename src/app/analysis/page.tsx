@@ -10,12 +10,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ErrorState } from '@/components/shared/ErrorState';
-import { getNormalizedExerciseName } from '@/lib/strength-standards';
+import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
 import Link from 'next/link';
 import { CalorieBreakdownCard } from '@/components/analysis/CalorieBreakdownCard';
 import { RepetitionBreakdownCard } from '@/components/analysis/RepetitionBreakdownCard';
 import StrengthBalanceCard from '@/components/analysis/StrengthBalanceCard';
 import { LiftProgressionCard } from '@/components/analysis/LiftProgressionCard';
+import { CardErrorFallback } from '@/components/analysis/CardErrorFallback';
 import { ExerciseVarietyCard } from '@/components/analysis/ExerciseVarietyCard';
 import { MilestonesCard } from '@/components/analysis/MilestonesCard';
 import { CardioAnalysisCard } from '@/components/analysis/CardioAnalysisCard';
@@ -44,26 +45,6 @@ export default function AnalysisPage() {
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
-  // Helper function to normalize for lookup
-  const normalizeForLookup = (name: string): string =>
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/^(egym|machine)\s+/, '')
-      .replace(/[()]/g, '')
-      .replace(/\s+/g, ' ');
-
-  // Helper function to resolve canonical name
-  const resolveCanonicalName = (exerciseName: string): string => {
-    const normalized = normalizeForLookup(exerciseName);
-    const exercise = exercises.find(e => {
-      if (e.normalizedName.toLowerCase() === normalized) return true;
-      if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
-      return false;
-    });
-    return exercise?.normalizedName || exerciseName;
-  };
-
   // Get frequently logged lifts - resolve to canonical exercise names from library
   const frequentlyLoggedLifts = useMemo(() => {
     if (!workoutLogs || exercises.length === 0) return [];
@@ -73,7 +54,7 @@ export default function AnalysisPage() {
         if (ex.weight && ex.weight > 0 && ex.category !== 'Cardio') {
           // Resolve to canonical name from exercise library
           // This handles "machine bicep curl" as its own exercise distinct from "bicep curl"
-          const canonical = resolveCanonicalName(ex.name);
+          const canonical = resolveCanonicalExerciseName(ex.name, exercises);
           weightedExercises.set(canonical, (weightedExercises.get(canonical) || 0) + 1);
         }
       });
@@ -224,27 +205,60 @@ export default function AnalysisPage() {
                 timeRange={timeRange}
               />
 
-              <LiftProgressionCard
-                userProfile={userProfile!}
-                workoutLogs={workoutLogs}
-                personalRecords={personalRecords}
-                selectedLift={resolvedSelectedLift}
-                setSelectedLift={setSelectedLift}
-                frequentlyLoggedLifts={frequentlyLoggedLifts}
-                exercises={exercises}
-              />
-              <StrengthBalanceCard
-                isLoading={isLoading}
-                userProfile={userProfile!}
-                workoutLogs={workoutLogs}
-                strengthAnalysis={userProfile?.strengthAnalysis}
-                exercises={exercises}
-              />
-              <CardioAnalysisCard
-                cardioAnalysisData={cardioAnalysisData}
-                timeRange={timeRange}
-                timeRangeDisplayNames={timeRangeDisplayNames}
-              />
+              <ErrorBoundary
+                feature="liftProgressionCard"
+                fallback={(error, reset) => (
+                  <CardErrorFallback
+                    cardName="Lift Progression Analysis"
+                    error={error}
+                    onReset={reset}
+                  />
+                )}
+              >
+                <LiftProgressionCard
+                  userProfile={userProfile!}
+                  workoutLogs={workoutLogs}
+                  personalRecords={personalRecords}
+                  selectedLift={resolvedSelectedLift}
+                  setSelectedLift={setSelectedLift}
+                  frequentlyLoggedLifts={frequentlyLoggedLifts}
+                  exercises={exercises}
+                />
+              </ErrorBoundary>
+              <ErrorBoundary
+                feature="strengthBalanceCard"
+                fallback={(error, reset) => (
+                  <CardErrorFallback
+                    cardName="Strength Balance Analysis"
+                    error={error}
+                    onReset={reset}
+                  />
+                )}
+              >
+                <StrengthBalanceCard
+                  isLoading={isLoading}
+                  userProfile={userProfile!}
+                  workoutLogs={workoutLogs}
+                  strengthAnalysis={userProfile?.strengthAnalysis}
+                  exercises={exercises}
+                />
+              </ErrorBoundary>
+              <ErrorBoundary
+                feature="cardioAnalysisCard"
+                fallback={(error, reset) => (
+                  <CardErrorFallback
+                    cardName="Cardio Analysis"
+                    error={error}
+                    onReset={reset}
+                  />
+                )}
+              >
+                <CardioAnalysisCard
+                  cardioAnalysisData={cardioAnalysisData}
+                  timeRange={timeRange}
+                  timeRangeDisplayNames={timeRangeDisplayNames}
+                />
+              </ErrorBoundary>
             </>
           )}
       </div>

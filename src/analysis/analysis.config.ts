@@ -1,32 +1,9 @@
 
 import type { PersonalRecord, WorkoutLog } from "@/lib/types";
 import type { ExerciseDocument } from "@/lib/exercise-types";
+import { resolveCanonicalExerciseName } from "@/lib/exercise-normalization";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { subWeeks, isAfter } from 'date-fns';
-
-/**
- * Normalizes exercise name for lookup (removes EGYM/Machine prefix and extra characters)
- */
-const normalizeForLookup = (name: string): string =>
-  name
-    .trim()
-    .toLowerCase()
-    .replace(/^(egym|machine)\s+/, '')
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ');
-
-/**
- * Resolves exercise name to its canonical name using the exercise library
- */
-const resolveCanonicalName = (exerciseName: string, exerciseLibrary: ExerciseDocument[]): string => {
-  const normalized = normalizeForLookup(exerciseName);
-  const exercise = exerciseLibrary.find(e => {
-    if (e.normalizedName.toLowerCase() === normalized) return true;
-    if (e.legacyNames?.some(ln => normalizeForLookup(ln) === normalized)) return true;
-    return false;
-  });
-  return exercise?.normalizedName || exerciseName;
-};
 
 export type ImbalanceType = 'Horizontal Push vs. Pull' | 'Vertical Push vs. Pull' | 'Hamstring vs. Quad' | 'Adductor vs. Abductor';
 
@@ -83,7 +60,7 @@ export function calculateAvgE1RM(
 
     log.exercises.forEach(ex => {
       // Resolve exercise name to canonical form to match options
-      const resolvedExerciseName = resolveCanonicalName(ex.name, exercises);
+      const resolvedExerciseName = resolveCanonicalExerciseName(ex.name, exercises);
       const normalizedName = getNormalizedExerciseName(resolvedExerciseName);
       const matchesExercise = exerciseNameOptions.some(
         opt => opt.trim().toLowerCase() === normalizedName
@@ -91,7 +68,7 @@ export function calculateAvgE1RM(
 
       if (matchesExercise && ex.weight && ex.reps && ex.weight > 0 && ex.reps > 0) {
         // Track exercise name and unit
-        if (!exerciseNameUsed) exerciseNameUsed = ex.name;
+        if (!exerciseNameUsed) exerciseNameUsed = resolvedExerciseName;
         const unit = ex.weightUnit || 'lbs';
         unitCounts[unit]++;
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
-import { checkAIConfig, checkFirestore } from "@/lib/logging/health-check";
+import { checkAIConfig, checkFirestore, checkRedis } from "@/lib/logging/health-check";
 
 export const runtime = "nodejs";
 
@@ -15,11 +15,12 @@ export async function GET(request: Request) {
     checks: {
       database: await checkFirestore(),
       ai: await checkAIConfig(),
+      redis: await checkRedis(),
     },
     timestamp: new Date().toISOString(),
   };
 
-  const isHealthy = checks.checks.database === "ok" && checks.checks.ai === "ok";
+  const isHealthy = checks.checks.database === "ok" && checks.checks.ai === "ok" && checks.checks.redis === "ok";
 
   await logger.info("Health check", { ...context, ...checks }, traceHeader);
 
