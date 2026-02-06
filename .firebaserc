@@ -1,6 +1,7 @@
 {
   "projects": {
     "default": "fitnessai-dev-dummy",
+    "staging": "fitnessai-dev-dummy",
     "prod": "fitnessai-prod"
   },
   "targets": {},
