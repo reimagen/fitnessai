@@ -162,6 +162,14 @@
 - Each has recommended user message and retry flag
 - Implemented in `src/lib/logging/error-classifier.ts`
 
+### Firestore Security - Stage 2 (Plan 01-03)
+- Exercises collection now requires authentication (`request.auth != null`)
+- ExerciseAliases and config collections require authentication
+- Custom user exercises stored at `/users/{uid}/exercises` with user isolation
+- All user-isolated paths use isOwner(userId) pattern
+- Admin writes to exercises still possible via Firebase Admin SDK (bypasses rules)
+- Pattern: Shared collections read-only with auth; user-isolated collections full CRUD with ownership check
+
 ---
 
 ## Session Continuity
