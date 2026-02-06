@@ -76,38 +76,38 @@ Deferred to post-launch.
 
 ## Traceability
 
-Which phases cover which requirements. To be filled during roadmap creation.
+Which phases cover which requirements.
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| SEC-01 | Phase ? | Pending |
-| SEC-02 | Phase ? | Pending |
-| SEC-03 | Phase ? | Pending |
-| SEC-04 | Phase ? | Pending |
-| SEC-05 | Phase ? | Pending |
-| SEC-06 | Phase ? | Pending |
-| SEC-07 | Phase ? | Pending |
-| TEST-01 | Phase ? | Pending |
-| TEST-02 | Phase ? | Pending |
-| TEST-03 | Phase ? | Pending |
-| TEST-04 | Phase ? | Pending |
-| TEST-05 | Phase ? | Pending |
-| TEST-06 | Phase ? | Pending |
-| TEST-07 | Phase ? | Pending |
-| TEST-08 | Phase ? | Pending |
-| TEST-09 | Phase ? | Pending |
-| TEST-10 | Phase ? | Pending |
-| COST-01 | Phase ? | Pending |
-| COST-02 | Phase ? | Pending |
-| COST-03 | Phase ? | Pending |
-| COST-04 | Phase ? | Pending |
+| Requirement | Phase | Category | Status |
+|-------------|-------|----------|--------|
+| SEC-01 | 1 | Security | Pending |
+| SEC-02 | 1 | Security | Pending |
+| SEC-03 | 4 | Security | Pending |
+| SEC-04 | 2 | Security | Pending |
+| SEC-05 | 3 | Security | Pending |
+| SEC-06 | 1 | Security | Pending |
+| SEC-07 | 1 | Security | Pending |
+| TEST-01 | 5 | Testing | Pending |
+| TEST-02 | 5 | Testing | Pending |
+| TEST-03 | 5 | Testing | Pending |
+| TEST-04 | 5 | Testing | Pending |
+| TEST-05 | 5 | Testing | Pending |
+| TEST-06 | 5 | Testing | Pending |
+| TEST-07 | 5 | Testing | Pending |
+| TEST-08 | 6 | Testing | Pending |
+| TEST-09 | 6 | Testing | Pending |
+| TEST-10 | 7 | Testing | Pending |
+| COST-01 | 8 | Cost | Pending |
+| COST-02 | 9 | Cost | Pending |
+| COST-03 | 10 | Cost | Pending |
+| COST-04 | 8 | Cost | Pending |
 
 **Coverage:**
 - v1 requirements: 21 total
-- Mapped to phases: (to be filled)
-- Unmapped: (to be filled)
+- Mapped to phases: 21 ✓
+- Unmapped: 0 ✓
 
 ---
 
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after initialization*
+*Traceability updated: 2026-02-05 after roadmap creation*
