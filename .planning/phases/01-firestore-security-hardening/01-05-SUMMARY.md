@@ -2,11 +2,11 @@
 phase: 01-firestore-security-hardening
 plan: 05
 title: "Deploy Stage 1+2 Rules to Staging & Validate"
-subtitle: "Stage 1+2 Firestore rules deployed to staging project (fitnessai-dev-dummy) - awaiting manual validation"
-status: checkpoint-pending-validation
-completed_date: 2026-02-05
+subtitle: "Stage 1+2 Firestore rules deployed to staging project (fitnessai-dev-dummy) - manual validation approved"
+status: complete
+completed_date: 2026-02-06
 requires: ["01-02", "01-03"]
-provides: "Stage 1+2 rules deployed to staging, ready for validation and production deployment"
+provides: "Stage 1+2 rules deployed to staging and validated; approved for production deployment"
 tech-stack:
   patterns:
     - "Two-stage deployment: Staging validation → Production deployment"
@@ -17,9 +17,9 @@ tech-stack:
 
 # Plan 1.5: Deploy Stage 1+2 Rules to Staging & Validate - SUMMARY
 
-**Date Completed:** 2026-02-05
-**Status:** Deployment Complete, Validation Pending
-**Checkpoint Type:** human-verify (manual validation required)
+**Date Completed:** 2026-02-06
+**Status:** Complete - Validation Approved
+**Checkpoint Type:** human-verify (manual validation completed and approved)
 
 ---
 
@@ -50,34 +50,34 @@ tech-stack:
 
 ---
 
-## Validation Required (Tasks 1.5.2, 1.5.3, 1.5.4)
+## Validation Results (Tasks 1.5.2, 1.5.3, 1.5.4)
 
-The rules are now LIVE in staging. Manual validation of 5 critical scenarios is required:
+All 5 critical security scenarios have been validated in staging. User approval confirmed.
 
 ### Scenario 1: User Isolation (Stage 1)
 - **Test:** Alice can read her own workouts, Bob cannot read Alice's workouts
 - **Expected:** Alice: SUCCESS, Bob: PERMISSION DENIED
-- **Status:** ⏳ Awaiting validation
+- **Status:** ✅ PASSED
 
 ### Scenario 2: Anonymous Denial (Stage 1)
 - **Test:** Unauthenticated users cannot access any collection
 - **Expected:** PERMISSION DENIED
-- **Status:** ⏳ Awaiting validation
+- **Status:** ✅ PASSED
 
 ### Scenario 3: Subcollection Inheritance (Stage 1)
 - **Test:** Alice can read her nested workout sets, Bob cannot
 - **Expected:** Alice: SUCCESS, Bob: PERMISSION DENIED
-- **Status:** ⏳ Awaiting validation
+- **Status:** ✅ PASSED
 
 ### Scenario 4: Exercises Auth Requirement (Stage 2)
 - **Test:** Exercises require authentication; users cannot write to global exercises
 - **Expected:** Anon: DENIED, Auth: CAN READ, Auth: CANNOT WRITE
-- **Status:** ⏳ Awaiting validation
+- **Status:** ✅ PASSED
 
 ### Scenario 5: Custom Exercises User Isolation (Stage 2)
 - **Test:** Alice can read/write her custom exercises, Bob cannot
 - **Expected:** Alice: SUCCESS, Bob: PERMISSION DENIED
-- **Status:** ⏳ Awaiting validation
+- **Status:** ✅ PASSED
 
 ---
 
@@ -104,14 +104,15 @@ See: `01-05-STAGING-VALIDATION.md` - Complete testing matrix with all scenarios
 
 ## Approval Gate
 
-**All tests PASSED?**
-- Type: `approved` → Proceed to Plan 1.6 (Production Deployment)
+**Status:** ✅ APPROVED
 
-**Any test FAILED?**
-- Type: `issues found` → Document, fix rules, re-deploy, re-test
+All 5 critical security scenarios tested and passed. User validated staging deployment and approved for production deployment (Plan 1.6).
 
-**Uncertain?**
-- Type: `uncertain` → Investigate further
+**Approval Decision:**
+- All scenarios show expected behavior: PASS
+- No data leakage or permission issues
+- Rules are stable and secure in staging
+- Ready for production deployment
 
 ---
 
@@ -148,5 +149,7 @@ Deployment successful on first attempt. No rule syntax errors. No unexpected beh
 
 ---
 
-**Awaiting:** User validation of 5 scenarios in staging Firestore. When complete, respond with approval status.
+**Completion Status:** Plan 1.5 complete. User validated all 5 scenarios and approved staging rules for production deployment.
+
+**Next:** Plan 1.6 (Production Deployment) can now proceed.
 
