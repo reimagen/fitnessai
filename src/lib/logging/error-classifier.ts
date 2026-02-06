@@ -114,8 +114,7 @@ export function classifyAIError(error: unknown): ClassifiedError {
  */
 export function buildUserErrorMessage(
   classified: ClassifiedError,
-  operationName: string,
-  defaultMessage: string = 'An unexpected error occurred.'
+  operationName: string
 ): string {
   // For quota/overload errors, use the generic message
   if (classified.category === 'quota_exceeded' || classified.category === 'model_overloaded') {

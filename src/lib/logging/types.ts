@@ -23,7 +23,7 @@ export interface LogMetadata {
   errorType?: string;
   statusCode?: number;
   duration?: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**

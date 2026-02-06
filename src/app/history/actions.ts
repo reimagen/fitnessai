@@ -14,7 +14,7 @@ import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
 import { classifyAIError } from "@/lib/logging/error-classifier";
-import type { WorkoutLog } from "@/lib/types";
+import type { Exercise, ExerciseCategory, WorkoutLog } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 // Zod schemas for input validation
@@ -28,27 +28,40 @@ const GetWorkoutLogsSchema = z.object({
   since: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)).optional(),
 });
 
+const ExerciseCategorySchema = z.enum([
+  "Cardio",
+  "Lower Body",
+  "Upper Body",
+  "Full Body",
+  "Core",
+  "Other",
+] as const satisfies readonly ExerciseCategory[]);
+
+const ExerciseSchema: z.ZodType<Exercise> = z.object({
+  id: z.string().min(1, "Exercise ID is required"),
+  name: z.string().min(1, "Exercise name is required"),
+  sets: z.number().nonnegative(),
+  reps: z.number().nonnegative(),
+  weight: z.number().nonnegative(),
+  weightUnit: z.enum(["kg", "lbs"]).optional(),
+  category: ExerciseCategorySchema.optional(),
+  distance: z.number().nonnegative().optional(),
+  distanceUnit: z.enum(["mi", "km", "ft", "m"]).optional(),
+  duration: z.number().nonnegative().optional(),
+  durationUnit: z.enum(["min", "hr", "sec"]).optional(),
+  calories: z.number().nonnegative().optional(),
+  caloriesSource: z.enum(["manual", "estimated"]).optional(),
+});
+
 const AddWorkoutLogSchema = z.object({
   date: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
-  exercises: z.array(z.object({
-    name: z.string().min(1, "Exercise name is required"),
-    sets: z.array(z.object({
-      reps: z.number().positive("Reps must be positive"),
-      weight: z.number().nonnegative("Weight must be non-negative").optional(),
-    })),
-  })),
+  exercises: z.array(ExerciseSchema),
   notes: z.string().optional(),
 });
 
 const UpdateWorkoutLogSchema = z.object({
   date: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)).optional(),
-  exercises: z.array(z.object({
-    name: z.string().min(1),
-    sets: z.array(z.object({
-      reps: z.number().positive(),
-      weight: z.number().nonnegative().optional(),
-    })),
-  })).optional(),
+  exercises: z.array(ExerciseSchema).optional(),
   notes: z.string().optional(),
 });
 

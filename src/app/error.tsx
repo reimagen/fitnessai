@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { reportError } from '@/lib/logging/error-reporter';
 
 interface Props {
@@ -129,7 +130,7 @@ export default function Error({ error, reset }: Props) {
           >
             Try Again
           </button>
-          <a
+          <Link
             href="/"
             style={{
               padding: '12px 24px',
@@ -145,7 +146,7 @@ export default function Error({ error, reset }: Props) {
             }}
           >
             Go Home
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -10,11 +10,25 @@ import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
 import { classifyAIError } from "@/lib/logging/error-classifier";
-import type { UserProfile, StoredLiftProgressionAnalysis, StoredGoalAnalysis } from "@/lib/types";
+import type {
+  FitnessGoal,
+  UserProfile,
+  StoredLiftProgressionAnalysis,
+  StoredGoalAnalysis,
+} from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
 // Zod schemas for input validation
+const FitnessGoalSchema: z.ZodType<FitnessGoal, z.ZodTypeDef, unknown> = z.object({
+  id: z.string().min(1, "Goal ID is required"),
+  description: z.string().min(1, "Goal description is required"),
+  targetDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+  achieved: z.boolean(),
+  dateAchieved: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)).optional(),
+  isPrimary: z.boolean().optional(),
+});
+
 const UpdateUserProfileSchema = z.object({
   name: z.string().optional(),
   email: z.string().email().optional(),
@@ -24,33 +38,40 @@ const UpdateUserProfileSchema = z.object({
   weightUnit: z.enum(['lbs', 'kg']).optional(),
   skeletalMuscleMassValue: z.number().positive().optional(),
   skeletalMuscleMassUnit: z.enum(['lbs', 'kg']).optional(),
-  fitnessGoals: z.array(z.string()).optional(),
-});
+  fitnessGoals: z.array(FitnessGoalSchema).optional(),
+}).passthrough();
 
-const AnalyzeLiftProgressionInputSchema = z.object({
+const AnalyzeLiftProgressionInputSchema: z.ZodType<AnalyzeLiftProgressionInput> = z.object({
   exerciseName: z.string().min(1, "Exercise name is required"),
-  exerciseHistory: z.array(z.object({
-    date: z.string(),
-    weight: z.number().positive(),
-    sets: z.number().positive(),
-    reps: z.number().positive(),
-  })),
+  exerciseHistory: z.array(
+    z.object({
+      date: z.string().min(1, "Date is required"),
+      weight: z.number(),
+      sets: z.number(),
+      reps: z.number(),
+    })
+  ),
   userProfile: z.object({
-    age: z.number().positive().optional(),
+    age: z.number().optional(),
     gender: z.string().optional(),
-    heightValue: z.number().positive().optional(),
-    heightUnit: z.enum(['cm', 'ft/in']).optional(),
-    weightValue: z.number().positive().optional(),
-    weightUnit: z.enum(['kg', 'lbs']).optional(),
-    skeletalMuscleMassValue: z.number().positive().optional(),
-    skeletalMuscleMassUnit: z.enum(['kg', 'lbs']).optional(),
-    fitnessGoals: z.array(z.object({
-      description: z.string(),
-      isPrimary: z.boolean().optional(),
-    })).optional(),
+    heightValue: z.number().optional(),
+    heightUnit: z.enum(["cm", "ft/in"]).optional(),
+    weightValue: z.number().optional(),
+    weightUnit: z.enum(["kg", "lbs"]).optional(),
+    skeletalMuscleMassValue: z.number().optional(),
+    skeletalMuscleMassUnit: z.enum(["kg", "lbs"]).optional(),
+    fitnessGoals: z
+      .array(
+        z.object({
+          description: z.string(),
+          isPrimary: z.boolean().optional(),
+        })
+      )
+      .optional(),
   }),
-  currentLevel: z.string().optional(),
+  currentLevel: z.enum(["Beginner", "Intermediate", "Advanced", "Elite", "N/A"]).optional(),
   trendPercentage: z.number().optional(),
+  volumeTrendPercentage: z.number().optional(),
 });
 
 const AnalyzeFitnessGoalsInputSchema = z.object({

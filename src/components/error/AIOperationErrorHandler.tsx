@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { classifyAIError } from '@/lib/logging/error-classifier';
-import type { ClassifiedError } from '@/lib/logging/error-classifier';
 import { reportError } from '@/lib/logging/error-reporter';
 
 interface AIOperationErrorHandlerProps {

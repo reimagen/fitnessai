@@ -14,7 +14,7 @@ import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
 import { withServerActionLogging } from "@/lib/logging/server-action-wrapper";
 import { classifyAIError } from "@/lib/logging/error-classifier";
-import type { PersonalRecord } from "@/lib/types";
+import type { ExerciseCategory, PersonalRecord } from "@/lib/types";
 import { checkRateLimit } from "./rate-limiting";
 
 // Zod schemas for input validation
@@ -22,12 +22,21 @@ const ParsePersonalRecordsInputSchema = z.object({
   photoDataUri: z.string().regex(/^data:image\//, "Photo must be a valid data URI"),
 });
 
+const ExerciseCategorySchema = z.enum([
+  "Cardio",
+  "Lower Body",
+  "Upper Body",
+  "Full Body",
+  "Core",
+  "Other",
+] as const satisfies readonly ExerciseCategory[]);
+
 const AddPersonalRecordsSchema = z.array(z.object({
   exerciseName: z.string().min(1, "Exercise name is required"),
   weight: z.number().positive("Weight must be positive"),
   weightUnit: z.enum(["lbs", "kg"]),
   date: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
-  category: z.string().optional(),
+  category: ExerciseCategorySchema.optional(),
 }));
 
 const UpdatePersonalRecordSchema = z.object({

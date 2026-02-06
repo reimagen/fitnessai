@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
 import { getAdminDb, exerciseConverter, exerciseAliasConverter } from '../src/lib/firebase-admin';
+import { logger } from '../src/lib/logging/logger';
 import {
   STRENGTH_STANDARDS,
   STRENGTH_RATIOS,
@@ -64,6 +65,7 @@ async function writeInBatches<T>(
     await batch.commit();
     console.log(`[${label}] Committed ${i + slice.length}/${docs.length}`);
   }
+  await logger.warn(`Batch written to ${label}`, { docsWritten: docs.length });
 }
 
 async function main() {
@@ -136,8 +138,16 @@ async function main() {
     }
   );
 
+  const totalExercises = strengthExercises.length + cardioExercises.length;
+
+  await logger.warn('Exercise migration started', {
+    mode: options.apply ? 'apply' : 'dry-run',
+    exercisesCount: totalExercises,
+    aliasesCount: aliasDocs.length,
+  });
+
   console.log(`Project: ${projectId}`);
-  console.log(`Exercises: ${strengthExercises.length + cardioExercises.length}`);
+  console.log(`Exercises: ${totalExercises}`);
   console.log(`Aliases: ${aliasDocs.length}`);
   console.log(`Mode: ${options.apply ? 'apply' : 'dry-run'}`);
   console.log(`Sample exercise IDs: ${strengthExercises.slice(0, 3).map(ex => ex.id).join(', ')}`);
@@ -169,9 +179,14 @@ async function main() {
   );
 
   console.log('Migration complete.');
+  await logger.warn('Exercise migration completed', {
+    exercisesWritten: totalExercises,
+    aliasesWritten: aliasDocs.length,
+  });
 }
 
-main().catch(error => {
+main().catch(async error => {
   console.error(error);
+  await logger.error('Exercise migration failed', { error: String(error) });
   process.exit(1);
 });

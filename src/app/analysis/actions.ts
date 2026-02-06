@@ -1,6 +1,7 @@
 
 'use server';
 
+import { z } from 'zod';
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
 import { updateUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
 import { getStrengthLevel } from "@/lib/strength-standards.server";
@@ -11,6 +12,25 @@ import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { GetLiftStrengthLevelInput, PersonalRecord, StoredStrengthAnalysis, StrengthLevel, UserProfile } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 
+// Zod schemas for input validation
+const StrengthImbalanceInputValidationSchema = z.object({
+  userProfile: z.object({}).passthrough(),
+  clientSideFindings: z.array(z.object({}).passthrough()),
+});
+
+const GetLiftStrengthLevelInputSchema = z.object({
+  exerciseName: z.string().min(1, "Exercise name required"),
+  weight: z.number().positive("Weight must be positive"),
+  weightUnit: z.enum(['kg', 'lbs']),
+  userProfile: z.object({
+    age: z.number().positive().optional(),
+    gender: z.string().optional(),
+    weightValue: z.number().positive().optional(),
+    weightUnit: z.enum(['kg', 'lbs']).optional(),
+    skeletalMuscleMassValue: z.number().positive().optional(),
+    skeletalMuscleMassUnit: z.enum(['kg', 'lbs']).optional(),
+  }),
+});
 
 export async function analyzeStrengthAction(
   userId: string,
@@ -23,6 +43,12 @@ export async function analyzeStrengthAction(
   });
 
   return withServerActionLogging(context, async () => {
+    // Validate input has required structure
+    const validatedInput = StrengthImbalanceInputValidationSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
+    }
+
     if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
       const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
       await logger.error("Missing API Key", { ...context, error: errorMessage });
@@ -41,7 +67,7 @@ export async function analyzeStrengthAction(
     }
 
     try {
-      const analysisData = await analyzeStrengthImbalances(values);
+      const analysisData = await analyzeStrengthImbalances(values as StrengthImbalanceInput);
 
       const storedAnalysis: StoredStrengthAnalysis = {
         result: analysisData,
@@ -85,12 +111,14 @@ export async function getLiftStrengthLevelAction(
   });
 
   return withServerActionLogging(context, async () => {
-    if (!userId) {
-      return { success: false, error: "User not authenticated." };
+    // Validate input schema
+    const validatedInput = GetLiftStrengthLevelInputSchema.safeParse(values);
+    if (!validatedInput.success) {
+      return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
     }
 
-    if (!values.exerciseName || values.weight <= 0) {
-      return { success: false, error: "Invalid lift level input." };
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
     }
 
     const syntheticRecord: PersonalRecord = {
