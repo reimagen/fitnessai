@@ -25,7 +25,7 @@ import {
 } from '@/app/profile/actions';
 import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
 import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
-import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction, getFitnessGoalsAction, saveFitnessGoalsAction } from '@/app/profile/actions';
+import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis, FitnessGoal } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
@@ -620,7 +620,7 @@ export function useSaveLiftProgressionAnalysis() {
         throw new Error(result.error || 'Failed to save lift progression analysis');
       }
     },
-    onSuccess: ({ exerciseName }) => {
+    onSuccess: (_, { exerciseName }) => {
       queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName] });
     },
   });

@@ -353,7 +353,6 @@ export async function getLiftProgressionAnalysisAction(
     userId,
     route: "profile/getLiftProgressionAnalysisAction",
     feature: "liftProgressionAnalyses",
-    exerciseName,
   });
 
   return withServerActionLogging(context, async () => {
@@ -382,7 +381,6 @@ export async function saveLiftProgressionAnalysisAction(
     userId,
     route: "profile/saveLiftProgressionAnalysisAction",
     feature: "liftProgressionAnalyses",
-    exerciseName,
   });
 
   return withServerActionLogging(context, async () => {
@@ -405,69 +403,6 @@ export async function saveLiftProgressionAnalysisAction(
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to save lift progression analysis"
-      };
-    }
-  });
-}
-
-const SaveFitnessGoalsSchema = z.array(FitnessGoalSchema);
-
-export async function getFitnessGoalsAction(
-  userId: string
-): Promise<{ success: boolean; data?: FitnessGoal[]; error?: string }> {
-  const context = createRequestContext({
-    userId,
-    route: "profile/getFitnessGoalsAction",
-    feature: "fitnessGoals",
-  });
-
-  return withServerActionLogging(context, async () => {
-    if (!userId) {
-      return { success: false, error: "User not authenticated." };
-    }
-
-    try {
-      const goals = await getFitnessGoals(userId, { enableLazyBackfill: true });
-      return { success: true, data: goals };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to fetch fitness goals"
-      };
-    }
-  });
-}
-
-export async function saveFitnessGoalsAction(
-  userId: string,
-  goals: FitnessGoal[]
-): Promise<{ success: boolean; error?: string }> {
-  const context = createRequestContext({
-    userId,
-    route: "profile/saveFitnessGoalsAction",
-    feature: "fitnessGoals",
-  });
-
-  return withServerActionLogging(context, async () => {
-    const validatedData = SaveFitnessGoalsSchema.safeParse(goals);
-    if (!validatedData.success) {
-      return {
-        success: false,
-        error: `Invalid goals data: ${validatedData.error.message}`
-      };
-    }
-
-    if (!userId) {
-      return { success: false, error: "User not authenticated." };
-    }
-
-    try {
-      await saveFitnessGoals(userId, validatedData.data);
-      return { success: true };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Failed to save fitness goals"
       };
     }
   });
