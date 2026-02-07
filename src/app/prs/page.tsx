@@ -24,8 +24,6 @@ export default function MilestonesPage() {
   // Enable PR fetching only if the profile has loaded and exists.
   const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(!isLoadingProfile && !!userProfile);
 
-  const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
-
   if (isLoadingProfile) {
       return (
           <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
@@ -90,7 +88,7 @@ export default function MilestonesPage() {
         isError={isErrorPrs}
       />
 
-      <CompletedGoalsSection completedGoals={completedGoals} />
+      <CompletedGoalsSection />
     </div>
   );
 }

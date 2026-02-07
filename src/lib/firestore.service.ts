@@ -20,11 +20,13 @@ import {
     updateUserProfile,
     analyzeLiftProgressionAction,
     analyzeGoalsAction,
+    getGoalsAction,
+    saveGoalsAction,
 } from '@/app/profile/actions';
 import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
 import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
-import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction } from '@/app/profile/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis } from './types';
+import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction, getFitnessGoalsAction, saveFitnessGoalsAction } from '@/app/profile/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis, FitnessGoal } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -620,6 +622,45 @@ export function useSaveLiftProgressionAnalysis() {
     },
     onSuccess: ({ exerciseName }) => {
       queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName] });
+    },
+  });
+}
+
+export function useGoals(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<FitnessGoal[], Error>({
+    queryKey: ['goals', user?.uid],
+    queryFn: async () => {
+      if (!user) return [];
+      const result = await getGoalsAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch goals');
+      }
+      return result.data || [];
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days - goals don't change frequently
+  });
+}
+
+export function useSaveGoals() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation<void, Error, FitnessGoal[]>({
+    mutationFn: async (goalsData: FitnessGoal[]) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveGoalsAction(user.uid, goalsData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save goals');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals', user?.uid] });
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] }); // Also invalidate profile cache
     },
   });
 }

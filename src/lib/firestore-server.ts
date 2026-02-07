@@ -3,7 +3,7 @@
 
 import { getAdminDb } from './firebase-admin';
 import { Timestamp, QueryDocumentSnapshot, FieldValue } from 'firebase-admin/firestore';
-import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, Exercise, ExerciseCategory, StoredLiftProgressionAnalysis, StrengthLevel, StoredWeeklyPlan, StoredGoalAnalysis, AIUsageStats, FitnessGoal } from './types';
 import { format } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards.server';
 import { cache } from 'react';
@@ -147,6 +147,35 @@ const goalAnalysisConverter = {
   }
 };
 
+const goalsConverter = {
+  toFirestore: (goals: FitnessGoal[]) => {
+    return {
+      goals: goals.map(goal => ({
+        id: goal.id,
+        description: goal.description,
+        targetDate: Timestamp.fromDate(goal.targetDate),
+        achieved: goal.achieved,
+        dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : null,
+        isPrimary: goal.isPrimary || false,
+      })),
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): FitnessGoal[] => {
+    const data = snapshot.data() || {};
+    if (!Array.isArray(data.goals)) {
+      return [];
+    }
+    return data.goals.map((g: any) => ({
+      id: typeof g.id === 'string' ? g.id : '',
+      description: typeof g.description === 'string' ? g.description : '',
+      targetDate: g.targetDate instanceof Timestamp ? g.targetDate.toDate() : new Date(),
+      achieved: typeof g.achieved === 'boolean' ? g.achieved : false,
+      dateAchieved: g.dateAchieved instanceof Timestamp ? g.dateAchieved.toDate() : undefined,
+      isPrimary: typeof g.isPrimary === 'boolean' ? g.isPrimary : false,
+    }));
+  }
+};
+
 const liftProgressionConverter = {
   toFirestore: (analysis: Omit<StoredLiftProgressionAnalysis, 'id'>) => {
     return {
@@ -161,6 +190,37 @@ const liftProgressionConverter = {
       generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
     };
   }
+};
+
+const fitnessGoalsConverter = {
+  toFirestore: (data: { goals: FitnessGoal[] }) => {
+    return {
+      goals: data.goals.map(goal => ({
+        id: goal.id,
+        description: goal.description,
+        targetDate: Timestamp.fromDate(goal.targetDate),
+        achieved: goal.achieved,
+        dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : null,
+        isPrimary: goal.isPrimary ?? false,
+      })),
+      lastUpdated: Timestamp.now(),
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): { goals: FitnessGoal[] } => {
+    const data = snapshot.data() || {};
+    const goalsArray = Array.isArray(data.goals) ? data.goals : [];
+
+    return {
+      goals: goalsArray.map((g: any) => ({
+        id: typeof g.id === 'string' ? g.id : '',
+        description: typeof g.description === 'string' ? g.description : '',
+        targetDate: g.targetDate instanceof Timestamp ? g.targetDate.toDate() : new Date(),
+        achieved: Boolean(g.achieved),
+        dateAchieved: g.dateAchieved instanceof Timestamp ? g.dateAchieved.toDate() : undefined,
+        isPrimary: Boolean(g.isPrimary),
+      })),
+    };
+  },
 };
 
 export const userProfileConverter = {
@@ -894,6 +954,136 @@ export const deleteGoalAnalysis = async (userId: string): Promise<void> => {
     await logger.error('Error deleting goal analysis', {
       route: 'firestore/deleteGoalAnalysis',
       feature: 'goalAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+// Fitness Goals
+export const getFitnessGoals = cache(async (userId: string, options?: { enableLazyBackfill?: boolean }): Promise<FitnessGoal[]> => {
+  try {
+    const adminDb = getAdminDb();
+
+    // Try new location first
+    const goalsDocRef = adminDb
+      .collection(`users/${userId}/goals`)
+      .doc('preferences')
+      .withConverter(fitnessGoalsConverter);
+
+    const goalsSnap = await goalsDocRef.get();
+
+    if (goalsSnap.exists) {
+      const data = goalsSnap.data();
+      await logger.info('Fitness goals fetched from subcollection', {
+        route: 'firestore/getFitnessGoals',
+        feature: 'fitnessGoals',
+        userId,
+        count: data?.goals.length ?? 0,
+      });
+      return data?.goals ?? [];
+    }
+
+    // Fallback to old location (user profile document)
+    await logger.info('Goals not found in subcollection, checking legacy location', {
+      route: 'firestore/getFitnessGoals',
+      feature: 'fitnessGoals',
+      userId,
+    });
+
+    const userProfile = await getUserProfile(userId);
+    const legacyGoals = userProfile?.fitnessGoals ?? [];
+
+    if (legacyGoals.length === 0) {
+      return [];
+    }
+
+    // Lazy backfill if enabled
+    if (options?.enableLazyBackfill) {
+      await logger.info('Performing lazy backfill migration for fitness goals', {
+        route: 'firestore/getFitnessGoals',
+        feature: 'fitnessGoals',
+        userId,
+        count: legacyGoals.length,
+      });
+
+      try {
+        await saveFitnessGoals(userId, legacyGoals);
+      } catch (backfillError) {
+        await logger.error('Failed to backfill fitness goals', {
+          route: 'firestore/getFitnessGoals',
+          feature: 'fitnessGoals',
+          userId,
+          error: String(backfillError),
+        });
+        // Don't throw - still return the legacy data
+      }
+    }
+
+    return legacyGoals;
+  } catch (error) {
+    await logger.error('Error fetching fitness goals', {
+      route: 'firestore/getFitnessGoals',
+      feature: 'fitnessGoals',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+});
+
+export const saveFitnessGoals = async (userId: string, goals: FitnessGoal[]): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const goalsDocRef = adminDb.collection(`users/${userId}/goals`).doc('preferences');
+
+    const dataToStore = {
+      goals: goals.map(goal => ({
+        id: goal.id,
+        description: goal.description,
+        targetDate: Timestamp.fromDate(goal.targetDate),
+        achieved: goal.achieved,
+        dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : null,
+        isPrimary: goal.isPrimary ?? false,
+      })),
+      lastUpdated: Timestamp.now(),
+    };
+
+    await goalsDocRef.set(dataToStore);
+
+    await logger.info('Fitness goals saved to subcollection', {
+      route: 'firestore/saveFitnessGoals',
+      feature: 'fitnessGoals',
+      userId,
+      count: goals.length,
+    });
+  } catch (error) {
+    await logger.error('Error saving fitness goals', {
+      route: 'firestore/saveFitnessGoals',
+      feature: 'fitnessGoals',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const deleteFitnessGoals = async (userId: string): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const goalsDocRef = adminDb.collection(`users/${userId}/goals`).doc('preferences');
+    await goalsDocRef.delete();
+
+    await logger.info('Fitness goals deleted from subcollection', {
+      route: 'firestore/deleteFitnessGoals',
+      feature: 'fitnessGoals',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error deleting fitness goals', {
+      route: 'firestore/deleteFitnessGoals',
+      feature: 'fitnessGoals',
       userId,
       error: String(error),
     });
