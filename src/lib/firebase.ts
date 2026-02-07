@@ -1,8 +1,8 @@
 "use client";
 
 import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
 
 // NEXT_PUBLIC_ vars are populated from FIREBASE_WEBAPP_CONFIG on App Hosting
 // (via next.config.js) or from .env.development.local for local dev.
@@ -19,5 +19,11 @@ const firebaseConfig: FirebaseOptions = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
 const auth = getAuth(app);
+
+// In CI/local tests, connect to Firebase emulators (no real credentials).
+if (process.env.NEXT_PUBLIC_USE_FIREBASE_EMULATOR === "1") {
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", { disableWarnings: true });
+  connectFirestoreEmulator(db, "127.0.0.1", 8080);
+}
 
 export { db, auth };
