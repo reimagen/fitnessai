@@ -11,6 +11,11 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ci": "vitest run",
+    "test:smoke": "playwright test",
+    "test:smoke:headed": "playwright test --headed",
     "migrate-exercises": "tsx scripts/migrate-exercises.ts",
     "add-cardio-aliases": "tsx scripts/add-cardio-aliases.ts",
     "add-strength-aliases": "tsx scripts/add-strength-aliases.ts",
@@ -65,14 +70,21 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "eslint": "9.39.2",
     "eslint-config-next": "^16.1.4",
+    "firebase-tools": "^13.35.1",
     "genkit-cli": "^1.8.0",
+    "jsdom": "^26.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

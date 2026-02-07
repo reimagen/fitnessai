@@ -34,6 +34,21 @@ export function getAdminApp(): App {
     return adminApp;
   }
 
+  // Emulator mode: allow admin SDK usage without any credentials.
+  // The SDK will route to emulators via FIRESTORE_EMULATOR_HOST / FIREBASE_AUTH_EMULATOR_HOST.
+  if (process.env.FIRESTORE_EMULATOR_HOST || process.env.FIREBASE_AUTH_EMULATOR_HOST) {
+    adminApp = initializeApp(
+      {
+        projectId:
+          process.env.FIREBASE_PROJECT_ID ||
+          process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+          'fitnessai-ci',
+      },
+      'admin'
+    );
+    return adminApp;
+  }
+
   if (isAppHosting()) {
     adminApp = initializeApp(
       { credential: applicationDefault() },
