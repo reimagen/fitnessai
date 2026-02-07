@@ -7,26 +7,7 @@ import { getCurrentUserProfile } from "@/lib/auth-server";
 import { HomeDashboard } from "@/components/home/HomeDashboard";
 import { LapsedGoalBanner } from "@/components/home/LapsedGoalBanner";
 import { Suspense } from "react";
-
-function getGreeting(userName?: string): string {
-  const hour = new Date().getHours();
-  let greeting: string;
-
-  if (hour >= 5 && hour < 12) {
-    greeting = "Good morning";
-  } else if (hour >= 12 && hour < 17) {
-    greeting = "Good afternoon";
-  } else if (hour >= 17 && hour < 21) {
-    greeting = "Good evening";
-  } else {
-    greeting = "Welcome";
-  }
-
-  if (userName) {
-    return `${greeting}, ${userName}`;
-  }
-  return `${greeting} to FitnessAI`;
-}
+import { HeroHeader } from "@/components/layout/HeroHeader";
 
 export default async function HomePage() {
   const { data: profile, notFound: profileNotFound } = await getCurrentUserProfile();
@@ -34,10 +15,13 @@ export default async function HomePage() {
   if (profileNotFound) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <header className="mb-12">
-            <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Welcome to FitnessAI!</h1>
-            <p className="mt-2 text-lg text-muted-foreground">Let&apos;s get your profile set up to personalize your experience.</p>
-        </header>
+        <HeroHeader
+          className="mb-12"
+          align="center"
+          size="lg"
+          title="Welcome to FitnessAI!"
+          subtitle="Let&apos;s get your profile set up to personalize your experience."
+        />
         <Card className="shadow-lg max-w-md mx-auto">
             <CardHeader>
                 <CardTitle className="font-headline">Create Your Profile</CardTitle>
@@ -60,10 +44,13 @@ export default async function HomePage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <header className="mb-12 text-center">
-        <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">{getGreeting(profile?.name)}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">Continue your fitness journey.</p>
-      </header>
+      <HeroHeader
+        className="mb-12"
+        align="center"
+        size="lg"
+        title={profile?.name ? `Welcome, ${profile.name}` : "Welcome to FitnessAI"}
+        subtitle="Continue your fitness journey."
+      />
 
       {profile?.fitnessGoals && (
         <div className="mb-8">
@@ -78,19 +65,35 @@ export default async function HomePage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <Link href="/history" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary" aria-label="Log a new workout">
+              <Link
+                href="/history"
+                className="group flex flex-col items-center justify-center space-y-2 rounded-2xl border border-transparent p-4 transition-all hover:-translate-y-0.5 hover:border-border/70 hover:bg-secondary/60 hover:shadow-md hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Log a new workout"
+              >
                 <Dumbbell className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
                 <span className="text-sm font-medium text-foreground">Log Workout</span>
               </Link>
-              <Link href="/prs" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary" aria-label="Log personal records and achievements">
+              <Link
+                href="/prs"
+                className="group flex flex-col items-center justify-center space-y-2 rounded-2xl border border-transparent p-4 transition-all hover:-translate-y-0.5 hover:border-border/70 hover:bg-secondary/60 hover:shadow-md hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Log personal records and achievements"
+              >
                 <Award className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
                 <span className="text-sm font-medium text-foreground">Log PRs</span>
               </Link>
-              <Link href="/plan" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary" aria-label="Get an AI-generated workout plan">
+              <Link
+                href="/plan"
+                className="group flex flex-col items-center justify-center space-y-2 rounded-2xl border border-transparent p-4 transition-all hover:-translate-y-0.5 hover:border-border/70 hover:bg-secondary/60 hover:shadow-md hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="Get an AI-generated workout plan"
+              >
                 <Target className="h-8 w-8 text-accent transition-transform group-hover:scale-110" />
                 <span className="text-sm font-medium text-foreground">Get AI Plan</span>
               </Link>
-              <Link href="/analysis" className="group flex flex-col items-center justify-center space-y-2 rounded-lg p-4 transition-colors hover:bg-secondary" aria-label="View detailed fitness analysis and insights">
+              <Link
+                href="/analysis"
+                className="group flex flex-col items-center justify-center space-y-2 rounded-2xl border border-transparent p-4 transition-all hover:-translate-y-0.5 hover:border-border/70 hover:bg-secondary/60 hover:shadow-md hover:shadow-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                aria-label="View detailed fitness analysis and insights"
+              >
                 <BarChartBig className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
                 <span className="text-sm font-medium text-foreground">View Analysis</span>
               </Link>

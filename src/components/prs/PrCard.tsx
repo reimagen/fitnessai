@@ -38,7 +38,7 @@ export function PrCard({
   const level = record.strengthLevel || "N/A";
 
   return (
-    <Card className="bg-secondary/50 flex flex-col justify-between p-4">
+    <Card className="bg-secondary/50 flex flex-col justify-between p-4 transition-all hover:-translate-y-0.5 hover:bg-secondary/70 hover:shadow-xl hover:shadow-primary/15">
       {isEditing ? (
         <div className="flex flex-col gap-2 h-full">
           <p className="font-bold text-lg text-primary capitalize">{record.exerciseName}</p>

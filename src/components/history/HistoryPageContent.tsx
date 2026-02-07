@@ -12,6 +12,7 @@ import { HistoryManualLogCard } from "@/components/history/HistoryManualLogCard"
 import { HistoryParserCard } from "@/components/history/HistoryParserCard";
 import { HistoryWorkoutsCard } from "@/components/history/HistoryWorkoutsCard";
 import { useHistoryPage } from "@/components/history/useHistoryPage";
+import { HeroHeader } from "@/components/layout/HeroHeader";
 
 export function HistoryPageContent() {
   const {
@@ -50,12 +51,13 @@ export function HistoryPageContent() {
   if (isProfileNotFound) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <header className="mb-12">
-          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Log Your History</h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Create a profile to save your workout logs and track your performance over time.
-          </p>
-        </header>
+        <HeroHeader
+          className="mb-12"
+          align="center"
+          size="lg"
+          title="Log Your History"
+          subtitle="Create a profile to save your workout logs and track your performance over time."
+        />
         <Card className="shadow-lg max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="font-headline">Create Your Profile First</CardTitle>
@@ -80,10 +82,11 @@ export function HistoryPageContent() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Workout History</h1>
-        <p className="text-muted-foreground">Log your sessions and review exercise lists.</p>
-      </header>
+      <HeroHeader
+        className="mb-8"
+        title="Workout History"
+        subtitle="Log your sessions and review exercise lists."
+      />
 
       {activeForm === "none" && <HistoryFormSelector onSelect={handleTabChange} />}
 

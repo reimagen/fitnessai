@@ -172,7 +172,7 @@ export function GoalFormSection({
               // Display mode for active goals
               if (!field.achieved) {
                 return (
-                  <Card key={field.id} className="p-4 border rounded-2xl shadow-sm bg-secondary/30">
+                  <Card key={field.id} className="p-4 border rounded-2xl shadow-sm bg-secondary/30 transition-all hover:-translate-y-0.5 hover:bg-secondary/50 hover:shadow-md hover:shadow-primary/10">
                     <div className="text-sm">
                       <div className="flex justify-between items-start">
                         <p className="font-semibold text-primary">
@@ -196,7 +196,12 @@ export function GoalFormSection({
         <AchievedGoalsSection fields={fields} isEditing={isEditing} onUnachieve={onUnachieve} onRemove={onRemove} />
 
         <div className="pt-4 flex justify-start items-center">
-          <Button type="button" variant="outline" onClick={onAddNewGoal}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onAddNewGoal}
+            className="border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
+          >
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Goal
           </Button>
         </div>

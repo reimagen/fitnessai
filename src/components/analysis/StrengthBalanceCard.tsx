@@ -225,14 +225,14 @@ const StrengthBalanceFindingCard: React.FC<{
 }> = ({ type, finding, aiFinding, isAnalyzing }) => {
   if ('hasData' in finding && !finding.hasData) {
     return (
-      <Card className="p-4 bg-secondary/50 flex flex-col">
+      <Card className="p-4 bg-secondary/50 flex flex-col transition-all hover:-translate-y-0.5 hover:bg-secondary/70 hover:shadow-xl hover:shadow-primary/15">
         <CardTitle className="text-base flex items-center justify-between">
           {type} <Badge variant="secondary">No Data</Badge>
         </CardTitle>
         <div className="flex-grow flex flex-col items-center justify-center text-center text-muted-foreground my-4">
           <Scale className="h-8 w-8 text-muted-foreground/50 mb-2" />
           <p className="text-sm font-semibold">Log workouts to analyze</p>
-          <p className="text-xs text-muted-foreground mt-1">Requires 6 weeks of data</p>
+          <p className="text-xs text-muted-foreground mt-1">Requires Data from Last 6 Weeks</p>
         </div>
       </Card>
     );
@@ -243,7 +243,7 @@ const StrengthBalanceFindingCard: React.FC<{
   const nextLevel = getNextStrengthLevel(dataFinding.lift1Level);
 
   return (
-    <Card className="p-4 bg-secondary/50 flex flex-col">
+    <Card className="p-4 bg-secondary/50 flex flex-col transition-all hover:-translate-y-0.5 hover:bg-secondary/70 hover:shadow-xl hover:shadow-primary/15">
       <CardTitle className="text-base">{dataFinding.imbalanceType}</CardTitle>
       <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-4 gap-y-1 pb-4">
         <p>
@@ -359,7 +359,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
               Uses 6-week average e1RM for analysis. Requires consistent workout logging.
               {generatedDate && (
                 <span className="block text-xs mt-1 text-muted-foreground/80">
-                  Last analysis on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}
+                  Last analyzed on: {format(generatedDate, "MMMM d, yyyy 'at' h:mm a")}
                 </span>
               )}
             </CardDescription>

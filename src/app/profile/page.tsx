@@ -13,6 +13,7 @@ import { useUserProfile } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 import { useAuth } from "@/lib/auth.service";
+import { HeroHeader } from "@/components/layout/HeroHeader";
 
 
 export default function ProfilePage() {
@@ -71,10 +72,11 @@ export default function ProfilePage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      <header className="mb-8">
-        <h1 className="font-headline text-3xl font-bold text-primary">Profile</h1>
-        <p className="text-muted-foreground">Manage your account, preferences, and fitness goals.</p>
-      </header>
+      <HeroHeader
+        className="mb-8"
+        title="Profile"
+        subtitle="Manage your account, preferences, and fitness goals."
+      />
 
       {isLoadingProfile ? (
         <div className="flex justify-center items-center h-64">

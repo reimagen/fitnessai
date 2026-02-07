@@ -69,7 +69,7 @@ export default function RootLayout({
           <AuthProvider>
             <AuthGate>
               <div className="flex min-h-screen flex-col">
-                <main className="flex-grow pb-20 pt-4">{children}</main>
+                <main className="flex-grow pb-24 pt-4">{children}</main>
                 <BottomNavigationBar />
               </div>
             </AuthGate>

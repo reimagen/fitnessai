@@ -208,7 +208,13 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
             </Button>
           </div>
         ) : !isEditing ? (
-          <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} aria-label="Edit goals">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsEditing(true)}
+            aria-label="Edit goals"
+            className="hover:bg-primary hover:text-primary-foreground"
+          >
             <Edit2 className="h-5 w-5" />
           </Button>
         ) : null}

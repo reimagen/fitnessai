@@ -10,6 +10,7 @@ import Link from "next/link";
 import { PlanGeneratorSection } from "@/components/plan/PlanGeneratorSection";
 import { GeneratedPlanSection } from "@/components/plan/GeneratedPlanSection";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
+import { HeroHeader } from "@/components/layout/HeroHeader";
 
 
 export default function PlanPage() {
@@ -32,10 +33,13 @@ export default function PlanPage() {
   if (isProfileNotFound) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <header className="mb-12">
-          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Get Your AI Plan</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Create a profile to generate a personalized workout plan.</p>
-        </header>
+        <HeroHeader
+          className="mb-12"
+          align="center"
+          size="lg"
+          title="Get Your AI Plan"
+          subtitle="Create a profile to generate a personalized workout plan."
+        />
         <Card className="shadow-lg max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="font-headline">Create Your Profile First</CardTitle>
@@ -59,10 +63,11 @@ export default function PlanPage() {
   return (
     <ErrorBoundary feature="plan">
       <div className="container mx-auto px-4 py-8 space-y-8">
-        <header className="mb-8">
-          <h1 className="font-headline text-3xl font-bold text-primary">Weekly Plan</h1>
-          <p className="text-muted-foreground">Workouts are based on your recent 6-week progress and workout preferences.</p>
-        </header>
+        <HeroHeader
+          className="mb-8"
+          title="Weekly Plan"
+          subtitle="Workouts are based on your recent 6-week progress and workout preferences."
+        />
 
         <PlanGeneratorSection
           userProfile={userProfile}

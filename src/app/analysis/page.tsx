@@ -25,6 +25,7 @@ import { useChartData } from '@/hooks/useChartData';
 import { useCardioAnalysis } from '@/hooks/useCardioAnalysis';
 import { formatCardioDuration } from '@/analysis/formatting-utils';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
+import { HeroHeader } from '@/components/layout/HeroHeader';
 
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('weekly');
@@ -90,10 +91,13 @@ export default function AnalysisPage() {
   if (isProfileNotFound) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <header className="mb-12">
-          <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Unlock Your Analysis</h1>
-          <p className="mt-2 text-lg text-muted-foreground">Create a profile to view your progress and get AI-powered insights.</p>
-        </header>
+        <HeroHeader
+          className="mb-12"
+          align="center"
+          size="lg"
+          title="Unlock Your Analysis"
+          subtitle="Create a profile to view your progress and get AI-powered insights."
+        />
         <Card className="shadow-lg max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="font-headline">Create Your Profile First</CardTitle>
@@ -117,10 +121,11 @@ export default function AnalysisPage() {
   return (
     <ErrorBoundary feature="analysis">
       <div className="container mx-auto px-4 py-8">
-        <header className="mb-8">
-          <h1 className="font-headline text-3xl font-bold text-primary">Workout Analysis</h1>
-          <p className="text-muted-foreground">Visualize your fitness journey and stay motivated.</p>
-        </header>
+        <HeroHeader
+          className="mb-8"
+          title="Workout Analysis"
+          subtitle="Visualize your fitness journey and stay motivated."
+        />
       <div className="mb-6">
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[180px] bg-card shadow">
