@@ -52,11 +52,9 @@ export default async function HomePage() {
         subtitle="Continue your fitness journey."
       />
 
-      {profile?.fitnessGoals && (
-        <div className="mb-8">
-          <LapsedGoalBanner goals={profile.fitnessGoals} />
-        </div>
-      )}
+      <div className="mb-8">
+        <LapsedGoalBanner />
+      </div>
 
       <section>
         <Card className="shadow-lg">

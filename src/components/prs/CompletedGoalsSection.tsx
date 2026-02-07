@@ -1,13 +1,15 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, Flag } from "lucide-react";
 import { format } from "date-fns";
-import type { FitnessGoal } from "@/lib/types";
+import { useGoals } from "@/lib/firestore.service";
+import { useMemo } from "react";
 
-type CompletedGoalsSectionProps = {
-  completedGoals: FitnessGoal[];
-};
+export function CompletedGoalsSection() {
+  const { data: goals = [] } = useGoals();
+  const completedGoals = useMemo(() => goals.filter(g => g.achieved), [goals]);
 
-export function CompletedGoalsSection({ completedGoals }: CompletedGoalsSectionProps) {
   return (
     <Card className="shadow-lg">
       <CardHeader>

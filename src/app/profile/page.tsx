@@ -9,11 +9,12 @@ import { ProfileCompletionNotice } from "@/components/profile/ProfileCompletionN
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react";
-import { useUserProfile } from "@/lib/firestore.service";
+import { useUserProfile, useGoals, useSaveGoals } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
 import { useAuth } from "@/lib/auth.service";
 import { HeroHeader } from "@/components/layout/HeroHeader";
+import { useToast } from "@/hooks/useToast";
 
 
 export default function ProfilePage() {
@@ -21,13 +22,27 @@ export default function ProfilePage() {
   const userProfile = profileResult?.data;
   const { updateProfile, isPending } = useProfileUpdate();
   const { user, signOut: handleSignOut } = useAuth();
+  const { data: fitnessGoals = [] } = useGoals();
+  const saveGoalsMutation = useSaveGoals();
+  const { toast } = useToast();
 
   const handleGoalsUpdate = (updatedGoals: FitnessGoal[]) => {
     if (!user) return;
-    updateProfile(
-      { fitnessGoals: updatedGoals },
-      { successTitle: "Goals Updated!", successDescription: "Your fitness goals have been saved." }
-    );
+    saveGoalsMutation.mutate(updatedGoals, {
+      onSuccess: () => {
+        toast({
+          title: "Goals Updated!",
+          description: "Your fitness goals have been saved.",
+        });
+      },
+      onError: (error) => {
+        toast({
+          title: "Update Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   const handleProfileDetailsUpdate = (updatedDetails: Partial<Pick<UserProfile, 'name' | 'joinedDate' | 'age' | 'gender' | 'heightValue' | 'heightUnit' | 'weightValue' | 'weightUnit' | 'skeletalMuscleMassValue' | 'skeletalMuscleMassUnit' | 'bodyFatPercentage'>>) => {
@@ -113,7 +128,7 @@ export default function ProfilePage() {
           />
           <div id="goals">
             <GoalSetterCard
-              initialGoals={userProfile.fitnessGoals}
+              initialGoals={fitnessGoals}
               onGoalsChange={handleGoalsUpdate}
               userProfile={userProfile}
             />

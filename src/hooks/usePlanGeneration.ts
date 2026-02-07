@@ -3,8 +3,8 @@ import { addWeeks, format, startOfWeek } from "date-fns";
 import { generateWeeklyWorkoutPlanAction } from "@/app/plan/actions";
 import { constructUserProfileContext } from "@/app/plan/utils/userProfileContext";
 import { useAuth } from "@/lib/auth.service";
-import { useUpdateUserProfile } from "@/lib/firestore.service";
-import type { PersonalRecord, StoredWeeklyPlan, UserProfile, WorkoutLog } from "@/lib/types";
+import { useSaveWeeklyPlan } from "@/lib/firestore.service";
+import type { PersonalRecord, StoredWeeklyPlan, StoredStrengthAnalysis, UserProfile, WorkoutLog } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 
 export type PlanWeekPreference = "current" | "next";
@@ -13,6 +13,7 @@ type UsePlanGenerationArgs = {
   userProfile: UserProfile | null | undefined;
   workoutLogs: WorkoutLog[] | undefined;
   personalRecords: PersonalRecord[] | undefined;
+  strengthAnalysis: StoredStrengthAnalysis | null | undefined;
   isLoadingProfile: boolean;
   isLoadingWorkouts: boolean;
   isLoadingPrs: boolean;
@@ -36,13 +37,14 @@ export function usePlanGeneration({
   userProfile,
   workoutLogs,
   personalRecords,
+  strengthAnalysis,
   isLoadingProfile,
   isLoadingWorkouts,
   isLoadingPrs,
 }: UsePlanGenerationArgs): UsePlanGenerationResult {
   const { toast } = useToast();
   const { user } = useAuth();
-  const updateUserMutation = useUpdateUserProfile();
+  const saveWeeklyPlanMutation = useSaveWeeklyPlan();
 
   const [planWeekPreference, setPlanWeekPreference] = useState<PlanWeekPreference>("current");
   const currentWeekStartDate = useMemo(() => {
@@ -67,9 +69,9 @@ export function usePlanGeneration({
       userProfile,
       workoutLogs,
       personalRecords,
-      userProfile.strengthAnalysis?.result
+      strengthAnalysis?.result
     );
-  }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
+  }, [userProfile, workoutLogs, personalRecords, strengthAnalysis, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
     if (!userProfileContextString || !currentWeekStartDate) {
@@ -109,16 +111,23 @@ export function usePlanGeneration({
           weekStartDate: currentWeekStartDate,
         };
 
-        updateUserMutation.mutate(
-          { weeklyPlan: newPlanData },
+        saveWeeklyPlanMutation.mutate(
+          newPlanData,
           {
             onSuccess: () => {
               setRegenerationFeedback("");
-              toast({ title: "Plan Generated!", description: "Your new weekly workout plan is ready and saved to your profile." });
+              toast({
+                title: "Plan Generated!",
+                description: "Your new weekly workout plan is ready and saved."
+              });
             },
             onError: saveError => {
-              setError(`Failed to save the plan to your profile: ${saveError.message}`);
-              toast({ title: "Save Failed", description: `Could not save plan: ${saveError.message}`, variant: "destructive" });
+              setError(`Failed to save the plan: ${saveError.message}`);
+              toast({
+                title: "Save Failed",
+                description: `Could not save plan: ${saveError.message}`,
+                variant: "destructive"
+              });
             },
           }
         );
@@ -147,7 +156,7 @@ export function usePlanGeneration({
     setRegenerationFeedback,
     error,
     isGenerating: apiIsLoading,
-    isSavingPlan: updateUserMutation.isPending,
+    isSavingPlan: saveWeeklyPlanMutation.isPending,
     handleGeneratePlan,
   };
 }

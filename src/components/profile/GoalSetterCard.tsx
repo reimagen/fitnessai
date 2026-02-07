@@ -9,7 +9,7 @@ import type { AnalyzeFitnessGoalsInput, FitnessGoal, UserProfile } from "@/lib/t
 import { useEffect, useMemo, useState } from "react";
 import { addDays, format as formatDate, subWeeks } from "date-fns";
 import { useToast } from "@/hooks/useToast";
-import { useAnalyzeGoals, usePersonalRecords, useWorkouts } from "@/lib/firestore.service";
+import { useAnalyzeGoals, usePersonalRecords, useWorkouts, useGoalAnalysis } from "@/lib/firestore.service";
 import { useIsMobile } from "@/hooks/useMobile";
 import { GoalAnalysisSection } from "@/components/profile/GoalAnalysisSection";
 import { GoalFormSection, type AchieveGoalState } from "@/components/profile/GoalFormSection";
@@ -27,6 +27,7 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   const [acceptedSuggestions, setAcceptedSuggestions] = useState<string[]>([]);
   const [achieveGoalState, setAchieveGoalState] = useState<AchieveGoalState | null>(null);
   const analyzeGoalsMutation = useAnalyzeGoals();
+  const { data: goalAnalysisData } = useGoalAnalysis();
   const { data: personalRecords } = usePersonalRecords();
 
   // Fetch only the last 4 weeks of workout logs for AI context
@@ -50,8 +51,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
   });
 
   const activeGoalsForAnalysis = useMemo(() => {
-    return (userProfile.fitnessGoals || []).filter(g => !g.achieved);
-  }, [userProfile.fitnessGoals]);
+    return initialGoals.filter(g => !g.achieved);
+  }, [initialGoals]);
 
   const handleSetPrimary = (selectedIndex: number) => {
     const currentGoals = form.getValues("goals");
@@ -185,8 +186,8 @@ export function GoalSetterCard({ initialGoals, onGoalsChange, userProfile }: Goa
     });
   };
 
-  const analysisToRender = userProfile?.goalAnalysis?.result;
-  const analysisGeneratedDate = userProfile?.goalAnalysis?.generatedDate;
+  const analysisToRender = goalAnalysisData?.result;
+  const analysisGeneratedDate = goalAnalysisData?.generatedDate;
 
   return (
     <Card className="shadow-lg">

@@ -1,17 +1,14 @@
 "use client";
 
-import { FitnessGoal } from "@/lib/types";
 import { Target } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
 import { getLapsedGoals, sortGoalsByUrgency } from "./goal-utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useGoals } from "@/lib/firestore.service";
 
-interface LapsedGoalBannerProps {
-  goals: FitnessGoal[];
-}
-
-export function LapsedGoalBanner({ goals }: LapsedGoalBannerProps) {
+export function LapsedGoalBanner() {
+  const { data: goals = [] } = useGoals();
   const lapsedGoals = getLapsedGoals(goals);
 
   // Don't render if no lapsed goals

@@ -20,9 +20,13 @@ import {
     updateUserProfile,
     analyzeLiftProgressionAction,
     analyzeGoalsAction,
+    getGoalsAction,
+    saveGoalsAction,
 } from '@/app/profile/actions';
-import { analyzeStrengthAction, getLiftStrengthLevelAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel } from './types';
+import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
+import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
+import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction } from '@/app/profile/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis, FitnessGoal } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -386,11 +390,12 @@ export function useAnalyzeLiftProgression() {
             }
             return result;
         },
-        onSuccess: async () => {
+        onSuccess: async (_, values) => {
             toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
 
             // Immediately invalidate the profile cache to force a fresh fetch
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, values.exerciseName] });
 
             // Wait a moment for the server to be updated, then refetch
             // This ensures we get the latest data from Firebase
@@ -427,6 +432,7 @@ export function useAnalyzeStrength() {
         onSuccess: () => {
             toast({ title: "Strength Analysis Complete!", description: "Your AI-powered insights have been generated." });
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['strengthAnalysis', user?.uid] });
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
@@ -455,16 +461,218 @@ export function useAnalyzeGoals() {
         onSuccess: () => {
             toast({ title: "Goal Analysis Complete!", description: "Your AI-powered feedback is ready." });
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['goalAnalysis', user?.uid] });
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
-            toast({ 
+            toast({
                 title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
-                description: error.message, 
-                variant: "destructive" 
+                description: error.message,
+                variant: "destructive"
             });
         },
     });
+}
+
+export function useWeeklyPlan(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredWeeklyPlan | null, Error>({
+    queryKey: ['weeklyPlan', user?.uid],
+    queryFn: async () => {
+      if (!user) return null;
+      const result = await getWeeklyPlanAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch weekly plan');
+      }
+      return result.data || null;
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveWeeklyPlan() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation<void, Error, StoredWeeklyPlan>({
+    mutationFn: async (planData: StoredWeeklyPlan) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveWeeklyPlanAction(user.uid, planData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save weekly plan');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weeklyPlan', user?.uid] });
+    },
+  });
+}
+
+export function useStrengthAnalysis(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredStrengthAnalysis | undefined, Error>({
+    queryKey: ['strengthAnalysis', user?.uid],
+    queryFn: async () => {
+      if (!user) return undefined;
+      const result = await getStrengthAnalysisAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch strength analysis');
+      }
+      return result.data;
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveStrengthAnalysis() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation<void, Error, StoredStrengthAnalysis>({
+    mutationFn: async (analysisData: StoredStrengthAnalysis) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveStrengthAnalysisAction(user.uid, analysisData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save strength analysis');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['strengthAnalysis', user?.uid] });
+    },
+  });
+}
+
+export function useGoalAnalysis(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredGoalAnalysis | undefined, Error>({
+    queryKey: ['goalAnalysis', user?.uid],
+    queryFn: async () => {
+      if (!user) return undefined;
+      const result = await getGoalAnalysisAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch goal analysis');
+      }
+      return result.data;
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes - ensure fresh analysis data
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    refetchOnMount: 'always', // Always refetch on mount to ensure latest analysis
+  });
+}
+
+export function useSaveGoalAnalysis() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation<void, Error, StoredGoalAnalysis>({
+    mutationFn: async (analysisData: StoredGoalAnalysis) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveGoalAnalysisAction(user.uid, analysisData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save goal analysis');
+      }
+    },
+    onSuccess: async () => {
+      // Invalidate cache with active refetch to force immediate update
+      await queryClient.invalidateQueries({
+        queryKey: ['goalAnalysis', user?.uid],
+        refetchType: 'active',
+      });
+    },
+  });
+}
+
+export function useGetLiftProgressionAnalysis(exerciseName: string, enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredLiftProgressionAnalysis | undefined, Error>({
+    queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName],
+    queryFn: async () => {
+      if (!user || !exerciseName) return undefined;
+      const result = await getLiftProgressionAnalysisAction(user.uid, exerciseName);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch lift progression analysis');
+      }
+      return result.data;
+    },
+    enabled: !!user && !!exerciseName && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveLiftProgressionAnalysis() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation<void, Error, { exerciseName: string; analysisData: StoredLiftProgressionAnalysis }>({
+    mutationFn: async ({ exerciseName, analysisData }) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveLiftProgressionAnalysisAction(user.uid, exerciseName, analysisData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save lift progression analysis');
+      }
+    },
+    onSuccess: (_, { exerciseName }) => {
+      queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName] });
+    },
+  });
+}
+
+export function useGoals(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<FitnessGoal[], Error>({
+    queryKey: ['goals', user?.uid],
+    queryFn: async () => {
+      if (!user) return [];
+      const result = await getGoalsAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch goals');
+      }
+      return result.data || [];
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes - ensure fresh data more frequently
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
+  });
+}
+
+export function useSaveGoals() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation<void, Error, FitnessGoal[]>({
+    mutationFn: async (goalsData: FitnessGoal[]) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveGoalsAction(user.uid, goalsData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save goals');
+      }
+    },
+    onSuccess: async () => {
+      // Invalidate cache with active refetch to force immediate update
+      await queryClient.invalidateQueries({
+        queryKey: ['goals', user?.uid],
+        refetchType: 'active',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['profile', user?.uid],
+        refetchType: 'active',
+      });
+    },
+  });
 }
 
 export function useLiftStrengthLevelFromE1RM(

@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UserPlus } from "lucide-react";
 import { parsePersonalRecordsAction } from "./actions";
@@ -23,8 +22,6 @@ export default function MilestonesPage() {
 
   // Enable PR fetching only if the profile has loaded and exists.
   const { data: allRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(!isLoadingProfile && !!userProfile);
-
-  const completedGoals = useMemo(() => userProfile?.fitnessGoals?.filter(g => g.achieved) || [], [userProfile]);
 
   if (isLoadingProfile) {
       return (
@@ -90,7 +87,7 @@ export default function MilestonesPage() {
         isError={isErrorPrs}
       />
 
-      <CompletedGoalsSection completedGoals={completedGoals} />
+      <CompletedGoalsSection />
     </div>
   );
 }

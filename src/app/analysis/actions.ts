@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
-import { updateUserProfile, incrementUsageCounter } from "@/lib/firestore-server";
+import { incrementUsageCounter, getStrengthAnalysis, saveStrengthAnalysis } from "@/lib/firestore-server";
 import { getStrengthLevel } from "@/lib/strength-standards.server";
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
@@ -74,8 +74,8 @@ export async function analyzeStrengthAction(
         generatedDate: new Date(),
       };
 
-      // After getting analysis, save it to the user's profile in Firestore
-      await updateUserProfile(userId, { strengthAnalysis: storedAnalysis });
+      // Save analysis to subcollection
+      await saveStrengthAnalysis(userId, storedAnalysis);
 
       // Increment usage counter on success
       await incrementUsageCounter(userId, 'strengthAnalyses');
@@ -146,5 +146,72 @@ export async function getLiftStrengthLevelAction(
 
     const level = await getStrengthLevel(syntheticRecord, profileForLevel);
     return { success: true, data: level };
+  });
+}
+
+const SaveStrengthAnalysisSchema = z.object({
+  result: z.any(),
+  generatedDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+});
+
+export async function getStrengthAnalysisAction(
+  userId: string
+): Promise<{ success: boolean; data?: StoredStrengthAnalysis; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "analysis/getStrengthAnalysisAction",
+    feature: "strengthAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      // Enable lazy backfill during migration period
+      const analysis = await getStrengthAnalysis(userId, { enableLazyBackfill: true });
+      return { success: true, data: analysis || undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch strength analysis"
+      };
+    }
+  });
+}
+
+export async function saveStrengthAnalysisAction(
+  userId: string,
+  analysisData: StoredStrengthAnalysis
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "analysis/saveStrengthAnalysisAction",
+    feature: "strengthAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveStrengthAnalysisSchema.safeParse(analysisData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid analysis data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveStrengthAnalysis(userId, validatedData.data as StoredStrengthAnalysis);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save strength analysis"
+      };
+    }
   });
 }

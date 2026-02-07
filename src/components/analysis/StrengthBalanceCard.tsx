@@ -22,6 +22,7 @@ interface StrengthBalanceCardProps {
   workoutLogs: WorkoutLog[] | undefined;
   strengthAnalysis: { result: StrengthImbalanceOutput; generatedDate: Date } | undefined;
   exercises: ExerciseDocument[];
+  fitnessGoals?: import('@/lib/types').FitnessGoal[];
 }
 
 type ClientSideFinding = StrengthFinding | { imbalanceType: ImbalanceType; hasData: false };
@@ -192,7 +193,7 @@ const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProf
   return findings;
 };
 
-const buildStrengthAnalysisInput = (userProfile: UserProfile, clientSideFindings: ClientSideFinding[]): StrengthImbalanceInput => {
+const buildStrengthAnalysisInput = (userProfile: UserProfile, clientSideFindings: ClientSideFinding[], fitnessGoals: import('@/lib/types').FitnessGoal[] = []): StrengthImbalanceInput => {
   const validFindings = clientSideFindings.filter(f => !('hasData' in f)) as StrengthFinding[];
 
   return {
@@ -207,7 +208,7 @@ const buildStrengthAnalysisInput = (userProfile: UserProfile, clientSideFindings
       weightUnit: userProfile.weightUnit,
       skeletalMuscleMassValue: userProfile.skeletalMuscleMassValue,
       skeletalMuscleMassUnit: userProfile.skeletalMuscleMassUnit,
-      fitnessGoals: (userProfile.fitnessGoals || [])
+      fitnessGoals: fitnessGoals
         .filter(g => !g.achieved)
         .map(g => ({
           description: g.description,
@@ -324,6 +325,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
   workoutLogs,
   strengthAnalysis,
   exercises,
+  fitnessGoals = [],
 }) => {
   const { toast } = useToast();
   const analyzeStrengthMutation = useAnalyzeStrength();
@@ -338,7 +340,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
         toast({ title: "Profile Not Loaded", description: "Your user profile is not available. Please try again.", variant: "destructive" });
         return;
     }
-    const analysisInput = buildStrengthAnalysisInput(userProfile, clientSideFindings);
+    const analysisInput = buildStrengthAnalysisInput(userProfile, clientSideFindings, fitnessGoals);
     analyzeStrengthMutation.mutate(analysisInput);
   };
 

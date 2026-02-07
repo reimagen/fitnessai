@@ -27,11 +27,6 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 ## P1: Testing & QA
 
 - ✅ Add `npm run test` pipeline (unit + minimal integration)
-- Smoke tests for:
-  - auth sign-in/out and profile creation
-  - workout log creation/edit/delete
-  - screenshot parsing for workout logs and PRs
-  - strength analysis + plan generation
 - ✅ Add CI checks: `lint`, `typecheck`, `build`
 
 ## P1: Performance & Cost Control 
@@ -39,9 +34,22 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - ✅ Add caching + TTL verification for exercise registry reads
 - Monitor Firestore read/write costs in prod (dashboard + alerts)
 - ✅ Add rate limits for AI features (verified coverage via script; production limit-hit testing still pending)
+- Smoke tests for:
+  - auth sign-in/out and profile creation
+  - workout log creation/edit/delete
+  - screenshot parsing for workout logs and PRs
+  - strength analysis + plan generation
 
-## P1.5: Collections-split.md
-- /Users/lisagu/Projects/fitnessai-1/docs/collections-split.md
+## P1.5: Collections Split (Firebase Optimization)
+- ✅ **Phase 1: Weekly Plans** - Move `weeklyPlan` from user profile to `/users/{userId}/weeklyPlans/current` subcollection
+  - ✅ Add weeklyPlanConverter for Timestamp handling
+  - ✅ Implement getWeeklyPlan (with fallback + lazy backfill), saveWeeklyPlan, deleteWeeklyPlan
+  - ✅ Add server actions with Zod validation
+  - ✅ Add React Query hooks with 7-day caching
+  - ✅ Update components to use new data path
+  - ✅ Context truncation to 500 chars to reduce document size
+  - ✅ Full backwards compatibility via lazy backfill
+  - 📋 Remaining phases: analyses (strength, goals, lift progression), personal records
 
 ## P2: Product & Operations
 

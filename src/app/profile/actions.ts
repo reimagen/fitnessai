@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
-import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
+import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter, getGoalAnalysis, saveGoalAnalysis, getLiftProgressionAnalysis, saveLiftProgressionAnalysis, getFitnessGoals, saveFitnessGoals} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import { logger } from "@/lib/logging/logger";
@@ -165,19 +165,8 @@ export async function analyzeLiftProgressionAction(
 
       const exerciseKey = await getNormalizedExerciseName(values.exerciseName);
 
-      const updatePayload = {
-        liftProgressionAnalysis: {
-          [exerciseKey]: storedAnalysis
-        }
-      };
-
-      await logger.info("Saving lift progression analysis", {
-        ...context,
-        exerciseKey,
-        updatePayload: JSON.stringify(updatePayload),
-      });
-
-      await updateUserProfileFromServer(userId, updatePayload);
+      // Save analysis to subcollection
+      await saveLiftProgressionAnalysis(userId, exerciseKey, storedAnalysis);
 
       await logger.info("Lift progression analysis saved successfully", {
         ...context,
@@ -254,11 +243,11 @@ export async function analyzeGoalsAction(
         result: analysisData,
         generatedDate: new Date(),
       };
-      
-      await incrementUsageCounter(userId, 'goalAnalyses');
 
-      // Save the analysis result to the user's profile
-      await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
+      // Save analysis to subcollection
+      await saveGoalAnalysis(userId, storedAnalysis);
+
+      await incrementUsageCounter(userId, 'goalAnalyses');
 
       // Invalidate server-side cache
       revalidateTag(`user-profile-${userId}`, "max");
@@ -281,6 +270,210 @@ export async function analyzeGoalsAction(
       }
 
       return { success: false, error: classified.userMessage };
+    }
+  });
+}
+
+const SaveGoalAnalysisSchema = z.object({
+  result: z.any(),
+  generatedDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+});
+
+export async function getGoalAnalysisAction(
+  userId: string
+): Promise<{ success: boolean; data?: StoredGoalAnalysis; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/getGoalAnalysisAction",
+    feature: "goalAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      const analysis = await getGoalAnalysis(userId, { enableLazyBackfill: true });
+      return { success: true, data: analysis || undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch goal analysis"
+      };
+    }
+  });
+}
+
+export async function saveGoalAnalysisAction(
+  userId: string,
+  analysisData: StoredGoalAnalysis
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/saveGoalAnalysisAction",
+    feature: "goalAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveGoalAnalysisSchema.safeParse(analysisData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid analysis data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveGoalAnalysis(userId, validatedData.data as StoredGoalAnalysis);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save goal analysis"
+      };
+    }
+  });
+}
+
+const SaveLiftProgressionAnalysisSchema = z.object({
+  result: z.any(),
+  generatedDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+});
+
+export async function getLiftProgressionAnalysisAction(
+  userId: string,
+  exerciseName: string
+): Promise<{ success: boolean; data?: StoredLiftProgressionAnalysis; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/getLiftProgressionAnalysisAction",
+    feature: "liftProgressionAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      const analysis = await getLiftProgressionAnalysis(userId, exerciseName, { enableLazyBackfill: true });
+      return { success: true, data: analysis || undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch lift progression analysis"
+      };
+    }
+  });
+}
+
+export async function saveLiftProgressionAnalysisAction(
+  userId: string,
+  exerciseName: string,
+  analysisData: StoredLiftProgressionAnalysis
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/saveLiftProgressionAnalysisAction",
+    feature: "liftProgressionAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveLiftProgressionAnalysisSchema.safeParse(analysisData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid analysis data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveLiftProgressionAnalysis(userId, exerciseName, validatedData.data as StoredLiftProgressionAnalysis);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save lift progression analysis"
+      };
+    }
+  });
+}
+
+const SaveGoalsSchema = z.array(z.object({
+  id: z.string(),
+  description: z.string(),
+  targetDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+  achieved: z.boolean(),
+  dateAchieved: z.union([z.date(), z.string().datetime(), z.null(), z.undefined()]).transform(d => d ? new Date(d) : undefined).optional(),
+  isPrimary: z.boolean().optional(),
+}));
+
+export async function getGoalsAction(
+  userId: string
+): Promise<{ success: boolean; data?: FitnessGoal[]; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/getGoalsAction",
+    feature: "goals",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      const goals = await getFitnessGoals(userId, { enableLazyBackfill: true });
+      return { success: true, data: goals };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch goals"
+      };
+    }
+  });
+}
+
+export async function saveGoalsAction(
+  userId: string,
+  goalsData: FitnessGoal[]
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/saveGoalsAction",
+    feature: "goals",
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveGoalsSchema.safeParse(goalsData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid goals data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveFitnessGoals(userId, validatedData.data);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save goals"
+      };
     }
   });
 }
