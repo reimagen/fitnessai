@@ -64,6 +64,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    /* Add depth without hardcoded colors: use existing theme tokens with alpha. */
+    background-image:
+      radial-gradient(1100px 700px at 18% -10%, hsl(var(--primary) / 0.18), transparent 58%),
+      radial-gradient(900px 600px at 90% 10%, hsl(var(--accent) / 0.16), transparent 55%),
+      radial-gradient(1000px 700px at 50% 110%, hsl(var(--chart-4) / 0.12), transparent 60%);
+    background-attachment: fixed;
   }
 }

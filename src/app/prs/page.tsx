@@ -13,6 +13,7 @@ import Link from "next/link";
 import { PrsFormSection } from "@/components/prs/PrsFormSection";
 import { PersonalRecordsSection } from "@/components/prs/PersonalRecordsSection";
 import { CompletedGoalsSection } from "@/components/prs/CompletedGoalsSection";
+import { HeroHeader } from "@/components/layout/HeroHeader";
 
 export default function MilestonesPage() {
   const { user } = useAuth();
@@ -44,10 +45,13 @@ export default function MilestonesPage() {
   if (profileResult?.notFound) {
       return (
         <div className="container mx-auto px-4 py-8 text-center">
-            <header className="mb-12">
-                <h1 className="font-headline text-4xl font-bold text-primary md:text-5xl">Track Your Milestones</h1>
-                <p className="mt-2 text-lg text-muted-foreground">Create a profile to start logging personal records and achievements.</p>
-            </header>
+            <HeroHeader
+              className="mb-12"
+              align="center"
+              size="lg"
+              title="Track Your Milestones"
+              subtitle="Create a profile to start logging personal records and achievements."
+            />
             <Card className="shadow-lg max-w-md mx-auto">
                 <CardHeader>
                     <CardTitle className="font-headline">Create Your Profile First</CardTitle>
@@ -70,10 +74,11 @@ export default function MilestonesPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
-      <header className="mb-4">
-        <h1 className="font-headline text-3xl font-bold text-primary">Milestones & Achievements</h1>
-        <p className="text-muted-foreground">Log your best lifts and completed goals, with strength level classifications.</p>
-      </header>
+      <HeroHeader
+        className="mb-4"
+        title="Milestones & Achievements"
+        subtitle="Log your best lifts and completed goals, with strength level classifications."
+      />
 
       <PrsFormSection onParse={parsePersonalRecordsAction} />
 

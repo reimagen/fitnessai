@@ -126,7 +126,15 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     return result.trim();
   };
 
-  const MobileGroupedExerciseView = ({ name, data }: { name: string; data: { category: string; totalCalories: number; sets: Exercise[] } }) => {
+  const MobileGroupedExerciseView = ({
+    name,
+    data,
+    showDivider = true,
+  }: {
+    name: string;
+    data: { category: string; totalCalories: number; sets: Exercise[] };
+    showDivider?: boolean;
+  }) => {
     const isSingleEntry = data.sets.length === 1;
 
     if (isSingleEntry) {
@@ -147,7 +155,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
       ].filter(Boolean);
 
       return (
-        <div className="py-3 border-b">
+        <div className={cn("py-3", showDivider && "border-b")}>
           <p className="font-semibold">
             <span className="text-primary">{name}</span>
             <span className="text-muted-foreground">
@@ -171,7 +179,7 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
     ].filter(Boolean);
 
     return (
-      <div className="py-3 border-b">
+      <div className={cn("py-3", showDivider && "border-b")}>
         <p className="font-semibold">
           <span className="text-primary">{name}</span>
           {headerParts.length > 0 && <span className="text-muted-foreground">{' • '}{headerParts.join(' • ')}</span>}
@@ -201,10 +209,14 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   return (
     <Accordion type="single" collapsible className="w-full space-y-4">
       {groupedExercisesByLog.map((log) => (
-        <AccordionItem value={log.id} key={log.id} className="border rounded-2xl shadow-sm bg-card overflow-hidden">
-          <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4">
+        <AccordionItem
+          value={log.id}
+          key={log.id}
+          className="group border rounded-2xl shadow-sm bg-card overflow-hidden transition-all hover:-translate-y-0.5 hover:bg-secondary/30 hover:shadow-md hover:shadow-primary/10"
+        >
+          <AccordionPrimitive.Header className="flex items-center justify-between px-6 py-4 transition-colors">
             <AccordionPrimitive.Trigger className={cn(
-              "flex flex-1 items-center justify-between p-0 text-left font-medium transition-all hover:underline rounded-sm",
+              "flex flex-1 items-center justify-between p-0 text-left font-medium transition-colors rounded-xl",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-offset-2",
               "[&[data-state=open]>svg]:rotate-180"
             )}>
@@ -248,14 +260,19 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                 </p>
               </div>
             )}
-            {log.notes && (
-              <div className={cn("text-sm text-muted-foreground", log.uniqueExerciseCount > 1 && "mt-2")}>
-                <p className="italic">Notes: {log.notes}</p>
-              </div>
-            )}
+          {log.notes && (
+            <div className={cn("text-sm text-muted-foreground", log.uniqueExerciseCount > 1 && "mt-2")}>
+              <p className="italic">Notes: {log.notes}</p>
+            </div>
+          )}
             <div className="space-y-2">
-              {Object.entries(log.groupedExercises).map(([name, data]) => (
-                <MobileGroupedExerciseView key={name} name={name} data={data} />
+              {Object.entries(log.groupedExercises).map(([name, data], index, entries) => (
+                <MobileGroupedExerciseView
+                  key={name}
+                  name={name}
+                  data={data}
+                  showDivider={index !== entries.length - 1}
+                />
               ))}
             </div>
           </AccordionContent>

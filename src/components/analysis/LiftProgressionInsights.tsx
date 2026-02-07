@@ -17,7 +17,7 @@ export const LiftProgressionInsights: React.FC<LiftProgressionInsightsProps> = (
     <div className="space-y-4">
       {generatedDate && (
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-          <p className="text-xs text-muted-foreground">Analysis from: {format(generatedDate, "MMM d, yyyy")}</p>
+          <p className="text-xs text-muted-foreground">Last analyzed on: {format(generatedDate, "MMM d, yyyy")}</p>
         </div>
       )}
       {insight && (

@@ -73,7 +73,7 @@ const ProgressionTooltip: React.FC<ProgressionTooltipProps> = ({ active, payload
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="p-2 bg-background border rounded-md shadow-lg text-xs space-y-1">
+      <div className="bg-card/90 border border-border/60 rounded-2xl shadow-xl shadow-primary/10 backdrop-blur-sm text-xs space-y-1 px-3 py-2">
         <p className="font-bold">{data.name}</p>
         {data.isActualPR && (
           <p className="font-bold text-amber-500 flex items-center gap-1">
@@ -144,6 +144,15 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
     return null;
   }
 
+  const roundedTrendImprovement =
+    trendImprovement === null ? null : Math.round(trendImprovement);
+  const roundedVolumeTrend = volumeTrend === null ? null : Math.round(volumeTrend);
+
+  const formatSignedPercent = (value: number) => {
+    if (value === 0) return "0%";
+    return `${value > 0 ? "+" : ""}${value}%`;
+  };
+
   return (
     <div className="pt-4">
       <div className="text-center mb-2">
@@ -159,17 +168,17 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
               e1RM: <Badge variant={getLevelBadgeVariant('Beginner')}>{Math.round(avgE1RM)} lbs</Badge>
             </span>
           )}
-          {trendImprovement !== null && (
+          {roundedTrendImprovement !== null && (
             <span>
-              e1RM Trend: <Badge variant={getTrendBadgeVariant(trendImprovement)}>
-                {trendImprovement > 0 ? "+" : ""}{trendImprovement.toFixed(0)}%
+              e1RM Trend: <Badge variant={getTrendBadgeVariant(roundedTrendImprovement)}>
+                {formatSignedPercent(roundedTrendImprovement)}
               </Badge>
             </span>
           )}
-          {volumeTrend !== null && (
+          {roundedVolumeTrend !== null && (
             <span>
-              Volume Trend: <Badge variant={getTrendBadgeVariant(volumeTrend)}>
-                {volumeTrend > 0 ? "+" : ""}{volumeTrend.toFixed(0)}%
+              Volume Trend: <Badge variant={getTrendBadgeVariant(roundedVolumeTrend)}>
+                {formatSignedPercent(roundedVolumeTrend)}
               </Badge>
             </span>
           )}

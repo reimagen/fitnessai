@@ -13,7 +13,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, Loader2 } from "lucide-react";
@@ -23,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { startOfDay } from 'date-fns';
 import { StepperInput } from "@/components/ui/stepper-input";
 import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useExerciseSuggestions } from "@/hooks/useExerciseSuggestions";
 import { getExerciseCategory, getNormalizedExerciseName, classifiedExercises as fallbackClassifiedExercises } from "@/lib/strength-standards";
 import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
@@ -262,17 +262,17 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
             <FormField
             control={form.control}
             name="date"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                    <Input type="date" className="appearance-none" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
+	            render={({ field }) => (
+	                <FormItem>
+	                <FormLabel>Date</FormLabel>
+	                <FormControl>
+	                    <DatePicker value={field.value} onChange={field.onChange} disabled={isSubmitting} />
+	                </FormControl>
+	                <FormMessage />
+	                </FormItem>
+	            )}
+	            />
+	        </div>
 
         <div>
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
@@ -284,12 +284,12 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                   variant="ghost"
                   size="icon"
                   onClick={() => remove(index)}
-                  className="absolute right-2 top-2 text-destructive hover:bg-destructive/10"
+                  className="absolute right-3 top-3 text-destructive hover:bg-destructive/10"
                   aria-label="Remove exercise"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
                   <FormField
                     control={form.control}
                     name={`exercises.${index}.name`}
@@ -506,7 +506,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
               append(defaultExerciseValues, { shouldFocus: false });
               setAutoFocusIndex(newIndex);
             }}
-            className="mt-2"
+            className="mt-2 border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
           >
             <PlusCircle className="mr-2 h-4 w-4" /> Add Exercise
           </Button>

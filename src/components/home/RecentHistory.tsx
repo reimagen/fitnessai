@@ -68,7 +68,7 @@ export function RecentHistory({ workoutLogs }: RecentHistoryProps) {
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-2xl border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:p-3 md:min-h-[140px]",
+                  "rounded-2xl border bg-card p-2 shadow-sm transition-shadow hover:shadow-md hover:shadow-primary/10 flex flex-row items-center md:flex-col md:p-3 md:min-h-[140px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >

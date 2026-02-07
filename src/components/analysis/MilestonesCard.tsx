@@ -53,7 +53,10 @@ export function MilestonesCard({ isLoading, isError, newPrsData, achievedGoalsDa
             {newPrsData.length > 0 ? (
               <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
                 {newPrsData.map(pr => (
-                  <div key={pr.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                  <div
+                    key={pr.id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-secondary/50 border border-border/60 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-secondary/70 hover:shadow-md hover:shadow-primary/10"
+                  >
                     <div className="flex flex-col">
                       <p className="font-semibold text-primary">{toTitleCase(pr.exerciseName)}</p>
                       <p className="text-xs text-muted-foreground">{format(pr.date, "MMMM d, yyyy")}</p>
@@ -73,7 +76,10 @@ export function MilestonesCard({ isLoading, isError, newPrsData, achievedGoalsDa
             {achievedGoalsData.length > 0 ? (
               <div className="h-[240px] w-full overflow-y-auto pr-2 space-y-3 mt-4">
                 {achievedGoalsData.map(goal => (
-                  <div key={goal.id} className="flex items-center justify-between p-3 rounded-md bg-secondary/50">
+                  <div
+                    key={goal.id}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-secondary/50 border border-border/60 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-secondary/70 hover:shadow-md hover:shadow-primary/10"
+                  >
                     <div className="flex flex-col">
                       <p className="font-semibold text-primary">{goal.description}</p>
                       {goal.dateAchieved && <p className="text-xs text-muted-foreground">Achieved on: {format(goal.dateAchieved, "MMMM d, yyyy")}</p>}

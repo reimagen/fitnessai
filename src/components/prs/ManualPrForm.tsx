@@ -14,7 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Loader2 } from "lucide-react";
 import type { PersonalRecord, ExerciseCategory } from "@/lib/types";
@@ -27,6 +26,7 @@ import { StepperInput } from "../ui/stepper-input";
 import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
 import { formatExerciseDisplayName } from "@/lib/exercise-display";
 import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -146,17 +146,17 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
 
           <FormField
             control={form.control}
-            name="date"
-            render={({ field }) => (
+          name="date"
+          render={({ field }) => (
               <FormItem>
                 <FormLabel>Date Achieved</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <DatePicker value={field.value} onChange={field.onChange} disabled={isSubmitting} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )}
-          />
+          )}
+        />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

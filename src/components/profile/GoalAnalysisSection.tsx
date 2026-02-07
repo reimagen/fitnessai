@@ -69,7 +69,7 @@ export function GoalAnalysisSection({
                 const wasSuggestionAccepted = acceptedSuggestions.includes(insight.originalGoalDescription);
 
                 return (
-                  <div key={index} className="p-3 border rounded-2xl bg-background/50">
+                  <div key={index} className="p-3 border rounded-2xl bg-background/50 transition-all hover:-translate-y-0.5 hover:bg-secondary/30 hover:shadow-md hover:shadow-primary/10">
                     <div className="relative">
                       <div className="md:pr-36">
                         <p className="text-sm font-semibold text-muted-foreground">
@@ -87,7 +87,7 @@ export function GoalAnalysisSection({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-auto px-2 py-1 text-xs"
+                            className="h-auto px-2 py-1 text-xs border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
                             onClick={() =>
                               onAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)
                             }
@@ -127,7 +127,7 @@ export function GoalAnalysisSection({
                         <Button
                           size="sm"
                           variant="outline"
-                          className="w-full"
+                          className="w-full border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary"
                           onClick={() =>
                             onAcceptSuggestion(insight.originalGoalDescription, insight.suggestedGoal, insight.suggestedTimelineInDays)
                           }

@@ -248,7 +248,7 @@ export function WeeklyCardioTracker({ workoutLogs, userProfile }: WeeklyCardioTr
               <div
                 key={dateKey}
                 className={cn(
-                  "rounded-2xl border bg-card p-2 shadow-sm flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
+                  "rounded-2xl border bg-card p-2 shadow-sm transition-shadow hover:shadow-md hover:shadow-primary/10 flex flex-row items-center md:flex-col md:items-stretch md:p-3 md:min-h-[160px]",
                   isCurrentDay && "border-2 border-primary"
                 )}
               >

@@ -71,7 +71,7 @@ export function ExerciseCombobox({
 
   return (
     <div className="relative w-full">
-      <Command className="border rounded-xl">
+      <Command className="border rounded-xl bg-card/60 shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md hover:shadow-primary/10">
         <CommandInput
           placeholder={placeholder}
           value={inputValue}
