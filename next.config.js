@@ -14,9 +14,6 @@ const nextConfig = {
     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: webappConfig.messagingSenderId || process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '',
     NEXT_PUBLIC_FIREBASE_APP_ID: webappConfig.appId || process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '',
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     remotePatterns: [
       {
