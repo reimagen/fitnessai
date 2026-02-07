@@ -16,6 +16,9 @@
     "test:ci": "vitest run",
     "test:smoke": "playwright test",
     "test:smoke:headed": "playwright test --headed",
+    "verify:cache": "tsx scripts/verify-cache-config.ts",
+    "verify:rate-limits": "tsx scripts/verify-rate-limits.ts",
+    "setup:firestore-alerts": "tsx scripts/setup-firestore-alerts.ts",
     "migrate-exercises": "tsx scripts/migrate-exercises.ts",
     "add-cardio-aliases": "tsx scripts/add-cardio-aliases.ts",
     "add-strength-aliases": "tsx scripts/add-strength-aliases.ts",
@@ -70,6 +73,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@google-cloud/monitoring": "^4.0.0",
     "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
@@ -84,6 +88,7 @@
     "jsdom": "^26.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.20.5",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

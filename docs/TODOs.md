@@ -27,19 +27,19 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 ## P1: Testing & QA
 
-- Add `npm run test` pipeline (unit + minimal integration)
+- ✅ Add `npm run test` pipeline (unit + minimal integration)
 - Smoke tests for:
   - auth sign-in/out and profile creation
   - workout log creation/edit/delete
   - screenshot parsing for workout logs and PRs
   - strength analysis + plan generation
-- Add CI checks: `lint`, `typecheck`, `build`
+- ✅ Add CI checks: `lint`, `typecheck`, `build`
 
 ## P1: Performance & Cost Control 
 
-- Add caching + TTL verification for exercise registry reads
+- ✅ Add caching + TTL verification for exercise registry reads
 - Monitor Firestore read/write costs in prod (dashboard + alerts)
-- Add rate limits for AI features (already present) and confirm limits in prod
+- ✅ Add rate limits for AI features (verified coverage via script; production limit-hit testing still pending)
 
 ## P1.5: Collections-split.md
 - /Users/lisagu/Projects/fitnessai-1/docs/collections-split.md
