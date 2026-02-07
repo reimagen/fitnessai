@@ -93,6 +93,28 @@ const personalRecordConverter = {
   }
 };
 
+const weeklyPlanConverter = {
+  toFirestore: (plan: Omit<StoredWeeklyPlan, 'id'>) => {
+    return {
+      plan: plan.plan,
+      generatedDate: Timestamp.fromDate(plan.generatedDate),
+      contextUsed: plan.contextUsed,
+      userId: plan.userId,
+      weekStartDate: plan.weekStartDate,
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): StoredWeeklyPlan => {
+    const data = snapshot.data() || {};
+    return {
+      plan: typeof data.plan === 'string' ? data.plan : '',
+      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+      contextUsed: typeof data.contextUsed === 'string' ? data.contextUsed : '',
+      userId: typeof data.userId === 'string' ? data.userId : '',
+      weekStartDate: typeof data.weekStartDate === 'string' ? data.weekStartDate : '',
+    };
+  }
+};
+
 export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: Record<string, unknown> = { ...profile };
@@ -471,7 +493,7 @@ export const clearAllPersonalRecords = async (userId: string): Promise<void> => 
     const adminDb = getAdminDb();
     const collectionRef = adminDb.collection(`users/${userId}/personalRecords`);
     const snapshot = await collectionRef.get();
-    
+
     if (snapshot.empty) {
         return;
     }
@@ -484,6 +506,128 @@ export const clearAllPersonalRecords = async (userId: string): Promise<void> => 
     await batch.commit();
 };
 
+// Weekly Plans
+export const getWeeklyPlan = cache(async (userId: string, options?: { enableLazyBackfill?: boolean }): Promise<StoredWeeklyPlan | null> => {
+  try {
+    const adminDb = getAdminDb();
+
+    // Try new location first
+    const planDocRef = adminDb
+      .collection(`users/${userId}/weeklyPlans`)
+      .doc('current')
+      .withConverter(weeklyPlanConverter) as FirebaseFirestore.DocumentReference<StoredWeeklyPlan>;
+
+    const planSnap = await planDocRef.get();
+
+    if (planSnap.exists) {
+      return planSnap.data() || null;
+    }
+
+    // Fallback to old location (user profile document)
+    await logger.info('Weekly plan not found in subcollection, checking legacy location', {
+      route: 'firestore/getWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+    });
+
+    const userProfile = await getUserProfile(userId);
+    const legacyPlan = userProfile?.weeklyPlan;
+
+    if (!legacyPlan) {
+      return null;
+    }
+
+    // Lazy backfill if enabled
+    if (options?.enableLazyBackfill) {
+      await logger.info('Performing lazy backfill migration for weekly plan', {
+        route: 'firestore/getWeeklyPlan',
+        feature: 'weeklyPlans',
+        userId,
+      });
+
+      try {
+        await saveWeeklyPlan(userId, legacyPlan);
+      } catch (backfillError) {
+        await logger.error('Failed to backfill weekly plan', {
+          route: 'firestore/getWeeklyPlan',
+          feature: 'weeklyPlans',
+          userId,
+          error: String(backfillError),
+        });
+        // Don't throw - still return the legacy data
+      }
+    }
+
+    return legacyPlan;
+  } catch (error) {
+    await logger.error('Error fetching weekly plan', {
+      route: 'firestore/getWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+});
+
+export const saveWeeklyPlan = async (userId: string, planData: StoredWeeklyPlan): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const planDocRef = adminDb.collection(`users/${userId}/weeklyPlans`).doc('current');
+
+    // Truncate contextUsed to first 500 characters to reduce document size
+    const truncatedContext = planData.contextUsed.length > 500
+      ? planData.contextUsed.substring(0, 500) + '...[truncated]'
+      : planData.contextUsed;
+
+    const dataToStore = {
+      plan: planData.plan,
+      generatedDate: Timestamp.fromDate(planData.generatedDate),
+      contextUsed: truncatedContext,
+      userId: planData.userId,
+      weekStartDate: planData.weekStartDate,
+    };
+
+    await planDocRef.set(dataToStore);
+
+    await logger.info('Weekly plan saved to subcollection', {
+      route: 'firestore/saveWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+      contextLength: truncatedContext.length,
+    });
+  } catch (error) {
+    await logger.error('Error saving weekly plan', {
+      route: 'firestore/saveWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const deleteWeeklyPlan = async (userId: string): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const planDocRef = adminDb.collection(`users/${userId}/weeklyPlans`).doc('current');
+    await planDocRef.delete();
+
+    await logger.info('Weekly plan deleted from subcollection', {
+      route: 'firestore/deleteWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error deleting weekly plan', {
+      route: 'firestore/deleteWeeklyPlan',
+      feature: 'weeklyPlans',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
 
 // User Profile
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {

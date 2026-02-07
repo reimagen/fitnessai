@@ -21,8 +21,9 @@ import {
     analyzeLiftProgressionAction,
     analyzeGoalsAction,
 } from '@/app/profile/actions';
+import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
 import { analyzeStrengthAction, getLiftStrengthLevelAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel } from './types';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -458,13 +459,51 @@ export function useAnalyzeGoals() {
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
-            toast({ 
+            toast({
                 title: isLimitError ? "Daily Limit Reached" : "Analysis Failed",
-                description: error.message, 
-                variant: "destructive" 
+                description: error.message,
+                variant: "destructive"
             });
         },
     });
+}
+
+export function useWeeklyPlan(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredWeeklyPlan | null, Error>({
+    queryKey: ['weeklyPlan', user?.uid],
+    queryFn: async () => {
+      if (!user) return null;
+      const result = await getWeeklyPlanAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch weekly plan');
+      }
+      return result.data || null;
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveWeeklyPlan() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation<void, Error, StoredWeeklyPlan>({
+    mutationFn: async (planData: StoredWeeklyPlan) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveWeeklyPlanAction(user.uid, planData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save weekly plan');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weeklyPlan', user?.uid] });
+    },
+  });
 }
 
 export function useLiftStrengthLevelFromE1RM(

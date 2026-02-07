@@ -5,7 +5,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, UserPlus } from "lucide-react";
-import { useUserProfile, useWorkouts, usePersonalRecords } from "@/lib/firestore.service";
+import { useUserProfile, useWorkouts, usePersonalRecords, useWeeklyPlan } from "@/lib/firestore.service";
 import Link from "next/link";
 import { PlanGeneratorSection } from "@/components/plan/PlanGeneratorSection";
 import { GeneratedPlanSection } from "@/components/plan/GeneratedPlanSection";
@@ -20,9 +20,9 @@ export default function PlanPage() {
 
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
-  const generatedPlan = userProfile?.weeklyPlan;
+  const { data: generatedPlan, isLoading: isLoadingPlan } = useWeeklyPlan();
 
-  if (isLoadingProfile) {
+  if (isLoadingProfile || isLoadingPlan) {
     return (
       <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -73,6 +73,7 @@ export default function PlanPage() {
           userProfile={userProfile}
           workoutLogs={workoutLogs}
           personalRecords={personalRecords}
+          generatedPlan={generatedPlan}
           isLoadingProfile={isLoadingProfile}
           isLoadingWorkouts={isLoadingWorkouts}
           isLoadingPrs={isLoadingPrs}

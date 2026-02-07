@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Info, Loader2, Zap } from "lucide-react";
-import type { PersonalRecord, UserProfile, WorkoutLog } from "@/lib/types";
+import type { PersonalRecord, UserProfile, WorkoutLog, StoredWeeklyPlan } from "@/lib/types";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { usePlanGeneration } from "@/hooks/usePlanGeneration";
 import { WeekPreferenceToggle } from "@/components/plan/WeekPreferenceToggle";
@@ -13,6 +13,7 @@ type PlanGeneratorSectionProps = {
   userProfile: UserProfile | null | undefined;
   workoutLogs: WorkoutLog[] | undefined;
   personalRecords: PersonalRecord[] | undefined;
+  generatedPlan: StoredWeeklyPlan | null | undefined;
   isLoadingProfile: boolean;
   isLoadingWorkouts: boolean;
   isLoadingPrs: boolean;
@@ -27,6 +28,7 @@ export function PlanGeneratorSection({
   userProfile,
   workoutLogs,
   personalRecords,
+  generatedPlan,
   isLoadingProfile,
   isLoadingWorkouts,
   isLoadingPrs,
@@ -57,7 +59,6 @@ export function PlanGeneratorSection({
 
   const isLoading = isLoadingProfile || isLoadingWorkouts || isLoadingPrs;
   const isError = isErrorProfile || isErrorWorkouts || isErrorPrs;
-  const generatedPlan = userProfile?.weeklyPlan;
 
   const hasFeedback = regenerationFeedback.trim().length > 0;
   let buttonText = "Generate My Weekly Plan";
