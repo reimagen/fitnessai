@@ -4,7 +4,7 @@
 import { Loader2, UserPlus, TrendingUp } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import type { WorkoutLog } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis } from '@/lib/firestore.service';
+import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis, useGoals } from '@/lib/firestore.service';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,9 +41,10 @@ export default function AnalysisPage() {
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   const { data: exercises = [] } = useExercises(enableDataFetching);
   const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
+  const { data: fitnessGoals = [] } = useGoals(enableDataFetching);
 
   // Custom hooks for data processing
-  const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
+  const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, fitnessGoals);
   const chartData = useChartData(timeRange, filteredData.logsForPeriod, filteredData.prsForPeriod, filteredData.goalsForPeriod);
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
@@ -247,6 +248,7 @@ export default function AnalysisPage() {
                   workoutLogs={workoutLogs}
                   strengthAnalysis={strengthAnalysis}
                   exercises={exercises}
+                  fitnessGoals={fitnessGoals}
                 />
               </ErrorBoundary>
               <ErrorBoundary

@@ -563,7 +563,9 @@ export function useGoalAnalysis(enabled: boolean = true) {
       return result.data;
     },
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+    staleTime: 1000 * 60 * 5, // 5 minutes - ensure fresh analysis data
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    refetchOnMount: 'always', // Always refetch on mount to ensure latest analysis
   });
 }
 
@@ -582,8 +584,12 @@ export function useSaveGoalAnalysis() {
         throw new Error(result.error || 'Failed to save goal analysis');
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goalAnalysis', user?.uid] });
+    onSuccess: async () => {
+      // Invalidate cache with active refetch to force immediate update
+      await queryClient.invalidateQueries({
+        queryKey: ['goalAnalysis', user?.uid],
+        refetchType: 'active',
+      });
     },
   });
 }
@@ -639,7 +645,9 @@ export function useGoals(enabled: boolean = true) {
       return result.data || [];
     },
     enabled: !!user && enabled,
-    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days - goals don't change frequently
+    staleTime: 1000 * 60 * 5, // 5 minutes - ensure fresh data more frequently
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    refetchOnMount: 'always', // Always refetch on mount to ensure fresh data
   });
 }
 
@@ -658,9 +666,16 @@ export function useSaveGoals() {
         throw new Error(result.error || 'Failed to save goals');
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals', user?.uid] });
-      queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] }); // Also invalidate profile cache
+    onSuccess: async () => {
+      // Invalidate cache with active refetch to force immediate update
+      await queryClient.invalidateQueries({
+        queryKey: ['goals', user?.uid],
+        refetchType: 'active',
+      });
+      await queryClient.invalidateQueries({
+        queryKey: ['profile', user?.uid],
+        refetchType: 'active',
+      });
     },
   });
 }
