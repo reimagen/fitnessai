@@ -1,6 +1,6 @@
 # FitnessAI Ops Runbook
 
-**Last Updated**: 2026-02-05
+**Last Updated**: 2026-02-07
 **Owner**: FitnessAI Team
 
 ## Overview
@@ -48,6 +48,89 @@ logName="projects/fitnessai-prod/logs/fitnessai"
 jsonPayload.message="Health check"
 ```
 
+## Firestore Monitoring
+
+Firestore cost and performance primarily track to document reads/writes/deletes. Alerting should be based on
+your observed baseline and your budget, not a hardcoded "free tier" threshold (pricing/tiers change).
+
+**Where to Monitor**
+- **Firebase Console**: Firestore usage + billed operations, plus overall project Billing.
+- **Google Cloud Monitoring**: Metrics Explorer + Alerting.
+- **Cloud Logging**: app-level logs that indicate a specific feature/route is spiking reads.
+
+**Recommended Alert Policies (Baseline + Budget)**
+1. Establish a baseline (last 7-30 days) for:
+   - `firestore.googleapis.com/document/read_count`
+   - `firestore.googleapis.com/document/write_count`
+   - `firestore.googleapis.com/document/delete_count`
+2. Create alerts that trigger when:
+   - Daily operations are > 3x baseline (spike detection), OR
+   - Daily operations exceed a budget-driven ceiling you choose.
+
+**Useful Link**
+- Firestore dashboard: https://console.cloud.google.com/firestore/databases?project=fitnessai-prod
+
+**What to Do When Usage Spikes**
+1. Confirm it's real:
+   - Check Cloud Monitoring graphs for reads/writes/deletes over the last 1h/24h.
+2. Find the cause in app logs:
+   - Use Cloud Logging queries above and filter by the time window of the spike.
+   - Look for repeated requests to the same route or repeated server-action execution.
+3. Likely culprits:
+   - Exercise registry reads (should be cached; if this regresses, costs jump quickly).
+   - Unindexed queries (Firestore may error; app retries can amplify load).
+   - N+1 patterns in server actions (multiple per-page or per-item reads).
+4. Quick mitigations:
+   - Roll back the last deploy if the spike aligns with a release.
+   - Temporarily gate heavy features (rate limits already exist for AI features).
+   - Add/adjust caching for stable reads (see `docs/caching-strategy.md`).
+5. Follow-up:
+   - Add a regression test where feasible.
+   - Add a lightweight dashboard panel for the metric that spiked.
+
+**Local Verification (Repo)**
+- Cache config checks: `npm run verify:cache`
+- Rate limit coverage checks: `npm run verify:rate-limits`
+
+## Rate Limit Monitoring
+
+**Alert Setup** (set up via verification checklist in docs/rate-limit-verification.md)
+
+Rate limits are enforced per-user per-feature daily. Monitor usage patterns:
+
+**Users hitting rate limits today**
+```
+logName="projects/fitnessai-prod/logs/fitnessai"
+jsonPayload.error=~"DAILY_LIMIT_REACHED"
+timestamp >= "2026-02-06T00:00:00Z"
+| count by jsonPayload.userId
+| sort by count desc
+```
+
+**Rate limit hits by feature**
+```
+logName="projects/fitnessai-prod/logs/fitnessai"
+jsonPayload.error=~"DAILY_LIMIT_REACHED"
+timestamp >= "2026-02-06T00:00:00Z"
+| count by jsonPayload.feature
+```
+
+**All AI feature usage (today)**
+```
+logName="projects/fitnessai-prod/logs/fitnessai"
+jsonPayload.feature=~"(prParses|screenshotParses|strengthAnalyses|planGenerations|liftProgressionAnalyses|goalAnalyses)"
+timestamp >= "2026-02-06T00:00:00Z"
+| count by jsonPayload.feature
+```
+
+**Interpreting Rate Limit Data**
+
+- **Normal**: Users hitting limits < 10% of active users
+- **Concerning**: > 20% of users hitting limits consistently
+- **Action needed**: If > 30%, consider raising limits or educating users
+
+See `docs/rate-limit-verification.md` for production testing procedures and limit adjustment guidance.
+
 ## Incident Response
 1. **Triage**
    - Check Cloud Logging for recent ERROR entries.
@@ -70,4 +153,3 @@ If a deployment causes widespread issues:
 ## Ownership & Escalation
 - Primary: Engineering on-call
 - Escalation: Product owner and CTO (if applicable)
-

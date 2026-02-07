@@ -1,269 +1,240 @@
-# Firebase Collections Split Plan
+# Firebase Collections Split Plan (P1.5)
 
 ## Executive Summary
 
-Currently, the user document stores profile data, fitness goals, AI analyses, and weekly plans together. Users view analyses after every workout (5-6+ times/week) and aggressive users regenerate analyses weekly. This creates redundant reads of large, static documents.
+Today, the app stores weekly plans and AI analyses on the main user profile document (`/users/{userId}`). That makes the profile payload larger than it needs to be and increases bandwidth/reads whenever the profile is fetched.
 
-**Recommendation:** Split weekly plans and analyses into separate subcollections before launch to control Firestore costs and improve cache efficiency.
+**Recommendation:** Split `weeklyPlan` (Phase 1) and optionally split analyses (Phase 2) into subcollections under `/users/{userId}`.
 
----
-
-## Current Structure & Problems
-
-### User Document (/users/{userId})
-```
-/users/{userId}
-├── Profile stats (age, height, weight, etc.)
-├── fitnessGoals: FitnessGoal[]
-├── strengthAnalysis: {result, generatedDate}           ← Large, viewed frequently
-├── liftProgressionAnalysis: {[exercise]: {result, generatedDate}}  ← Large, viewed frequently
-├── goalAnalysis: {result, generatedDate}              ← Large, viewed frequently
-├── weeklyPlan: {plan, generatedDate, ...}             ← Medium, viewed multiple times/week
-└── aiUsage counters
-```
-
-### Actual Usage Patterns
-- **View analyses**: After every workout (5-6+ times/week per user)
-- **Regenerate analyses**: Weekly by aggressive users
-- **View plan**: Multiple times/week, generated once/week
-- **Access profile**: Least frequently used
-- **Regenerate plan**: Once per week
-
-### Cost Problem
-When user views analyses after workout:
-1. App reads entire user document (20-50KB+)
-2. Analyses are typically unchanged since last workout
-3. Same read repeated 5-6 times/week, mostly redundant
-
-Example: User with 5 workouts/week × 2 weeks:
-- **Current**: 10 reads of 30KB user doc = unnecessary bandwidth + Firestore read ops
-- **Proposed**: 2-3 reads of analyses (cached) + separate profile reads = efficient cache hits
+This plan is written to match the current codebase as of **2026-02-07**:
+- Plan generation is an AI call in `src/app/plan/actions.ts`.
+- Plan persistence currently happens client-side in `src/hooks/usePlanGeneration.ts` via `useUpdateUserProfile()` (server action in `src/app/profile/actions.ts`).
+- Strength/goals/lift progression analyses are persisted via server actions (`src/app/analysis/actions.ts`, `src/app/profile/actions.ts`) into `updateUserProfile()` in `src/lib/firestore-server.ts`.
 
 ---
 
-## Proposed Structure
+## Current Structure (What We Have Now)
 
-### Phase 1: Move Weekly Plan
+### User Profile Document (`/users/{userId}`)
 
-```
-/users/{userId}/
-├── (user doc - unchanged, contains core profile + goals + aiUsage)
-│
-└── weeklyPlans/ (new subcollection)
-    └── current (document)
-        ├── plan: string
-        ├── generatedDate: Timestamp
-        ├── weekStartDate: string
-        └── contextUsed: string
-```
+The user document currently contains:
+- core profile fields (age, gender, height/weight, experience, etc.)
+- `fitnessGoals` (keep on profile; small + required across the app)
+- AI outputs:
+  - `weeklyPlan` (includes `plan` and `contextUsed`)
+  - `strengthAnalysis`
+  - `goalAnalysis`
+  - `liftProgressionAnalysis` (keyed by normalized exercise)
+- `aiUsage` counters
 
-**Why Phase 1 first:**
-- Lowest risk (plan is simple, non-nested structure)
-- Plan viewed multiple times/week but generated once/week—perfect for separate caching
-- Quick to implement (1-2 files)
+### Why This Is A Problem
 
-### Phase 2: Move Analyses
+Even with caching (client `useUserProfile()` has `staleTime: 1h`), the user doc is:
+- larger than needed for most screens
+- more expensive to transmit on every cache miss
+- more likely to invalidate/refresh when any large field changes
 
-```
-/users/{userId}/
-├── (user doc - unchanged, contains core profile + goals + aiUsage)
-│
-├── weeklyPlans/ (from Phase 1)
-│   └── current
-│
-└── analyses/ (new subcollection)
-    ├── strength (document)
-    │   ├── result: StrengthImbalanceOutput
-    │   └── generatedDate: Timestamp
-    ├── liftProgression (document)
-    │   ├── exercises: {[name]: {result, generatedDate}}
-    │   └── lastUpdated: Timestamp
-    └── goals (document)
-        ├── result: AnalyzeFitnessGoalsOutput
-        └── generatedDate: Timestamp
-```
+The biggest avoidable payload today is typically `weeklyPlan.contextUsed` (can be long).
 
-**Why separate from Phase 1:**
-- Analyses are complex nested objects (exercise-specific)
-- Need to decide: one document per exercise or all in one doc
-- More files to update (3+ action files)
+### Important: The Profile Is Effectively Fetched Everywhere
+
+In the current UI, `useUserProfile()` is used on multiple pages and in shared UI (notably the bottom navigation).
+That means the profile document is effectively part of the "global" data load for signed-in users: you will pay a
+profile read regularly (typically 1/hour per tab due to React Query cache settings) and you will download the full
+document payload when it does fetch.
 
 ---
 
-## Performance Impact
+## Proposed Structure (Target)
 
-### Current (Combined)
-| Scenario | Reads | Write Ops | Bandwidth | Cache |
-|----------|-------|-----------|-----------|-------|
-| View profile | 1 | - | 30-50KB | 1hr |
-| View analyses after workout | 1 | - | 30-50KB | 1hr (wasted) |
-| View plan | 1 | - | 30-50KB | 1hr (wasted) |
-| Regenerate analyses | 1 | 1 | 30-50KB | Invalidates all |
-| 5 workouts/week + weekly reanalyze | 10+ reads | 1 write | 300KB+ | Poor |
+### Phase 1: Weekly Plan Subcollection
 
-### Proposed (Split)
-| Scenario | Reads | Write Ops | Bandwidth | Cache |
-|----------|-------|-----------|-----------|-------|
-| View profile | 1 | - | 2-5KB | 1hr |
-| View analyses (1st time) | 1 | - | 15-20KB | 7 days |
-| View analyses (cache hit) | 0 | - | 0KB | Hit |
-| View plan (1st time) | 1 | - | 3-5KB | 7 days |
-| Regenerate analyses | 1 | 1 write | 15-20KB | Only invalidate analyses |
-| 5 workouts/week + weekly reanalyze | 2-3 reads + cache hits | 1 write | 30-40KB | Excellent |
+Move weekly plan out of the user doc into:
 
-**Cost savings:** ~70-80% reduction in bandwidth for typical user; better cache hit rates
+`/users/{userId}/weeklyPlans/current`
+- `plan: string`
+- `generatedDate: Timestamp`
+- `weekStartDate: string` (YYYY-MM-DD)
+- `contextUsed?: string` (optional, consider truncation or omission)
 
----
+### Phase 2 (Optional): Analyses Subcollection
 
-## Implementation Plan
+Move analyses into:
 
-### Phase 1: Weekly Plan (Pre-Launch)
+`/users/{userId}/analyses/strength`
+- `result`
+- `generatedDate`
 
-#### Files to Update
+`/users/{userId}/analyses/goals`
+- `result`
+- `generatedDate`
 
-1. **`src/lib/firestore-server.ts`**
-   - Update `updateUserProfile()` to NOT write weeklyPlan
-   - Add new function: `updateWeeklyPlan(userId, plan, generatedDate, contextUsed, weekStartDate)`
-   - Update weeklyPlan read logic to fetch from subcollection
-
-2. **`src/lib/firestore.service.ts`**
-   - Update `useUserProfile()` to NOT return weeklyPlan
-   - Add new hook: `useWeeklyPlan()` with 7-day cache
-   - Update code that references `userProfile.weeklyPlan` to use separate hook
-
-3. **`src/app/plan/actions.ts`**
-   - Update plan generation to call `updateWeeklyPlan()` instead of `updateUserProfile()`
-
-4. **Component updates**
-   - Any component reading `userProfile.weeklyPlan` now reads from `useWeeklyPlan()` hook
-   - Identify: search for `weeklyPlan` in component files
-
-#### Data Migration
-- One-time: Move existing `weeklyPlan` from user documents to `weeklyPlans/current`
-  - Create script: `scripts/migrate-weekly-plans.ts`
-  - Safe: Can coexist during rollout; old data abandoned
-
-#### Validation
-- Existing plans still readable from subcollection
-- New generations write to subcollection
-- Cache TTL properly set (7 days or until next generation)
+`/users/{userId}/analyses/liftProgression`
+- `exercises: { [normalizedExerciseName]: { result, generatedDate } }`
+- `lastUpdated`
 
 ---
 
-### Phase 2: Analyses (Pre-Launch or Post-Launch Optimization)
+## Phase 1 Implementation Plan (Weekly Plan Split)
 
-#### Files to Update
+### 1) Server Storage Helpers (`src/lib/firestore-server.ts`)
 
-1. **`src/lib/firestore-server.ts`**
-   - Update `updateUserProfile()` to NOT write analyses
-   - Add functions:
-     - `updateStrengthAnalysis(userId, result, generatedDate)`
-     - `updateLiftProgressionAnalysis(userId, result, generatedDate)` — store all exercises in one doc
-     - `updateGoalAnalysis(userId, result, generatedDate)`
+Add server-only functions:
+- `getWeeklyPlan(userId): Promise<StoredWeeklyPlan | null>`
+- `updateWeeklyPlan(userId, plan: StoredWeeklyPlan): Promise<void>`
 
-2. **`src/lib/firestore.service.ts`**
-   - Update `useUserProfile()` to NOT return analyses
-   - Add new hooks:
-     - `useStrengthAnalysis()` with 14-day cache
-     - `useLiftProgressionAnalysis()` with 14-day cache
-     - `useGoalAnalysis()` with 14-day cache
+**Backwards compatibility (important):**
+- `getWeeklyPlan()` should:
+  1. read `/users/{userId}/weeklyPlans/current` first
+  2. if missing, fallback to reading `/users/{userId}.weeklyPlan`
+  3. (optional) backfill: if fallback is used, write it once into `weeklyPlans/current`
 
-3. **Server actions**
-   - `src/app/analysis/actions.ts` → call `updateStrengthAnalysis()`
-   - `src/app/profile/actions.ts` → call `updateLiftProgressionAnalysis()` and `updateGoalAnalysis()`
+**Write policy:**
+- New writes should go to `/weeklyPlans/current`.
+- Do not rely on clearing `users/{userId}.weeklyPlan` immediately; it can be left in place during rollout.
 
-4. **Component updates**
-   - Search for `strengthAnalysis`, `liftProgressionAnalysis`, `goalAnalysis` in component files
-   - Update to use new hooks
+### 2) Server Actions (new) for Client to Call
 
-#### Data Migration
-- Similar to Phase 1: Move existing analyses to subcollection
-- Create script: `scripts/migrate-analyses.ts`
+Create plan-specific server actions (recommended location: `src/app/plan/actions.ts`):
+- `getWeeklyPlanAction(userId)` -> calls `getWeeklyPlan()`
+- `saveWeeklyPlanAction(userId, plan)` -> validates (Zod) then calls `updateWeeklyPlan()`
 
-#### Cache Strategy
-- Analyses unchanged for 14 days (regenerated every couple weeks)
-- User views post-workout benefit from cache, not repeated reads
+Rationale:
+- The current plan is saved via the profile update server action, but splitting storage is cleaner if plan reads/writes are their own server actions.
+- Keeps `src/app/profile/actions.ts` focused on core profile updates.
+
+### 3) Client Hooks (`src/lib/firestore.service.ts`)
+
+Add React Query hooks:
+- `useWeeklyPlan()` -> calls `getWeeklyPlanAction()`
+  - cache `staleTime` can be long (e.g. 7 days) because plans are regenerated intentionally
+- `useSaveWeeklyPlan()` -> calls `saveWeeklyPlanAction()`
+  - invalidate `useWeeklyPlan()` on success
+
+### 4) Update the Writer Path (Plan Save)
+
+Update `src/hooks/usePlanGeneration.ts`:
+- Replace `useUpdateUserProfile().mutate({ weeklyPlan: ... })`
+- With `useSaveWeeklyPlan().mutate(planDoc)`
+
+Keep `generateWeeklyWorkoutPlanAction()` unchanged (it generates; it does not persist).
+
+### 5) Update the Reader Path (Plan Screen)
+
+Update `src/app/plan/page.tsx` and plan components:
+- Stop reading `userProfile?.weeklyPlan`
+- Read from `useWeeklyPlan()`
+
+### 6) Optional: Reduce Stored Payload
+
+Consider one of:
+- do not store `contextUsed` in production, or
+- store a truncated version (e.g., first N characters)
+
+This is an immediate cost/bandwidth improvement even without Phase 2.
 
 ---
 
-## Firestore Security Rules Updates
+## Phase 2 Implementation Plan (Analyses Split, Optional)
 
-No changes needed initially—existing rules allow reads/writes to subcollections under `/users/{userId}/*`:
+Only do this if Phase 1 is shipped cleanly and you still see meaningful bloat/cost from analyses.
 
-```firestore
-match /users/{userId} {
-  allow read, write: if request.auth.uid == userId;
+### Storage + Server Actions
 
-  match /{subcollection=**} {
-    allow read, write: if request.auth.uid == userId;
-  }
-}
-```
+Add server-only helpers in `src/lib/firestore-server.ts`:
+- `getStrengthAnalysis(userId)` / `updateStrengthAnalysis(userId, payload)`
+- `getGoalAnalysis(userId)` / `updateGoalAnalysis(userId, payload)`
+- `getLiftProgressionAnalysis(userId)` / `updateLiftProgressionAnalysis(userId, payload)`
 
-Subcollections are covered by the recursive `{subcollection=**}` rule.
+Add corresponding server actions (suggested locations):
+- Strength: `src/app/analysis/actions.ts`
+- Goals/Lift progression: `src/app/profile/actions.ts`
+
+### Update Call Sites
+
+Replace:
+- `updateUserProfile(userId, { strengthAnalysis: ... })`
+- `updateUserProfileFromServer(userId, { goalAnalysis: ... })`
+- `updateUserProfileFromServer(userId, { liftProgressionAnalysis: ... })`
+
+With the new analysis-specific update functions writing to subcollection docs.
+
+### Client Read Path
+
+Update `src/app/analysis/page.tsx` and any profile-related analysis views to read analyses from new hooks instead of the profile document.
+
+### Backwards Compatibility
+
+Mirror the Phase 1 pattern:
+- read new doc first, fallback to old profile fields
+- optional one-time backfill when fallback is used
 
 ---
 
-## Rollback Plan
+## Firestore Rules
 
-### Phase 1 Rollback
-If weekly plan split causes issues:
-1. Revert plan generation to write to `updateUserProfile()`
-2. Add migration script to consolidate back to user document
-3. Disable reads from subcollection; read from user doc instead
+No rules changes should be required if subcollections under `/users/{userId}` are already covered.
 
-### Phase 2 Rollback
-Same approach: revert writes to user document, disable subcollection reads.
+In `firestore.rules`, `/users/{userId}` already has a wildcard rule:
+- `match /{document=**} { allow read, write: if isOwner(userId); }`
 
-**Note:** Since these are additive (not destructive), rollback is straightforward.
+So:
+- `/users/{userId}/weeklyPlans/*`
+- `/users/{userId}/analyses/*`
+
+should be permitted for the owner.
+
+---
+
+## Rollout / Migration Strategy (Recommended)
+
+Avoid a hard migration cutover. You can ship this without any mandatory migration.
+
+1. Ship new reads with fallback (new doc -> old field).
+2. Ship new writes to new doc.
+3. Leave legacy data in place (no data deletion required).
+4. Optional: backfill lazily on read fallback (only if you care about moving old data forward without requiring user regeneration).
+5. After confidence, optionally clean up old fields later.
+
+This keeps rollback simple and reduces risk.
+
+### What Happens To Existing Users / Old Data?
+
+You have two valid choices:
+
+1. **No migration, regeneration-driven (lowest effort):**
+   - Change the code so new plans/analyses write to subcollections.
+   - Keep fallback reads from the legacy fields on `/users/{userId}`.
+   - Old `weeklyPlan`/analysis fields can remain forever; users will naturally overwrite with new generations over time.
+   - This is enough if you're OK with legacy users continuing to see their last stored plan/analysis until they regenerate.
+
+2. **Lazy backfill (still no migration script):**
+   - When a user loads a screen and fallback reads legacy data, write it once into the new subcollection doc.
+   - This progressively moves active users without a one-time migration job.
+
+In both cases, you do not need to run a migration script unless you want to guarantee that *all* users have their
+data moved immediately.
 
 ---
 
 ## Testing Checklist
 
 ### Phase 1
-- [ ] Existing weekly plans still readable after migration
-- [ ] New plan generation writes to subcollection
-- [ ] Plan cache invalidates on new generation
-- [ ] Components display plan correctly from new hook
-- [ ] Firestore rules allow reads/writes to subcollection
-- [ ] Performance: verify plan reads are cached after 1st read
+- [ ] Plan page loads when only legacy `users/{userId}.weeklyPlan` exists (fallback works)
+- [ ] New plan generation persists to `/users/{userId}/weeklyPlans/current`
+- [ ] Plan page reads from subcollection after save
+- [ ] Cache behavior: subsequent navigations do not re-fetch unnecessarily
+- [ ] No Firestore rules errors for weeklyPlans paths
 
-### Phase 2
-- [ ] Existing analyses migrated to subcollection
-- [ ] New analysis generation writes to subcollection
-- [ ] Reanalyze button works (updates document, invalidates cache)
-- [ ] Analysis pages load correctly from new hooks
-- [ ] Cache behavior: repeated views don't re-fetch (cache hit)
-- [ ] Aggressive weekly reanalyze: only analyses write, plan/profile untouched
-
----
-
-## Decision: Phase 1 Only or Both?
-
-### Phase 1 Only (Recommended Pre-Launch)
-**Effort:** ~2-3 hours
-**Impact:** ~40% bandwidth reduction from plan bloat; plan caching
-**Risk:** Very low
-
-### Phase 1 + Phase 2 (Complete optimization)
-**Effort:** ~4-5 hours
-**Impact:** ~70-80% bandwidth reduction; excellent cache efficiency
-**Risk:** Low (but more surface area)
-
-**Recommendation:** Do both before launch. Cost savings compound when you have hundreds of users viewing analyses 5-6 times/week.
-
----
-
-## Related Tasks
-- Add Firestore cost monitoring in prod (P1: Performance & Cost Control)
-- Set up alerts if read/write ops spike unexpectedly
-- Monitor cache hit rates post-launch to validate assumptions
+### Phase 2 (if done)
+- [ ] Analysis generation writes to the new docs
+- [ ] Analysis pages read from new docs
+- [ ] Reanalyze overwrites only the analysis doc, not the core profile doc
+- [ ] Fallback/backfill works for existing users
 
 ---
 
 ## Timeline
-- **Phase 1**: 2-3 hours dev + testing
-- **Phase 2**: 2 hours additional dev + testing
-- **Migration scripts**: 1 hour (dry-run + staging validation)
-- **Total:** ~5-6 hours before launch to prevent cost surprises
+
+- Phase 1: ~2-4 hours dev + verification (depends on how many components read `weeklyPlan`)
+- Phase 2: ~4-6 hours dev + verification (more surfaces)
