@@ -147,6 +147,22 @@ const goalAnalysisConverter = {
   }
 };
 
+const liftProgressionConverter = {
+  toFirestore: (analysis: Omit<StoredLiftProgressionAnalysis, 'id'>) => {
+    return {
+      result: analysis.result,
+      generatedDate: Timestamp.fromDate(analysis.generatedDate),
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): StoredLiftProgressionAnalysis => {
+    const data = snapshot.data() || {};
+    return {
+      result: data.result || {},
+      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+    };
+  }
+};
+
 export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: Record<string, unknown> = { ...profile };
@@ -879,6 +895,127 @@ export const deleteGoalAnalysis = async (userId: string): Promise<void> => {
       route: 'firestore/deleteGoalAnalysis',
       feature: 'goalAnalyses',
       userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+// Lift Progression Analysis
+export const getLiftProgressionAnalysis = async (userId: string, exerciseName: string, options?: { enableLazyBackfill?: boolean }): Promise<StoredLiftProgressionAnalysis | null> => {
+  try {
+    const adminDb = getAdminDb();
+    const normalizedName = exerciseName.toLowerCase().replace(/\s+/g, '_');
+
+    const analysisDocRef = adminDb
+      .collection(`users/${userId}/liftProgressionAnalyses`)
+      .doc(normalizedName)
+      .withConverter(liftProgressionConverter) as FirebaseFirestore.DocumentReference<StoredLiftProgressionAnalysis>;
+
+    const analysisSnap = await analysisDocRef.get();
+
+    if (analysisSnap.exists) {
+      return analysisSnap.data() || null;
+    }
+
+    await logger.info('Lift progression analysis not found in subcollection, checking legacy location', {
+      route: 'firestore/getLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
+    });
+
+    const userProfile = await getUserProfile(userId);
+    const legacyAnalysis = userProfile?.liftProgressionAnalysis?.[exerciseName];
+
+    if (!legacyAnalysis) {
+      return null;
+    }
+
+    if (options?.enableLazyBackfill) {
+      await logger.info('Performing lazy backfill migration for lift progression analysis', {
+        route: 'firestore/getLiftProgressionAnalysis',
+        feature: 'liftProgressionAnalyses',
+        userId,
+        exerciseName,
+      });
+
+      try {
+        await saveLiftProgressionAnalysis(userId, exerciseName, legacyAnalysis);
+      } catch (backfillError) {
+        await logger.error('Failed to backfill lift progression analysis', {
+          route: 'firestore/getLiftProgressionAnalysis',
+          feature: 'liftProgressionAnalyses',
+          userId,
+          exerciseName,
+          error: String(backfillError),
+        });
+      }
+    }
+
+    return legacyAnalysis;
+  } catch (error) {
+    await logger.error('Error fetching lift progression analysis', {
+      route: 'firestore/getLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const saveLiftProgressionAnalysis = async (userId: string, exerciseName: string, analysisData: StoredLiftProgressionAnalysis): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const normalizedName = exerciseName.toLowerCase().replace(/\s+/g, '_');
+    const analysisDocRef = adminDb.collection(`users/${userId}/liftProgressionAnalyses`).doc(normalizedName);
+
+    const dataToStore = {
+      result: analysisData.result,
+      generatedDate: Timestamp.fromDate(analysisData.generatedDate),
+    };
+
+    await analysisDocRef.set(dataToStore);
+
+    await logger.info('Lift progression analysis saved to subcollection', {
+      route: 'firestore/saveLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
+    });
+  } catch (error) {
+    await logger.error('Error saving lift progression analysis', {
+      route: 'firestore/saveLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const deleteLiftProgressionAnalysis = async (userId: string, exerciseName: string): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const normalizedName = exerciseName.toLowerCase().replace(/\s+/g, '_');
+    const analysisDocRef = adminDb.collection(`users/${userId}/liftProgressionAnalyses`).doc(normalizedName);
+    await analysisDocRef.delete();
+
+    await logger.info('Lift progression analysis deleted from subcollection', {
+      route: 'firestore/deleteLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
+    });
+  } catch (error) {
+    await logger.error('Error deleting lift progression analysis', {
+      route: 'firestore/deleteLiftProgressionAnalysis',
+      feature: 'liftProgressionAnalyses',
+      userId,
+      exerciseName,
       error: String(error),
     });
     throw error;

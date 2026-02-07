@@ -7,7 +7,7 @@ import type { WorkoutLog, PersonalRecord, UserProfile } from "@/lib/types";
 import type { ExerciseDocument } from "@/lib/exercise-types";
 import { resolveCanonicalExerciseName } from "@/lib/exercise-normalization";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
-import { useLiftStrengthLevelFromE1RM } from "@/lib/firestore.service";
+import { useLiftStrengthLevelFromE1RM, useGetLiftProgressionAnalysis } from "@/lib/firestore.service";
 import { toTitleCase } from "@/lib/utils";
 import { useLiftProgression } from "@/hooks/useLiftProgression";
 import { useLiftTrends } from "@/hooks/useLiftTrends";
@@ -37,11 +37,11 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
   const canonicalLiftName = resolveCanonicalExerciseName(selectedLift, exercises);
   const selectedLiftKey = getNormalizedExerciseName(canonicalLiftName);
 
-  // Check for analysis under both new (canonical) and old (original) keys
-  // to handle migrations when exercise names were updated
-  const progressionAnalysisToRender =
-    userProfile?.liftProgressionAnalysis?.[selectedLiftKey] ||
-    userProfile?.liftProgressionAnalysis?.[getNormalizedExerciseName(selectedLift)];
+  // Fetch analysis from new subcollection (with fallback to legacy profile data)
+  const { data: progressionAnalysisToRender } = useGetLiftProgressionAnalysis(
+    canonicalLiftName,
+    !!selectedLift
+  );
 
   const progressionChartData = useLiftProgression(
     selectedLift,

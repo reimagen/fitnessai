@@ -23,8 +23,8 @@ import {
 } from '@/app/profile/actions';
 import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
 import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
-import { getGoalAnalysisAction, saveGoalAnalysisAction } from '@/app/profile/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis } from './types';
+import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction } from '@/app/profile/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -388,11 +388,12 @@ export function useAnalyzeLiftProgression() {
             }
             return result;
         },
-        onSuccess: async () => {
+        onSuccess: async (_, values) => {
             toast({ title: "Progression Analysis Complete!", description: "Your AI-powered insights are ready." });
 
             // Immediately invalidate the profile cache to force a fresh fetch
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, values.exerciseName] });
 
             // Wait a moment for the server to be updated, then refetch
             // This ensures we get the latest data from Firebase
@@ -581,6 +582,44 @@ export function useSaveGoalAnalysis() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goalAnalysis', user?.uid] });
+    },
+  });
+}
+
+export function useGetLiftProgressionAnalysis(exerciseName: string, enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredLiftProgressionAnalysis | undefined, Error>({
+    queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName],
+    queryFn: async () => {
+      if (!user || !exerciseName) return undefined;
+      const result = await getLiftProgressionAnalysisAction(user.uid, exerciseName);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch lift progression analysis');
+      }
+      return result.data;
+    },
+    enabled: !!user && !!exerciseName && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveLiftProgressionAnalysis() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation<void, Error, { exerciseName: string; analysisData: StoredLiftProgressionAnalysis }>({
+    mutationFn: async ({ exerciseName, analysisData }) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveLiftProgressionAnalysisAction(user.uid, exerciseName, analysisData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save lift progression analysis');
+      }
+    },
+    onSuccess: ({ exerciseName }) => {
+      queryClient.invalidateQueries({ queryKey: ['liftProgressionAnalysis', user?.uid, exerciseName] });
     },
   });
 }

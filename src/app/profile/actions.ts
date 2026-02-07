@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
-import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter, getGoalAnalysis, saveGoalAnalysis} from "@/lib/firestore-server";
+import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter, getGoalAnalysis, saveGoalAnalysis, getLiftProgressionAnalysis, saveLiftProgressionAnalysis} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import { logger } from "@/lib/logging/logger";
@@ -165,19 +165,8 @@ export async function analyzeLiftProgressionAction(
 
       const exerciseKey = await getNormalizedExerciseName(values.exerciseName);
 
-      const updatePayload = {
-        liftProgressionAnalysis: {
-          [exerciseKey]: storedAnalysis
-        }
-      };
-
-      await logger.info("Saving lift progression analysis", {
-        ...context,
-        exerciseKey,
-        updatePayload: JSON.stringify(updatePayload),
-      });
-
-      await updateUserProfileFromServer(userId, updatePayload);
+      // Save analysis to subcollection
+      await saveLiftProgressionAnalysis(userId, exerciseKey, storedAnalysis);
 
       await logger.info("Lift progression analysis saved successfully", {
         ...context,
@@ -346,6 +335,76 @@ export async function saveGoalAnalysisAction(
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to save goal analysis"
+      };
+    }
+  });
+}
+
+const SaveLiftProgressionAnalysisSchema = z.object({
+  result: z.any(),
+  generatedDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+});
+
+export async function getLiftProgressionAnalysisAction(
+  userId: string,
+  exerciseName: string
+): Promise<{ success: boolean; data?: StoredLiftProgressionAnalysis; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/getLiftProgressionAnalysisAction",
+    feature: "liftProgressionAnalyses",
+    exerciseName,
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      const analysis = await getLiftProgressionAnalysis(userId, exerciseName, { enableLazyBackfill: true });
+      return { success: true, data: analysis || undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch lift progression analysis"
+      };
+    }
+  });
+}
+
+export async function saveLiftProgressionAnalysisAction(
+  userId: string,
+  exerciseName: string,
+  analysisData: StoredLiftProgressionAnalysis
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/saveLiftProgressionAnalysisAction",
+    feature: "liftProgressionAnalyses",
+    exerciseName,
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveLiftProgressionAnalysisSchema.safeParse(analysisData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid analysis data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveLiftProgressionAnalysis(userId, exerciseName, validatedData.data as StoredLiftProgressionAnalysis);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save lift progression analysis"
       };
     }
   });
