@@ -1,7 +1,6 @@
 
 "use client";
 
-import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UserPlus } from "lucide-react";
 import { parsePersonalRecordsAction } from "./actions";

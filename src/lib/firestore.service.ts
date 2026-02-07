@@ -494,7 +494,6 @@ export function useWeeklyPlan(enabled: boolean = true) {
 export function useSaveWeeklyPlan() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   return useMutation<void, Error, StoredWeeklyPlan>({
     mutationFn: async (planData: StoredWeeklyPlan) => {
@@ -532,7 +531,6 @@ export function useStrengthAnalysis(enabled: boolean = true) {
 export function useSaveStrengthAnalysis() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   return useMutation<void, Error, StoredStrengthAnalysis>({
     mutationFn: async (analysisData: StoredStrengthAnalysis) => {
@@ -572,7 +570,6 @@ export function useGoalAnalysis(enabled: boolean = true) {
 export function useSaveGoalAnalysis() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   return useMutation<void, Error, StoredGoalAnalysis>({
     mutationFn: async (analysisData: StoredGoalAnalysis) => {
@@ -614,7 +611,6 @@ export function useGetLiftProgressionAnalysis(exerciseName: string, enabled: boo
 export function useSaveLiftProgressionAnalysis() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   return useMutation<void, Error, { exerciseName: string; analysisData: StoredLiftProgressionAnalysis }>({
     mutationFn: async ({ exerciseName, analysisData }) => {
@@ -654,7 +650,6 @@ export function useGoals(enabled: boolean = true) {
 export function useSaveGoals() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { toast } = useToast();
 
   return useMutation<void, Error, FitnessGoal[]>({
     mutationFn: async (goalsData: FitnessGoal[]) => {

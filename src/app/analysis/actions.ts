@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { analyzeStrengthImbalances, type StrengthImbalanceInput, type StrengthImbalanceOutput } from "@/ai/flows/strength-imbalance-analyzer";
-import { updateUserProfile, incrementUsageCounter, getStrengthAnalysis, saveStrengthAnalysis } from "@/lib/firestore-server";
+import { incrementUsageCounter, getStrengthAnalysis, saveStrengthAnalysis } from "@/lib/firestore-server";
 import { getStrengthLevel } from "@/lib/strength-standards.server";
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";

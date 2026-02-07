@@ -147,35 +147,6 @@ const goalAnalysisConverter = {
   }
 };
 
-const goalsConverter = {
-  toFirestore: (goals: FitnessGoal[]) => {
-    return {
-      goals: goals.map(goal => ({
-        id: goal.id,
-        description: goal.description,
-        targetDate: Timestamp.fromDate(goal.targetDate),
-        achieved: goal.achieved,
-        dateAchieved: goal.dateAchieved ? Timestamp.fromDate(goal.dateAchieved) : null,
-        isPrimary: goal.isPrimary || false,
-      })),
-    };
-  },
-  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): FitnessGoal[] => {
-    const data = snapshot.data() || {};
-    if (!Array.isArray(data.goals)) {
-      return [];
-    }
-    return data.goals.map((g: any) => ({
-      id: typeof g.id === 'string' ? g.id : '',
-      description: typeof g.description === 'string' ? g.description : '',
-      targetDate: g.targetDate instanceof Timestamp ? g.targetDate.toDate() : new Date(),
-      achieved: typeof g.achieved === 'boolean' ? g.achieved : false,
-      dateAchieved: g.dateAchieved instanceof Timestamp ? g.dateAchieved.toDate() : undefined,
-      isPrimary: typeof g.isPrimary === 'boolean' ? g.isPrimary : false,
-    }));
-  }
-};
-
 const liftProgressionConverter = {
   toFirestore: (analysis: Omit<StoredLiftProgressionAnalysis, 'id'>) => {
     return {
@@ -211,7 +182,7 @@ const fitnessGoalsConverter = {
     const goalsArray = Array.isArray(data.goals) ? data.goals : [];
 
     return {
-      goals: goalsArray.map((g: any) => ({
+      goals: goalsArray.map((g: Record<string, unknown>) => ({
         id: typeof g.id === 'string' ? g.id : '',
         description: typeof g.description === 'string' ? g.description : '',
         targetDate: g.targetDate instanceof Timestamp ? g.targetDate.toDate() : new Date(),
