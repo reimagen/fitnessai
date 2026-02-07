@@ -428,6 +428,7 @@ export function useAnalyzeStrength() {
         onSuccess: () => {
             toast({ title: "Strength Analysis Complete!", description: "Your AI-powered insights have been generated." });
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['strengthAnalysis', user?.uid] });
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
@@ -456,6 +457,7 @@ export function useAnalyzeGoals() {
         onSuccess: () => {
             toast({ title: "Goal Analysis Complete!", description: "Your AI-powered feedback is ready." });
             queryClient.invalidateQueries({ queryKey: ['profile', user?.uid] });
+            queryClient.invalidateQueries({ queryKey: ['goalAnalysis', user?.uid] });
         },
         onError: (error) => {
             const isLimitError = error.message.toLowerCase().includes('limit');
