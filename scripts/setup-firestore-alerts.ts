@@ -11,7 +11,6 @@
  */
 
 import { google } from 'googleapis';
-import * as readline from 'readline';
 
 const monitoring = google.monitoring('v3');
 
@@ -145,8 +144,9 @@ async function createAlertPolicy(
 
     const policyName = response.data.name;
     console.log(`✓ Created alert: ${displayName} (${policyName})`);
-  } catch (error: any) {
-    if (error.message?.includes('already exists')) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('already exists')) {
       console.log(`ℹ️  Alert already exists: ${displayName}`);
     } else {
       throw error;

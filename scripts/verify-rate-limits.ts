@@ -16,12 +16,6 @@ interface RateLimitFeature {
   limit: number;
 }
 
-interface VerificationResult {
-  configuredFeatures: RateLimitFeature[];
-  protectedFeatures: Map<string, string>;
-  unprotectedFeatures: string[];
-}
-
 function readConfiguredFeatures(): RateLimitFeature[] {
   const configPath = path.join(
     process.cwd(),
@@ -72,7 +66,7 @@ function findProtectedFeatures(): Map<string, string> {
         protected_.set(featureName, file);
       }
     });
-  } catch (error) {
+  } catch {
     // grep might fail if no matches found
   }
 
