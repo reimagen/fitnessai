@@ -115,6 +115,22 @@ const weeklyPlanConverter = {
   }
 };
 
+const strengthAnalysisConverter = {
+  toFirestore: (analysis: Omit<StoredStrengthAnalysis, 'id'>) => {
+    return {
+      result: analysis.result,
+      generatedDate: Timestamp.fromDate(analysis.generatedDate),
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): StoredStrengthAnalysis => {
+    const data = snapshot.data() || {};
+    return {
+      result: data.result || {},
+      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+    };
+  }
+};
+
 export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: Record<string, unknown> = { ...profile };
@@ -622,6 +638,120 @@ export const deleteWeeklyPlan = async (userId: string): Promise<void> => {
     await logger.error('Error deleting weekly plan', {
       route: 'firestore/deleteWeeklyPlan',
       feature: 'weeklyPlans',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+// Strength Analysis
+export const getStrengthAnalysis = cache(async (userId: string, options?: { enableLazyBackfill?: boolean }): Promise<StoredStrengthAnalysis | null> => {
+  try {
+    const adminDb = getAdminDb();
+
+    // Try new location first
+    const analysisDocRef = adminDb
+      .collection(`users/${userId}/strengthAnalyses`)
+      .doc('current')
+      .withConverter(strengthAnalysisConverter) as FirebaseFirestore.DocumentReference<StoredStrengthAnalysis>;
+
+    const analysisSnap = await analysisDocRef.get();
+
+    if (analysisSnap.exists) {
+      return analysisSnap.data() || null;
+    }
+
+    // Fallback to old location (user profile document)
+    await logger.info('Strength analysis not found in subcollection, checking legacy location', {
+      route: 'firestore/getStrengthAnalysis',
+      feature: 'strengthAnalyses',
+      userId,
+    });
+
+    const userProfile = await getUserProfile(userId);
+    const legacyAnalysis = userProfile?.strengthAnalysis;
+
+    if (!legacyAnalysis) {
+      return null;
+    }
+
+    // Lazy backfill if enabled
+    if (options?.enableLazyBackfill) {
+      await logger.info('Performing lazy backfill migration for strength analysis', {
+        route: 'firestore/getStrengthAnalysis',
+        feature: 'strengthAnalyses',
+        userId,
+      });
+
+      try {
+        await saveStrengthAnalysis(userId, legacyAnalysis);
+      } catch (backfillError) {
+        await logger.error('Failed to backfill strength analysis', {
+          route: 'firestore/getStrengthAnalysis',
+          feature: 'strengthAnalyses',
+          userId,
+          error: String(backfillError),
+        });
+        // Don't throw - still return the legacy data
+      }
+    }
+
+    return legacyAnalysis;
+  } catch (error) {
+    await logger.error('Error fetching strength analysis', {
+      route: 'firestore/getStrengthAnalysis',
+      feature: 'strengthAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+});
+
+export const saveStrengthAnalysis = async (userId: string, analysisData: StoredStrengthAnalysis): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const analysisDocRef = adminDb.collection(`users/${userId}/strengthAnalyses`).doc('current');
+
+    const dataToStore = {
+      result: analysisData.result,
+      generatedDate: Timestamp.fromDate(analysisData.generatedDate),
+    };
+
+    await analysisDocRef.set(dataToStore);
+
+    await logger.info('Strength analysis saved to subcollection', {
+      route: 'firestore/saveStrengthAnalysis',
+      feature: 'strengthAnalyses',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error saving strength analysis', {
+      route: 'firestore/saveStrengthAnalysis',
+      feature: 'strengthAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const deleteStrengthAnalysis = async (userId: string): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const analysisDocRef = adminDb.collection(`users/${userId}/strengthAnalyses`).doc('current');
+    await analysisDocRef.delete();
+
+    await logger.info('Strength analysis deleted from subcollection', {
+      route: 'firestore/deleteStrengthAnalysis',
+      feature: 'strengthAnalyses',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error deleting strength analysis', {
+      route: 'firestore/deleteStrengthAnalysis',
+      feature: 'strengthAnalyses',
       userId,
       error: String(error),
     });

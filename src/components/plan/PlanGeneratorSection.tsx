@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Info, Loader2, Zap } from "lucide-react";
-import type { PersonalRecord, UserProfile, WorkoutLog, StoredWeeklyPlan } from "@/lib/types";
+import type { PersonalRecord, UserProfile, WorkoutLog, StoredWeeklyPlan, StoredStrengthAnalysis } from "@/lib/types";
 import { ErrorState } from "@/components/shared/ErrorState";
 import { usePlanGeneration } from "@/hooks/usePlanGeneration";
 import { WeekPreferenceToggle } from "@/components/plan/WeekPreferenceToggle";
@@ -14,6 +14,7 @@ type PlanGeneratorSectionProps = {
   workoutLogs: WorkoutLog[] | undefined;
   personalRecords: PersonalRecord[] | undefined;
   generatedPlan: StoredWeeklyPlan | null | undefined;
+  strengthAnalysis: StoredStrengthAnalysis | null | undefined;
   isLoadingProfile: boolean;
   isLoadingWorkouts: boolean;
   isLoadingPrs: boolean;
@@ -29,6 +30,7 @@ export function PlanGeneratorSection({
   workoutLogs,
   personalRecords,
   generatedPlan,
+  strengthAnalysis,
   isLoadingProfile,
   isLoadingWorkouts,
   isLoadingPrs,
@@ -52,6 +54,7 @@ export function PlanGeneratorSection({
     userProfile,
     workoutLogs,
     personalRecords,
+    strengthAnalysis,
     isLoadingProfile,
     isLoadingWorkouts,
     isLoadingPrs,

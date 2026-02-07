@@ -4,7 +4,7 @@
 import { Loader2, UserPlus, TrendingUp } from 'lucide-react';
 import React, { useState, useMemo } from 'react';
 import type { WorkoutLog } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile, useExercises } from '@/lib/firestore.service';
+import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis } from '@/lib/firestore.service';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ export default function AnalysisPage() {
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   const { data: exercises = [] } = useExercises(enableDataFetching);
+  const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
 
   // Custom hooks for data processing
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, userProfile?.fitnessGoals);
@@ -244,7 +245,7 @@ export default function AnalysisPage() {
                   isLoading={isLoading}
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
-                  strengthAnalysis={userProfile?.strengthAnalysis}
+                  strengthAnalysis={strengthAnalysis}
                   exercises={exercises}
                 />
               </ErrorBoundary>

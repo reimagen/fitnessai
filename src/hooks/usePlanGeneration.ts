@@ -4,7 +4,7 @@ import { generateWeeklyWorkoutPlanAction } from "@/app/plan/actions";
 import { constructUserProfileContext } from "@/app/plan/utils/userProfileContext";
 import { useAuth } from "@/lib/auth.service";
 import { useSaveWeeklyPlan } from "@/lib/firestore.service";
-import type { PersonalRecord, StoredWeeklyPlan, UserProfile, WorkoutLog } from "@/lib/types";
+import type { PersonalRecord, StoredWeeklyPlan, StoredStrengthAnalysis, UserProfile, WorkoutLog } from "@/lib/types";
 import { useToast } from "@/hooks/useToast";
 
 export type PlanWeekPreference = "current" | "next";
@@ -13,6 +13,7 @@ type UsePlanGenerationArgs = {
   userProfile: UserProfile | null | undefined;
   workoutLogs: WorkoutLog[] | undefined;
   personalRecords: PersonalRecord[] | undefined;
+  strengthAnalysis: StoredStrengthAnalysis | null | undefined;
   isLoadingProfile: boolean;
   isLoadingWorkouts: boolean;
   isLoadingPrs: boolean;
@@ -36,6 +37,7 @@ export function usePlanGeneration({
   userProfile,
   workoutLogs,
   personalRecords,
+  strengthAnalysis,
   isLoadingProfile,
   isLoadingWorkouts,
   isLoadingPrs,
@@ -67,9 +69,9 @@ export function usePlanGeneration({
       userProfile,
       workoutLogs,
       personalRecords,
-      userProfile.strengthAnalysis?.result
+      strengthAnalysis?.result
     );
-  }, [userProfile, workoutLogs, personalRecords, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
+  }, [userProfile, workoutLogs, personalRecords, strengthAnalysis, isLoadingProfile, isLoadingWorkouts, isLoadingPrs]);
 
   const handleGeneratePlan = async () => {
     if (!userProfileContextString || !currentWeekStartDate) {
