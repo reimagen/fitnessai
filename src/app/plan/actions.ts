@@ -54,17 +54,24 @@ export async function generateWeeklyWorkoutPlanAction(
 
     try {
       const planOutput = await generateWeeklyWorkoutPlan(validatedFields.data);
-      
+
       // Increment usage counter on success
       await incrementUsageCounter(userId, 'planGenerations');
 
       return { success: true, data: planOutput };
     } catch (error) {
       const classified = classifyAIError(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Log to console for immediate visibility
+      console.error('[generateWeeklyWorkoutPlanAction] Actual error:', errorMessage);
+      console.error('[generateWeeklyWorkoutPlanAction] Full error:', error);
+
       await logger.error("Error generating weekly workout plan", {
         ...context,
         errorType: classified.category,
         statusCode: classified.statusCode,
+        rawError: errorMessage,
       });
 
       // Don't count against limit if it's a service error
