@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 import { revalidateTag } from 'next/cache';
-import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter} from "@/lib/firestore-server";
+import { getUserProfile as getUserProfileFromServer, updateUserProfile as updateUserProfileFromServer, incrementUsageCounter, getGoalAnalysis, saveGoalAnalysis} from "@/lib/firestore-server";
 import { analyzeLiftProgression as analyzeLiftProgressionFlow, type AnalyzeLiftProgressionInput, type AnalyzeLiftProgressionOutput } from "@/ai/flows/lift-progression-analyzer";
 import { analyzeFitnessGoals as analyzeFitnessGoalsFlow, type AnalyzeFitnessGoalsInput, type AnalyzeFitnessGoalsOutput } from "@/ai/flows/goal-analyzer";
 import { logger } from "@/lib/logging/logger";
@@ -254,11 +254,11 @@ export async function analyzeGoalsAction(
         result: analysisData,
         generatedDate: new Date(),
       };
-      
-      await incrementUsageCounter(userId, 'goalAnalyses');
 
-      // Save the analysis result to the user's profile
-      await updateUserProfileFromServer(userId, { goalAnalysis: storedAnalysis });
+      // Save analysis to subcollection
+      await saveGoalAnalysis(userId, storedAnalysis);
+
+      await incrementUsageCounter(userId, 'goalAnalyses');
 
       // Invalidate server-side cache
       revalidateTag(`user-profile-${userId}`, "max");
@@ -281,6 +281,72 @@ export async function analyzeGoalsAction(
       }
 
       return { success: false, error: classified.userMessage };
+    }
+  });
+}
+
+const SaveGoalAnalysisSchema = z.object({
+  result: z.any(),
+  generatedDate: z.union([z.date(), z.string().datetime()]).transform(d => new Date(d)),
+});
+
+export async function getGoalAnalysisAction(
+  userId: string
+): Promise<{ success: boolean; data?: StoredGoalAnalysis; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/getGoalAnalysisAction",
+    feature: "goalAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      const analysis = await getGoalAnalysis(userId, { enableLazyBackfill: true });
+      return { success: true, data: analysis || undefined };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to fetch goal analysis"
+      };
+    }
+  });
+}
+
+export async function saveGoalAnalysisAction(
+  userId: string,
+  analysisData: StoredGoalAnalysis
+): Promise<{ success: boolean; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: "profile/saveGoalAnalysisAction",
+    feature: "goalAnalyses",
+  });
+
+  return withServerActionLogging(context, async () => {
+    const validatedData = SaveGoalAnalysisSchema.safeParse(analysisData);
+    if (!validatedData.success) {
+      return {
+        success: false,
+        error: `Invalid analysis data: ${validatedData.error.message}`
+      };
+    }
+
+    if (!userId) {
+      return { success: false, error: "User not authenticated." };
+    }
+
+    try {
+      await saveGoalAnalysis(userId, validatedData.data as StoredGoalAnalysis);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to save goal analysis"
+      };
     }
   });
 }

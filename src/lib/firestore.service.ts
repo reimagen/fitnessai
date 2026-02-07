@@ -23,7 +23,8 @@ import {
 } from '@/app/profile/actions';
 import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
 import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
-import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis } from './types';
+import { getGoalAnalysisAction, saveGoalAnalysisAction } from '@/app/profile/actions';
+import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
@@ -542,6 +543,44 @@ export function useSaveStrengthAnalysis() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['strengthAnalysis', user?.uid] });
+    },
+  });
+}
+
+export function useGoalAnalysis(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<StoredGoalAnalysis | undefined, Error>({
+    queryKey: ['goalAnalysis', user?.uid],
+    queryFn: async () => {
+      if (!user) return undefined;
+      const result = await getGoalAnalysisAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch goal analysis');
+      }
+      return result.data;
+    },
+    enabled: !!user && enabled,
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useSaveGoalAnalysis() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  return useMutation<void, Error, StoredGoalAnalysis>({
+    mutationFn: async (analysisData: StoredGoalAnalysis) => {
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      const result = await saveGoalAnalysisAction(user.uid, analysisData);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save goal analysis');
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goalAnalysis', user?.uid] });
     },
   });
 }

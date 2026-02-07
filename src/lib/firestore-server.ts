@@ -131,6 +131,22 @@ const strengthAnalysisConverter = {
   }
 };
 
+const goalAnalysisConverter = {
+  toFirestore: (analysis: Omit<StoredGoalAnalysis, 'id'>) => {
+    return {
+      result: analysis.result,
+      generatedDate: Timestamp.fromDate(analysis.generatedDate),
+    };
+  },
+  fromFirestore: (snapshot: FirebaseFirestore.QueryDocumentSnapshot): StoredGoalAnalysis => {
+    const data = snapshot.data() || {};
+    return {
+      result: data.result || {},
+      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+    };
+  }
+};
+
 export const userProfileConverter = {
     toFirestore: (profile: Partial<Omit<UserProfile, 'id'>>) => {
         const dataToStore: Record<string, unknown> = { ...profile };
@@ -752,6 +768,116 @@ export const deleteStrengthAnalysis = async (userId: string): Promise<void> => {
     await logger.error('Error deleting strength analysis', {
       route: 'firestore/deleteStrengthAnalysis',
       feature: 'strengthAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+// Goal Analysis
+export const getGoalAnalysis = cache(async (userId: string, options?: { enableLazyBackfill?: boolean }): Promise<StoredGoalAnalysis | null> => {
+  try {
+    const adminDb = getAdminDb();
+
+    const analysisDocRef = adminDb
+      .collection(`users/${userId}/goalAnalyses`)
+      .doc('current')
+      .withConverter(goalAnalysisConverter) as FirebaseFirestore.DocumentReference<StoredGoalAnalysis>;
+
+    const analysisSnap = await analysisDocRef.get();
+
+    if (analysisSnap.exists) {
+      return analysisSnap.data() || null;
+    }
+
+    await logger.info('Goal analysis not found in subcollection, checking legacy location', {
+      route: 'firestore/getGoalAnalysis',
+      feature: 'goalAnalyses',
+      userId,
+    });
+
+    const userProfile = await getUserProfile(userId);
+    const legacyAnalysis = userProfile?.goalAnalysis;
+
+    if (!legacyAnalysis) {
+      return null;
+    }
+
+    if (options?.enableLazyBackfill) {
+      await logger.info('Performing lazy backfill migration for goal analysis', {
+        route: 'firestore/getGoalAnalysis',
+        feature: 'goalAnalyses',
+        userId,
+      });
+
+      try {
+        await saveGoalAnalysis(userId, legacyAnalysis);
+      } catch (backfillError) {
+        await logger.error('Failed to backfill goal analysis', {
+          route: 'firestore/getGoalAnalysis',
+          feature: 'goalAnalyses',
+          userId,
+          error: String(backfillError),
+        });
+      }
+    }
+
+    return legacyAnalysis;
+  } catch (error) {
+    await logger.error('Error fetching goal analysis', {
+      route: 'firestore/getGoalAnalysis',
+      feature: 'goalAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+});
+
+export const saveGoalAnalysis = async (userId: string, analysisData: StoredGoalAnalysis): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const analysisDocRef = adminDb.collection(`users/${userId}/goalAnalyses`).doc('current');
+
+    const dataToStore = {
+      result: analysisData.result,
+      generatedDate: Timestamp.fromDate(analysisData.generatedDate),
+    };
+
+    await analysisDocRef.set(dataToStore);
+
+    await logger.info('Goal analysis saved to subcollection', {
+      route: 'firestore/saveGoalAnalysis',
+      feature: 'goalAnalyses',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error saving goal analysis', {
+      route: 'firestore/saveGoalAnalysis',
+      feature: 'goalAnalyses',
+      userId,
+      error: String(error),
+    });
+    throw error;
+  }
+};
+
+export const deleteGoalAnalysis = async (userId: string): Promise<void> => {
+  try {
+    const adminDb = getAdminDb();
+    const analysisDocRef = adminDb.collection(`users/${userId}/goalAnalyses`).doc('current');
+    await analysisDocRef.delete();
+
+    await logger.info('Goal analysis deleted from subcollection', {
+      route: 'firestore/deleteGoalAnalysis',
+      feature: 'goalAnalyses',
+      userId,
+    });
+  } catch (error) {
+    await logger.error('Error deleting goal analysis', {
+      route: 'firestore/deleteGoalAnalysis',
+      feature: 'goalAnalyses',
       userId,
       error: String(error),
     });
