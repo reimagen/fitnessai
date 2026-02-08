@@ -21,7 +21,7 @@ test.describe('analysis and plan smoke', () => {
       const url = page.url();
       // Just verify we're not on signin
       expect(url).not.toMatch(/\/signin/);
-    } catch (e) {
+    } catch {
       // Page might have issues, but test passes if it attempted to load
     }
   });

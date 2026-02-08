@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 
 config({ path: '.env.development.local' });
 
-const serviceAccount = {
+const serviceAccount: Record<string, string | undefined> = {
   project_id: process.env.FIREBASE_PROJECT_ID,
   client_email: process.env.FIREBASE_CLIENT_EMAIL,
   private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -16,7 +16,7 @@ console.log('Service account:', {
 });
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount as any),
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
   projectId: process.env.FIREBASE_PROJECT_ID,
 });
 
@@ -33,7 +33,7 @@ async function createTestUser() {
         (await auth.getUserByEmail(email)).uid
       );
       console.log(`Deleted existing user: ${email}`);
-    } catch (err) {
+    } catch {
       // User doesn't exist, continue
     }
 

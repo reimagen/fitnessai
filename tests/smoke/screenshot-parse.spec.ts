@@ -30,7 +30,7 @@ test.describe('screenshot parsing smoke', () => {
     }
   });
 
-  test('prs parser surface is accessible', async ({ page }, testInfo) => {
+  test('prs parser surface is accessible', async ({ page }) => {
     test.setTimeout(15000); // Shorter timeout for this test
 
     await signIn(page);
