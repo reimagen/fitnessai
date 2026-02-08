@@ -144,11 +144,54 @@ See `docs/rate-limit-verification.md` for production testing procedures and limi
    - Document incident summary and root cause.
    - Add a regression test if applicable.
 
+## Smoke Tests & Pre-Deployment Validation
+
+**Overview**
+Smoke tests run automatically on every PR to `main` and every push to `main` via GitHub Actions. They validate critical user flows before production deployment.
+
+**Test Coverage**
+- ✅ Authentication (sign-in/out)
+- ✅ Workout logging (history, create/edit)
+- ✅ Screenshot parsing (upload UI, PR detection)
+- ✅ Analysis & plan generation
+
+**CI/CD Pipeline**
+1. **On PR**: Lint → Typecheck → Build → Smoke tests (must pass to merge)
+2. **On merge to main**: Smoke tests run again before production deployment
+3. **On deploy failure**: Check GitHub Actions logs to view test traces and videos
+
+**Running Tests Locally**
+```bash
+# Set test credentials
+export E2E_AUTH_EMAIL="fake@notreal.com"
+export E2E_AUTH_PASSWORD="fake26"
+
+# Run all tests
+npm run test:smoke
+
+# Run in headed mode (see browser)
+npm run test:smoke:headed
+```
+
+**GitHub Actions Setup**
+- Workflow: `.github/workflows/smoke-tests.yml`
+- Secrets required:
+  - `E2E_AUTH_EMAIL`
+  - `E2E_AUTH_PASSWORD`
+- Artifacts: Test results uploaded for 7 days (failures include videos/traces)
+
+**Debugging Failed Tests**
+1. View GitHub Actions logs: PR → "Checks" tab → "Smoke Tests"
+2. Download test artifacts (videos/traces) for detailed failure analysis
+3. Run locally with same credentials to reproduce
+4. Check `tests/smoke/README.md` for test documentation
+
 ## Rollback
 If a deployment causes widespread issues:
 1. Revert to last stable App Hosting release.
 2. Verify `/api/health` returns `ok`.
 3. Monitor error logs for 30 minutes.
+4. Re-run smoke tests against rollback version to confirm.
 
 ## Ownership & Escalation
 - Primary: Engineering on-call
