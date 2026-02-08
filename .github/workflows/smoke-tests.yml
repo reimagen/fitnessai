@@ -28,7 +28,7 @@ jobs:
         env:
           E2E_AUTH_EMAIL: ${{ secrets.E2E_AUTH_EMAIL }}
           E2E_AUTH_PASSWORD: ${{ secrets.E2E_AUTH_PASSWORD }}
-          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyAAUUJ0WzE1KIaBm_UUwQJ23nWx7d3czC4
           NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: fitnessai-dev-dummy.firebaseapp.com
           NEXT_PUBLIC_FIREBASE_PROJECT_ID: fitnessai-dev-dummy
           NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: fitnessai-dev-dummy.firebasestorage.app
