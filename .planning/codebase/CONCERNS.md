@@ -16,11 +16,14 @@
 - Impact: Risk of displaying outdated strength standards to users. Analysis results may vary depending on which source is queried. Confusing developer experience.
 - Fix approach: Complete the exercise-registry migration (above) to make Firebase the single source of truth. Remove hardcoded data entirely. Update all components to fetch from Firebase.
 
-### No Test Coverage in Production Codebase
-- Issue: Zero test files in the src directory despite production server actions, complex hooks, and AI integrations. Only node_modules contains test files (from dependencies). No Jest/Vitest configuration found for the main codebase.
-- Files: All src files lack corresponding `.test.ts` or `.spec.ts` files
-- Impact: Cannot verify behavior before deployment. Regression testing requires manual testing. Difficult to refactor with confidence. Error paths in server actions, rate limiting, error classification, and AI flows are untested.
-- Fix approach: Add Jest or Vitest configuration. Start with critical paths: server actions in `src/app/*/actions.ts`, error classification in `src/lib/logging/error-classifier.ts`, rate limiting in `src/app/prs/rate-limiting.ts`. Aim for >70% coverage.
+### Limited Test Coverage in Production Codebase
+- Issue: No unit/integration test files in the `src/` directory despite production server actions, complex hooks, and AI integrations. Smoke tests (E2E) added for critical user flows, but deep logic remains untested.
+- Coverage:
+  - ✅ Smoke tests: 11 E2E tests for authentication, workouts, analysis, screenshots (Playwright)
+  - ❌ Unit tests: Zero test files for server actions, hooks, utilities, components
+  - ❌ Integration tests: No tests for Firestore converters, error classification, rate limiting
+- Impact: Cannot verify deep logic or error paths before deployment. Regression testing for business logic requires manual testing. Difficult to refactor with confidence. Error paths in server actions, rate limiting, error classification, and AI flows remain untested.
+- Fix approach: Add Vitest + React Testing Library for unit/integration tests. Start with critical paths: server actions in `src/app/*/actions.ts`, error classification in `src/lib/logging/error-classifier.ts`, rate limiting in `src/app/prs/rate-limiting.ts`. Aim for >70% coverage on critical paths. Smoke tests validate end-to-end flows but don't catch logic bugs.
 
 ### Incomplete Error Handling in Complex Hooks
 - Issue: Hooks like `useLiftProgression` (177 lines), `useChartData` (303 lines), `useCardioAnalysis` (321 lines) have minimal error handling. They return null on missing data without distinguishing between "still loading" and "error occurred". This can silently hide problems.
@@ -196,4 +199,4 @@
 
 ---
 
-*Concerns audit: 2026-02-05*
+*Concerns audit: Updated 2026-02-07*
