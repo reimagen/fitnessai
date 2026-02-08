@@ -125,12 +125,21 @@
   - Build-time: FIREBASE_WEBAPP_CONFIG injected as environment variable
 
 **CI Pipeline:**
-- No GitHub Actions workflows detected
-- Manual deployment via Firebase CLI assumed
+- GitHub Actions automated testing
+  - Workflow: `.github/workflows/smoke-tests.yml`
+  - Triggers: Every PR to main, every push to main
+  - Tests: 11 end-to-end smoke tests (Playwright) validating critical user flows
+  - Checks:
+    - ESLint (lint)
+    - TypeScript type checking (typecheck)
+    - Smoke tests (authentication, workouts, analysis, screenshots)
+  - Requirements: Lint and smoke tests must pass before merging to main
+- Manual deployment to Firebase App Hosting via Firebase CLI or GitHub push to main
 
 **Build Configuration:**
 - Next.js build with TypeScript (strict mode enabled, build errors ignored)
 - Server-side external packages: `@genkit-ai/firebase`, `firebase-admin`
+- Test browser setup: Playwright installs Chromium for E2E tests in CI
 
 ## Environment Configuration
 
@@ -173,4 +182,4 @@
 
 ---
 
-*Integration audit: 2026-02-05*
+*Integration audit: Updated 2026-02-07*

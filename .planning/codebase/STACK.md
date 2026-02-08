@@ -76,7 +76,11 @@
 - clsx 2.1.1 - Conditional className utility
 
 **Testing:**
-- No testing framework detected in dependencies
+- @playwright/test 1.55.0 - End-to-end testing (smoke tests for critical user flows)
+- vitest 3.2.4 - Unit/integration testing framework (TypeScript-native, fast)
+- @testing-library/react 16.3.0 - React component testing utilities
+- @testing-library/jest-dom 6.8.0 - DOM matchers for testing
+- jsdom 26.1.0 - DOM implementation for test environment
 
 **Build/Dev:**
 - PostCSS 8 - CSS processing (Tailwind dependency)
@@ -138,6 +142,14 @@
 - TypeScript strict mode enabled (strict: true in tsconfig.json)
 - Build errors ignored for TypeScript (ignoreBuildErrors: true in next.config.js) - allows build completion with type errors
 
+## CI/CD
+
+**GitHub Actions:**
+- Automated smoke tests on every PR and push to main
+- Lint checks (ESLint)
+- TypeScript type checking
+- Workflow: `.github/workflows/smoke-tests.yml`
+
 ---
 
-*Stack analysis: 2026-02-05*
+*Stack analysis: Updated 2026-02-07*
