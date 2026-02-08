@@ -1,7 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { WorkoutList } from "@/components/history/WorkoutList";
+import { WorkoutListSkeleton } from "@/components/history/WorkoutListSkeleton";
 import { ErrorState } from "@/components/shared/ErrorState";
 import type { WorkoutLog } from "@/lib/types";
 
@@ -28,11 +29,7 @@ export function HistoryWorkoutsCard({
 }: HistoryWorkoutsCardProps) {
   const renderWorkoutContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-40">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
+      return <WorkoutListSkeleton />;
     }
 
     if (isError) {
