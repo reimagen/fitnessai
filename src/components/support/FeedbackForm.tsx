@@ -62,7 +62,7 @@ export function FeedbackForm() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error',
         description: 'An error occurred while submitting your feedback. Please try again.',
@@ -108,7 +108,7 @@ export function FeedbackForm() {
                     <Input type="email" placeholder="your@email.com" {...field} />
                   </FormControl>
                   <FormDescription>
-                    We'll use this to follow up if we need more details
+                    We&apos;ll use this to follow up if we need more details
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

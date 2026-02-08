@@ -11,9 +11,9 @@ export default function SupportPage() {
   return (
     <div className="container mx-auto max-w-2xl space-y-8 py-8 px-4">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Support & Feedback</h1>
+        <h1 className="text-3xl font-bold mb-2">Support &amp; Feedback</h1>
         <p className="text-muted-foreground">
-          We're here to help. Send us your feedback or reach out with questions.
+          We&apos;re here to help. Send us your feedback or reach out with questions.
         </p>
       </div>
 

@@ -1,7 +1,6 @@
 'use server';
 
 import { z } from 'zod';
-import { getAuth } from 'firebase-admin/auth';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 

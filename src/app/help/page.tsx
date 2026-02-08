@@ -34,7 +34,7 @@ const faqs = [
         a: "Yes! Go to History and click 'Upload Screenshot'. Our AI will automatically extract exercises, sets, reps, and weight from your gym app screenshots.",
       },
       {
-        q: "Why didn't my screenshot parse correctly?",
+        q: "Why didn&apos;t my screenshot parse correctly?",
         a: "Make sure your screenshot clearly shows: exercise name, number of sets, reps per set, and weight. Blurry or partially visible text may cause parsing issues. Try again with a clearer screenshot.",
       },
       {
@@ -73,7 +73,7 @@ const faqs = [
       },
       {
         q: "Can I edit or delete PRs?",
-        a: "Yes, click the edit icon to update a PR's weight or date. Click the delete icon to remove it.",
+        a: "Yes, click the edit icon to update a PR&apos;s weight or date. Click the delete icon to remove it.",
       },
       {
         q: "What happens if I clear all records?",
@@ -160,7 +160,7 @@ export default function HelpPage() {
         <CardHeader>
           <CardTitle>Still need help?</CardTitle>
           <CardDescription>
-            Can't find what you're looking for? We're here to help.
+            Can&apos;t find what you&apos;re looking for? We&apos;re here to help.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
