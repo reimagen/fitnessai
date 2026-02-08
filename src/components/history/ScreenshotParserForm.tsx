@@ -19,6 +19,8 @@ type ScreenshotParserFormProps = {
   onParsedData: (data: ParseWorkoutScreenshotOutput) => void;
 };
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParserFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -33,6 +35,19 @@ export function ScreenshotParserForm({ onParse, onParsedData }: ScreenshotParser
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
+      // Validate file size
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 10MB",
+          variant: "destructive"
+        });
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+        return;
+      }
+
       setParsedResult(null);
       setNeedsDateConfirmation(false);
 
