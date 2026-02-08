@@ -34,22 +34,34 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - ✅ Add caching + TTL verification for exercise registry reads
 - Monitor Firestore read/write costs in prod (dashboard + alerts)
 - ✅ Add rate limits for AI features (verified coverage via script; production limit-hit testing still pending)
-- Smoke tests for:
-  - auth sign-in/out and profile creation
-  - workout log creation/edit/delete
-  - screenshot parsing for workout logs and PRs
-  - strength analysis + plan generation
+- ✅ Smoke tests for:
+  - ✅ auth sign-in/out and profile creation
+  - ✅ workout log creation/edit/delete
+  - ✅ screenshot parsing for workout logs and PRs
+  - ✅ strength analysis + plan generation
+  - ✅ GitHub Actions CI integration (runs on PRs to main)
 
-## P1.5: Collections Split (Firebase Optimization)
+## P1.5: Collections Split (Firebase Optimization) - COMPLETE ✅
 - ✅ **Phase 1: Weekly Plans** - Move `weeklyPlan` from user profile to `/users/{userId}/weeklyPlans/current` subcollection
   - ✅ Add weeklyPlanConverter for Timestamp handling
   - ✅ Implement getWeeklyPlan (with fallback + lazy backfill), saveWeeklyPlan, deleteWeeklyPlan
   - ✅ Add server actions with Zod validation
-  - ✅ Add React Query hooks with 7-day caching
+  - ✅ Add React Query hooks with optimized caching (5 min staleTime)
   - ✅ Update components to use new data path
   - ✅ Context truncation to 500 chars to reduce document size
   - ✅ Full backwards compatibility via lazy backfill
-  - 📋 Remaining phases: analyses (strength, goals, lift progression), personal records
+- ✅ **Phase 2: Analyses Split** - Move strength/goal/lift progression analyses to subcollections
+  - ✅ Move `strengthAnalysis` to `/users/{userId}/strengthAnalyses/{id}`
+  - ✅ Move `goalAnalysis` to `/users/{userId}/goalAnalyses/{id}`
+  - ✅ Move `liftProgressionAnalysis` to `/users/{userId}/liftProgressionAnalyses/{exerciseName}`
+  - ✅ Add server functions with fallback + lazy backfill
+  - ✅ Add React Query hooks with optimized caching
+  - ✅ Update components to read from new hooks (GoalSetterCard, StrengthBalanceCard, etc.)
+  - ✅ Fix cache invalidation to ensure fresh data displays immediately
+- ✅ **Phase 3: Fitness Goals Split** - Move `fitnessGoals` to `/users/{userId}/goals/preferences`
+  - ✅ Server functions with fallback + lazy backfill
+  - ✅ React Query hooks with optimized caching
+  - ✅ Components updated to use new hooks
 
 ## P2: Product & Operations
 
@@ -71,3 +83,11 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 - Admin UI for managing the exercise library (post-migration)
 - (Optional) Expand exercise library (smith machine, preacher curl, etc.)
+- **Collections Split Final Cleanup** - Remove old fields from user profile document (final optimization step, safe because fallback/backfill completed in prod)
+  - Delete `weeklyPlan` field from `/users/{userId}`
+  - Delete `strengthAnalysis` field from `/users/{userId}`
+  - Delete `goalAnalysis` field from `/users/{userId}`
+  - Delete `liftProgressionAnalysis` field from `/users/{userId}`
+  - Delete `fitnessGoals` field from `/users/{userId}`
+  - Timeline: Can be done anytime (no user impact, data safely in new locations)
+  - See `/Users/lisagu/Projects/fitnessai-1/docs/collections-split.md` for safe removal strategy

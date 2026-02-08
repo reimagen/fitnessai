@@ -1,0 +1,47 @@
+name: Smoke Tests
+
+on:
+  push:
+    branches: [main, testing-modules]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install
+
+      - name: Run smoke tests
+        run: npm run test:smoke
+        env:
+          E2E_AUTH_EMAIL: ${{ secrets.E2E_AUTH_EMAIL }}
+          E2E_AUTH_PASSWORD: ${{ secrets.E2E_AUTH_PASSWORD }}
+          NEXT_PUBLIC_FIREBASE_API_KEY: AIzaSyAAUUJ0WzE1KIaBm_UUwQJ23nWx7d3czC4
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: fitnessai-dev-dummy.firebaseapp.com
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: fitnessai-dev-dummy
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: fitnessai-dev-dummy.firebasestorage.app
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '814255658112'
+          NEXT_PUBLIC_FIREBASE_APP_ID: 1:814255658112:web:b364f11bef22740014c265
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: test-results/
+          retention-days: 7
