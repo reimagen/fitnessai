@@ -6,11 +6,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem } from "@/components/ui/accordion";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { format } from "date-fns";
-import { CalendarDays, Edit3, Trash2, ChevronDown } from "lucide-react"; // Added icons
+import { CalendarDays, Edit3, Trash2, ChevronDown, Dumbbell } from "lucide-react"; // Added icons
 import { Button } from "../ui/button";
 import { cn, toTitleCase } from "@/lib/utils";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Badge } from "../ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type WorkoutListProps = {
   workoutLogs: WorkoutLog[];
@@ -34,6 +43,19 @@ const categoryBadgeVariant = (category: ExerciseCategory): 'default' | 'secondar
 };
 
 export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  const handleDeleteClick = (logId: string) => {
+    setPendingDeleteId(logId);
+  };
+
+  const handleConfirmDelete = () => {
+    if (pendingDeleteId && onDelete) {
+      onDelete(pendingDeleteId);
+    }
+    setPendingDeleteId(null);
+  };
+
   const groupedExercisesByLog = useMemo(() => {
     return workoutLogs.map(log => {
       const grouped = log.exercises.reduce((acc, exercise) => {
@@ -62,8 +84,17 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   if (workoutLogs.length === 0) {
     return (
       <Card className="shadow-sm">
-        <CardContent className="pt-6">
-          <p className="text-center text-muted-foreground">No workouts logged yet. Start logging to see your history!</p>
+        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+          <Dumbbell className="h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground mb-4">
+            No workouts logged yet. Start logging to see your history!
+          </p>
+          <Button
+            disabled
+            className="opacity-50 cursor-not-allowed"
+          >
+            Log Your First Workout
+          </Button>
         </CardContent>
       </Card>
     );
@@ -207,8 +238,9 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
   };
 
   return (
-    <Accordion type="single" collapsible className="w-full space-y-4">
-      {groupedExercisesByLog.map((log) => (
+    <>
+      <Accordion type="single" collapsible className="w-full space-y-4">
+        {groupedExercisesByLog.map((log) => (
         <AccordionItem
           value={log.id}
           key={log.id}
@@ -245,7 +277,12 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
                 </Button>
               )}
               {onDelete && (
-                <Button variant="ghost" size="icon" onClick={() => onDelete(log.id)} className="h-8 w-8 text-destructive hover:text-destructive">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteClick(log.id)}
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
@@ -277,7 +314,29 @@ export function WorkoutList({ workoutLogs, onEdit, onDelete }: WorkoutListProps)
             </div>
           </AccordionContent>
         </AccordionItem>
-      ))}
-    </Accordion>
+        ))}
+      </Accordion>
+      {pendingDeleteId && (
+        <AlertDialog defaultOpen={true} onOpenChange={(isOpen) => !isOpen && setPendingDeleteId(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete workout?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete this workout and all its exercises. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex gap-2 justify-end">
+              <AlertDialogCancel onClick={() => setPendingDeleteId(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+    </>
   );
 }

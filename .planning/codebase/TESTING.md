@@ -1,21 +1,56 @@
 # Testing Patterns
 
-**Analysis Date:** 2026-02-05
+**Last Updated:** 2026-02-07
 
 ## Test Framework
 
-**Status:** No formal test framework currently configured or in use
+**Status:** Multi-tier testing strategy implemented
 
-**Not Detected:**
-- No Jest configuration (`jest.config.ts` or `jest.config.js`)
-- No Vitest configuration (`vitest.config.ts`)
-- No test files found in `src/` directory (`.test.ts`, `.test.tsx`, `.spec.ts`, `.spec.tsx`)
-- No `__tests__` directories
-- Testing dependencies not in `package.json`
+### Configured Frameworks:
+1. **Vitest** - Unit/integration tests (fast, TypeScript-native)
+2. **Playwright** - Smoke tests for critical user flows (E2E)
+3. **GitHub Actions CI** - Automated test runs on every PR and push to main
 
-**Note:** This codebase is currently in development without automated unit/integration tests. Testing is likely conducted manually or via E2E testing in production environments.
+### Test Coverage:
+- **Unit/Integration Tests**: Run with `npm run test` (configured in vitest)
+- **Smoke Tests**: 11 end-to-end tests covering auth, workouts, analysis, screenshots
+- **CI/CD**: Lint → TypeCheck → Smoke Tests (required to merge to main)
 
-## Code Paths for Testing (If Implemented)
+## Running Tests
+
+**Smoke Tests** (end-to-end user flows)
+```bash
+# Set test credentials
+export E2E_AUTH_EMAIL="fake@notreal.com"
+export E2E_AUTH_PASSWORD="fake26"
+
+# Run all tests
+npm run test:smoke
+
+# Run in headed mode (see browser)
+npm run test:smoke:headed
+```
+
+**Unit/Integration Tests** (when added)
+```bash
+npm run test        # Watch mode
+npm run test:ci     # CI mode (run once)
+```
+
+## Smoke Test Coverage
+
+Located in `tests/smoke/`, these 11 tests validate critical user flows:
+
+| Test | Coverage |
+|------|----------|
+| Auth | Sign-in/out flow |
+| Workouts | History page, create/edit |
+| Screenshots | Upload UI, PRS detection |
+| Analysis | Plan generation, analysis generation |
+
+See `tests/smoke/README.md` for detailed documentation.
+
+## Code Paths for Testing (Future Unit Tests)
 
 The following areas would benefit from test coverage:
 
@@ -442,18 +477,22 @@ src/__tests__/
 9. UI component styling/rendering (hard to test meaningfully)
 10. Data fetching/caching (often integration tested)
 
-## Current Testing Gaps
+## Current Testing Coverage
 
-**Note:** No tests are currently in place. The following areas lack coverage:
+### Implemented:
+- ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)
+- ✅ **CI/CD Pipeline** (GitHub Actions on every PR and push to main)
 
-- **Error classification**: No tests for 5 error categories
-- **Exercise resolution**: No validation that machine/non-machine exercises stay separate
-- **Server actions**: No tests for `parsePersonalRecordsAction`, `getPersonalRecords`, etc.
-- **Hooks**: No tests for `useLiftProgression`, `useStrengthFindings`, `useLiftTrends`
-- **Components**: No tests for `LiftProgressionCard`, `ErrorBoundary`, `CardErrorFallback`
-- **API endpoints**: No tests for `/api/client-errors`, `/api/health`
-- **Rate limiting**: No tests for quota enforcement
+### Future Opportunities (Unit/Integration):
+The areas listed above (error classification, exercise resolution, server actions, hooks, components, API endpoints) would benefit from unit/integration tests using Vitest + React Testing Library.
+
+**Priority Order:**
+1. Error classification and logging
+2. Exercise name resolution
+3. Rate limiting enforcement
+4. Server action validation
+5. Component integration tests
 
 ---
 
-*Testing analysis: 2026-02-05*
+*Testing last updated: 2026-02-07*

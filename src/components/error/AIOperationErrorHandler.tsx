@@ -93,7 +93,7 @@ export function AIOperationErrorHandler({
       case 'auth_error':
         return 'Authentication failed. Please sign in and try again.';
       case 'unknown_error':
-        return 'An unexpected error occurred. Please try again or contact support if the problem persists.';
+        return 'An unexpected error occurred. Please try again or contact our support team if the problem persists.';
       default:
         return classified.userMessage;
     }
@@ -152,6 +152,23 @@ export function AIOperationErrorHandler({
                 Try Again
               </button>
             )}
+            <a
+              href="mailto:support@fitnessai.app"
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#f57c00',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+            >
+              Contact Support
+            </a>
             {isDevelopment && (
               <button
                 onClick={() => {

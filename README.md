@@ -68,6 +68,35 @@ To run this project locally, follow these steps:
 4.  **Open the App**:
     Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Testing
+
+**Unit & Integration Tests**
+```bash
+npm run test           # Run tests in watch mode
+npm run test:ci        # Run tests once (CI mode)
+```
+
+**Smoke Tests** (end-to-end user flows)
+```bash
+# Set up test credentials first
+export E2E_AUTH_EMAIL="fake@notreal.com"
+export E2E_AUTH_PASSWORD="fake26"
+
+# Run all smoke tests
+npm run test:smoke
+
+# Run in headed mode (see browser)
+npm run test:smoke:headed
+```
+
+**CI/CD Checks**
+When you push to `main` or open a PR, the following checks run automatically:
+- `lint` - ESLint
+- `typecheck` - TypeScript type checking
+- `smoke-tests` - End-to-end tests for critical user flows
+
+See `.github/workflows/` for CI configuration and `tests/smoke/README.md` for detailed smoke test documentation.
+
 ## Available Pages
 
 The application is organized into the following pages, accessible via the bottom navigation bar:

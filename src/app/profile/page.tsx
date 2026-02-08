@@ -8,7 +8,8 @@ import { WeeklyCardioTargetsCard } from "@/components/profile/WeeklyCardioTarget
 import { ProfileCompletionNotice } from "@/components/profile/ProfileCompletionNotice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LogOut, Loader2, AlertTriangle, UserPlus } from "lucide-react";
+import { LogOut, Loader2, AlertTriangle, UserPlus, Mail, HelpCircle } from "lucide-react";
+import Link from "next/link";
 import { useUserProfile, useGoals, useSaveGoals } from "@/lib/firestore.service";
 import type { UserProfile, FitnessGoal } from "@/lib/types";
 import { useProfileUpdate } from "@/hooks/useProfileUpdate";
@@ -156,6 +157,39 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Support & Help Section */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HelpCircle className="h-5 w-5" />
+            Help & Support
+          </CardTitle>
+          <CardDescription>
+            Need help? Send us feedback or check our FAQ
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Link href="/support" className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <Mail className="mr-2 h-4 w-4" />
+              Support & Feedback
+            </Button>
+          </Link>
+          <a href="mailto:support@fitnessai.app" className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <Mail className="mr-2 h-4 w-4" />
+              Email: support@fitnessai.app
+            </Button>
+          </a>
+          <Link href="/help" className="block">
+            <Button variant="outline" className="w-full justify-start">
+              <HelpCircle className="mr-2 h-4 w-4" />
+              Help & FAQ
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-lg">
         <CardContent className="pt-6">

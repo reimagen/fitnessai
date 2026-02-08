@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Trash2, Loader2 } from "lucide-react";
 import type { ExerciseCategory, PersonalRecord, UserProfile } from "@/lib/types";
@@ -11,6 +11,16 @@ import { Button } from "@/components/ui/button";
 import { useRecordUpdate } from "@/hooks/useRecordUpdate";
 import { useClearRecords } from "@/hooks/useClearRecords";
 import { useExercises } from "@/lib/firestore.service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type PersonalRecordsSectionProps = {
   userId: string;
@@ -27,6 +37,7 @@ export function PersonalRecordsSection({
   isLoading,
   isError,
 }: PersonalRecordsSectionProps) {
+  const [showClearDialog, setShowClearDialog] = useState(false);
   const { data: exerciseLibrary = [] } = useExercises();
   const { editState, isEditing, startEdit, cancelEdit, updateWeight, updateDate } = usePrEdit();
   const { handleSaveEdit, isPending: isUpdating } = useRecordUpdate(userId, editState, { onSuccess: cancelEdit });
@@ -113,20 +124,43 @@ export function PersonalRecordsSection({
         )}
         {recordCount > 0 && (
           <div className="pt-6 mt-6 border-t">
-            <Button
-              variant="destructive"
-              size="sm"
-              className="w-full"
-              onClick={() => handleClear(recordCount)}
-              disabled={isClearing}
-            >
-              {isClearing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="mr-2 h-4 w-4" />
-              )}
-              Clear All Records
-            </Button>
+            <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  disabled={isClearing}
+                >
+                  {isClearing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-2 h-4 w-4" />
+                  )}
+                  Clear All Records
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all {recordCount} of your personal records. This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="flex gap-2 justify-end">
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      handleClear(recordCount);
+                      setShowClearDialog(false);
+                    }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete All
+                  </AlertDialogAction>
+                </div>
+              </AlertDialogContent>
+            </AlertDialog>
             <p className="mt-2 text-xs text-muted-foreground">This action cannot be undone.</p>
           </div>
         )}

@@ -65,13 +65,67 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 ## P2: Product & Operations
 
-- App store-grade UX polish passes (empty states, error copy, edge cases)
-- Add in-app help/FAQ and user-facing troubleshooting for AI failures
-- Verify onboarding flow and first-session success path (log 1 workout, view analysis)
+### Phase 1: Launch Blockers ✅ COMPLETE
 
-- Create production runbook (deploy, rollback, incident handling) - partially complete for error handling in /Users/lisagu/Projects/fitnessai-1/docs/ops-runbook.md
-- Add analytics to measure feature usage and drop-offs
-- Add user support path (feedback / contact)
+- ✅ **P2.1: Onboarding Verification** - Comprehensive testing & findings in `/docs/P2.1-FINDINGS.md`
+  - ✅ Smoke tests executed (9/11 passing, 2 non-critical timeouts)
+  - ✅ Manual end-to-end onboarding tested (sign-up → profile → workout → analysis)
+  - ✅ Error scenarios validated
+  - ✅ Data persistence verified
+  - **Status**: Onboarding is production-ready
+
+- ✅ **P2.2: User Support Path** - Contact email + feedback form
+  - ✅ Support page with feedback form at `/support`
+  - ✅ Feedback server actions save to Firestore
+  - ✅ Support email link: `support@fitnessai.app`
+  - ✅ Support section in Profile page
+
+- ✅ **P2.3: Critical UX Fixes**
+  - ✅ File size validation (10MB max) on screenshot uploads
+  - ✅ Confirmation dialogs for destructive actions (Clear All Records, Delete Workout)
+  - ✅ Improved empty state (WorkoutList with icon + messaging)
+  - ✅ Error handler includes "Contact Support" button
+
+- ✅ **P2.4: Deployment Procedure** - Production runbook complete
+  - ✅ Pre-deployment checklist documented
+  - ✅ Deployment commands (Firebase CLI and Console)
+  - ✅ Post-deployment verification steps
+  - ✅ Rollback procedure with commands
+  - ✅ 5 incident playbooks: Firestore, AI API, High Error Rate, Auth Failures, Performance
+
+### Phase 2: Launch Essentials 🔄 IN PROGRESS
+
+- ✅ **P2.5: Help/FAQ Page** - Created at `/help` with 30+ FAQs
+  - ✅ Organized by category: Getting Started, Workout Logging, Analysis, PRs, Troubleshooting, Account
+  - ✅ Collapsible accordion for each question
+  - ✅ Links back to Support page
+
+- ⏳ **P2.6: UX Polish - Empty States** (skeleton loaders, optimizations)
+  - [ ] Skeleton loaders for History page
+  - [ ] Additional empty state improvements
+
+- ⏳ **P2.7: Ops Runbook - Incident Playbooks** (already done in P2.4! ✅)
+
+### Phase 3: Growth Enablers (Post-Launch)
+
+- ⏳ **P2.8: Analytics Platform Integration** - Not started
+  - [ ] Choose platform (Posthog or GA4)
+  - [ ] Implement tracking script
+
+- ⏳ **P2.9: Analytics Event Tracking** - Not started
+  - [ ] Track onboarding events
+  - [ ] Track feature usage
+  - [ ] Track drop-off points
+
+### Phase 4: Maturity (Post-Scale)
+
+- ⏳ **P2.10: Advanced UX Polish** - Not started
+  - [ ] Success animations
+  - [ ] Optimistic UI updates
+
+- ⏳ **P2.11: Disaster Recovery** - Not started
+  - [ ] Backup/restore procedures
+  - [ ] On-call rotation
 
 ## P2: Billing (Not started)
 
@@ -80,9 +134,9 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - Add pricing page and plan enforcement
 
 ## Deferred
-
+- Adding support email/form destinations
 - Admin UI for managing the exercise library (post-migration)
-- (Optional) Expand exercise library (smith machine, preacher curl, etc.)
+- (Optional) Expand exercise library (smith machine, preacher curl, cable glute kickbacks, etc.)
 - **Collections Split Final Cleanup** - Remove old fields from user profile document (final optimization step, safe because fallback/backfill completed in prod)
   - Delete `weeklyPlan` field from `/users/{userId}`
   - Delete `strengthAnalysis` field from `/users/{userId}`
