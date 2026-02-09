@@ -1,5 +1,7 @@
 # AGENTS.md
 
+- ⚠️ NEVER hardcode API keys in documentation or code - use environment variables only
+
 ## Project context
 - App: FitnessAI
 - Stack: Next.js (app router), TypeScript, Tailwind, Shadcn UI

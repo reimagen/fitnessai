@@ -34,24 +34,24 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 - ✅ Error messages include "Contact Support" link
 
 ### Pre-Deployment
-- [ ] Review Firestore rules for production settings
-- [ ] Test smoke tests with prod credentials (in staging if available)
-- [ ] Verify all email notifications working (password reset, feedback, etc.)
-- [ ] Set up monitoring alerts in Cloud Logging
-- [ ] Configure uptime check and health endpoint
-- [ ] Document on-call rotation and escalation contacts
+- ✅ Review Firestore rules for production settings
+- ✅ Test smoke tests with prod credentials (11/11 passing)
+- ✅ Verify all email notifications working (password reset, feedback form)
+- ✅ Set up monitoring alerts in Cloud Logging (documented in ops-runbook)
+- ✅ Configure uptime check and health endpoint (`/api/health`)
+- ⏳ Document on-call rotation and escalation contacts
 
 ### During Deployment
-- [ ] Have rollback procedure ready (`docs/ops-runbook.md`)
-- [ ] Monitor error logs for 30 minutes post-deploy
-- [ ] Run manual smoke test after deployment
-- [ ] Verify health check endpoint returns `ok`
+- ✅ Have rollback procedure ready (`docs/ops-runbook.md`)
+- ⏳ Monitor error logs for 30 minutes post-deploy
+- ✅ Run manual smoke test after deployment (11/11 smoke tests pass)
+- ✅ Verify health check endpoint returns `ok` (`/api/health`)
 
-### Post-Launch (First Week)
-- [ ] Monitor Firestore costs and alert thresholds
-- [ ] Monitor error rates and spike detection
-- [ ] Gather user feedback from early users
-- [ ] Plan Phase 2 work (analytics, advanced UX)
+### Post-Launch (First Week) - IN PROGRESS
+- ⏳ Monitor Firestore costs and alert thresholds
+- ⏳ Monitor error rates and spike detection
+- ⏳ Gather user feedback from early users (support@fitnessai.app)
+- ⏳ Plan Phase 2 work (analytics, advanced UX)
 
 ---
 
