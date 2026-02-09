@@ -76,6 +76,114 @@ function useExercises() {
 - **Garbage collected (24h)**: Data removed from memory if unused
 - **Components**: `WorkoutLogForm`, `ManualPrForm`, `PersonalRecordsSection`, `PrProgress`, `analysis/page`
 
+## Workout Data Caching
+
+### Client-Side Caching Strategy
+
+Workout logs use React Query with an intelligent caching strategy based on date ranges. This minimizes Firestore reads while balancing freshness:
+
+| Query Type | Cache Key | Stale Time | Rationale |
+|-----------|-----------|-----------|-----------|
+| **Current Month** (History Page) | `['workouts', userId, 'yyyy-MM']` | **1 hour** | Frequently updated, but user only modifies current month regularly |
+| **Past Months** (History Page) | `['workouts', userId, 'yyyy-MM']` | **∞ (forever)** | Historical data never changes; no need to refetch |
+| **Date Range** (Analysis Page) | `['workouts', userId, 'since-yyyy-MM-dd']` | **5 minutes** | For filtered views; shorter TTL ensures fresh data when filters change |
+| **All Workouts** (Rare) | `['workouts', userId, 'all']` | **5 minutes** | Expensive query; rarely used; 5min TTL balances freshness |
+
+### Implementation
+
+```typescript
+// src/lib/firestore.service.ts
+
+export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | undefined, enabled: boolean = true) {
+  // Determine cache key based on date range
+  let dateKey: string | undefined;
+  if (forDateRange) {
+    if (forDateRange instanceof Date) {
+      dateKey = format(forDateRange, 'yyyy-MM'); // Month-based key
+    } else {
+      dateKey = `since-${format(forDateRange.start, 'yyyy-MM-dd')}`; // Range-based key
+    }
+  } else {
+    dateKey = 'all'; // All workouts
+  }
+
+  const queryKey = ['workouts', user?.uid, dateKey];
+
+  // Stale time: 1 hour for current month, forever for past, 5 min for ranges
+  let staleTime = 1000 * 60 * 5; // 5 minute default
+  if (forDateRange && forDateRange instanceof Date) {
+    staleTime = isSameMonth(forDateRange, new Date())
+      ? 1000 * 60 * 60    // 1 hour for current month
+      : Infinity;         // Forever for past months
+  }
+
+  return useQuery({
+    queryKey,
+    queryFn: () => getWorkoutLogs(user.uid, dateRange),
+    staleTime,
+    enabled: !!user && enabled,
+  });
+}
+```
+
+### Cache Invalidation
+
+When a user creates, updates, or deletes a workout:
+
+```typescript
+// Invalidate the specific month's cache
+const monthKey = format(workoutDate, 'yyyy-MM');
+queryClient.invalidateQueries({ queryKey: ['workouts', userId, monthKey] });
+
+// Also invalidate current week (if applicable)
+const weekKey = `${getYear(today)}-W${getWeek(today)}`;
+queryClient.invalidateQueries({ queryKey: ['workouts', userId, weekKey] });
+```
+
+### Centralized Date Range Utilities
+
+Common date range calculations are extracted into `/src/lib/date-range-utils.ts` for consistency:
+
+```typescript
+// Get date 6 weeks ago (used for filtering recent lift/workout data)
+export function getSixWeeksAgo(): Date {
+  return subWeeks(new Date(), 6);
+}
+
+// Get 6 completed weeks + partial current week (used for plan generation, strength analysis)
+export function getSixWeeksRange(): { start: Date; end: Date } {
+  const weekStart = startOfWeek(new Date());
+  const sixWeeksBeforeCurrentWeek = subWeeks(weekStart, 6);
+  return { start: sixWeeksBeforeCurrentWeek, end: new Date() };
+}
+```
+
+**Used by:**
+- **Plan Page** — Fetches 6-week range for personalized weekly plans
+- **Lift Progression Analysis** — Analyzes strength trends over 6 weeks
+- **Strength Balance Analysis** — Compares lift ratios using 6-week averages
+
+This centralization ensures consistent date range logic across all analysis features.
+
+### Cost Impact
+
+**Analysis Page Optimization (Smart Date Range Fetching)**
+
+Before: Fetched ALL workouts every time page loaded
+- User with 500 workouts: ~500 documents read per load
+- 5 loads/day × 100 users = 250,000 reads/day
+
+After: Fetches only selected time range
+- Default (This Week): ~7-10 documents per load
+- This Month: ~30 documents per load
+- This Year: ~365 documents per load
+- Reduction: **80-90% fewer reads** on analysis page
+
+**Monthly Savings Example**
+- Without optimization: 7.5M reads/month (likely exceeds free tier)
+- With optimization: 1-2M reads/month (comfortably within free tier)
+- Estimated savings: $3-5/month per 100 DAU
+
 ### Fallback Data
 
 If Firestore is unavailable, the app falls back to hardcoded data in `/src/lib/exercise-data.ts`:
