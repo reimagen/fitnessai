@@ -11,14 +11,17 @@ import { PlanGeneratorSection } from "@/components/plan/PlanGeneratorSection";
 import { GeneratedPlanSection } from "@/components/plan/GeneratedPlanSection";
 import { ErrorBoundary } from "@/components/error/ErrorBoundary";
 import { HeroHeader } from "@/components/layout/HeroHeader";
-
+import { getSixWeeksRange } from "@/lib/date-range-utils";
 
 export default function PlanPage() {
   const { data: profileResult, isLoading: isLoadingProfile, isError: isErrorProfile } = useUserProfile();
   const userProfile = profileResult?.data;
   const isProfileNotFound = profileResult?.notFound === true;
 
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts();
+  // Fetch 6 completed weeks + partial current week for plan generation
+  const recentWeeksRange = getSixWeeksRange();
+
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(recentWeeksRange);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords();
   const { data: generatedPlan, isLoading: isLoadingPlan } = useWeeklyPlan();
   const { data: strengthAnalysis } = useStrengthAnalysis();

@@ -17,13 +17,13 @@
 - Fix approach: Complete the exercise-registry migration (above) to make Firebase the single source of truth. Remove hardcoded data entirely. Update all components to fetch from Firebase.
 
 ### Limited Test Coverage in Production Codebase
-- Issue: No unit/integration test files in the `src/` directory despite production server actions, complex hooks, and AI integrations. Smoke tests (E2E) added for critical user flows, but deep logic remains untested.
+- Issue: Unit/integration test files missing in the `src/` directory despite production server actions, complex hooks, and AI integrations.
 - Coverage:
-  - ✅ Smoke tests: 11 E2E tests for authentication, workouts, analysis, screenshots (Playwright)
+  - ✅ Smoke tests: 11 E2E tests for authentication, workouts, analysis, screenshots (Playwright) - COMPLETE
   - ❌ Unit tests: Zero test files for server actions, hooks, utilities, components
   - ❌ Integration tests: No tests for Firestore converters, error classification, rate limiting
-- Impact: Cannot verify deep logic or error paths before deployment. Regression testing for business logic requires manual testing. Difficult to refactor with confidence. Error paths in server actions, rate limiting, error classification, and AI flows remain untested.
-- Fix approach: Add Vitest + React Testing Library for unit/integration tests. Start with critical paths: server actions in `src/app/*/actions.ts`, error classification in `src/lib/logging/error-classifier.ts`, rate limiting in `src/app/prs/rate-limiting.ts`. Aim for >70% coverage on critical paths. Smoke tests validate end-to-end flows but don't catch logic bugs.
+- Impact: Cannot verify deep logic or error paths before deployment. Regression testing for business logic requires manual testing. Difficult to refactor with confidence.
+- Fix approach: Add Vitest + React Testing Library for unit/integration tests. Start with critical paths: server actions in `src/app/*/actions.ts`, error classification in `src/lib/logging/error-classifier.ts`, rate limiting in `src/app/prs/rate-limiting.ts`. Aim for >70% coverage on critical paths.
 
 ### Incomplete Error Handling in Complex Hooks
 - Issue: Hooks like `useLiftProgression` (177 lines), `useChartData` (303 lines), `useCardioAnalysis` (321 lines) have minimal error handling. They return null on missing data without distinguishing between "still loading" and "error occurred". This can silently hide problems.
@@ -45,12 +45,6 @@
 - Trigger: When Firestore returns null or missing date field. The converter defaults to `new Date()` instead of throwing error or returning null, masking data issues.
 - Workaround: Always verify workout log dates after logging. Check Firestore console for malformed date fields.
 
-### Rate Limiting Not Enforced in Development
-- Symptoms: Development users can bypass rate limits by setting NODE_ENV=development. Test environment has no quota protection.
-- Files: `src/app/analysis/actions.ts` line 36, `src/app/prs/actions.ts` line 36, `src/app/plan/actions.ts` line 36, `src/app/profile/actions.ts` line 36, `src/app/history/actions.ts` line 36
-- Trigger: Running with NODE_ENV !== 'production'. Easily bypassed by modifying environment.
-- Workaround: Use explicit feature flag or user-based bypass list instead of NODE_ENV check.
-
 ## Security Considerations
 
 ### PII Redaction May Be Incomplete
@@ -64,12 +58,6 @@
 - Files: `src/app/analysis/actions.ts` line 26, `src/app/prs/actions.ts` line 26, `src/app/plan/actions.ts` line 26, `src/app/profile/actions.ts` line 26, `src/app/history/actions.ts` line 26
 - Current mitigation: Error message is generic but still identifies which service is missing.
 - Recommendations: (1) Pre-validate environment variables at startup, fail fast. (2) Log missing env vars only once at application start, not on every action. (3) Return generic error to user instead of exposing which service is missing.
-
-### Redis Configuration Exposure
-- Risk: `src/lib/logging/health-check.ts` checks for `process.env.UPSTASH_REDIS_REST_URL` and `process.env.UPSTASH_REDIS_REST_TOKEN` in client-visible health endpoint. If missing, health status is "degraded" which could leak infrastructure details.
-- Files: `src/lib/logging/health-check.ts` line 10
-- Current mitigation: Health endpoint is internal API route, not world-accessible unless hosting misconfigured.
-- Recommendations: (1) Add authentication to `/api/health` endpoint. (2) Return different responses for authenticated vs unauthenticated requests. (3) Do not expose why health is degraded publicly.
 
 ## Performance Bottlenecks
 
@@ -199,4 +187,4 @@
 
 ---
 
-*Concerns audit: Updated 2026-02-07*
+*Concerns audit: Updated 2026-02-09 - Removed completed items: E2E smoke tests (11/11), rate limiting implementation, health endpoint*

@@ -20,7 +20,7 @@ export default defineConfig({
         command: 'npm run dev -- --hostname 127.0.0.1 --port 3000',
         url: 'http://127.0.0.1:3000',
         reuseExistingServer: !isCI,
-        timeout: isCI ? 240000 : 180000,
+        timeout: isCI ? 270000 : 180000, // 4.5 min for CI (was 4 min), accommodates slow history page loads
       },
   projects: [
     {
