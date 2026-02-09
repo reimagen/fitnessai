@@ -3,7 +3,8 @@ import type { WorkoutLog, PersonalRecord } from '@/lib/types';
 import type { ExerciseDocument } from '@/lib/exercise-types';
 import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
 import { getNormalizedExerciseName } from '@/lib/strength-standards';
-import { format, subWeeks, isAfter } from 'date-fns';
+import { format, isAfter } from 'date-fns';
+import { getSixWeeksAgo } from '@/lib/date-range-utils';
 
 interface LiftHistoryEntry {
   date: Date;
@@ -49,7 +50,7 @@ export function useLiftProgression(
       return { chartData: [], trendlineData: null };
     }
 
-    const sixWeeksAgo = subWeeks(new Date(), 6);
+    const sixWeeksAgo = getSixWeeksAgo();
     const liftHistory = new Map<string, LiftHistoryEntry>();
 
     workoutLogs.forEach((log: WorkoutLog) => {

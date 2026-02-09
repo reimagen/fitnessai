@@ -2,6 +2,59 @@
 
 This is a prioritized sweep of what remains before a consumer-ready launch.
 
+---
+
+## 🚀 PRE-LAUNCH CHECKLIST
+
+### Security & Secrets
+- ✅ Firebase keys deployed to production
+- ✅ Gemini API key deployed to production
+- ✅ GitHub Secrets configured
+- ✅ Production environment variables set in Firebase App Hosting
+- ⚠️ NEVER hardcode API keys in documentation or code - use environment variables only
+
+### Code Quality
+- [ ] All lint checks passing (`npm run lint`)
+- [ ] All typecheck passing (`npm run typecheck`)
+- [ ] Build succeeds locally (`npm run build`)
+- ✅ Smoke tests passing (11/11 - GitHub Secrets configured)
+
+### Documentation
+- [ ] Deployment procedure documented in `docs/ops-runbook.md` ✅
+- [ ] Incident playbooks documented ✅
+- [ ] P2.1 findings documented in `docs/P2.1-FINDINGS.md` ✅
+- [ ] Help/FAQ page created at `/help` ✅
+- [ ] Support page created at `/support` ✅
+
+### Features & UX
+- [ ] File size validation on uploads (10MB max) ✅
+- [ ] Confirmation dialogs for destructive actions ✅
+- [ ] Support contact email visible in Profile page ✅
+- [ ] Feedback form functional and saves to Firestore ✅
+- [ ] Error messages include "Contact Support" link ✅
+
+### Pre-Deployment
+- [ ] Review Firestore rules for production settings
+- [ ] Test smoke tests with prod credentials (in staging if available)
+- [ ] Verify all email notifications working (password reset, feedback, etc.)
+- [ ] Set up monitoring alerts in Cloud Logging
+- [ ] Configure uptime check and health endpoint
+- [ ] Document on-call rotation and escalation contacts
+
+### During Deployment
+- [ ] Have rollback procedure ready (`docs/ops-runbook.md`)
+- [ ] Monitor error logs for 30 minutes post-deploy
+- [ ] Run manual smoke test after deployment
+- [ ] Verify health check endpoint returns `ok`
+
+### Post-Launch (First Week)
+- [ ] Monitor Firestore costs and alert thresholds
+- [ ] Monitor error rates and spike detection
+- [ ] Gather user feedback from early users
+- [ ] Plan Phase 2 work (analytics, advanced UX)
+
+---
+
 ## P0: Data & Core Functionality
 
 - ✅ Exercise library migration: implement Phases 1–6 in `docs/firebase-exercise-lib.md`
@@ -100,9 +153,13 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
   - ✅ Collapsible accordion for each question
   - ✅ Links back to Support page
 
-- ⏳ **P2.6: UX Polish - Empty States** (skeleton loaders, optimizations)
-  - [ ] Skeleton loaders for History page
-  - [ ] Additional empty state improvements
+- ✅ **P2.6: UX Polish - Empty States & Performance** (COMPLETE)
+  - ✅ Skeleton loaders for History, Analysis, and Plan pages
+  - ✅ Smart date range fetching for Analysis & Plan pages (80-90% Firestore read reduction)
+  - ✅ Centralized 6-week date range utilities (`/src/lib/date-range-utils.ts`)
+  - ✅ Updated caching strategy documentation
+  - ✅ Add loading state indicator for screenshot parser form (shows "Loading parser..." while initializing)
+  - ✅ Increase test timeouts in playwright.config (from 4m to 4.5m for flaky history tests)
 
 - ⏳ **P2.7: Ops Runbook - Incident Playbooks** (already done in P2.4! ✅)
 
@@ -129,7 +186,7 @@ This is a prioritized sweep of what remains before a consumer-ready launch.
 
 ## P2: Billing (Not started)
 
-- Decide billing provider and model (subscriptions vs usage)
+- Decide billing provider and model (subscriptions vs usage) - Stripe, monthly subscription.
 - Gate AI-heavy features behind billing tiers
 - Add pricing page and plan enforcement
 

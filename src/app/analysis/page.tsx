@@ -1,8 +1,8 @@
 
 "use client";
 
-import { Loader2, UserPlus, TrendingUp } from 'lucide-react';
-import React, { useState, useMemo } from 'react';
+import { UserPlus, TrendingUp } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import type { WorkoutLog } from '@/lib/types';
 import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis, useGoals } from '@/lib/firestore.service';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
@@ -26,6 +26,30 @@ import { useCardioAnalysis } from '@/hooks/useCardioAnalysis';
 import { formatCardioDuration } from '@/analysis/formatting-utils';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
 import { HeroHeader } from '@/components/layout/HeroHeader';
+import { AnalysisPageSkeleton } from '@/components/analysis/AnalysisPageSkeleton';
+
+const getDateRangeForFilter = (range: string): Date | { start: Date; end: Date } | undefined => {
+  const end = new Date();
+  const start = new Date();
+
+  switch (range) {
+    case 'weekly':
+      start.setDate(end.getDate() - 7);
+      return { start, end };
+    case 'monthly':
+      start.setMonth(end.getMonth() - 1);
+      return { start, end };
+    case 'yearly':
+      start.setFullYear(end.getFullYear() - 1);
+      return { start, end };
+    case 'all-time':
+      return undefined;
+    default:
+      // Default to weekly
+      start.setDate(end.getDate() - 7);
+      return { start, end };
+  }
+};
 
 export default function AnalysisPage() {
   const [timeRange, setTimeRange] = useState('weekly');
@@ -37,7 +61,8 @@ export default function AnalysisPage() {
   const isProfileNotFound = profileResult?.notFound === true;
 
   const enableDataFetching = !isLoadingProfile && !!userProfile;
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(undefined, enableDataFetching);
+  const dateRange = getDateRangeForFilter(timeRange);
+  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(dateRange, enableDataFetching);
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   const { data: exercises = [] } = useExercises(enableDataFetching);
   const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
@@ -75,11 +100,7 @@ export default function AnalysisPage() {
   const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
 
   if (isLoadingProfile) {
-    return (
-      <div className="container mx-auto px-4 py-8 flex justify-center items-center h-64">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-      </div>
-    );
+    return <AnalysisPageSkeleton />;
   }
 
   if (isErrorProfile) {
@@ -120,6 +141,10 @@ export default function AnalysisPage() {
     );
   }
 
+  if (isLoading) {
+    return <AnalysisPageSkeleton />;
+  }
+
   return (
     <ErrorBoundary feature="analysis">
       <div className="container mx-auto px-4 py-8">
@@ -148,11 +173,7 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      {isLoading ? (
-        <Card className="shadow-lg mb-6 h-40 flex justify-center items-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </Card>
-      ) : !isError && chartData.periodSummary ? (
+      {!isError && chartData.periodSummary ? (
         <Card className="shadow-lg mb-6 bg-card">
           <CardHeader>
             <CardTitle className="font-headline flex items-center gap-2 text-xl">
@@ -178,15 +199,9 @@ export default function AnalysisPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
-        {isLoading
-          ? Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="shadow-lg lg:col-span-3 h-96 flex justify-center items-center">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </Card>
-          ))
-          : !isError && (
-            <>
-              <ExerciseVarietyCard
+        {!isError && (
+          <>
+            <ExerciseVarietyCard
                 isLoading={isLoading}
                 isError={isError}
                 workoutFrequencyData={chartData.workoutFrequencyData}
@@ -268,7 +283,7 @@ export default function AnalysisPage() {
                 />
               </ErrorBoundary>
             </>
-          )}
+        )}
       </div>
       </div>
     </ErrorBoundary>

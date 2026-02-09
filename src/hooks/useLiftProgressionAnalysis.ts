@@ -1,8 +1,9 @@
-import { subWeeks, isAfter } from "date-fns";
+import { isAfter } from "date-fns";
 import { useToast } from "@/hooks/useToast";
 import { useAnalyzeLiftProgression } from "@/lib/firestore.service";
 import { getNormalizedExerciseName } from "@/lib/strength-standards";
 import { resolveCanonicalExerciseName } from "@/lib/exercise-normalization";
+import { getSixWeeksAgo } from "@/lib/date-range-utils";
 import type { AnalyzeLiftProgressionInput, StrengthLevel, UserProfile, WorkoutLog } from "@/lib/types";
 import type { ExerciseDocument } from "@/lib/exercise-types";
 
@@ -38,7 +39,7 @@ export function useLiftProgressionAnalysis({
     }
     if (!workoutLogs) return;
 
-    const sixWeeksAgo = subWeeks(new Date(), 6);
+    const sixWeeksAgo = getSixWeeksAgo();
     const exerciseHistory = workoutLogs
       .filter(log => isAfter(log.date, sixWeeksAgo))
       .flatMap(log =>
