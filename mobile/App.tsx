@@ -48,7 +48,7 @@ export default function App() {
     try {
       let granted = false;
       try {
-        // @ts-ignore - API compatibility across versions
+        // @ts-expect-error - API compatibility across versions
         const permission = await Camera.requestCameraPermissionsAsync();
         granted = permission.granted;
       } catch {

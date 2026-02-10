@@ -1,0 +1,6 @@
+{
+  "extends": "expo",
+  "rules": {
+    "no-html-link-for-pages": "off"
+  }
+}
