@@ -13,6 +13,10 @@ interface PhotoLibraryResult {
   error?: string;
 }
 
+interface PhotoError extends Error {
+  code?: string;
+}
+
 declare global {
   interface Window {
     NativeBridge?: {
@@ -39,8 +43,8 @@ export const PhotoBridge = {
       }
 
       if (result.canceled) {
-        const error = new Error('Photo selection canceled by user');
-        (error as any).code = 'USER_CANCELLED';
+        const error: PhotoError = new Error('Photo selection canceled by user');
+        error.code = 'USER_CANCELLED';
         throw error;
       }
 
@@ -54,7 +58,7 @@ export const PhotoBridge = {
         mimeType: 'image/jpeg',
       };
     } catch (error) {
-      if ((error as any).code === 'USER_CANCELLED') {
+      if ((error as PhotoError)?.code === 'USER_CANCELLED') {
         throw error;
       }
       throw new Error(`Failed to select photo: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -73,7 +77,7 @@ export const PhotoBridge = {
    */
   getErrorMessage(error: unknown): string {
     if (error instanceof Error) {
-      if ((error as any).code === 'USER_CANCELLED') {
+      if ((error as PhotoError)?.code === 'USER_CANCELLED') {
         return 'You cancelled the selection';
       }
       if (error.message.includes('permission')) {
