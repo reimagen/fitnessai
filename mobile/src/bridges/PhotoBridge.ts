@@ -20,6 +20,7 @@ interface PhotoError extends Error {
 declare global {
   interface Window {
     NativeBridge?: {
+      camera: () => Promise<PhotoLibraryResult>;
       photoLibrary: () => Promise<PhotoLibraryResult>;
     };
   }

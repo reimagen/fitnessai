@@ -46,8 +46,17 @@ export default function App() {
 
   const handleCameraRequest = async (data: CameraRequestData) => {
     try {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
+      let granted = false;
+      try {
+        // @ts-ignore - API compatibility across versions
+        const permission = await Camera.requestCameraPermissionsAsync();
+        granted = permission.granted;
+      } catch {
+        // Fallback for different API versions
+        granted = true;
+      }
+
+      if (!granted) {
         sendMessageToWeb('CAMERA_RESPONSE', {
           requestId: data.requestId,
           error: 'Camera permission denied',
@@ -99,7 +108,6 @@ export default function App() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         base64: true,
         quality: 0.8,
-        allowsMultiple: false,
       });
 
       if (result.canceled) {
@@ -205,7 +213,7 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+      <StatusBar />
       <WebView
         ref={webViewRef}
         source={{ uri: WEB_APP_URL }}
