@@ -11,15 +11,6 @@ interface CameraResult {
   error?: string;
 }
 
-declare global {
-  interface Window {
-    NativeBridge?: {
-      camera: () => Promise<CameraResult>;
-      photoLibrary: () => Promise<CameraResult>;
-    };
-  }
-}
-
 export const CameraBridge = {
   /**
    * Access native camera to take a photo
