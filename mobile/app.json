@@ -1,19 +1,31 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "FitnessAI",
+    "slug": "fitnessai",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "scheme": "fitnessai",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.reimagen.fitnessai",
+      "buildNumber": "1",
+      "config": {
+        "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "FitnessAI uses your camera to parse workout screenshots and personal records from your training logs.",
+        "NSPhotoLibraryUsageDescription": "FitnessAI accesses your photo library to parse workout screenshots and training data.",
+        "NSPhotoLibraryAddOnlyUsageDescription": "FitnessAI saves photos to your library."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,10 +33,21 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.reimagen.fitnessai"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ]
   }
 }

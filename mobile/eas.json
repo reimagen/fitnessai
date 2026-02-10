@@ -1,0 +1,44 @@
+{
+  "cli": {
+    "version": ">= 5.0.0",
+    "requireCommit": false
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m1"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "resourceClass": "m1",
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://app.fitnessai.com"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {
+        "resourceClass": "m1",
+        "image": "latest"
+      },
+      "env": {
+        "EXPO_PUBLIC_WEB_URL": "https://app.fitnessai.com"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleTeamId": "YOUR_TEAM_ID",
+        "appleId": "your-apple-id@example.com",
+        "appleIdPassword": "@env APPLE_ID_PASSWORD"
+      }
+    }
+  }
+}
