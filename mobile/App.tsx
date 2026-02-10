@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { StatusBar } from 'expo-status-bar';
@@ -8,16 +8,23 @@ import * as Camera from 'expo-camera';
 
 const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'http://localhost:3000';
 
-interface WebViewRef {
-  injectJavaScript: (script: string) => void;
-  goBack: () => void;
-  reload: () => void;
+interface CameraRequestData {
+  type: string;
+  requestId: number;
+}
+
+interface PhotoLibraryRequestData {
+  type: string;
+  requestId: number;
+}
+
+interface NativeShareRequestData {
+  type: string;
+  requestId: number;
 }
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [canGoBack, setCanGoBack] = useState(false);
 
   const handleMessage = async (event: WebViewMessageEvent) => {
     const data = JSON.parse(event.nativeEvent.data);
@@ -37,7 +44,7 @@ export default function App() {
     }
   };
 
-  const handleCameraRequest = async (data: any) => {
+  const handleCameraRequest = async (data: CameraRequestData) => {
     try {
       const { status } = await Camera.requestCameraPermissionsAsync();
       if (status !== 'granted') {
@@ -77,7 +84,7 @@ export default function App() {
     }
   };
 
-  const handlePhotoLibraryRequest = async (data: any) => {
+  const handlePhotoLibraryRequest = async (data: PhotoLibraryRequestData) => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
@@ -117,7 +124,7 @@ export default function App() {
     }
   };
 
-  const handleNativeShare = async (data: any) => {
+  const handleNativeShare = async (data: NativeShareRequestData) => {
     try {
       // Share functionality - can be expanded with react-native-share
       console.log('Share request:', data);
@@ -133,14 +140,14 @@ export default function App() {
     }
   };
 
-  const sendMessageToWeb = (type: string, data: any) => {
+  const sendMessageToWeb = (type: string, data: Record<string, unknown>) => {
     const script = `
       window.postMessage(JSON.stringify({
         type: '${type}',
         ...${JSON.stringify(data)}
       }), '*');
     `;
-    (webViewRef.current as any)?.injectJavaScript(script);
+    webViewRef.current?.injectJavaScript(script);
   };
 
   const injectedJavaScript = `
@@ -209,11 +216,6 @@ export default function App() {
             <ActivityIndicator size="large" color="#0000ff" />
           </View>
         )}
-        onLoadStart={() => setIsLoading(true)}
-        onLoadEnd={() => setIsLoading(false)}
-        onNavigationStateChange={(navState) => {
-          setCanGoBack(navState.canGoBack);
-        }}
         onMessage={handleMessage}
         injectedJavaScript={injectedJavaScript}
         javaScriptEnabled={true}

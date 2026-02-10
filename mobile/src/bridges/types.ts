@@ -74,7 +74,7 @@ export interface NativeBridgeConfig {
 /**
  * Event emitted when native bridge is ready
  */
-export interface NativeBridgeReadyEvent extends CustomEvent<{
+export type NativeBridgeReadyEvent = CustomEvent<{
   isNative: boolean;
   timestamp: number;
-}> {}
+}>;
