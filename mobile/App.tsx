@@ -4,7 +4,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { StatusBar } from 'expo-status-bar';
 import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
-import * as Camera from 'expo-camera';
+import { useCameraPermissions } from 'expo-camera';
 
 const WEB_APP_URL = process.env.EXPO_PUBLIC_WEB_URL || 'http://localhost:3000';
 
@@ -25,6 +25,8 @@ interface NativeShareRequestData {
 
 export default function App() {
   const webViewRef = useRef<WebView>(null);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [mediaLibraryPermission, requestMediaLibraryPermission] = ImagePicker.useMediaLibraryPermissions();
 
   const handleMessage = async (event: WebViewMessageEvent) => {
     const data = JSON.parse(event.nativeEvent.data);
@@ -46,14 +48,11 @@ export default function App() {
 
   const handleCameraRequest = async (data: CameraRequestData) => {
     try {
-      let granted = false;
-      try {
-        // @ts-expect-error - API compatibility across versions
-        const permission = await Camera.requestCameraPermissionsAsync();
-        granted = permission.granted;
-      } catch {
-        // Fallback for different API versions
-        granted = true;
+      // Check or request camera permission
+      let granted = cameraPermission?.granted;
+      if (!granted) {
+        const result = await requestCameraPermission();
+        granted = result.granted;
       }
 
       if (!granted) {
@@ -65,7 +64,7 @@ export default function App() {
       }
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         base64: true,
         quality: 0.8,
         allowsEditing: false,
@@ -95,8 +94,14 @@ export default function App() {
 
   const handlePhotoLibraryRequest = async (data: PhotoLibraryRequestData) => {
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
+      // Check or request media library permission
+      let granted = mediaLibraryPermission?.granted;
+      if (!granted) {
+        const result = await requestMediaLibraryPermission();
+        granted = result.granted;
+      }
+
+      if (!granted) {
         sendMessageToWeb('PHOTO_LIBRARY_RESPONSE', {
           requestId: data.requestId,
           error: 'Photo library permission denied',
@@ -105,7 +110,7 @@ export default function App() {
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         base64: true,
         quality: 0.8,
       });
