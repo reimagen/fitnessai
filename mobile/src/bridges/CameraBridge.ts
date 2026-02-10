@@ -21,7 +21,7 @@ export const CameraBridge = {
       throw new Error('Native bridge not available');
     }
 
-    const result = await window.NativeBridge.camera();
+    const result = (await window.NativeBridge.camera()) as CameraResult;
 
     if (result.error) {
       throw new Error(result.error);
@@ -47,7 +47,7 @@ export const CameraBridge = {
       throw new Error('Native bridge not available');
     }
 
-    const result = await window.NativeBridge.photoLibrary();
+    const result = (await window.NativeBridge.photoLibrary()) as CameraResult;
 
     if (result.error) {
       throw new Error(result.error);

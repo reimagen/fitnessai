@@ -12,7 +12,8 @@
     "build:ios:dev": "eas build --platform ios --profile development",
     "submit:ios": "eas submit --platform ios",
     "prebuild": "expo prebuild --clean",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "expo": "~54.0.33",
