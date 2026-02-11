@@ -63,6 +63,13 @@ export default function AnalysisPage() {
   const enableDataFetching = !isLoadingProfile && !!userProfile;
   const dateRange = getDateRangeForFilter(timeRange);
   const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(dateRange, enableDataFetching);
+
+  // Fetch 6-week data independently for lift progression (not affected by time range selector)
+  const sixWeeksAgo = new Date();
+  sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+  const sixWeekDateRange = { start: sixWeeksAgo, end: new Date() };
+  const { data: workoutLogsForLiftProgression } = useWorkouts(sixWeekDateRange, enableDataFetching);
+
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   const { data: exercises = [] } = useExercises(enableDataFetching);
   const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
@@ -74,10 +81,11 @@ export default function AnalysisPage() {
   const cardioAnalysisData = useCardioAnalysis(timeRange, workoutLogs, userProfile || undefined, filteredData.logsForPeriod);
 
   // Get frequently logged lifts - resolve to canonical exercise names from library
+  // Use 6-week data so exercises are available regardless of time range selector
   const frequentlyLoggedLifts = useMemo(() => {
-    if (!workoutLogs || exercises.length === 0) return [];
+    if (!workoutLogsForLiftProgression || exercises.length === 0) return [];
     const weightedExercises = new Map<string, number>();
-    workoutLogs.forEach((log: WorkoutLog) => {
+    workoutLogsForLiftProgression.forEach((log: WorkoutLog) => {
       log.exercises.forEach((ex) => {
         if (ex.weight && ex.weight > 0 && ex.category !== 'Cardio') {
           // Resolve to canonical name from exercise library
@@ -91,7 +99,7 @@ export default function AnalysisPage() {
       .filter(([, count]: [string, number]) => count > 1)
       .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .map(([name]: [string, number]) => name);
-  }, [workoutLogs, exercises]);
+  }, [workoutLogsForLiftProgression, exercises]);
 
   const resolvedSelectedLift = selectedLift || frequentlyLoggedLifts[0] || '';
 
@@ -239,7 +247,7 @@ export default function AnalysisPage() {
               >
                 <LiftProgressionCard
                   userProfile={userProfile!}
-                  workoutLogs={workoutLogs}
+                  workoutLogs={workoutLogsForLiftProgression}
                   personalRecords={personalRecords}
                   selectedLift={resolvedSelectedLift}
                   setSelectedLift={setSelectedLift}
