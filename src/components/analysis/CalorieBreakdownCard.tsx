@@ -50,17 +50,17 @@ export function CalorieBreakdownCard({ isLoading, isError, categoryCalorieData, 
         </CardTitle>
         <CardDescription>Total calories burned per category {timeRangeDisplayNames[timeRange]}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4">
         {categoryCalorieData.length > 0 ? (
-          <ChartContainer config={chartConfig} className="h-[300px] w-full">
+          <ChartContainer config={chartConfig} className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <PieChart margin={{ top: 0, right: 20, bottom: 0, left: 20 }}>
                 <Pie
                   data={categoryCalorieData}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
-                  cy="50%"
+                  cy="45%"
                   outerRadius={isMobile ? 60 : 80}
                   labelLine={false}
                   label={(props) => renderPieLabel(props, 'kcal', isMobile, props.payload?.hasEstimatedCalories ?? true)}
@@ -70,12 +70,12 @@ export function CalorieBreakdownCard({ isLoading, isError, categoryCalorieData, 
                   ))}
                 </Pie>
                 <Tooltip content={<ChartTooltipContent hideIndicator />} />
-                <Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{ paddingTop: "20px" }} />
+                <Legend content={<ChartLegendContent nameKey="key" />} wrapperStyle={{ paddingTop: "8px" }} />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
         ) : (
-          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+          <div className="h-[250px] flex items-center justify-center text-muted-foreground">
             <p>No calorie data available.</p>
           </div>
         )}

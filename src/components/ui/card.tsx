@@ -10,7 +10,7 @@ const Card = React.forwardRef<
     ref={ref}
     className={cn(
       // Default surface: deeper shadow + subtle "sheen" so the UI reads less flat.
-      "relative overflow-hidden rounded-2xl border border-border/70 bg-card/90 text-card-foreground shadow-lg shadow-primary/5",
+      "relative overflow-hidden rounded-2xl border border-border/70 bg-card/90 text-card-foreground shadow-lg shadow-primary/5 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1",
       "before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-br before:from-primary/10 before:via-transparent before:to-transparent before:opacity-60",
       className
     )}
