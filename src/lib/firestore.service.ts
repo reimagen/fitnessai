@@ -88,9 +88,9 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
   // --- Caching Strategy ---
   // - Past Months (History Page): Cache forever (`Infinity`). Data is historical and won't change.
   // - Current Month (History Page): Cache for 1 hour. It's only updated from this page, and mutations invalidate it.
-  // - Date Range (AI Context): Cache for 5 minutes.
-  // - All Workouts (Analysis Page): Cache for 5 minutes.
-  let staleTime: number | undefined = 1000 * 60 * 5; // 5 minute default
+  // - Date Range (AI Context): Cache for 30 minutes. Mutations trigger immediate refresh.
+  // - All Workouts (Analysis Page): Cache for 30 minutes. Mutations trigger immediate refresh.
+  let staleTime: number | undefined = 1000 * 60 * 30; // 30 minute default
   if (forDateRange && forDateRange instanceof Date) {
       staleTime = isSameMonth(forDateRange, new Date()) ? 1000 * 60 * 60 : Infinity; // 1 hour for current month
   }
@@ -146,7 +146,7 @@ export function useExercises(enabled: boolean = true) {
       });
     },
     enabled,
-    staleTime: 1000 * 60 * 60,
+    staleTime: 1000 * 60 * 60, // 1 hour - exercises change rarely
   });
 }
 
@@ -205,11 +205,17 @@ export function useAddWorkoutLog() {
         onSuccess: (data, variables) => {
             const monthKey = format(variables.data.date, 'yyyy-MM');
             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, monthKey] });
-            
+
             // Invalidate the "current week" query using the dynamic key
             const today = new Date();
             const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
+
+            // Invalidate the 6-week range query for lift progression chart
+            const sixWeeksAgo = new Date();
+            sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+            const sixWeekKey = `since-${format(sixWeeksAgo, 'yyyy-MM-dd')}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, sixWeekKey] });
         },
     });
 }
@@ -237,6 +243,12 @@ export function useUpdateWorkoutLog() {
             const today = new Date();
             const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
+
+            // Invalidate the 6-week range query for lift progression chart
+            const sixWeeksAgo = new Date();
+            sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+            const sixWeekKey = `since-${format(sixWeeksAgo, 'yyyy-MM-dd')}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, sixWeekKey] });
         },
     });
 }
@@ -277,6 +289,12 @@ export function useDeleteWorkoutLog() {
             const today = new Date();
             const weekKey = `${getYear(today)}-W${getWeek(today, { weekStartsOn: 0 })}`;
             queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, weekKey] });
+
+            // Invalidate the 6-week range query for lift progression chart
+            const sixWeeksAgo = new Date();
+            sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
+            const sixWeekKey = `since-${format(sixWeeksAgo, 'yyyy-MM-dd')}`;
+            queryClient.invalidateQueries({ queryKey: ['workouts', variables.userId, sixWeekKey] });
         },
     });
 }

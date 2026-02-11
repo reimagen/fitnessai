@@ -86,8 +86,8 @@ Workout logs use React Query with an intelligent caching strategy based on date 
 |-----------|-----------|-----------|-----------|
 | **Current Month** (History Page) | `['workouts', userId, 'yyyy-MM']` | **1 hour** | Frequently updated, but user only modifies current month regularly |
 | **Past Months** (History Page) | `['workouts', userId, 'yyyy-MM']` | **∞ (forever)** | Historical data never changes; no need to refetch |
-| **Date Range** (Analysis Page) | `['workouts', userId, 'since-yyyy-MM-dd']` | **5 minutes** | For filtered views; shorter TTL ensures fresh data when filters change |
-| **All Workouts** (Rare) | `['workouts', userId, 'all']` | **5 minutes** | Expensive query; rarely used; 5min TTL balances freshness |
+| **Date Range** (Analysis Page) | `['workouts', userId, 'since-yyyy-MM-dd']` | **30 minutes** | Mutations trigger immediate refresh; longer TTL reduces unnecessary refetches |
+| **All Workouts** (Rare) | `['workouts', userId, 'all']` | **30 minutes** | Expensive query; rarely used; mutations invalidate immediately |
 
 ### Implementation
 
@@ -109,8 +109,8 @@ export function useWorkouts(forDateRange?: Date | { start: Date, end: Date } | u
 
   const queryKey = ['workouts', user?.uid, dateKey];
 
-  // Stale time: 1 hour for current month, forever for past, 5 min for ranges
-  let staleTime = 1000 * 60 * 5; // 5 minute default
+  // Stale time: 1 hour for current month, forever for past, 30 min for ranges
+  let staleTime = 1000 * 60 * 30; // 30 minute default
   if (forDateRange && forDateRange instanceof Date) {
     staleTime = isSameMonth(forDateRange, new Date())
       ? 1000 * 60 * 60    // 1 hour for current month
