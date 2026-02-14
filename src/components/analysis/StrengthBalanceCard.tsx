@@ -9,10 +9,16 @@ import type { ExerciseDocument } from '@/lib/exercise-types';
 import type { ImbalanceType } from '@/analysis/analysis.config';
 import { useAnalyzeStrength } from '@/lib/firestore.service';
 import { useToast } from '@/hooks/useToast';
-import { IMBALANCE_CONFIG, IMBALANCE_TYPES, find6WeekAvgE1RM } from '@/analysis/analysis.config';
+import {
+  IMBALANCE_CONFIG,
+  IMBALANCE_TYPES,
+  find6WeekAvgE1RM,
+  reportImbalanceConfigValidationIssues,
+  validateImbalanceConfigExercises,
+} from '@/analysis/analysis.config';
 import { resolveCanonicalExerciseName } from '@/lib/exercise-normalization';
 import { LBS_TO_KG } from '@/lib/constants';
-import { toTitleCase } from '@/lib/utils';
+import { formatExerciseDisplayName } from '@/lib/exercise-display';
 import { getStrengthRatioStandards } from '@/lib/strength-standards';
 import { focusBadgeProps, strengthLevelRanks, type ImbalanceFocus } from '@/analysis/analysis.utils';
 
@@ -173,11 +179,11 @@ const buildClientSideFindings = (workoutLogs: WorkoutLog[] | undefined, userProf
 
     findings.push({
       imbalanceType: type,
-      lift1Name: toTitleCase(lift1.exerciseName),
+      lift1Name: formatExerciseDisplayName(lift1.exerciseName),
       lift1Weight: lift1.weight,
       lift1Unit: lift1.weightUnit,
       lift1SessionCount: lift1.sessionCount,
-      lift2Name: toTitleCase(lift2.exerciseName),
+      lift2Name: formatExerciseDisplayName(lift2.exerciseName),
       lift2Weight: lift2.weight,
       lift2Unit: lift2.weightUnit,
       lift2SessionCount: lift2.sessionCount,
@@ -334,6 +340,14 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
     () => buildClientSideFindings(workoutLogs, userProfile, exercises),
     [workoutLogs, userProfile, exercises],
   );
+  const imbalanceConfigIssues = React.useMemo(
+    () => validateImbalanceConfigExercises(exercises),
+    [exercises],
+  );
+
+  React.useEffect(() => {
+    reportImbalanceConfigValidationIssues(imbalanceConfigIssues);
+  }, [imbalanceConfigIssues]);
 
   const handleAnalyzeStrength = () => {
     if (!userProfile) {
@@ -379,6 +393,11 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
             </div>
         ) : (
             <div className="w-full space-y-4">
+                {imbalanceConfigIssues.length > 0 && (
+                    <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                      Strength analysis configuration is out of sync with the exercise library. Findings may be incomplete until configuration is fixed.
+                    </div>
+                )}
                 {analysisToRender?.summary && analysisToRender.findings.length > 0 && (
                     <p className="text-center text-muted-foreground italic text-sm">{analysisToRender.summary}</p>
                 )}

@@ -104,6 +104,11 @@ function redactString(str: string): string {
     return match;
   });
 
+  // Redact bare Firebase user IDs (28 alphanumeric chars, keep first 8 for tracing)
+  str = str.replace(/\b[a-zA-Z0-9]{28}\b/g, (match) => {
+    return `[REDACTED_${match.substring(0, 8)}...]`;
+  });
+
   return str;
 }
 

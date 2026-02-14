@@ -22,7 +22,7 @@ export function WeeklyProgressTracker({ workoutLogs, userProfile }: WeeklyProgre
   const { weekStart, weekEnd, daysOfWeek } = useCurrentWeek();
   const today = new Date();
   
-  const completedWorkouts = workoutLogs.filter(log => 
+  const completedWorkouts = workoutLogs.filter(log =>
     log.date >= weekStart && log.date <= weekEnd
   );
 

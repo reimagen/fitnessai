@@ -16,14 +16,27 @@
 - Impact: Risk of displaying outdated strength standards to users. Analysis results may vary depending on which source is queried. Confusing developer experience.
 - Fix approach: Complete the exercise-registry migration (above) to make Firebase the single source of truth. Remove hardcoded data entirely. Update all components to fetch from Firebase.
 
-### Limited Test Coverage in Production Codebase
-- Issue: Unit/integration test files missing in the `src/` directory despite production server actions, complex hooks, and AI integrations.
-- Coverage:
-  - ✅ Smoke tests: 11 E2E tests for authentication, workouts, analysis, screenshots (Playwright) - COMPLETE
-  - ❌ Unit tests: Zero test files for server actions, hooks, utilities, components
-  - ❌ Integration tests: No tests for Firestore converters, error classification, rate limiting
-- Impact: Cannot verify deep logic or error paths before deployment. Regression testing for business logic requires manual testing. Difficult to refactor with confidence.
-- Fix approach: Add Vitest + React Testing Library for unit/integration tests. Start with critical paths: server actions in `src/app/*/actions.ts`, error classification in `src/lib/logging/error-classifier.ts`, rate limiting in `src/app/prs/rate-limiting.ts`. Aim for >70% coverage on critical paths.
+### ✅ PARTIAL RESOLUTION: Test Coverage Expansion Started (Phase 1 Complete - 2026-02-14)
+
+**Status:** Phase 1 foundation tests complete, Phase 2-4 pending
+
+**Phase 1 Completed (137 new tests):**
+- ✅ `src/lib/logging/error-classifier.test.ts` (37 tests) - All error categories, user messaging, edge cases
+- ✅ `src/lib/logging/data-redactor.test.ts` (46 tests) - PII redaction, recursive handling, safe fields
+- ✅ `src/lib/exercise-normalization.test.ts` (38 tests expanded) - Normalization, canonical lookup, fallbacks
+- ✅ `src/app/prs/rate-limiting.test.ts` (26 tests) - Rate limits, daily enforcement, boundaries
+- ✅ All 173 tests deterministic, <3sec execution, zero flaky tests
+- ✅ Vitest + mocking patterns established for future phases
+
+**Remaining Coverage Gaps:**
+- ❌ Unit tests: Server actions still need testing (Phase 2 - 75+ tests planned)
+- ❌ Integration tests: Firestore converters untested (Phase 3 - 50+ tests planned)
+- ❌ Complex hooks: `useLiftProgression`, `useChartData`, `useCardioAnalysis` still lack tests
+- ❌ Components: Error boundaries, form validation still need tests (Phase 4)
+
+**Impact:** Foundation for critical business logic is now tested. Remaining gaps target server actions, AI flows, and data layer.
+
+**Next Steps:** Phase 2 will add 75+ tests for server actions (`src/app/*/actions.ts`) with Firebase/AI mocking.
 
 ### Incomplete Error Handling in Complex Hooks
 - Issue: Hooks like `useLiftProgression` (177 lines), `useChartData` (303 lines), `useCardioAnalysis` (321 lines) have minimal error handling. They return null on missing data without distinguishing between "still loading" and "error occurred". This can silently hide problems.
@@ -33,31 +46,49 @@
 
 ## Known Bugs
 
-### Exercise Name Resolution Inconsistency
-- Symptoms: Users see exercise names rendered inconsistently. "Machine Bicep Curl" vs "bicep curl" may appear in different parts of UI. Chart data may not match dropdown selections.
-- Files: `src/components/history/WorkoutLogForm.tsx`, `src/components/analysis/StrengthBalanceCard.tsx`, `src/lib/exercise-normalization.ts`, `src/lib/exercise-display.ts`
-- Trigger: When exercise library contains both "bicep curl" and "machine bicep curl" but user sees different canonical names in different pages. When DISPLAY_OVERRIDES in exercise-display.ts is applied inconsistently.
-- Workaround: The normalizeExerciseNameForLookup function (exercise-normalization.ts) attempts to standardize by stripping EGYM prefix, but inconsistencies persist because formatExerciseDisplayName applies different formatting rules.
+### ✅ RESOLVED: Exercise Name Resolution Inconsistency
+- **Status:** FIXED as of 2026-02-14
+- **What was fixed:**
+  - Data-level resolution: `resolveCanonicalExerciseName()` correctly distinguishes machine vs non-machine exercises (e.g., "Machine Bicep Curl" vs "Bicep Curl") with 38 unit tests verifying behavior
+  - Display-level consistency: `StrengthBalanceCard` was using `toTitleCase()` while other components used `formatExerciseDisplayName()`. Unified all display formatting to use `formatExerciseDisplayName()`.
+- **Files updated:**
+  - `src/components/analysis/StrengthBalanceCard.tsx` - Replaced `toTitleCase()` with `formatExerciseDisplayName()` for lift1Name/lift2Name
 
-### Potential Date Conversion Bugs in Firestore Converters
-- Symptoms: Dates may appear as midnight or with wrong timezone. Analysis dates may be off by a day.
-- Files: `src/lib/firestore-server.ts` (workoutLogConverter lines 59, personalRecordConverter line 82)
-- Trigger: When Firestore returns null or missing date field. The converter defaults to `new Date()` instead of throwing error or returning null, masking data issues.
-- Workaround: Always verify workout log dates after logging. Check Firestore console for malformed date fields.
+### ✅ RESOLVED: Date Conversion Bugs in Firestore Converters
+- **Status:** FIXED as of 2026-02-14
+- **What was fixed:** All 8 Firestore converters now throw on missing/malformed required date fields instead of silently falling back to `new Date()`. Dates are always set by the UI at time of entry (manual form defaults to today, screenshot parser blocks save without date, goal form requires targetDate). A missing date in Firestore means data corruption, not a valid state.
+- **Files updated:**
+  - `src/lib/firestore-server.ts` - All converters throw with document ID and field name on missing dates (workoutLogConverter, personalRecordConverter, weeklyPlanConverter, strengthAnalysisConverter, goalAnalysisConverter, liftProgressionConverter, fitnessGoalsConverter, userProfileConverter). `dateAchieved` remains optional (`undefined` if not set).
+- **Impact:** Data corruption is surfaced immediately via error. Server action try/catch handles it gracefully - user sees friendly error, error is logged to Cloud Logging with document ID for investigation. Types stay clean (`Date`, not `Date | null`) so no cascading null checks needed.
 
 ## Security Considerations
 
-### PII Redaction May Be Incomplete
-- Risk: The redactPII function in `src/lib/logging/data-redactor.ts` redacts known PII patterns but new data shapes added without update could leak personal information to Cloud Logging.
-- Files: `src/lib/logging/data-redactor.ts`, `src/lib/logging/server-action-wrapper.ts`
-- Current mitigation: Basic redaction of email, weights, goals. No redaction of user IDs in log context though they're sensitive.
-- Recommendations: (1) Test redactPII with actual user data before deployment. (2) Add explicit PII check in pre-commit hooks. (3) Audit Cloud Logging permissions to ensure only authorized personnel can read logs. (4) Consider setting up Cloud Logging data access policies.
+### ✅ RESOLVED: PII Redaction May Be Incomplete
+- **Status:** FIXED as of 2026-02-13
+- **What was fixed:**
+  - Logger now applies `redactPII()` to all metadata before sending to Cloud Logging (production only)
+  - Firebase user ID redaction enhanced with regex pattern for bare 28-character user IDs
+  - Keeps first 8 characters for tracing/debugging while masking the rest
+- **Files updated:**
+  - `src/lib/logging/logger.ts` - Applies redaction to metadata before logging (lines 40-42)
+  - `src/lib/logging/data-redactor.ts` - Added bare Firebase user ID pattern (lines 107-110)
+- **Remaining recommendations:** (1) Test redactPII with actual user data before production deployment. (2) Add explicit PII check in pre-commit hooks. (3) Audit Cloud Logging permissions to ensure only authorized personnel can read logs.
 
-### Environment Variable Exposure Risk
-- Risk: Multiple places check for API key presence using `!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY`. If either is missing, error message is shown to user, potentially confirming environment is not production.
-- Files: `src/app/analysis/actions.ts` line 26, `src/app/prs/actions.ts` line 26, `src/app/plan/actions.ts` line 26, `src/app/profile/actions.ts` line 26, `src/app/history/actions.ts` line 26
-- Current mitigation: Error message is generic but still identifies which service is missing.
-- Recommendations: (1) Pre-validate environment variables at startup, fail fast. (2) Log missing env vars only once at application start, not on every action. (3) Return generic error to user instead of exposing which service is missing.
+### ✅ RESOLVED: Environment Variable Exposure Risk
+- **Status:** FIXED as of 2026-02-13
+- **What was fixed:** Replaced all specific API key error messages with generic "AI features are temporarily unavailable" message. This prevents attackers from fingerprinting the environment.
+- **Implementation:**
+  - Validation happens once at app startup via `validateEnvironment()` in `src/app/layout.tsx`
+  - All 5 action files now use `areAPIKeysAvailable()` helper function
+  - Returns generic `API_UNAVAILABLE_ERROR` message to users instead of revealing which key is missing
+  - Detailed error logging remains server-side only (console/Cloud Logging, not user-facing)
+- **Files updated:**
+  - `src/app/analysis/actions.ts` - Generic error on line 54
+  - `src/app/prs/actions.ts` - Generic error on line 66
+  - `src/app/plan/actions.ts` - Generic error on line 32
+  - `src/app/profile/actions.ts` - Generic error on lines 143, 222
+  - `src/app/history/actions.ts` - Generic error on line 87
+- **Impact:** Attackers can no longer determine if they're hitting production or staging by reading error messages.
 
 ## Performance Bottlenecks
 
@@ -147,44 +178,47 @@
 - Problem: If exercise library needs update (e.g., rename "bench press" to "barbell bench press"), must be done one exercise at a time through admin UI or scripts. No batch import/export.
 - Blocks: Scaling exercise library efficiently is not possible. Data migrations are manual and error-prone.
 
-## Test Coverage Gaps
+## Test Coverage Gaps (Updated with Phase 1 Progress)
 
-### Zero Unit Tests for Server Actions
-- What's not tested: `src/app/*/actions.ts` files (analysis, prs, plan, profile, history). Request validation, error handling, rate limiting checks, database writes, AI API calls.
-- Files: All `src/app/*/actions.ts`
-- Risk: Refactoring server actions is unsafe. Bug fixes may introduce regressions. Validation rules may be silently broken.
-- Priority: HIGH - These are the main entry points for user interactions.
+### ✅ Error Classification Tests (COMPLETED - Phase 1)
+- **Status:** 37 tests covering all 5 error categories (quota_exceeded, model_overloaded, validation_error, auth_error, unknown_error)
+- **Coverage:** Error categorization, status codes, retry flags, user messaging, edge cases
+- **Files:** `src/lib/logging/error-classifier.test.ts`
+- **Impact:** classifyAIError logic is now fully tested and safe to refactor.
 
-### Zero Integration Tests for Firebase Operations
-- What's not tested: Firestore converters, queries with date filters, sub-collection access, cache behavior. If converter logic changes, bugs go undetected.
-- Files: `src/lib/firestore-server.ts` (620 lines of untested converters), `src/lib/firestore.service.ts` (522 lines of untested queries)
-- Risk: Data corruption or loss may go unnoticed until production. Converter bugs silently convert undefined to default values.
-- Priority: HIGH - Data layer is critical.
+### ✅ Exercise Normalization Tests (COMPLETED - Phase 1)
+- **Status:** 38 tests covering normalization, canonical lookup, legacy names, fallbacks
+- **Coverage:** Name normalization (EGYM prefix, whitespace, casing), canonical exercise lookup, integration scenarios
+- **Files:** `src/lib/exercise-normalization.test.ts`
+- **Impact:** Exercise resolution logic is now tested; data accuracy improvements enabled.
 
-### Zero Tests for AI Flows
-- What's not tested: Prompt engineering, output validation, edge cases (empty inputs, malformed data). If Gemini API behavior changes, we won't know until user reports error.
-- Files: `src/ai/flows/*.ts` (lift-progression-analyzer, strength-imbalance-analyzer, goal-analyzer, screenshot-workout-parser, etc.)
-- Risk: AI outputs may be invalid JSON, missing required fields, or hallucinations. Validation happens downstream in components, creating hard-to-debug failures.
-- Priority: MEDIUM - AI flows have Zod validation as safeguard, but edge cases still uncovered.
+### ✅ Rate Limiting Tests (COMPLETED - Phase 1)
+- **Status:** 26 tests covering daily limits, feature-specific enforcement, boundary conditions
+- **Coverage:** Authentication, limit checking per feature, date rollover, concurrent requests
+- **Files:** `src/app/prs/rate-limiting.test.ts`
+- **Impact:** Rate limiting fairness and quota protection verified; safe to modify.
 
-### Zero Tests for Error Classification
-- What's not tested: classifyAIError correctly categorizes Gemini errors, retry logic decisions, rate limit detection.
-- Files: `src/lib/logging/error-classifier.ts`
-- Risk: Error categories may be wrong, causing incorrect retry behavior. User sees wrong error messages.
-- Priority: MEDIUM - Affects user experience but has fallback behavior.
+### 🔄 Server Actions Tests (PENDING - Phase 2)
+- **What's not tested:** `src/app/*/actions.ts` files (analysis, prs, plan, profile, history). Request validation, error handling, rate limiting checks, database writes, AI API calls.
+- **Planned:** ~75 tests with Firebase/AI mocking
+- **Risk:** Refactoring server actions is unsafe. Bug fixes may introduce regressions.
+- **Priority:** HIGH - These are main entry points for user interactions.
+- **Target:** Phase 2 implementation
 
-### Zero Tests for Exercise Normalization
-- What's not tested: normalizeExerciseNameForLookup, resolveCanonicalExerciseName with real exercise library data. Legacy name resolution, fallback lookups.
-- Files: `src/lib/exercise-normalization.ts`
-- Risk: Exercise names may not resolve correctly, causing mismatched data in charts and analysis.
-- Priority: MEDIUM - Affects data accuracy.
+### 🔄 Firebase Operations Tests (PENDING - Phase 3)
+- **What's not tested:** Firestore converters (8 total), queries with date filters, sub-collection access, cache behavior.
+- **Planned:** ~50 tests covering all converters and query functions
+- **Risk:** Data corruption or loss may go unnoticed until production.
+- **Priority:** HIGH - Data layer is critical.
+- **Target:** Phase 3 implementation
 
-### Zero Tests for Rate Limiting
-- What's not tested: checkRateLimit correctly enforces daily limits, date rollover works correctly, concurrent requests are handled.
-- Files: `src/app/prs/rate-limiting.ts`
-- Risk: Rate limiting may not work as designed. Users could bypass limits or be rate limited incorrectly.
-- Priority: MEDIUM - Affects fairness and quota protection.
+### 🔄 AI Flows Tests (PENDING - Phase 2)
+- **What's not tested:** Prompt engineering, output validation, edge cases (empty inputs, malformed data).
+- **Planned:** Tested as part of server action mocking (Phase 2) with Zod validation verification
+- **Risk:** AI outputs may be invalid JSON or hallucinations.
+- **Priority:** MEDIUM - Zod validation provides safeguard.
+- **Target:** Phase 2 implementation
 
 ---
 
-*Concerns audit: Updated 2026-02-09 - Removed completed items: E2E smoke tests (11/11), rate limiting implementation, health endpoint*
+*Concerns audit: Updated 2026-02-14 - Resolved: Exercise name resolution inconsistency (unified display formatting). Date conversion fix revised: converters now throw on missing required dates instead of null/modal approach. Phase 1 test coverage complete (137 new tests). Previous: 2026-02-13 - Resolved: Date conversion bugs, PII redaction, env var exposure. 2026-02-09 - Removed E2E smoke tests (11/11), rate limiting implementation, health endpoint*

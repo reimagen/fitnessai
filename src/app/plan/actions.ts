@@ -10,6 +10,7 @@ import { classifyAIError } from "@/lib/logging/error-classifier";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 import { z } from "zod";
 import type { StoredWeeklyPlan } from "@/lib/types";
+import { areAPIKeysAvailable, API_UNAVAILABLE_ERROR } from "@/lib/env-validation";
 
 const WeeklyPlanActionInputSchema = z.object({
   userId: z.string().min(1, "User ID is required."),
@@ -27,10 +28,8 @@ export async function generateWeeklyWorkoutPlanAction(
   });
 
   return withServerActionLogging(context, async () => {
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-      const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
-      await logger.error("Missing API Key", { ...context, error: errorMessage });
-      return { success: false, error: errorMessage };
+    if (!areAPIKeysAvailable()) {
+      return { success: false, error: API_UNAVAILABLE_ERROR };
     }
 
     const validatedFields = WeeklyPlanActionInputSchema.safeParse(values);

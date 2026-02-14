@@ -479,20 +479,79 @@ src/__tests__/
 
 ## Current Testing Coverage
 
-### Implemented:
+### ✅ Phase 1: Foundation Tests (COMPLETED - 2026-02-14)
+
+**Status:** 173 total tests passing, all deterministic, <3sec execution time
+
+**Implemented Files (137 new tests):**
+1. `src/lib/logging/error-classifier.test.ts` (37 tests)
+   - ✅ All 5 error categories (quota_exceeded, model_overloaded, validation_error, auth_error, unknown_error)
+   - ✅ Status code assignment, user messaging, retry flags
+   - ✅ Edge cases: null/undefined errors, very long messages, multiple error indicators
+
+2. `src/lib/logging/data-redactor.test.ts` (46 tests)
+   - ✅ PII pattern redaction: email, phone, tokens, API keys, URLs, Firebase user IDs
+   - ✅ Recursive handling of nested objects/arrays
+   - ✅ Safe field preservation (timestamp, message, errorMessage, etc.)
+   - ✅ Edge cases: null/empty/deeply nested structures, case insensitivity
+
+3. `src/lib/exercise-normalization.test.ts` (38 tests - expanded)
+   - ✅ Exercise name normalization (EGYM prefix, whitespace, casing, parentheses)
+   - ✅ Canonical exercise lookup via direct match and legacy names
+   - ✅ Fallback mapping and boundary conditions
+   - ✅ Integration scenarios with real gym equipment names
+
+4. `src/app/prs/rate-limiting.test.ts` (26 tests)
+   - ✅ Daily rate limit enforcement per feature
+   - ✅ Authentication validation
+   - ✅ Feature-specific limits (parse_personal_records: 5, generate_workout_plan: 3, analyze_strength: 10)
+   - ✅ Boundary conditions, date handling, edge cases
+
+**Test Infrastructure:**
+- ✅ Vitest configured and running in watch/CI modes
+- ✅ All tests use proper mocking (vi.mock, vi.mocked)
+- ✅ Fixture data patterns established
+- ✅ No external dependencies or flaky tests
+- ✅ CI integration ready (npm run test:ci)
+
+### 🚀 Phase 2: Server Actions (PENDING)
+
+**Target:** 75+ tests for server action validation and AI integration
+- `src/app/history/actions.ts` (expand from 6 → ~20 tests)
+- `src/app/prs/actions.ts` (new, ~18 tests)
+- `src/app/analysis/actions.ts` (new, ~20 tests)
+- `src/app/plan/actions.ts` (new, ~16 tests)
+- `src/app/profile/actions.ts` (new, ~25+ tests)
+
+**Requirements:**
+- Mock Firebase Firestore operations
+- Mock AI flows (Gemini, screenshot parser)
+- Zod schema validation
+- Rate limit integration
+- Error classification integration
+- Cache invalidation side effects
+
+### 📋 Phase 3: Firestore Layer (PENDING)
+
+**Target:** 50+ tests for data layer reliability
+- Converter tests (8 converters, ~40 tests)
+- Query function tests (CRUD operations, ~30 tests)
+- Date/timestamp handling
+- Lazy backfill logic
+- Error paths and recovery
+
+### 📊 Phase 4: Integration Tests (PENDING)
+
+**Target:** 30+ tests for end-to-end flows
+- Full workout analysis pipeline
+- PR calculation and strength level determination
+- Error recovery scenarios
+- Data validation flows
+
+### Prior Testing:
 - ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)
 - ✅ **CI/CD Pipeline** (GitHub Actions on every PR and push to main)
 
-### Future Opportunities (Unit/Integration):
-The areas listed above (error classification, exercise resolution, server actions, hooks, components, API endpoints) would benefit from unit/integration tests using Vitest + React Testing Library.
-
-**Priority Order:**
-1. Error classification and logging
-2. Exercise name resolution
-3. Rate limiting enforcement
-4. Server action validation
-5. Component integration tests
-
 ---
 
-*Testing last updated: 2026-02-07*
+*Testing last updated: 2026-02-14 - Phase 1 Complete*
