@@ -6,6 +6,8 @@
 - App: FitnessAI
 - Stack: Next.js (app router), TypeScript, Tailwind, Shadcn UI
 - Data: Firestore hooks in `src/lib/firestore.service`
+- Necessary docs: `.planning/codebase` and `docs`
+- Change log: `docs/changelog.md`
 - Brand guidelines: `docs/brand-guidelines.md` (tokens in `src/app/globals.css`)
 - Ops runbook: `docs/ops-runbook.md`
 - Observability: Cloud Logging + client error reporting (`/api/client-errors`) + health check (`/api/health`)
@@ -29,6 +31,18 @@
 - Typography: labels/help text `text-sm`, stats `text-3xl font-bold`.
 
 ## Workflow
-- Don’t reformat or change copy unless asked.
+
+### Primary work driver
+- **`.planning/codebase/CONCERNS.md` is the single work queue.** All implementation work should trace back to a concern or priority item in that file.
+- Follow the **Priority Order** section in CONCERNS.md—it defines execution sequence and dependencies.
+- Before starting work, read CONCERNS.md to identify the next actionable item.
+
+### Closeout protocol (required for every completed work item)
+1. **Update CONCERNS.md**: set status to `RESOLVED` (or `PARTIAL RESOLUTION` with remaining risk noted) and add a resolution summary.
+2. **Add changelog entry**: dated entry in `docs/changelog.md` with area, summary, files changed, and verification performed.
+3. **Update adjacent docs**: if architecture, testing, or workflow changed, update the relevant `.planning/codebase` docs (e.g., `TESTING.md`, `STRUCTURE.md`, `ARCHITECTURE.md`) in the same workstream.
+
+### General rules
+- Don't reformat or change copy unless asked.
 - Avoid new deps; use existing UI primitives first.
 - Keep mobile layouts in mind (`grid` and responsive cols).

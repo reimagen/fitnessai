@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Last Updated:** 2026-02-07
+**Last Updated:** 2026-02-14
 
 ## Test Framework
 
@@ -21,7 +21,7 @@
 **Smoke Tests** (end-to-end user flows)
 ```bash
 # Set test credentials
-export E2E_AUTH_EMAIL="fake@notreal.com"
+export E2E_AUTH_EMAIL="new@fake.com"
 export E2E_AUTH_PASSWORD="fake26"
 
 # Run all tests
@@ -31,7 +31,7 @@ npm run test:smoke
 npm run test:smoke:headed
 ```
 
-**Unit/Integration Tests** (when added)
+**Unit/Integration Tests**
 ```bash
 npm run test        # Watch mode
 npm run test:ci     # CI mode (run once)
@@ -50,7 +50,7 @@ Located in `tests/smoke/`, these 11 tests validate critical user flows:
 
 See `tests/smoke/README.md` for detailed documentation.
 
-## Code Paths for Testing (Future Unit Tests)
+## Code Paths for Additional Testing
 
 The following areas would benefit from test coverage:
 
@@ -450,7 +450,7 @@ src/__tests__/
     ErrorBoundary.test.tsx
 ```
 
-## Testing Tools (If Implemented)
+## Testing Tools
 
 **Recommended:**
 - **Jest** or **Vitest** - Test runner with assertion library
@@ -461,7 +461,7 @@ src/__tests__/
 
 ## Coverage Priorities
 
-**High Priority (if implementing tests):**
+**High Priority:**
 1. Error classification and logging (`src/lib/logging/`)
 2. Exercise name resolution (`src/lib/exercise-normalization.ts`)
 3. Validation schemas (Zod in API routes and forms)
@@ -481,7 +481,7 @@ src/__tests__/
 
 ### ✅ Phase 1: Foundation Tests (COMPLETED - 2026-02-14)
 
-**Status:** 173 total tests passing, all deterministic, <3sec execution time
+**Status:** 179 total tests passing in CI mode, deterministic, low-runtime execution time
 
 **Implemented Files (137 new tests):**
 1. `src/lib/logging/error-classifier.test.ts` (37 tests)
@@ -504,7 +504,7 @@ src/__tests__/
 4. `src/app/prs/rate-limiting.test.ts` (26 tests)
    - ✅ Daily rate limit enforcement per feature
    - ✅ Authentication validation
-   - ✅ Feature-specific limits (parse_personal_records: 5, generate_workout_plan: 3, analyze_strength: 10)
+   - ✅ Feature-specific limits (prParses: 10, planGenerations: 5, strengthAnalyses: 5)
    - ✅ Boundary conditions, date handling, edge cases
 
 **Test Infrastructure:**
@@ -514,39 +514,7 @@ src/__tests__/
 - ✅ No external dependencies or flaky tests
 - ✅ CI integration ready (npm run test:ci)
 
-### 🚀 Phase 2: Server Actions (PENDING)
-
-**Target:** 75+ tests for server action validation and AI integration
-- `src/app/history/actions.ts` (expand from 6 → ~20 tests)
-- `src/app/prs/actions.ts` (new, ~18 tests)
-- `src/app/analysis/actions.ts` (new, ~20 tests)
-- `src/app/plan/actions.ts` (new, ~16 tests)
-- `src/app/profile/actions.ts` (new, ~25+ tests)
-
-**Requirements:**
-- Mock Firebase Firestore operations
-- Mock AI flows (Gemini, screenshot parser)
-- Zod schema validation
-- Rate limit integration
-- Error classification integration
-- Cache invalidation side effects
-
-### 📋 Phase 3: Firestore Layer (PENDING)
-
-**Target:** 50+ tests for data layer reliability
-- Converter tests (8 converters, ~40 tests)
-- Query function tests (CRUD operations, ~30 tests)
-- Date/timestamp handling
-- Lazy backfill logic
-- Error paths and recovery
-
-### 📊 Phase 4: Integration Tests (PENDING)
-
-**Target:** 30+ tests for end-to-end flows
-- Full workout analysis pipeline
-- PR calculation and strength level determination
-- Error recovery scenarios
-- Data validation flows
+Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md`.
 
 ### Prior Testing:
 - ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)
@@ -554,4 +522,4 @@ src/__tests__/
 
 ---
 
-*Testing last updated: 2026-02-14 - Phase 1 Complete*
+*Testing last updated: 2026-02-14 - descriptive coverage restored; upgrade roadmap moved to testing-upgrades.md*

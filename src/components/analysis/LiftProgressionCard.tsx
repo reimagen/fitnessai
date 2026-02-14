@@ -11,6 +11,7 @@ import { useLiftStrengthLevelFromE1RM, useGetLiftProgressionAnalysis } from "@/l
 import { toTitleCase } from "@/lib/utils";
 import { useLiftProgression } from "@/hooks/useLiftProgression";
 import { useLiftTrends } from "@/hooks/useLiftTrends";
+import { useSixWeekLiftMetrics } from "@/hooks/useSixWeekLiftMetrics";
 import { useLiftProgressionAnalysis } from "@/hooks/useLiftProgressionAnalysis";
 import { LiftProgressionChart } from "@/components/analysis/LiftProgressionChart";
 import { LiftProgressionInsights } from "@/components/analysis/LiftProgressionInsights";
@@ -36,6 +37,7 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
 }) => {
   const canonicalLiftName = resolveCanonicalExerciseName(selectedLift, exercises);
   const selectedLiftKey = getNormalizedExerciseName(canonicalLiftName);
+  const sixWeekLiftMetrics = useSixWeekLiftMetrics(workoutLogs, exercises);
 
   // Fetch analysis from new subcollection (with fallback to legacy profile data)
   const { data: progressionAnalysisToRender } = useGetLiftProgressionAnalysis(
@@ -46,7 +48,7 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
   const progressionChartData = useLiftProgression(
     selectedLift,
     selectedLiftKey,
-    workoutLogs,
+    sixWeekLiftMetrics,
     personalRecords,
     exercises
   );
@@ -55,8 +57,7 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
     selectedLift,
     selectedLiftKey,
     progressionChartData,
-    workoutLogs,
-    exercises
+    sixWeekLiftMetrics
   );
 
   const { data: currentLiftLevel } = useLiftStrengthLevelFromE1RM({
@@ -129,6 +130,7 @@ export const LiftProgressionCard: React.FC<LiftProgressionCardProps> = ({
           trendImprovement={trendImprovement}
           volumeTrend={volumeTrend}
           avgE1RM={avgE1RM}
+          avgE1RMUnit={avgE1RMUnit}
         />
 
         <div className="pt-4 border-t">

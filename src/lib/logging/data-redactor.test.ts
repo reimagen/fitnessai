@@ -189,10 +189,12 @@ describe('redactPII - Object redaction', () => {
             phone: '5551234567',
           },
         },
-      }) as Record<string, any>;
+      }) as Record<string, unknown>;
 
-      expect(result.user.email).toContain('[REDACTED_EMAIL]');
-      expect(result.user.profile.phone).toContain('[REDACTED_PHONE]');
+      const user = result.user as Record<string, unknown>;
+      expect((user.email as string)).toContain('[REDACTED_EMAIL]');
+      const profile = user.profile as Record<string, unknown>;
+      expect((profile.phone as string)).toContain('[REDACTED_PHONE]');
     });
 
     it('handles deeply nested objects', () => {
@@ -204,9 +206,12 @@ describe('redactPII - Object redaction', () => {
             },
           },
         },
-      }) as Record<string, any>;
+      }) as Record<string, unknown>;
 
-      expect(result.level1.level2.level3.email).toContain('[REDACTED_EMAIL]');
+      const level1 = result.level1 as Record<string, unknown>;
+      const level2 = level1.level2 as Record<string, unknown>;
+      const level3 = level2.level3 as Record<string, unknown>;
+      expect((level3.email as string)).toContain('[REDACTED_EMAIL]');
     });
   });
 
@@ -248,10 +253,14 @@ describe('redactPII - Object redaction', () => {
           { email: 'user@example.com' },
           [{ phone: '5551234567' }],
         ],
-      ]) as Array<any>;
+      ]) as unknown[];
 
-      expect(result[0][0].email).toContain('[REDACTED_EMAIL]');
-      expect(result[0][1][0].phone).toContain('[REDACTED_PHONE]');
+      const outer = result[0] as unknown[];
+      const firstObj = outer[0] as Record<string, unknown>;
+      const nestedArray = outer[1] as unknown[];
+      const nestedObj = nestedArray[0] as Record<string, unknown>;
+      expect((firstObj.email as string)).toContain('[REDACTED_EMAIL]');
+      expect((nestedObj.phone as string)).toContain('[REDACTED_PHONE]');
     });
   });
 
@@ -280,11 +289,14 @@ describe('redactPII - Object redaction', () => {
           requestId: 'req-123',
           timestamp: '2026-02-13',
         },
-      }) as Record<string, any>;
+      }) as Record<string, unknown>;
 
-      expect(result.data.user.email).toContain('[REDACTED_EMAIL]');
-      expect(result.meta.requestId).toBe('req-123');
-      expect(result.meta.timestamp).toBe('2026-02-13');
+      const data = result.data as Record<string, unknown>;
+      const user = data.user as Record<string, unknown>;
+      expect((user.email as string)).toContain('[REDACTED_EMAIL]');
+      const meta = result.meta as Record<string, unknown>;
+      expect(meta.requestId).toBe('req-123');
+      expect(meta.timestamp).toBe('2026-02-13');
     });
 
     it('handles API error responses', () => {
@@ -296,15 +308,16 @@ describe('redactPII - Object redaction', () => {
         },
         statusCode: 401,
         timestamp: '2026-02-13',
-      }) as Record<string, any>;
+      }) as Record<string, unknown>;
 
       expect(result.statusCode).toBe(401);
       expect(result.timestamp).toBe('2026-02-13');
       // "message" field value is preserved as-is since it's a safe field
-      expect((result.error.message as string)).toBe('Token abc123 invalid');
+      const error = result.error as Record<string, unknown>;
+      expect((error.message as string)).toBe('Token abc123 invalid');
       // userId is not a safe field, so its value (an object) is recursively redacted
       // The 'id' field in the object is not a safe field either
-      expect(typeof result.error.userId).toBe('object');
+      expect(typeof error.userId).toBe('object');
     });
   });
 

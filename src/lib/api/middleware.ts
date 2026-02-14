@@ -232,14 +232,16 @@ export function createErrorResponse(error: string): ApiResponse<null> {
  * Rate limiting helper
  * Returns true if rate limit exceeded
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function checkRateLimit(
-  _key: string,
-  _maxRequests: number = 100,
-  _windowSeconds: number = 60
+  key: string,
+  maxRequests: number = 100,
+  windowSeconds: number = 60
 ): Promise<boolean> {
   // TODO: Implement with Redis or similar
   // For now, always allow
+  void key;
+  void maxRequests;
+  void windowSeconds;
   return false;
 }
 

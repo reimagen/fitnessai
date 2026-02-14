@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { WorkoutLog, PersonalRecord, ExerciseCategory, FitnessGoal } from '@/lib/types';
 import { chartConfig } from '@/analysis/chart.config';
 import { timeRangeDisplayNames } from '@/analysis/analysis-constants';
+import { reportErrorWithContext } from '@/lib/logging/error-reporter';
 import {
   format,
   parse,
@@ -38,6 +39,22 @@ interface ChartDataResult {
   categoryCalorieData: { key: string; name: string; value: number; fill: string }[];
   periodSummary: PeriodSummaryStats;
 }
+
+const createEmptyChartDataResult = (timeRange: string): ChartDataResult => ({
+  workoutFrequencyData: [],
+  newPrsData: [],
+  achievedGoalsData: [],
+  categoryRepData: [],
+  categoryCalorieData: [],
+  periodSummary: {
+    workoutDays: 0,
+    totalWeightLiftedLbs: 0,
+    totalDistanceMi: 0,
+    totalCardioDurationMin: 0,
+    totalCaloriesBurned: 0,
+    periodLabel: `${timeRangeDisplayNames[timeRange] ?? 'Period'}'s Summary`,
+  },
+});
 
 type ChartDataKey = keyof typeof chartConfig;
 type ExerciseCategoryKey = keyof Omit<ChartDataPoint, 'date' | 'dateLabel'>;
@@ -81,12 +98,13 @@ export function useChartData(
   goalsForPeriod: FitnessGoal[]
 ): ChartDataResult {
   return useMemo(() => {
-    const periodLabel = `${timeRangeDisplayNames[timeRange]}'s Summary`;
-    const today = new Date();
+    try {
+      const periodLabel = `${timeRangeDisplayNames[timeRange]}'s Summary`;
+      const today = new Date();
 
-    let workoutFrequencyData: ChartDataPoint[] = [];
+      let workoutFrequencyData: ChartDataPoint[] = [];
 
-    switch (timeRange) {
+      switch (timeRange) {
       case 'weekly': {
         const weekStart = startOfWeek(today, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
@@ -192,112 +210,120 @@ export function useChartData(
           .sort((a: ChartDataPoint, b: ChartDataPoint) => parseInt(a.date) - parseInt(b.date));
         break;
       }
+      }
+
+      const repsByCat: Record<ExerciseCategoryKey, number> = {
+        upperBody: 0,
+        lowerBody: 0,
+        fullBody: 0,
+        cardio: 0,
+        core: 0,
+        other: 0,
+      };
+      const caloriesByCat: Record<ExerciseCategoryKey, number> = {
+        upperBody: 0,
+        lowerBody: 0,
+        fullBody: 0,
+        cardio: 0,
+        core: 0,
+        other: 0,
+      };
+      const hasEstimatedCaloriesByCat: Record<ExerciseCategoryKey, boolean> = {
+        upperBody: false,
+        lowerBody: false,
+        fullBody: false,
+        cardio: false,
+        core: false,
+        other: false,
+      };
+
+      logsForPeriod.forEach((log: WorkoutLog) => {
+        log.exercises.forEach((ex) => {
+          const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
+          repsByCat[camelCaseCategory] += (ex.reps || 0) * (ex.sets || 0);
+          caloriesByCat[camelCaseCategory] += ex.calories || 0;
+
+          // Track if any exercise in this category has estimated calories
+          if (ex.caloriesSource === 'estimated' || (ex.calories && ex.calories > 0 && !ex.caloriesSource)) {
+            hasEstimatedCaloriesByCat[camelCaseCategory] = true;
+          }
+        });
+      });
+
+      const categoryRepData = Object.entries(repsByCat)
+        .filter(([, value]: [string, number]) => value > 0)
+        .map(([name, value]: [string, number]) => ({
+          key: name,
+          name: (chartConfig[name as ChartDataKey]?.label || name) as string,
+          value,
+          fill: `var(--color-${name})`,
+        }));
+
+      const categoryCalorieData = Object.entries(caloriesByCat)
+        .filter(([, value]: [string, number]) => value > 0)
+        .map(([name, value]: [string, number]) => ({
+          key: name,
+          name: (chartConfig[name as ChartDataKey]?.label || name) as string,
+          value,
+          fill: `var(--color-${name})`,
+          hasEstimatedCalories: hasEstimatedCaloriesByCat[name as ExerciseCategoryKey],
+        }));
+
+      const uniqueWorkoutDates = new Set<string>();
+      let totalWeight = 0,
+        totalDistance = 0,
+        totalDuration = 0,
+        totalCalories = 0;
+      logsForPeriod.forEach((log: WorkoutLog) => {
+        uniqueWorkoutDates.add(format(log.date, 'yyyy-MM-dd'));
+        log.exercises.forEach((ex) => {
+          if (ex.weight && ex.sets && ex.reps)
+            totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
+          if (ex.category === 'Cardio' && ex.distance) {
+            let distMi = 0;
+            if (ex.distanceUnit === 'km') distMi = (ex.distance || 0) * 0.621371;
+            else if (ex.distanceUnit === 'ft') distMi = (ex.distance || 0) / 5280;
+            else if (ex.distanceUnit === 'm') distMi = (ex.distance || 0) / 1609.34;
+            else if (ex.distanceUnit === 'mi') distMi = ex.distance || 0;
+            totalDistance += distMi;
+          }
+          if (ex.category === 'Cardio' && ex.duration) {
+            let durMin = ex.duration;
+            if (ex.durationUnit === 'hr') durMin *= 60;
+            else if (ex.durationUnit === 'sec') durMin /= 60;
+            totalDuration += durMin;
+          }
+          totalCalories += ex.calories || 0;
+        });
+      });
+
+      const periodSummary = {
+        workoutDays: uniqueWorkoutDates.size,
+        totalWeightLiftedLbs: Math.round(totalWeight),
+        totalDistanceMi: Math.round(totalDistance),
+        totalCardioDurationMin: Math.round(totalDuration),
+        totalCaloriesBurned: Math.round(totalCalories),
+        periodLabel: periodLabel,
+      };
+
+      return {
+        workoutFrequencyData,
+        newPrsData: prsForPeriod.sort((a: PersonalRecord, b: PersonalRecord) => b.date.getTime() - a.date.getTime()),
+        achievedGoalsData: (goalsForPeriod as (FitnessGoal & { dateAchieved: Date })[]).sort(
+          (a: FitnessGoal & { dateAchieved: Date }, b: FitnessGoal & { dateAchieved: Date }) =>
+            b.dateAchieved.getTime() - a.dateAchieved.getTime()
+        ),
+        categoryRepData,
+        categoryCalorieData,
+        periodSummary,
+      };
+    } catch (error) {
+      void reportErrorWithContext(
+        error instanceof Error ? error : new Error(String(error)),
+        'analysis',
+        { hook: 'useChartData', timeRange }
+      );
+      return createEmptyChartDataResult(timeRange);
     }
-
-    const repsByCat: Record<ExerciseCategoryKey, number> = {
-      upperBody: 0,
-      lowerBody: 0,
-      fullBody: 0,
-      cardio: 0,
-      core: 0,
-      other: 0,
-    };
-    const caloriesByCat: Record<ExerciseCategoryKey, number> = {
-      upperBody: 0,
-      lowerBody: 0,
-      fullBody: 0,
-      cardio: 0,
-      core: 0,
-      other: 0,
-    };
-    const hasEstimatedCaloriesByCat: Record<ExerciseCategoryKey, boolean> = {
-      upperBody: false,
-      lowerBody: false,
-      fullBody: false,
-      cardio: false,
-      core: false,
-      other: false,
-    };
-
-    logsForPeriod.forEach((log: WorkoutLog) => {
-      log.exercises.forEach((ex) => {
-        const camelCaseCategory = categoryToCamelCase(ex.category || 'Other');
-        repsByCat[camelCaseCategory] += (ex.reps || 0) * (ex.sets || 0);
-        caloriesByCat[camelCaseCategory] += ex.calories || 0;
-
-        // Track if any exercise in this category has estimated calories
-        if (ex.caloriesSource === 'estimated' || (ex.calories && ex.calories > 0 && !ex.caloriesSource)) {
-          hasEstimatedCaloriesByCat[camelCaseCategory] = true;
-        }
-      });
-    });
-
-    const categoryRepData = Object.entries(repsByCat)
-      .filter(([, value]: [string, number]) => value > 0)
-      .map(([name, value]: [string, number]) => ({
-        key: name,
-        name: (chartConfig[name as ChartDataKey]?.label || name) as string,
-        value,
-        fill: `var(--color-${name})`,
-      }));
-
-    const categoryCalorieData = Object.entries(caloriesByCat)
-      .filter(([, value]: [string, number]) => value > 0)
-      .map(([name, value]: [string, number]) => ({
-        key: name,
-        name: (chartConfig[name as ChartDataKey]?.label || name) as string,
-        value,
-        fill: `var(--color-${name})`,
-        hasEstimatedCalories: hasEstimatedCaloriesByCat[name as ExerciseCategoryKey],
-      }));
-
-    const uniqueWorkoutDates = new Set<string>();
-    let totalWeight = 0,
-      totalDistance = 0,
-      totalDuration = 0,
-      totalCalories = 0;
-    logsForPeriod.forEach((log: WorkoutLog) => {
-      uniqueWorkoutDates.add(format(log.date, 'yyyy-MM-dd'));
-      log.exercises.forEach((ex) => {
-        if (ex.weight && ex.sets && ex.reps)
-          totalWeight += ex.weight * ex.sets * ex.reps * (ex.weightUnit === 'kg' ? 2.20462 : 1);
-        if (ex.category === 'Cardio' && ex.distance) {
-          let distMi = 0;
-          if (ex.distanceUnit === 'km') distMi = (ex.distance || 0) * 0.621371;
-          else if (ex.distanceUnit === 'ft') distMi = (ex.distance || 0) / 5280;
-          else if (ex.distanceUnit === 'm') distMi = (ex.distance || 0) / 1609.34;
-          else if (ex.distanceUnit === 'mi') distMi = ex.distance || 0;
-          totalDistance += distMi;
-        }
-        if (ex.category === 'Cardio' && ex.duration) {
-          let durMin = ex.duration;
-          if (ex.durationUnit === 'hr') durMin *= 60;
-          else if (ex.durationUnit === 'sec') durMin /= 60;
-          totalDuration += durMin;
-        }
-        totalCalories += ex.calories || 0;
-      });
-    });
-
-    const periodSummary = {
-      workoutDays: uniqueWorkoutDates.size,
-      totalWeightLiftedLbs: Math.round(totalWeight),
-      totalDistanceMi: Math.round(totalDistance),
-      totalCardioDurationMin: Math.round(totalDuration),
-      totalCaloriesBurned: Math.round(totalCalories),
-      periodLabel: periodLabel,
-    };
-
-    return {
-      workoutFrequencyData,
-      newPrsData: prsForPeriod.sort((a: PersonalRecord, b: PersonalRecord) => b.date.getTime() - a.date.getTime()),
-      achievedGoalsData: (goalsForPeriod as (FitnessGoal & { dateAchieved: Date })[]).sort(
-        (a: FitnessGoal & { dateAchieved: Date }, b: FitnessGoal & { dateAchieved: Date }) =>
-          b.dateAchieved.getTime() - a.dateAchieved.getTime()
-      ),
-      categoryRepData,
-      categoryCalorieData,
-      periodSummary,
-    };
   }, [timeRange, logsForPeriod, prsForPeriod, goalsForPeriod]);
 }

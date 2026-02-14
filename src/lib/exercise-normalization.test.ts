@@ -245,6 +245,85 @@ describe('resolveCanonicalExerciseName', () => {
     const result = resolveCanonicalExerciseName('BARBELL SQUAT', exerciseLibrary);
     expect(result).toBe('back squat');
   });
+
+  it('resolves unprefixed names to machine canonical names when match is unique', () => {
+    const machineOnlyLibrary: ExerciseDocument[] = [
+      {
+        id: 'machine-seated-row',
+        name: 'Machine Seated Row',
+        normalizedName: 'machine seated row',
+        equipment: 'machine',
+        category: 'Upper Body',
+        type: 'strength',
+        isActive: true,
+      },
+      {
+        id: 'machine-leg-curl',
+        name: 'Machine Leg Curl',
+        normalizedName: 'machine leg curl',
+        equipment: 'machine',
+        category: 'Lower Body',
+        type: 'strength',
+        isActive: true,
+      },
+      {
+        id: 'machine-adductor',
+        name: 'Machine Adductor',
+        normalizedName: 'machine adductor',
+        equipment: 'machine',
+        category: 'Lower Body',
+        type: 'strength',
+        isActive: true,
+      },
+      {
+        id: 'machine-abductor',
+        name: 'Machine Abductor',
+        normalizedName: 'machine abductor',
+        equipment: 'machine',
+        category: 'Lower Body',
+        type: 'strength',
+        isActive: true,
+      },
+    ];
+
+    expect(resolveCanonicalExerciseName('seated row', machineOnlyLibrary)).toBe(
+      'machine seated row'
+    );
+    expect(resolveCanonicalExerciseName('leg curl', machineOnlyLibrary)).toBe(
+      'machine leg curl'
+    );
+    expect(resolveCanonicalExerciseName('adductor', machineOnlyLibrary)).toBe(
+      'machine adductor'
+    );
+    expect(resolveCanonicalExerciseName('abductor', machineOnlyLibrary)).toBe(
+      'machine abductor'
+    );
+  });
+
+  it('does not use relaxed matching when multiple equipment variants exist', () => {
+    const ambiguousLibrary: ExerciseDocument[] = [
+      {
+        id: 'machine-row',
+        name: 'Machine Row',
+        normalizedName: 'machine row',
+        equipment: 'machine',
+        category: 'Upper Body',
+        type: 'strength',
+        isActive: true,
+      },
+      {
+        id: 'barbell-row',
+        name: 'Barbell Row',
+        normalizedName: 'barbell row',
+        equipment: 'barbell',
+        category: 'Upper Body',
+        type: 'strength',
+        isActive: true,
+      },
+    ];
+
+    expect(resolveCanonicalExerciseName('row', ambiguousLibrary)).toBe('row');
+  });
 });
 
 describe('exercise normalization - integration', () => {

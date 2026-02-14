@@ -269,7 +269,7 @@ export default function AnalysisPage() {
                   isLoading={isLoading}
                   userProfile={userProfile!}
                   workoutLogs={workoutLogs}
-                  strengthAnalysis={strengthAnalysis as any}
+                  strengthAnalysis={strengthAnalysis}
                   exercises={exercises}
                   fitnessGoals={fitnessGoals}
                 />

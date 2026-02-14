@@ -3,6 +3,7 @@ import type { Exercise, WorkoutLog, UserProfile } from '@/lib/types';
 import { toTitleCase } from '@/lib/utils';
 import { calculateExerciseCalories } from '@/lib/calorie-calculator';
 import { calculateRecentWeeklyCardioAverage, resolveWeeklyCardioGoal } from '@/lib/cardio-target-calculator';
+import { reportErrorWithContext } from '@/lib/logging/error-reporter';
 import {
   format,
   startOfMonth,
@@ -49,6 +50,14 @@ interface CardioAnalysisResult {
   cardioAmountChartData: CardioAmountChartPoint[];
 }
 
+const EMPTY_CARDIO_ANALYSIS_RESULT: CardioAnalysisResult = {
+  totalCalories: 0,
+  statsByActivity: {},
+  pieChartData: [],
+  calorieSummary: '',
+  cardioAmountChartData: [],
+};
+
 export function useCardioAnalysis(
   timeRange: string,
   workoutLogs: WorkoutLog[] | undefined,
@@ -56,24 +65,19 @@ export function useCardioAnalysis(
   logsForPeriod: WorkoutLog[]
 ): CardioAnalysisResult {
   return useMemo(() => {
-    if (!userProfile) {
-      return {
-        totalCalories: 0,
-        statsByActivity: {},
-        pieChartData: [],
-        calorieSummary: '',
-        cardioAmountChartData: [],
-      };
-    }
+    try {
+      if (!userProfile) {
+        return EMPTY_CARDIO_ANALYSIS_RESULT;
+      }
 
-    const today = new Date();
+      const today = new Date();
 
-    const cardioExercises: CardioExercise[] = logsForPeriod.flatMap(log =>
-      log.exercises
-        .filter(ex => ex.category === 'Cardio')
-        .map(ex => {
-          let name = toTitleCase(ex.name);
-          const exNameLower = ex.name.toLowerCase();
+      const cardioExercises: CardioExercise[] = logsForPeriod.flatMap(log =>
+        log.exercises
+          .filter(ex => ex.category === 'Cardio')
+          .map(ex => {
+            let name = toTitleCase(ex.name);
+            const exNameLower = ex.name.toLowerCase();
 
           // Speed-based categorization for treadmill, elliptical, and ascent trainer
           if (exNameLower.includes('treadmill') || exNameLower.includes('elliptical') || exNameLower.includes('ascent trainer')) {
@@ -99,21 +103,21 @@ export function useCardioAnalysis(
           else if (exNameLower.includes('rowing')) name = 'Rowing';
           else if (exNameLower.includes('swim')) name = 'Swimming';
 
-          const calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
+            const calculatedCalories = calculateExerciseCalories(ex, userProfile, workoutLogs || []);
 
-          return {
-            ...ex,
-            date: log.date,
-            name,
-            calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories,
-          };
-        })
-    );
+            return {
+              ...ex,
+              date: log.date,
+              name,
+              calories: ex.calories && ex.calories > 0 ? ex.calories : calculatedCalories,
+            };
+          })
+      );
 
-    const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
+      const totalCalories = cardioExercises.reduce((sum, ex) => sum + (ex.calories || 0), 0);
 
-    const statsByActivity = cardioExercises.reduce(
-      (acc: Record<string, CardioStats>, ex) => {
+      const statsByActivity = cardioExercises.reduce(
+        (acc: Record<string, CardioStats>, ex) => {
         if (!acc[ex.name]) {
           acc[ex.name] = { count: 0, totalDistanceMi: 0, totalDurationMin: 0, totalCalories: 0, hasEstimatedCalories: false };
         }
@@ -142,26 +146,26 @@ export function useCardioAnalysis(
         }
         stats.totalDurationMin += durationMin;
 
-        return acc;
-      },
-      {} as Record<string, CardioStats>
-    );
+          return acc;
+        },
+        {} as Record<string, CardioStats>
+      );
 
-    const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
-      name: `${name} `,
-      value: Math.round(stats.totalCalories),
-      fill: `var(--color-${name})`,
-      hasEstimatedCalories: stats.hasEstimatedCalories,
-    }));
+      const pieChartData = Object.entries(statsByActivity).map(([name, stats]) => ({
+        name: `${name} `,
+        value: Math.round(stats.totalCalories),
+        fill: `var(--color-${name})`,
+        hasEstimatedCalories: stats.hasEstimatedCalories,
+      }));
 
-    let calorieSummary = '';
-    const recentWeeklyAverage = workoutLogs
-      ? calculateRecentWeeklyCardioAverage(workoutLogs) ?? undefined
-      : undefined;
-    const weeklyGoal = resolveWeeklyCardioGoal(userProfile, { recentWeeklyAverage });
-    let weeklyAverage = 0;
+      let calorieSummary = '';
+      const recentWeeklyAverage = workoutLogs
+        ? calculateRecentWeeklyCardioAverage(workoutLogs) ?? undefined
+        : undefined;
+      const weeklyGoal = resolveWeeklyCardioGoal(userProfile, { recentWeeklyAverage });
+      let weeklyAverage = 0;
 
-    if (timeRange === 'weekly') {
+      if (timeRange === 'weekly') {
       weeklyAverage = totalCalories;
       calorieSummary = `This week you've burned a total of ${Math.round(totalCalories).toLocaleString()} cardio calories.`;
     } else if (timeRange === 'monthly') {
@@ -188,7 +192,7 @@ export function useCardioAnalysis(
       calorieSummary = `You've burned ${Math.round(totalCalories).toLocaleString()} cardio calories in total, averaging ${Math.round(weeklyAverage).toLocaleString()}/week.`;
     }
 
-    if (weeklyGoal && weeklyGoal > 0) {
+      if (weeklyGoal && weeklyGoal > 0) {
       const percentageAchieved = (weeklyAverage / weeklyGoal) * 100;
       calorieSummary += ` Your weekly calorie target is ${weeklyGoal.toLocaleString()}.`;
 
@@ -204,24 +208,24 @@ export function useCardioAnalysis(
     }
 
     // --- Cardio Amount Bar Chart Data ---
-    let cardioAmountChartData: CardioAmountChartPoint[] = [];
-    const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
-    const initialActivityData = { total: 0, ...Object.fromEntries(activities.map((act: string) => [act, 0])) };
+      let cardioAmountChartData: CardioAmountChartPoint[] = [];
+      const activities = Array.from(new Set(cardioExercises.map(ex => ex.name)));
+      const initialActivityData = { total: 0, ...Object.fromEntries(activities.map((act: string) => [act, 0])) };
 
-    const processAndFinalizeData = (dataMap: Map<string, CardioAmountChartPoint>) => {
-      const finalizedData = Array.from(dataMap.values());
-      finalizedData.forEach(dataPoint => {
-        let total = 0;
-        activities.forEach((activity: string) => {
-          const value = dataPoint[activity];
-          total += typeof value === 'number' ? value : 0;
+      const processAndFinalizeData = (dataMap: Map<string, CardioAmountChartPoint>) => {
+        const finalizedData = Array.from(dataMap.values());
+        finalizedData.forEach(dataPoint => {
+          let total = 0;
+          activities.forEach((activity: string) => {
+            const value = dataPoint[activity];
+            total += typeof value === 'number' ? value : 0;
+          });
+          dataPoint.total = Math.round(total);
         });
-        dataPoint.total = Math.round(total);
-      });
-      return finalizedData;
-    };
+        return finalizedData;
+      };
 
-    switch (timeRange) {
+      switch (timeRange) {
       case 'weekly': {
         const weekStart = startOfWeek(today, { weekStartsOn: 0 });
         const daysInWeek = Array.from({ length: 7 }, (_, i) => {
@@ -314,8 +318,16 @@ export function useCardioAnalysis(
         );
         break;
       }
-    }
+      }
 
-    return { totalCalories, statsByActivity, pieChartData, calorieSummary, cardioAmountChartData };
+      return { totalCalories, statsByActivity, pieChartData, calorieSummary, cardioAmountChartData };
+    } catch (error) {
+      void reportErrorWithContext(
+        error instanceof Error ? error : new Error(String(error)),
+        'analysis',
+        { hook: 'useCardioAnalysis', timeRange }
+      );
+      return EMPTY_CARDIO_ANALYSIS_RESULT;
+    }
   }, [timeRange, logsForPeriod, userProfile, workoutLogs]);
 }
