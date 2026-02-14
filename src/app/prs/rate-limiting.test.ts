@@ -256,7 +256,10 @@ describe('checkRateLimit', () => {
     });
 
     it('handles null aiUsage', async () => {
-      vi.mocked(firestoreServer.getUserProfile).mockResolvedValue(createUserProfile({ aiUsage: null }));
+      vi.mocked(firestoreServer.getUserProfile).mockResolvedValue({
+        ...createUserProfile(),
+        aiUsage: null,
+      } as unknown as UserProfile);
 
       const result = await checkRateLimit('user-1', 'prParses');
 
