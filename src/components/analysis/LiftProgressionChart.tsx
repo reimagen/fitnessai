@@ -31,6 +31,7 @@ type LiftProgressionChartProps = {
   trendImprovement: number | null;
   volumeTrend: number | null;
   avgE1RM: number | null;
+  avgE1RMUnit: 'kg' | 'lbs' | null;
 };
 
 type TrophyShapeProps = {
@@ -139,6 +140,7 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
   trendImprovement,
   volumeTrend,
   avgE1RM,
+  avgE1RMUnit,
 }) => {
   if (!selectedLift || chartData.length <= 1) {
     return null;
@@ -152,6 +154,7 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
     if (value === 0) return "0%";
     return `${value > 0 ? "+" : ""}${value}%`;
   };
+  const avgE1RMDisplay = avgE1RMUnit ? `${Math.round(avgE1RM ?? 0)} ${avgE1RMUnit}` : `${Math.round(avgE1RM ?? 0)}`;
 
   return (
     <div className="pt-4">
@@ -165,7 +168,7 @@ export const LiftProgressionChart: React.FC<LiftProgressionChartProps> = ({
           )}
           {avgE1RM !== null && (
             <span>
-              e1RM: <Badge variant={getLevelBadgeVariant('Beginner')}>{Math.round(avgE1RM)} lbs</Badge>
+              e1RM: <Badge variant={getLevelBadgeVariant('Beginner')}>{avgE1RMDisplay}</Badge>
             </span>
           )}
           {roundedTrendImprovement !== null && (

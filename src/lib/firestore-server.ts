@@ -56,7 +56,10 @@ const workoutLogConverter = {
     return {
       id: snapshot.id,
       userId: userId,
-      date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
+      date: (() => {
+        if (data.date instanceof Timestamp) return data.date.toDate();
+        throw new Error(`WorkoutLog ${snapshot.id}: required field "date" is missing or malformed`);
+      })(),
       notes: typeof data.notes === 'string' ? data.notes : '',
       exercises: exercises,
     };
@@ -86,7 +89,10 @@ const personalRecordConverter = {
       exerciseName: typeof data.exerciseName === 'string' ? data.exerciseName : 'Unnamed Exercise',
       weight: Number(data.weight || 0),
       weightUnit: data.weightUnit === 'kg' || data.weightUnit === 'lbs' ? data.weightUnit : 'lbs',
-      date: data.date instanceof Timestamp ? data.date.toDate() : new Date(),
+      date: (() => {
+        if (data.date instanceof Timestamp) return data.date.toDate();
+        throw new Error(`PersonalRecord ${snapshot.id}: required field "date" is missing or malformed`);
+      })(),
       category: category,
       strengthLevel: strengthLevel,
     };
@@ -107,7 +113,10 @@ const weeklyPlanConverter = {
     const data = snapshot.data() || {};
     return {
       plan: typeof data.plan === 'string' ? data.plan : '',
-      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+      generatedDate: (() => {
+        if (data.generatedDate instanceof Timestamp) return data.generatedDate.toDate();
+        throw new Error(`WeeklyPlan ${snapshot.id}: required field "generatedDate" is missing or malformed`);
+      })(),
       contextUsed: typeof data.contextUsed === 'string' ? data.contextUsed : '',
       userId: typeof data.userId === 'string' ? data.userId : '',
       weekStartDate: typeof data.weekStartDate === 'string' ? data.weekStartDate : '',
@@ -126,7 +135,10 @@ const strengthAnalysisConverter = {
     const data = snapshot.data() || {};
     return {
       result: data.result || {},
-      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+      generatedDate: (() => {
+        if (data.generatedDate instanceof Timestamp) return data.generatedDate.toDate();
+        throw new Error(`StrengthAnalysis ${snapshot.id}: required field "generatedDate" is missing or malformed`);
+      })(),
     };
   }
 };
@@ -142,7 +154,10 @@ const goalAnalysisConverter = {
     const data = snapshot.data() || {};
     return {
       result: data.result || {},
-      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+      generatedDate: (() => {
+        if (data.generatedDate instanceof Timestamp) return data.generatedDate.toDate();
+        throw new Error(`GoalAnalysis ${snapshot.id}: required field "generatedDate" is missing or malformed`);
+      })(),
     };
   }
 };
@@ -158,7 +173,10 @@ const liftProgressionConverter = {
     const data = snapshot.data() || {};
     return {
       result: data.result || {},
-      generatedDate: data.generatedDate instanceof Timestamp ? data.generatedDate.toDate() : new Date(),
+      generatedDate: (() => {
+        if (data.generatedDate instanceof Timestamp) return data.generatedDate.toDate();
+        throw new Error(`LiftProgressionAnalysis ${snapshot.id}: required field "generatedDate" is missing or malformed`);
+      })(),
     };
   }
 };
@@ -185,7 +203,10 @@ const fitnessGoalsConverter = {
       goals: goalsArray.map((g: Record<string, unknown>) => ({
         id: typeof g.id === 'string' ? g.id : '',
         description: typeof g.description === 'string' ? g.description : '',
-        targetDate: g.targetDate instanceof Timestamp ? g.targetDate.toDate() : new Date(),
+        targetDate: (() => {
+          if (g.targetDate instanceof Timestamp) return g.targetDate.toDate();
+          throw new Error(`FitnessGoal ${g.id || 'unknown'}: required field "targetDate" is missing or malformed`);
+        })(),
         achieved: Boolean(g.achieved),
         dateAchieved: g.dateAchieved instanceof Timestamp ? g.dateAchieved.toDate() : undefined,
         isPrimary: Boolean(g.isPrimary),
@@ -256,7 +277,10 @@ export const userProfileConverter = {
                 description: typeof goal.description === 'string' ? goal.description : '',
                 achieved: !!goal.achieved,
                 isPrimary: !!goal.isPrimary,
-                targetDate: goal.targetDate instanceof Timestamp ? goal.targetDate.toDate() : new Date(),
+                targetDate: (() => {
+                  if (goal.targetDate instanceof Timestamp) return goal.targetDate.toDate();
+                  throw new Error(`FitnessGoal ${goal.id || 'unknown'}: required field "targetDate" is missing or malformed`);
+                })(),
                 dateAchieved: goal.dateAchieved instanceof Timestamp ? goal.dateAchieved.toDate() : undefined,
             }))
             : [];

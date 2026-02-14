@@ -6,6 +6,10 @@ import { QueryProvider } from '@/components/QueryProvider';
 import { BottomNavigationBar } from '@/components/layout/BottomNavigationBar';
 import { AuthProvider } from '@/lib/auth.service';
 import { AuthGate } from '@/components/auth/AuthGate';
+import { validateEnvironment } from '@/lib/env-validation';
+
+// Validate environment variables at startup
+validateEnvironment();
 
 export const dynamic = 'force-dynamic';
 

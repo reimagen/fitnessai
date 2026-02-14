@@ -4,6 +4,8 @@ const LEGACY_CANONICAL_FALLBACKS: Record<string, string> = {
   'chest press': 'machine chest press',
 };
 
+const EQUIPMENT_PREFIX_REGEX = /^(machine|barbell|dumbbell|cable|bodyweight|band|kettlebell)\s+/;
+
 /**
  * Client-side exercise normalization used for lookups against exercise library data.
  * Matches server normalization behavior by stripping only EGYM prefixes.
@@ -33,6 +35,33 @@ export const findCanonicalExercise = (
   });
 };
 
+const stripEquipmentPrefix = (name: string): string =>
+  normalizeExerciseNameForLookup(name).replace(EQUIPMENT_PREFIX_REGEX, '');
+
+const findByEquipmentPrefixInsensitiveName = (
+  exerciseName: string,
+  exerciseLibrary: ExerciseDocument[]
+): ExerciseDocument | undefined => {
+  const strippedInput = stripEquipmentPrefix(exerciseName);
+  if (!strippedInput) {
+    return undefined;
+  }
+
+  const matches = exerciseLibrary.filter(exercise => {
+    if (stripEquipmentPrefix(exercise.normalizedName) === strippedInput) {
+      return true;
+    }
+
+    return (
+      exercise.legacyNames?.some(legacyName => stripEquipmentPrefix(legacyName) === strippedInput) ||
+      false
+    );
+  });
+
+  // Only use this relaxed match when it is unambiguous.
+  return matches.length === 1 ? matches[0] : undefined;
+};
+
 /**
  * Resolves any exercise name to its canonical normalized name when possible.
  */
@@ -55,6 +84,14 @@ export const resolveCanonicalExerciseName = (
     if (fallbackExercise?.normalizedName) {
       return fallbackExercise.normalizedName;
     }
+  }
+
+  const equipmentInsensitiveExercise = findByEquipmentPrefixInsensitiveName(
+    exerciseName,
+    exerciseLibrary
+  );
+  if (equipmentInsensitiveExercise?.normalizedName) {
+    return equipmentInsensitiveExercise.normalizedName;
   }
 
   return normalizedInput;

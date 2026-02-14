@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Last Updated:** 2026-02-07
+**Last Updated:** 2026-02-14
 
 ## Test Framework
 
@@ -21,7 +21,7 @@
 **Smoke Tests** (end-to-end user flows)
 ```bash
 # Set test credentials
-export E2E_AUTH_EMAIL="fake@notreal.com"
+export E2E_AUTH_EMAIL="new@fake.com"
 export E2E_AUTH_PASSWORD="fake26"
 
 # Run all tests
@@ -31,7 +31,7 @@ npm run test:smoke
 npm run test:smoke:headed
 ```
 
-**Unit/Integration Tests** (when added)
+**Unit/Integration Tests**
 ```bash
 npm run test        # Watch mode
 npm run test:ci     # CI mode (run once)
@@ -50,7 +50,7 @@ Located in `tests/smoke/`, these 11 tests validate critical user flows:
 
 See `tests/smoke/README.md` for detailed documentation.
 
-## Code Paths for Testing (Future Unit Tests)
+## Code Paths for Additional Testing
 
 The following areas would benefit from test coverage:
 
@@ -450,7 +450,7 @@ src/__tests__/
     ErrorBoundary.test.tsx
 ```
 
-## Testing Tools (If Implemented)
+## Testing Tools
 
 **Recommended:**
 - **Jest** or **Vitest** - Test runner with assertion library
@@ -461,7 +461,7 @@ src/__tests__/
 
 ## Coverage Priorities
 
-**High Priority (if implementing tests):**
+**High Priority:**
 1. Error classification and logging (`src/lib/logging/`)
 2. Exercise name resolution (`src/lib/exercise-normalization.ts`)
 3. Validation schemas (Zod in API routes and forms)
@@ -479,20 +479,47 @@ src/__tests__/
 
 ## Current Testing Coverage
 
-### Implemented:
+### ✅ Phase 1: Foundation Tests (COMPLETED - 2026-02-14)
+
+**Status:** 179 total tests passing in CI mode, deterministic, low-runtime execution time
+
+**Implemented Files (137 new tests):**
+1. `src/lib/logging/error-classifier.test.ts` (37 tests)
+   - ✅ All 5 error categories (quota_exceeded, model_overloaded, validation_error, auth_error, unknown_error)
+   - ✅ Status code assignment, user messaging, retry flags
+   - ✅ Edge cases: null/undefined errors, very long messages, multiple error indicators
+
+2. `src/lib/logging/data-redactor.test.ts` (46 tests)
+   - ✅ PII pattern redaction: email, phone, tokens, API keys, URLs, Firebase user IDs
+   - ✅ Recursive handling of nested objects/arrays
+   - ✅ Safe field preservation (timestamp, message, errorMessage, etc.)
+   - ✅ Edge cases: null/empty/deeply nested structures, case insensitivity
+
+3. `src/lib/exercise-normalization.test.ts` (38 tests - expanded)
+   - ✅ Exercise name normalization (EGYM prefix, whitespace, casing, parentheses)
+   - ✅ Canonical exercise lookup via direct match and legacy names
+   - ✅ Fallback mapping and boundary conditions
+   - ✅ Integration scenarios with real gym equipment names
+
+4. `src/app/prs/rate-limiting.test.ts` (26 tests)
+   - ✅ Daily rate limit enforcement per feature
+   - ✅ Authentication validation
+   - ✅ Feature-specific limits (prParses: 10, planGenerations: 5, strengthAnalyses: 5)
+   - ✅ Boundary conditions, date handling, edge cases
+
+**Test Infrastructure:**
+- ✅ Vitest configured and running in watch/CI modes
+- ✅ All tests use proper mocking (vi.mock, vi.mocked)
+- ✅ Fixture data patterns established
+- ✅ No external dependencies or flaky tests
+- ✅ CI integration ready (npm run test:ci)
+
+Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md`.
+
+### Prior Testing:
 - ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)
 - ✅ **CI/CD Pipeline** (GitHub Actions on every PR and push to main)
 
-### Future Opportunities (Unit/Integration):
-The areas listed above (error classification, exercise resolution, server actions, hooks, components, API endpoints) would benefit from unit/integration tests using Vitest + React Testing Library.
-
-**Priority Order:**
-1. Error classification and logging
-2. Exercise name resolution
-3. Rate limiting enforcement
-4. Server action validation
-5. Component integration tests
-
 ---
 
-*Testing last updated: 2026-02-07*
+*Testing last updated: 2026-02-14 - descriptive coverage restored; upgrade roadmap moved to testing-upgrades.md*

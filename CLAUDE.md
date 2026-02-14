@@ -109,8 +109,9 @@ This document provides guidelines and authorizations for Claude to work efficien
 
 ### Testing Strategy
 - **E2E tests**: Use Playwright (11 smoke tests in `.github/workflows/`)
-- **Unit tests**: Missing—contribute when refactoring critical paths
-- **Manual testing**: Primary validation method currently
+- **Unit tests**: 179 tests passing (`npm run test:ci`). Coverage tracks concerns closeout.
+- **Test roadmap**: `.planning/codebase/testing-upgrades.md` (Phases 2-4)
+- **Manual testing**: Still used for UI/UX validation
 
 ### Code Review Checklist
 Before asking for PR approval:
@@ -123,6 +124,17 @@ Before asking for PR approval:
 - ✓ Related cache invalidations added (if data modified)
 
 ## Common Tasks
+
+### Picking Up Work (Default Workflow)
+1. Read `.planning/codebase/CONCERNS.md` — it is the **single work queue**
+2. Follow the **Priority Order** section for what to work on next
+3. Reference linked detail docs (e.g., `imbalance-config.md`, `testing-upgrades.md`) for scope
+4. Implement the item
+5. **Closeout** (all three required):
+   - Update concern status in CONCERNS.md (`RESOLVED` or `PARTIAL RESOLUTION` with remaining risk)
+   - Add dated entry in `docs/changelog.md` (area, summary, files, verification)
+   - Update adjacent `.planning/codebase` docs if architecture/testing/workflow changed
+6. Show user `git diff` and ask for approval
 
 ### Adding a New Feature
 1. Create feature branch: `git checkout -b feature/description`
@@ -188,13 +200,17 @@ Before asking for PR approval:
 
 ## References
 
+- [Codebase Concerns (work queue)](/.planning/codebase/CONCERNS.md)
+- [Changelog](/docs/changelog.md)
+- [Testing Status](/.planning/codebase/TESTING.md)
+- [Testing Upgrade Roadmap](/.planning/codebase/testing-upgrades.md)
+- [Imbalance Config Plan](/.planning/codebase/imbalance-config.md)
 - [Caching Strategy](/docs/archive/caching-strategy.md)
 - [Project Structure](/docs/archive/STRUCTURE.md)
 - [Architecture](/docs/archive/ARCHITECTURE.md)
-- [Codebase Concerns](/docs/archive/CONCERNS.md)
 - [Conventions](/docs/archive/CONVENTIONS.md)
 
 ---
 
-**Last Updated**: 2026-02-10
-**Version**: 1.0
+**Last Updated**: 2026-02-14
+**Version**: 1.1

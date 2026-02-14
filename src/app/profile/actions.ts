@@ -18,6 +18,7 @@ import type {
 } from "@/lib/types";
 import { getNormalizedExerciseName } from "@/lib/strength-standards.server";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
+import { areAPIKeysAvailable, API_UNAVAILABLE_ERROR } from "@/lib/env-validation";
 
 // Zod schemas for input validation
 const FitnessGoalSchema: z.ZodType<FitnessGoal, z.ZodTypeDef, unknown> = z.object({
@@ -138,10 +139,8 @@ export async function analyzeLiftProgressionAction(
       return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
     }
 
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-      const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
-      await logger.error("Missing API Key", { ...context, error: errorMessage });
-      return { success: false, error: errorMessage };
+    if (!areAPIKeysAvailable()) {
+      return { success: false, error: API_UNAVAILABLE_ERROR };
     }
     if (!userId) {
       return { success: false, error: "User not authenticated." };
@@ -219,10 +218,8 @@ export async function analyzeGoalsAction(
       return { success: false, error: `Invalid input: ${validatedInput.error.message}` };
     }
 
-    if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_API_KEY) {
-      const errorMessage = "The Gemini API Key is missing from your environment configuration. Please add either GEMINI_API_KEY or GOOGLE_API_KEY to your .env.local file. You can obtain a key from Google AI Studio.";
-      await logger.error("Missing API Key", { ...context, error: errorMessage });
-      return { success: false, error: errorMessage };
+    if (!areAPIKeysAvailable()) {
+      return { success: false, error: API_UNAVAILABLE_ERROR };
     }
     if (!userId) {
       return { success: false, error: "User not authenticated." };

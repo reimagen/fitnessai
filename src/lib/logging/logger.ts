@@ -1,4 +1,5 @@
 import { Logging } from "@google-cloud/logging";
+import { redactPII } from "@/lib/logging/data-redactor";
 
 export type LogLevel = "debug" | "info" | "warn" | "error" | "fatal";
 export type LogMetadata = Record<string, unknown>;
@@ -35,11 +36,16 @@ async function writeLog(
   metadata: LogMetadata = {},
   traceHeader?: string
 ): Promise<void> {
+  // Redact sensitive data before logging (production only)
+  const redactedMetadata = process.env.NODE_ENV === "production"
+    ? (redactPII(metadata) as LogMetadata)
+    : metadata;
+
   const payload = {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV ?? "development",
     message,
-    ...metadata,
+    ...redactedMetadata,
   };
 
   if (process.env.NODE_ENV !== "production") {

@@ -1,5 +1,8 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Redis } from "@upstash/redis";
+import { getActiveExercises } from "@/lib/exercise-registry.server";
+import { validateImbalanceConfigExercises } from "@/analysis/analysis.config";
+import type { ImbalanceConfigValidationIssue } from "@/analysis/analysis.config";
 
 export async function checkFirestore(): Promise<"ok" | "degraded"> {
   try {
@@ -27,5 +30,42 @@ export async function checkRedis(): Promise<"ok" | "degraded"> {
     return "ok";
   } catch {
     return "degraded";
+  }
+}
+
+export async function checkAnalysisConfig(): Promise<"ok" | "degraded"> {
+  const details = await getAnalysisConfigHealthDetails();
+  return details.status;
+}
+
+export type AnalysisConfigHealthDetails = {
+  status: "ok" | "degraded";
+  mismatchCount: number;
+  sampleMismatches: ImbalanceConfigValidationIssue[];
+};
+
+export async function getAnalysisConfigHealthDetails(): Promise<AnalysisConfigHealthDetails> {
+  try {
+    const exercises = await getActiveExercises();
+    const issues = validateImbalanceConfigExercises(exercises);
+    if (issues.length === 0) {
+      return {
+        status: "ok",
+        mismatchCount: 0,
+        sampleMismatches: [],
+      };
+    }
+
+    return {
+      status: "degraded",
+      mismatchCount: issues.length,
+      sampleMismatches: issues.slice(0, 3),
+    };
+  } catch {
+    return {
+      status: "degraded",
+      mismatchCount: 0,
+      sampleMismatches: [],
+    };
   }
 }

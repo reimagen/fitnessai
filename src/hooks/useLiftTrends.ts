@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
-import type { WorkoutLog } from '@/lib/types';
-import type { ExerciseDocument } from '@/lib/exercise-types';
-import { find6WeekAvgE1RM } from '@/analysis/analysis.config';
+import type { SixWeekLiftMetricsMap } from '@/analysis/six-week-lift-metrics';
 
 interface ProgressionChartData {
   chartData: Array<{
@@ -26,8 +24,7 @@ export function useLiftTrends(
   selectedLift: string,
   selectedLiftKey: string,
   progressionChartData: ProgressionChartData | undefined,
-  workoutLogs: WorkoutLog[] | undefined,
-  exercises: ExerciseDocument[] = []
+  sixWeekLiftMetrics: SixWeekLiftMetricsMap
 ): LiftTrendsResult {
   return useMemo(() => {
     if (!selectedLift || !progressionChartData?.chartData || progressionChartData.chartData.length < 2) {
@@ -73,15 +70,9 @@ export function useLiftTrends(
       return null;
     };
 
-    let avgE1RM: number | null = null;
-    let avgE1RMUnit: 'kg' | 'lbs' | null = null;
-    if (workoutLogs) {
-      const result = find6WeekAvgE1RM(workoutLogs, [selectedLiftKey], exercises);
-      if (result) {
-        avgE1RM = result.weight;
-        avgE1RMUnit = result.weightUnit;
-      }
-    }
+    const liftMetric = sixWeekLiftMetrics[selectedLiftKey];
+    const avgE1RM = liftMetric?.avgE1RM ?? null;
+    const avgE1RMUnit = liftMetric?.avgE1RMUnit ?? null;
 
     return {
       trendImprovement: calculateTrend('e1RM'),
@@ -89,5 +80,5 @@ export function useLiftTrends(
       avgE1RM,
       avgE1RMUnit,
     };
-  }, [selectedLift, selectedLiftKey, progressionChartData, workoutLogs, exercises]);
+  }, [selectedLift, selectedLiftKey, progressionChartData, sixWeekLiftMetrics]);
 }
