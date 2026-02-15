@@ -1,6 +1,6 @@
 # Testing Patterns
 
-**Last Updated:** 2026-02-14
+**Last Updated:** 2026-02-14 (post Step 4-5 checkpoint)
 
 ## Test Framework
 
@@ -36,6 +36,21 @@ npm run test:smoke:headed
 npm run test        # Watch mode
 npm run test:ci     # CI mode (run once)
 ```
+
+## Test Storage Conventions
+
+1. Vitest unit/integration tests live under `src/**` and use `*.test.ts` / `*.test.tsx`.
+2. Playwright smoke tests live under `tests/smoke/**` and use `*.spec.ts`.
+3. Test files should use kebab-case naming (for consistency across domains).
+4. Shared test helpers live in `src/test/**`:
+   - `src/test/setup.ts` for global test setup
+   - `src/test/utils.tsx` for render helpers/providers
+   - `src/test/fixtures.ts` for shared deterministic fixtures/builders
+5. Placement rule:
+   - component tests in `src/components/**`
+   - hook tests in `src/hooks/**`
+   - domain logic tests in `src/lib/**` or `src/analysis/**`
+   - server action tests in `src/app/**`
 
 ## Smoke Test Coverage
 
@@ -514,7 +529,7 @@ src/__tests__/
 - ✅ No external dependencies or flaky tests
 - ✅ CI integration ready (npm run test:ci)
 
-Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md`.
+Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md` (current baseline: `npm run test:ci` 269 passing, `npm run typecheck` clean).
 
 ### Prior Testing:
 - ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)

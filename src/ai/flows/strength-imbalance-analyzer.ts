@@ -36,7 +36,7 @@ const IMBALANCE_TYPES = [
     'Adductor vs. Abductor',
 ] as const;
 
-const IMBALANCE_FOCUS_TYPES = ['Balanced', 'Level Imbalance', 'Ratio Imbalance'] as const;
+const IMBALANCE_FOCUS_TYPES = ['Balanced', 'Ratio Imbalance'] as const;
 
 const ClientSideFindingSchema = z.object({
     imbalanceType: z.enum(IMBALANCE_TYPES),
@@ -72,7 +72,7 @@ const ImbalanceFindingSchema = z.object({
     userRatio: z.string().describe("The user's calculated strength ratio, formatted as 'X : Y'."),
     targetRatio: z.string().describe("The target or ideal ratio, formatted as 'X:1'."),
     balancedRange: z.string().describe("The ideal or target strength ratio, formatted as 'X-Y:1'."),
-    imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The primary issue to focus on: a disparity in strength levels or an incorrect ratio between same-level lifts."),
+    imbalanceFocus: z.enum(IMBALANCE_FOCUS_TYPES).describe("The primary issue to focus on: whether the opposing lift ratio is balanced."),
     insight: z.string().describe("A concise, AI-generated explanation of what the imbalance means."),
     recommendation: z.string().describe("A simple, AI-generated, actionable recommendation to address the imbalance."),
 });
@@ -103,6 +103,9 @@ const ImbalanceDataForAISchema = z.object({
     lift1Level: z.custom<StrengthLevel>(),
     lift2Name: z.string(),
     lift2Level: z.custom<StrengthLevel>(),
+    weakerLiftName: z.string().describe("The lift to prioritize for correction. Empty only for balanced findings."),
+    strongerLiftName: z.string().describe("The comparatively stronger lift in the pair. Empty only for balanced findings."),
+    explicitActionLine: z.string().describe("A direct, deterministic action line that explicitly states what the user should work on."),
     insightFocus: z.string().describe("A clear instruction for the AI, guiding its insight generation."),
     recommendationFocus: z.string().describe("A clear instruction for the AI, guiding its recommendation (e.g., 'focus on bringing the lagging lift to an Intermediate level for health, not matching the elite lift')."),
 });
@@ -148,6 +151,9 @@ The following data has been calculated by our system. Use this as the absolute s
   - **Focus Area:** {{{this.imbalanceFocus}}}
   - **Proximity to Balance:** {{{this.proximity}}}
   - Lifts: {{{this.lift1Name}}} (Level: {{{this.lift1Level}}}) vs. {{{this.lift2Name}}} (Level: {{{this.lift2Level}}})
+  - **Weaker Lift To Prioritize:** {{{this.weakerLiftName}}}
+  - **Stronger Comparison Lift:** {{{this.strongerLiftName}}}
+  - **System Action Line:** {{{this.explicitActionLine}}}
   - **System Insight Focus:** {{{this.insightFocus}}}
   - **System Recommendation Focus:** {{{this.recommendationFocus}}}
 {{/each}}
@@ -168,16 +174,9 @@ For **each** of the imbalances listed above, you will provide expert commentary.
     - If Proximity is **'Significant'**, your tone should be direct about the risks of the imbalance and the importance of addressing it. Example: "A significant imbalance like this can increase injury risk..."
     - If Proximity is **'Close'**, your tone MUST be encouraging and motivational. Acknowledge their progress. Example: "You're very close to achieving a healthy balance! A small focus on..."
     - If Proximity is **'Balanced'**, your tone should be positive and reinforcing. Congratulate the user. Example: "Excellent work maintaining this balance..."
+- **EXPLICIT TARGET REQUIRED:** For every non-balanced finding, you MUST explicitly name the weaker lift and what to work on. Do not give generic "stay balanced" or "monitor this" guidance without naming the lift.
 `,
 });
-
-const strengthLevelRanks: Record<StrengthLevel, number> = {
-    'Beginner': 0,
-    'Intermediate': 1,
-    'Advanced': 2,
-    'Elite': 3,
-    'N/A': -1,
-};
 
 const strengthImbalanceFlow = ai.defineFlow(
   {
@@ -188,11 +187,22 @@ const strengthImbalanceFlow = ai.defineFlow(
   async (input) => {
     
     const imbalancesForAI: z.infer<typeof ImbalanceDataForAISchema>[] = [];
+    const directiveByFindingKey = new Map<string, {
+      weakerLiftName: string;
+      strongerLiftName: string;
+      explicitActionLine: string;
+    }>();
+
+    const getFindingKey = (imbalanceType: string, imbalanceFocus: string) =>
+      `${imbalanceType}::${imbalanceFocus}`;
 
     for (const finding of input.clientSideFindings) {
         let recommendationFocus = "";
         let insightFocus = "";
         let proximity: 'Significant' | 'Close' | 'Balanced' = 'Balanced';
+        let weakerLiftName = "";
+        let strongerLiftName = "";
+        let explicitActionLine = "Maintain current balance and continue progressive overload.";
 
         if (finding.imbalanceFocus === 'Ratio Imbalance') {
              const userRatioNum = parseFloat(finding.userRatio.split(':')[0]);
@@ -209,6 +219,10 @@ const strengthImbalanceFlow = ai.defineFlow(
              }
              
              const weakerLiftByRatio = userRatioNum < lowerBound ? finding.lift1Name : finding.lift2Name;
+             const strongerLiftByRatio = userRatioNum < lowerBound ? finding.lift2Name : finding.lift1Name;
+             weakerLiftName = weakerLiftByRatio;
+             strongerLiftName = strongerLiftByRatio;
+             explicitActionLine = `Primary focus: strengthen ${weakerLiftByRatio} to bring your ratio toward the balanced range.`;
 
              if (proximity === 'Close') {
                 insightFocus = `The user is very close to a balanced ratio. Explain why achieving this final bit of balance is key for optimal performance and injury prevention.`;
@@ -217,15 +231,6 @@ const strengthImbalanceFlow = ai.defineFlow(
                 insightFocus = `The user has a significant ratio imbalance. Explain the potential risks (e.g., joint stress, performance plateaus) associated with this specific imbalance.`;
                 recommendationFocus = `Prioritize correcting the imbalance. Recommend focusing on strengthening the proportionally weaker lift (${weakerLiftByRatio}) to bring it into the balanced range.`;
              }
-        } else if (finding.imbalanceFocus === 'Level Imbalance') {
-             proximity = 'Significant'; // Level imbalances are always considered significant
-             const isLift1Weaker = strengthLevelRanks[finding.lift1Level] < strengthLevelRanks[finding.lift2Level];
-             const weakerLiftName = isLift1Weaker ? finding.lift1Name : finding.lift2Name;
-             const weakerLevel = isLift1Weaker ? finding.lift1Level : finding.lift2Level;
-             const strongerLevel = isLift1Weaker ? finding.lift2Level : finding.lift1Level;
-             
-             insightFocus = `Explain the risks of having a strength level disparity between these two lifts. Emphasize joint health.`;
-             recommendationFocus = `The primary goal is to close the gap between strength tiers. Focus on bringing the weaker lift (${weakerLiftName}, currently ${weakerLevel}) up to the ${strongerLevel} level for better joint stability and balanced development.`;
         } else { // Balanced
             const currentLevel = finding.lift1Level;
             proximity = 'Balanced';
@@ -254,8 +259,17 @@ const strengthImbalanceFlow = ai.defineFlow(
             lift1Level: finding.lift1Level,
             lift2Name: finding.lift2Name,
             lift2Level: finding.lift2Level,
+            weakerLiftName,
+            strongerLiftName,
+            explicitActionLine,
             insightFocus,
             recommendationFocus,
+        });
+
+        directiveByFindingKey.set(getFindingKey(finding.imbalanceType, finding.imbalanceFocus), {
+          weakerLiftName,
+          strongerLiftName,
+          explicitActionLine,
         });
     }
 
@@ -277,10 +291,16 @@ const strengthImbalanceFlow = ai.defineFlow(
     
     const finalFindings = input.clientSideFindings.map(finding => {
         const aiResult = aiAnalyses?.analyses?.find(a => a.imbalanceType === finding.imbalanceType && a.imbalanceFocus === finding.imbalanceFocus);
+        const directive = directiveByFindingKey.get(getFindingKey(finding.imbalanceType, finding.imbalanceFocus));
+        const directivePrefix =
+          finding.imbalanceFocus !== 'Balanced' && directive?.weakerLiftName
+            ? `Priority lift to improve: ${directive.weakerLiftName}. `
+            : '';
+
         return {
             ...finding,
-            insight: aiResult?.insight || "AI analysis could not be generated for this pair.",
-            recommendation: aiResult?.recommendation || "Please consult a fitness professional for guidance.",
+            insight: `${directivePrefix}${aiResult?.insight || "AI analysis could not be generated for this pair."}`.trim(),
+            recommendation: `${aiResult?.recommendation || "Please consult a fitness professional for guidance."}`.trim(),
         };
     });
     

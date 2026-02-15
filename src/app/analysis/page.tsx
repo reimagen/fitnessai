@@ -4,7 +4,7 @@
 import { UserPlus, TrendingUp } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import type { WorkoutLog } from '@/lib/types';
-import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis, useGoals } from '@/lib/firestore.service';
+import { useWorkouts, usePersonalRecords, useUserProfile, useExercises, useStrengthAnalysis, useGoals, useImbalanceConfig } from '@/lib/firestore.service';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,7 @@ export default function AnalysisPage() {
   const { data: exercises = [] } = useExercises(enableDataFetching);
   const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
   const { data: fitnessGoals = [] } = useGoals(enableDataFetching);
+  const { data: imbalanceConfig } = useImbalanceConfig(enableDataFetching);
 
   // Custom hooks for data processing
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, fitnessGoals);
@@ -272,6 +273,7 @@ export default function AnalysisPage() {
                   strengthAnalysis={strengthAnalysis}
                   exercises={exercises}
                   fitnessGoals={fitnessGoals}
+                  imbalanceConfig={imbalanceConfig}
                 />
               </ErrorBoundary>
               <ErrorBoundary

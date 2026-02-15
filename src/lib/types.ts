@@ -14,7 +14,7 @@ export interface StrengthFinding {
   userRatio: string;
   targetRatio: string;
   balancedRange: string;
-  imbalanceFocus: 'Balanced' | 'Level Imbalance' | 'Ratio Imbalance';
+  imbalanceFocus: 'Balanced' | 'Ratio Imbalance';
   lift1Level: StrengthLevel;
   lift2Level: StrengthLevel;
 }
@@ -99,7 +99,7 @@ export interface StrengthImbalanceInput {
       userRatio: string;
       targetRatio: string;
       balancedRange: string; // Added this line
-      imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
+      imbalanceFocus: "Balanced" | "Ratio Imbalance";
   }[];
   userProfile: {
       age?: number;
@@ -261,7 +261,7 @@ export interface StrengthImbalanceOutput {
       userRatio: string;
       targetRatio: string;
       balancedRange: string; // Added this line
-      imbalanceFocus: "Balanced" | "Level Imbalance" | "Ratio Imbalance";
+      imbalanceFocus: "Balanced" | "Ratio Imbalance";
       insight: string;
       recommendation: string;
   }[];
