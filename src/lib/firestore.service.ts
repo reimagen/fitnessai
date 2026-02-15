@@ -560,7 +560,9 @@ export function useImbalanceConfig(enabled: boolean = true) {
       return result.data;
     },
     enabled: !!user && enabled,
-    staleTime: Infinity,
+    staleTime: 1000 * 60 * 5, // 5 minutes - allows config repairs to propagate quickly
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: 'always',
   });
 }
 

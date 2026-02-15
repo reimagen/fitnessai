@@ -23,6 +23,11 @@ Plan: Ship FitnessAI as iOS App using Expo                                      
 │ - React Query for client state management                                           │
 │ - Radix UI components with Tailwind CSS                                             │
 │                                                                                     │
+│ Execution Gate                                                                       │
+│ - iOS plan drafting can proceed now.                                                 │
+│ - iOS implementation starts only after prioritized concerns in                       │
+│   `.planning/codebase/CONCERNS.md` are addressed.                                   │
+│                                                                                     │
 │ Architectural Decision: Three-Phase Approach                                        │
 │                                                                                     │
 │ Phase 1: WebView Wrapper MVP (2-3 weeks)                                            │

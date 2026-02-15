@@ -1,3 +1,14 @@
+# ⚠️ Superseded / Archived
+#
+# Status: Superseded on 2026-02-15 after Phase 2 completion.
+# This document is retained for historical context and may contain outdated assumptions/test counts.
+# Do not use this file as the execution source of truth.
+#
+# Current source of truth:
+# - `.planning/codebase/CONCERNS.md` (priority order + dependencies)
+# - `.planning/codebase/testing-upgrades.md` (testing phase status/roadmap)
+# - `docs/changelog.md` (implemented outcomes + verification)
+
 # Phase 2: Server Actions Testing Plan
 
 **Status:** Ready for Implementation

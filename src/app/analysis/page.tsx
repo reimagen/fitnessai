@@ -269,7 +269,7 @@ export default function AnalysisPage() {
                 <StrengthBalanceCard
                   isLoading={isLoading}
                   userProfile={userProfile!}
-                  workoutLogs={workoutLogs}
+                  workoutLogs={workoutLogsForLiftProgression}
                   strengthAnalysis={strengthAnalysis}
                   exercises={exercises}
                   fitnessGoals={fitnessGoals}

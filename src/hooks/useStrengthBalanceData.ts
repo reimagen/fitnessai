@@ -34,16 +34,26 @@ export function useStrengthBalanceData({
   fitnessGoals = [],
   imbalanceConfig,
 }: UseStrengthBalanceDataParams): UseStrengthBalanceDataResult {
+  const shouldValidateStaticConfig = imbalanceConfig?.source !== 'firestore';
+
   const clientSideFindings = React.useMemo(
     () => buildClientSideFindings(workoutLogs, userProfile, exercises, imbalanceConfig),
     [workoutLogs, userProfile, exercises, imbalanceConfig]
   );
 
-  const imbalanceConfigIssues = React.useMemo(() => validateImbalanceConfigExercises(exercises), [exercises]);
+  const imbalanceConfigIssues = React.useMemo(() => {
+    if (!shouldValidateStaticConfig) {
+      return [];
+    }
+    return validateImbalanceConfigExercises(exercises);
+  }, [exercises, shouldValidateStaticConfig]);
 
   React.useEffect(() => {
+    if (!shouldValidateStaticConfig) {
+      return;
+    }
     reportImbalanceConfigValidationIssues(imbalanceConfigIssues);
-  }, [imbalanceConfigIssues]);
+  }, [imbalanceConfigIssues, shouldValidateStaticConfig]);
 
   const analysisInput = React.useMemo(() => {
     if (!userProfile) {

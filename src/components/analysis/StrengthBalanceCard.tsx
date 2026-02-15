@@ -62,6 +62,11 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
 
   const analysisToRender = strengthAnalysis?.result;
   const generatedDate = strengthAnalysis?.generatedDate;
+  const hasConfigWarning =
+    Boolean(imbalanceConfig) &&
+    (imbalanceConfig?.source === 'fallback' ||
+      (imbalanceConfig?.validationIssueCount ?? 0) > 0 ||
+      imbalanceConfigIssues.length > 0);
 
   return (
     <Card className="shadow-lg lg:col-span-6">
@@ -101,7 +106,7 @@ const StrengthBalanceCard: React.FC<StrengthBalanceCardProps> = ({
           </div>
         ) : (
           <div className="w-full space-y-4">
-            {(imbalanceConfigIssues.length > 0 || imbalanceConfig?.source === 'fallback') && (
+            {hasConfigWarning && (
               <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 Strength analysis configuration is out of sync with the exercise library. Findings may
                 be incomplete until configuration is fixed.
