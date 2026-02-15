@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ExerciseDocument } from '@/lib/exercise-types';
+import type { ImbalanceConfigLoadResult } from '@/lib/imbalance-config-types';
 import type { StrengthFinding, UserProfile } from '@/lib/types';
 import * as strengthBalanceUtils from '@/analysis/strength-balance.utils';
 import * as analysisConfig from '@/analysis/analysis.config';
@@ -121,5 +122,35 @@ describe('useStrengthBalanceData', () => {
 
     expect(result.current.imbalanceConfigIssues).toEqual(issues);
     expect(reportSpy).toHaveBeenCalledWith(issues);
+  });
+
+  it('skips static config validation when firestore config is active', () => {
+    const validateSpy = vi
+      .spyOn(analysisConfig, 'validateImbalanceConfigExercises')
+      .mockReturnValue([]);
+    const reportSpy = vi
+      .spyOn(analysisConfig, 'reportImbalanceConfigValidationIssues')
+      .mockImplementation(() => {});
+    vi.spyOn(strengthBalanceUtils, 'buildClientSideFindings').mockReturnValue([ratioFinding]);
+
+    const imbalanceConfig: ImbalanceConfigLoadResult = {
+      source: 'firestore',
+      version: 1,
+      validationIssueCount: 0,
+      pairs: [],
+    };
+
+    const { result } = renderHook(() =>
+      useStrengthBalanceData({
+        workoutLogs: [],
+        userProfile,
+        exercises,
+        imbalanceConfig,
+      })
+    );
+
+    expect(result.current.imbalanceConfigIssues).toEqual([]);
+    expect(validateSpy).not.toHaveBeenCalled();
+    expect(reportSpy).not.toHaveBeenCalled();
   });
 });

@@ -1,10 +1,23 @@
 # Testing Patterns
 
-**Last Updated:** 2026-02-14 (post Step 4-5 checkpoint)
+**Last Updated:** 2026-02-15 (post Phase 3 closeout checkpoint)
 
 ## Test Framework
 
 **Status:** Multi-tier testing strategy implemented
+
+## Current Baseline
+
+1. `npm run test:ci` -> 379 passing tests
+2. `npm run typecheck` -> passing
+3. `npm run lint` -> passing
+
+## Phase Status
+
+1. Phase 1: completed
+2. Phase 2: completed
+3. Phase 3: completed (`src/lib/firestore-server.test.ts` expanded to 62 tests)
+4. Phase 4: planned
 
 ### Configured Frameworks:
 1. **Vitest** - Unit/integration tests (fast, TypeScript-native)
@@ -529,7 +542,7 @@ src/__tests__/
 - ✅ No external dependencies or flaky tests
 - ✅ CI integration ready (npm run test:ci)
 
-Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md` (current baseline: `npm run test:ci` 269 passing, `npm run typecheck` clean).
+Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-upgrades.md` (current baseline: `npm run test:ci` 379 passing, `npm run typecheck` clean).
 
 ### Prior Testing:
 - ✅ **Smoke Tests** (11 end-to-end tests covering critical user flows)
@@ -537,4 +550,4 @@ Planned testing upgrades (Phase 2+) are tracked in `/.planning/codebase/testing-
 
 ---
 
-*Testing last updated: 2026-02-14 - descriptive coverage restored; upgrade roadmap moved to testing-upgrades.md*
+*Testing last updated: 2026-02-15 - descriptive coverage retained; Phase 2 completion and current baseline reflected in `testing-upgrades.md`.*

@@ -1,8 +1,10 @@
 # Imbalance Component Plan (Firestore-First)
 
+**Status:** Resolved and retained as historical implementation record.
+
 ## Context
 
-The remaining issue is not Firestore exercise availability; it is that imbalance pairing logic still originates from hardcoded name pairs (`IMBALANCE_CONFIG`) and then attempts to resolve them.  
+This plan addressed an issue where imbalance pairing logic originated from hardcoded name pairs (`IMBALANCE_CONFIG`) and then attempted runtime resolution.  
 Other mature flows already use Firestore as source-of-truth directly:
 - **Workout logs write path:** canonicalizes exercise names/categories using Firestore `exerciseAliases` + `exercises` (`src/components/history/WorkoutLogForm.tsx`).
 - **Lift progression read path:** resolves from Firestore-backed exercise library and aggregates over 6 weeks (`src/hooks/useLiftProgression.ts`, `src/components/analysis/LiftProgressionCard.tsx`).
@@ -175,25 +177,24 @@ Technical:
 
 ## Rollout Strategy
 
+Rollout completed in three phases:
+
 1. Phase A (low risk)
-- Ship unit-label fix + shared aggregator behind internal feature flag.
-- Verify parity between old/new outputs in dev logging.
+- Shipped unit-label fix + shared aggregator behind internal feature flag.
+- Verified parity between old/new outputs in dev logging.
 
 2. Phase B
-- Enable Firestore imbalance config loader + ID-based matching behind flag.
-- Keep hardcoded fallback active.
+- Enabled Firestore imbalance config loader + ID-based matching behind flag.
+- Kept hardcoded fallback active during transition.
 
 3. Phase C
-- Remove hardcoded primary path after production parity verification.
-- Keep fallback for disaster recovery only.
+- Removed hardcoded primary path after production parity verification.
+- Retained fallback for disaster recovery only.
 
-## Next Item to Execute
+## Closeout Notes
 
-**Steps 6-7: UI and observability follow-through**:
-- Step 6: Expand no-data reason text and any remaining UX affordances.
-- Step 7: Continue operational monitoring hardening and rollout checks.
-
-In parallel, continue **Phase 2 remaining server-action suites** tracked in `testing-upgrades.md`.
+- Step 6 and Step 7 follow-through were completed in the same workstream and reflected in `CONCERNS.md` and `docs/changelog.md`.
+- Phase 2/3/4 testing dependencies referenced below are historical and closed in `testing-upgrades.md`.
 
 ## Step 3+ Readiness Assessment (2026-02-14, revised)
 
@@ -219,22 +220,21 @@ Verification:
 - `npm run test -- src/app/analysis/actions.test.ts`
 - `npm run test -- src/lib/logging/health-check.test.ts`
 - `npm run typecheck`
-- `npm run test:ci` (269 passing)
+- `npm run test:ci` (269 passing at this checkpoint; superseded by later suite expansions)
 
 
-
-Steps 4-5 claude:
+## Historical Reference (Step 4-5 Plan Excerpt)
 # Imbalance Steps 4-5: Firestore Config + ID-Based Matching
 
 ## Context
 
-`IMBALANCE_CONFIG` in `src/analysis/analysis.config.ts` is hardcoded with string-based exercise name options (`lift1Options: ['chest press']`). Adding or changing imbalance pair definitions requires a code deploy. `buildClientSideFindings` in `src/analysis/strength-balance.utils.ts` reads this config to drive matching. Steps 4-5 replace this with a Firestore-backed config document, keeping `IMBALANCE_CONFIG` only as a fallback.
+At planning time, `IMBALANCE_CONFIG` in `src/analysis/analysis.config.ts` was hardcoded with string-based exercise name options (`lift1Options: ['chest press']`), and `buildClientSideFindings` in `src/analysis/strength-balance.utils.ts` read this config to drive matching. Steps 4-5 replaced this with a Firestore-backed config document, keeping `IMBALANCE_CONFIG` fallback-only.
 
 Prerequisites complete:
 - `buildSixWeekLiftMetrics` (shared aggregation layer) — `src/analysis/six-week-lift-metrics.ts`
 - `buildClientSideFindings` already uses `SixWeekLiftMetricsMap` — `src/analysis/strength-balance.utils.ts:161`
 - `useStrengthBalanceData` hook is clean — `src/hooks/useStrengthBalanceData.ts`
-- `IMBALANCE_CONFIG` is the only remaining hardcoded source
+- At planning time, `IMBALANCE_CONFIG` was the remaining hardcoded source (now addressed by Step 4/5 implementation with fallback-only retention).
 
 ---
 
@@ -451,7 +451,7 @@ Add `imbalanceConfig` check to `src/lib/logging/health-check.ts`:
 npm run test -- src/lib/imbalance-config.server.test.ts
 npm run test -- src/analysis/strength-balance.utils.test.ts
 npm run test -- src/components/analysis/strength-balance-finding-card.test.tsx
-npm run test:ci      # 269+ tests pass
+npm run test:ci      # 403 tests pass (current baseline)
 npm run typecheck    # clean
 ```
 

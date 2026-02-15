@@ -10,6 +10,30 @@ This file tracks shipped fixes and notable technical changes.
 
 ## 2026-02-14
 
+- `2026-02-15` - `Phase 4 Testing Closeout`: Completed cross-feature integration baseline with risk-focused deterministic coverage (write/read consistency, side effects, validation, and failure recovery) and formalized non-arbitrary Phase 4 exit criteria.
+  - Files: `src/test/integration/cross-feature.integration.test.ts`, `src/test/integration/harness.ts`, `src/test/integration/fixtures.ts`, `src/test/integration/mocks.ts`, `.planning/codebase/CONCERNS.md`, `.planning/codebase/testing-upgrades.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/test/integration/cross-feature.integration.test.ts` (24 passing), `npm run test:ci` (403 passing), `npm run typecheck`, `npm run lint`
+
+- `2026-02-15` - `Phase 3 Testing Closeout`: Completed Firestore data-layer reliability phase with expanded converter/query/backfill/save-delete coverage and full verification.
+  - Files: `src/lib/firestore-server.test.ts`, `.planning/codebase/CONCERNS.md`, `.planning/codebase/testing-upgrades.md`, `.planning/codebase/TESTING.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/firestore-server.test.ts` (62 passing), `npm run test:ci` (379 passing), `npm run typecheck`, `npm run lint`
+
+- `2026-02-15` - `Phase 3 Testing`: Expanded Firestore data-layer test rollout with a dedicated suite now covering converter reliability, query branch semantics, PR strength-level side effects, `clearAllPersonalRecords` behavior, weekly-plan truncation, migration lazy-backfill flows, `updateUserProfile` recompute gating, and usage-counter branch logic.
+  - Files: `src/lib/firestore-server.test.ts`, `.planning/codebase/testing-upgrades.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/firestore-server.test.ts` (39 passing), `npm run typecheck`, `npm run lint`
+
+- `2026-02-15` - `Phase 2 Testing`: Completed remaining Phase 2 server-action coverage by adding PRS/Plan suites and expanding History suite to full branch depth.
+  - Files: `src/app/prs/actions.test.ts`, `src/app/plan/actions.test.ts`, `src/app/history/actions.test.ts`, `.planning/codebase/CONCERNS.md`, `.planning/codebase/testing-upgrades.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/app/prs/actions.test.ts`, `npm run test -- src/app/plan/actions.test.ts`, `npm run test -- src/app/history/actions.test.ts`, `npm run test:ci` (317 passing), `npm run typecheck`, `npm run lint`
+
+- `2026-02-15` - `Strength Balance Config`: Fixed false degraded warning behavior when Firestore imbalance config is healthy, and hardened stale-cache fallback handling.
+  - Files: `src/hooks/useStrengthBalanceData.ts`, `src/components/analysis/StrengthBalanceCard.tsx`, `src/lib/firestore.service.ts`, `src/lib/imbalance-config.server.ts`, `src/hooks/use-strength-balance-data.test.tsx`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/hooks/use-strength-balance-data.test.tsx`, `npm run typecheck`
+
+- `2026-02-15` - `Strength Balance Data Window`: Fixed Strength Balance card to always consume dedicated last-6-weeks logs instead of the page time-range-filtered dataset.
+  - Files: `src/app/analysis/page.tsx`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run typecheck`, manual analysis-page validation with time-range narrower than 6 weeks
+
 - `2026-02-15` - `Imbalance Config Ops`: Populated missing production `config/imbalanceConfig` document with canonical exercise ID pairs and validated zero pair-ID mismatches against active exercises.
   - Files: `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
   - Verification: production Firestore doc check (`savedVersion=1`, `savedPairs=4`), direct ID validation (`activePairs=4`, `validationIssueCount=0`)

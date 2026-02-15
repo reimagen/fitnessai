@@ -28,6 +28,13 @@ const getCachedImbalanceConfig = unstable_cache(
   { revalidate: IMBALANCE_CONFIG_CACHE_TTL_SECONDS, tags: ['imbalance-config'] }
 );
 
+async function getUncachedImbalanceConfig(): Promise<ImbalanceConfigDocument | null> {
+  const db = getAdminDb();
+  const doc = await db.collection('config').doc('imbalanceConfig').get();
+  if (!doc.exists) return null;
+  return doc.data() as ImbalanceConfigDocument;
+}
+
 function buildExerciseMaps(exercises: ExerciseDocument[]) {
   const exerciseById = new Map<string, ExerciseDocument>();
   const idByNormalizedName = new Map<string, string>();
@@ -115,64 +122,76 @@ export async function getImbalanceConfig(): Promise<ImbalanceConfigLoadResult> {
   const fallback = buildFallbackResult(exercises);
 
   try {
+    const { exerciseById } = buildExerciseMaps(exercises);
+    const buildResultFromDocument = (doc: ImbalanceConfigDocument): ImbalanceConfigLoadResult => {
+      const parsed = ImbalanceConfigDocumentSchema.safeParse(doc);
+      if (!parsed.success) {
+        return {
+          ...fallback,
+          validationIssueCount: fallback.validationIssueCount + parsed.error.issues.length,
+        };
+      }
+
+      const seen = new Set<string>();
+      let validationIssueCount = 0;
+
+      const pairs: ImbalancePairConfig[] = [];
+      for (const pair of parsed.data.pairs) {
+        if (pair.isActive === false) {
+          continue;
+        }
+
+        if (pair.lift1CanonicalId === pair.lift2CanonicalId) {
+          validationIssueCount += 1;
+          continue;
+        }
+
+        const lift1Exists = exerciseById.has(pair.lift1CanonicalId);
+        const lift2Exists = exerciseById.has(pair.lift2CanonicalId);
+        if (!lift1Exists || !lift2Exists) {
+          validationIssueCount += 1;
+          continue;
+        }
+
+        const key = `${pair.imbalanceType}|${pair.lift1CanonicalId}|${pair.lift2CanonicalId}`;
+        if (seen.has(key)) {
+          validationIssueCount += 1;
+          continue;
+        }
+
+        seen.add(key);
+        pairs.push(pair);
+      }
+
+      if (pairs.length === 0) {
+        return {
+          ...fallback,
+          validationIssueCount: fallback.validationIssueCount + validationIssueCount,
+        };
+      }
+
+      return {
+        pairs,
+        source: 'firestore',
+        version: parsed.data.version,
+        validationIssueCount,
+      };
+    };
+
     const raw = await getCachedImbalanceConfig();
-    if (!raw) {
+    if (raw) {
+      const cachedResult = buildResultFromDocument(raw);
+      if (cachedResult.source === 'firestore') {
+        return cachedResult;
+      }
+    }
+
+    const uncached = await getUncachedImbalanceConfig();
+    if (!uncached) {
       return fallback;
     }
 
-    const parsed = ImbalanceConfigDocumentSchema.safeParse(raw);
-    if (!parsed.success) {
-      return {
-        ...fallback,
-        validationIssueCount: fallback.validationIssueCount + parsed.error.issues.length,
-      };
-    }
-
-    const { exerciseById } = buildExerciseMaps(exercises);
-    const seen = new Set<string>();
-    let validationIssueCount = 0;
-
-    const pairs: ImbalancePairConfig[] = [];
-    for (const pair of parsed.data.pairs) {
-      if (pair.isActive === false) {
-        continue;
-      }
-
-      if (pair.lift1CanonicalId === pair.lift2CanonicalId) {
-        validationIssueCount += 1;
-        continue;
-      }
-
-      const lift1Exists = exerciseById.has(pair.lift1CanonicalId);
-      const lift2Exists = exerciseById.has(pair.lift2CanonicalId);
-      if (!lift1Exists || !lift2Exists) {
-        validationIssueCount += 1;
-        continue;
-      }
-
-      const key = `${pair.imbalanceType}|${pair.lift1CanonicalId}|${pair.lift2CanonicalId}`;
-      if (seen.has(key)) {
-        validationIssueCount += 1;
-        continue;
-      }
-
-      seen.add(key);
-      pairs.push(pair);
-    }
-
-    if (pairs.length === 0) {
-      return {
-        ...fallback,
-        validationIssueCount: fallback.validationIssueCount + validationIssueCount,
-      };
-    }
-
-    return {
-      pairs,
-      source: 'firestore',
-      version: parsed.data.version,
-      validationIssueCount,
-    };
+    return buildResultFromDocument(uncached);
   } catch (error) {
     console.error('Failed to load imbalance config from Firestore:', error);
     return fallback;
