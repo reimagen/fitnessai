@@ -42,7 +42,7 @@ type LiftSummary = {
 /**
  * Strength balance card currently supports ratio-driven classification only.
  */
-const SUPPORTED_IMBALANCE_MODE: 'ratio_only' = 'ratio_only';
+const SUPPORTED_IMBALANCE_MODE = 'ratio_only' as const;
 
 export const resolveExerciseOptions = (
   options: string[],
