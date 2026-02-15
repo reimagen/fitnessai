@@ -26,8 +26,6 @@ export const getTrendBadgeVariant = (trend: number | null): 'default' | 'destruc
 
 export const focusBadgeProps = (focus: ImbalanceFocus): { variant: 'secondary' | 'default' | 'destructive'; text: string } => {
   switch (focus) {
-    case 'Level Imbalance':
-      return { variant: 'default', text: 'Level Imbalance' };
     case 'Ratio Imbalance':
       return { variant: 'destructive', text: 'Ratio Imbalance' };
     case 'Balanced':

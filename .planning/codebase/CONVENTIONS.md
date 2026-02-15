@@ -10,6 +10,14 @@
 - Services: camelCase with `.ts` extension (`firestore.service.ts`, `auth-server.ts`)
 - Pages: lowercase with hyphens (`/app/profile/page.tsx`, `/app/prs/page.tsx`)
 - API routes: lowercase with hyphens (`/api/client-errors/route.ts`, `/api/health/route.ts`)
+- Test files: kebab-case with `.test.ts`/`.test.tsx` suffix (`strength-balance.utils.test.ts`, `use-strength-balance-data.test.tsx`, `strength-balance-finding-card.test.tsx`)
+
+## Test File Location
+
+- Prefer colocated tests next to the source file they validate (same folder).
+- Keep shared test-only fixtures in `src/test/` when reused by multiple suites.
+- Do not mix naming styles inside a feature folder; use kebab-case consistently for new tests.
+- Hook tests may live beside hooks (for example `src/hooks/use-strength-balance-data.test.tsx`) and component tests beside components (for example `src/components/analysis/strength-balance-finding-card.test.tsx`).
 
 **Functions:**
 - Regular functions: camelCase (`calculateE1RM`, `findBestPr`, `shouldSample`)

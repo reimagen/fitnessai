@@ -55,9 +55,8 @@ Before generating the daily breakdown, you MUST start the plan with a brief, mot
 Your primary directive is to create a plan that intelligently addresses the user's specific needs based on their **Strength Balance Analysis**, **Personal Record Strength Levels**, and **Workout History**.
 
 1.  **Address Imbalances First**:
-    *   If the "Strength Balance Analysis Summary" shows any findings (e.g., "Ratio Imbalance" or "Level Imbalance"), your plan **MUST** prioritize correcting these issues.
+    *   If the "Strength Balance Analysis Summary" shows any findings (e.g., "Ratio Imbalance"), your plan **MUST** prioritize correcting these issues.
     *   For a **Ratio Imbalance**, increase the volume (sets/reps) or frequency for the weaker lift in the pair. For example, if a "Horizontal Push vs. Pull" imbalance exists where push is stronger, the plan should include more pulling exercises like rows.
-    *   For a **Level Imbalance**, focus on bringing the weaker lift (e.g., 'Beginner') up to the level of the stronger lift (e.g., 'Intermediate'). The workout descriptions should reflect this focus.
 
 2.  **Drive Progression for Balanced Lifts**:
     *   If the user's lifts are balanced, or for pairs of lifts that are already balanced, design the plan to help them progress to the next strength level.

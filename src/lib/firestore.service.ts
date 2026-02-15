@@ -24,10 +24,11 @@ import {
     saveGoalsAction,
 } from '@/app/profile/actions';
 import { getWeeklyPlanAction, saveWeeklyPlanAction } from '@/app/plan/actions';
-import { analyzeStrengthAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
+import { analyzeStrengthAction, getImbalanceConfigAction, getLiftStrengthLevelAction, getStrengthAnalysisAction, saveStrengthAnalysisAction } from '@/app/analysis/actions';
 import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalysisAction, saveLiftProgressionAnalysisAction } from '@/app/profile/actions';
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis, FitnessGoal } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
+import type { ImbalanceConfigLoadResult } from './imbalance-config-types';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
@@ -543,6 +544,23 @@ export function useStrengthAnalysis(enabled: boolean = true) {
     },
     enabled: !!user && enabled,
     staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days
+  });
+}
+
+export function useImbalanceConfig(enabled: boolean = true) {
+  const { user } = useAuth();
+  return useQuery<ImbalanceConfigLoadResult | undefined, Error>({
+    queryKey: ['imbalance-config', user?.uid],
+    queryFn: async () => {
+      if (!user) return undefined;
+      const result = await getImbalanceConfigAction(user.uid);
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch imbalance config');
+      }
+      return result.data;
+    },
+    enabled: !!user && enabled,
+    staleTime: Infinity,
   });
 }
 

@@ -15,36 +15,73 @@
 
 ## Priority Order (Execution + Dependencies)
 
-1. **Imbalance Component Step 1 + Step 2 first** (`.planning/codebase/imbalance-config.md`)
-- Scope: shared 6-week aggregation extraction + immediate unit-label fix.
-- Dependency notes: low coupling to server-action test rollout; high user-facing correctness value.
+1. **✅ RESOLVED: Imbalance Component Step 1 + Step 2** (`.planning/codebase/imbalance-config.md`)
+- Scope completed: shared 6-week aggregation extraction + immediate unit-label fix.
+- Verification: `src/analysis/six-week-lift-metrics.test.ts` added; typecheck clean.
 
-2. **Phase 2 Server Action Tests (targeted subset first)** (`.planning/codebase/testing-upgrades.md`)
-- Scope: start with deterministic tests for `src/app/analysis/actions.ts` and `src/app/profile/actions.ts`.
-- Dependency notes: these are the highest-value guardrails for upcoming Imbalance Step 3/4 Firestore refactor paths.
-- Detailed testing scope:
-  - Server action tests (PENDING - Phase 2 subset)
-  - What's not tested: `src/app/*/actions.ts` files (analysis, prs, plan, profile, history). Request validation, error handling, rate limiting checks, database writes, AI API calls.
-  - Planned first slice: analysis/profile action suites
-  - Risk: Refactoring server actions is unsafe. Bug fixes may introduce regressions.
-  - Priority: HIGH - These are main entry points for user interactions.
-  - Target: complete analysis/profile suites before Imbalance Step 3/4
-  - AI flow tests (PENDING - Phase 2)
-  - What's not tested: Prompt engineering, output validation, edge cases (empty inputs, malformed data).
-  - Planned: Tested as part of server action mocking (Phase 2) with Zod validation verification
-  - Risk: AI outputs may be invalid JSON or hallucinations.
-  - Priority: MEDIUM - Zod validation provides safeguard.
-  - Target: phase with subset and full Phase 2 completion
+2. **✅ RESOLVED: Imbalance Component Step 3 + StrengthBalanceCard Refactor Phase 4** (`.planning/codebase/imbalance-config.md` + `.planning/codebase/balance-card-refactor.md`)
+- Scope completed: extracted strength-balance utils/tests + hook + presentational card + orchestrator rewire. Phase 4 cleanup completed by removing dead `Level Imbalance` contract paths and recommendation prefix duplication in AI flow output composition.
+- Verification: `npm run typecheck`, `npm run test:ci -- src/analysis/strength-balance.utils.test.ts src/analysis/six-week-lift-metrics.test.ts src/analysis/analysis.config.validation.test.ts src/app/analysis/actions.test.ts`, `npm run test:ci -- src/hooks/use-strength-balance-data.test.tsx src/components/analysis/strength-balance-finding-card.test.tsx src/analysis/strength-balance.utils.test.ts src/analysis/six-week-lift-metrics.test.ts src/analysis/analysis.config.validation.test.ts`.
 
-3. **Imbalance Component Step 3 + Step 4 after targeted Phase 2 subset** (`.planning/codebase/imbalance-config.md`)
-- Scope: Firestore-backed imbalance config + ID-based matching engine.
-- Dependency notes: depends on Step 1/2 aggregation and targeted analysis/profile action coverage before deeper refactor.
+3. **✅ PARTIAL RESOLUTION: Phase 2 Server Action Tests (targeted subset)** (`.planning/codebase/testing-upgrades.md`)
+- Scope: deterministic tests for `src/app/analysis/actions.ts` and `src/app/profile/actions.ts` (~35-42 tests).
+- Status: Targeted subset completed and green; full Phase 2 remains pending under item 5.
+- Dependency notes: Highest-value guardrails for Step 4 Firestore config paths are now in place.
+- Risk: Refactoring server actions is unsafe without regression coverage.
+- Priority: HIGH - these actions orchestrate imbalance analysis.
+- Detailed scope:
+  - Server action tests (PARTIAL RESOLUTION - Phase 2 subset complete)
+  - What's covered: analysis/profile action validation, auth gating, rate-limit branches, success/error flows, Firestore call orchestration.
+  - What is NOT done yet from full Phase 2:
+    - `src/app/prs/actions.test.ts` does not exist yet.
+    - `src/app/plan/actions.test.ts` does not exist yet.
+    - `src/app/history/actions.test.ts` exists (6 tests) but is below planned full Phase 2 depth.
+  - AI flow validation: covered as part of action mocking, with Zod output schema verification.
+  - Verification: `npm run test -- src/app/analysis/actions.test.ts`, `npm run test -- src/app/profile/actions.test.ts`, `npm run test:ci` (269 passing), `npm run typecheck`.
 
-4. **Complete remaining Phase 2 server-action suites** (`.planning/codebase/testing-upgrades.md`)
-- Scope: finish `src/app/prs/actions.ts`, `src/app/history/actions.ts`, and `src/app/plan/actions.ts`.
-- Dependency notes: complete full Phase 2 coverage immediately after Imbalance Step 3/4 lands.
+4. **✅ RESOLVED: Imbalance Component Steps 4-5 after Step 3** (`.planning/codebase/imbalance-config.md`)
+- Scope: Firestore `imbalanceConfig` loader (Step 4) + ID-based matching engine consuming shared metrics map (Step 5).
+- Status: `RESOLVED` (2026-02-14)
+- Dependency notes: Landed after Step 3 and targeted Phase 2 subset coverage.
+- Resolution summary:
+  - Added Firestore-backed config loader + schema validation with safe fallback.
+  - Added dedicated ID-based matcher using exercise ID lookup map.
+  - Rewired strength-balance flow (`actions`/hook/page/card/utils) to consume loader output.
+  - Added health-check signal for imbalance-config source/validation quality.
+  - Added focused tests for loader, matcher, and action wiring.
+- Verification: `npm run test -- src/lib/imbalance-config.server.test.ts`, `npm run test -- src/analysis/imbalance-matcher.test.ts`, `npm run test -- src/analysis/strength-balance.utils.test.ts`, `npm run test -- src/app/analysis/actions.test.ts`, `npm run test -- src/lib/logging/health-check.test.ts`, `npm run typecheck`, `npm run test:ci`.
 
-5. **Phase 3 Firestore data-layer tests** (`.planning/codebase/testing-upgrades.md`)
+5. **✅ RESOLVED: Imbalance Config Operational Sync (Firestore data vs active exercise library)** (`.planning/codebase/imbalance-config.md`)
+- Scope: resolve the active mismatch causing degraded/fallback warning states in Strength Balance (canonical pair IDs not fully aligned to active exercises).
+- Status: `RESOLVED` (2026-02-15)
+- Why this is separate from Steps 4-5: code path is complete, but config data population/repair is still required.
+- Resolution summary:
+  - Created missing Firestore `config/imbalanceConfig` document in production.
+  - Populated 4 active pairs with canonical IDs:
+    - Horizontal Push vs. Pull: `machine-chest-press` ↔ `machine-seated-row`
+    - Vertical Push vs. Pull: `machine-shoulder-press` ↔ `machine-lat-pulldown`
+    - Hamstring vs. Quad: `machine-leg-curl` ↔ `machine-leg-extension`
+    - Adductor vs. Abductor: `machine-adductor` ↔ `machine-abductor`
+  - Verified all pair IDs exist in active exercise set; zero validation mismatches.
+- Target outcome:
+  - Firestore `config/imbalanceConfig` uses valid active canonical IDs for all intended pairs
+  - no unresolved loader validation issues
+  - analysis warning banner only appears for true degraded incidents
+  - `/api/health` shows `imbalanceConfig: ok` in steady state
+- Verification:
+  - direct Firestore verification: `activePairs=4`, `validationIssueCount=0`
+  - manual: analysis page warning clears after cache refresh window/invalidation
+  - `GET /api/health` should report `checks.imbalanceConfig = "ok"` after cache refresh/invalidation
+
+6. **Phase 2 Server Action Tests (remaining to complete full suite)** (`.planning/codebase/testing-upgrades.md`)
+- Scope: Complete remaining Phase 2 work to close gaps:
+  - add `src/app/prs/actions.test.ts`
+  - add `src/app/plan/actions.test.ts`
+  - expand `src/app/history/actions.test.ts` to planned Phase 2 coverage depth
+- Estimated remaining size: ~55-68 tests.
+- Dependency notes: Follows after Imbalance Steps 3-5 merged and initial testing window closed.
+
+7. **Phase 3 Firestore data-layer tests** (`.planning/codebase/testing-upgrades.md`)
 - Scope: converter/query reliability tests.
 - Dependency notes: should run in same window as, or immediately after, Step 3/4 Firestore config migration.
 - Revision trigger: after completing Phase 2 server-action tests, revise Phase 3 scope/estimates using newly added fixtures/mocks and any findings from Step 3/4 rollout.
@@ -57,14 +94,14 @@
   - Target: Phase 3 implementation
   - Re-plan checkpoint: Re-baseline this section immediately after Phase 2 completion (and again after Imbalance Step 3/4), then update final test count/scope in `/.planning/codebase/testing-upgrades.md`.
 
-6. **Phase 4 integration test rollout** (`.planning/codebase/testing-upgrades.md`)
+8. **Phase 4 integration test rollout** (`.planning/codebase/testing-upgrades.md`)
 - Scope: cross-feature integration test rollout as defined in `testing-upgrades.md` (Phase 4).
 - Dependency notes: execute after critical correctness + reliability milestones above.
 - Detailed testing scope:
   - Components and integration coverage still needed (error boundaries, form validation, and broader cross-feature flow checks).
   - Target: Phase 4 implementation.
 
-7. **Post-Phase performance/scaling track**
+9. **Post-Phase performance/scaling track**
 - Scope: broader performance/scaling concerns after critical correctness/reliability phases complete.
 - Dependency notes: execute after Phase 4 integration baseline is stable.
 
@@ -87,6 +124,25 @@ Note: sections below (`Tech Debt`, `Performance Bottlenecks`, `Fragile Areas`, `
 ### Testing Status
 - Phase 1 foundational testing work is complete and documented in `/.planning/codebase/TESTING.md` and `docs/changelog.md`.
 - Active testing concerns in this file focus on pending Phase 2/3/4 work, aligned with the priority order above.
+
+### ✅ PARTIAL RESOLUTION: Phase 2 Targeted Subset (Analysis + Profile Actions)
+- **Status:** Completed and verified on 2026-02-14; full Phase 2 remains open.
+- **Files:** `src/app/analysis/actions.test.ts`, `src/app/profile/actions.test.ts`
+- **What was completed:**
+  - Added deterministic server-action tests for analysis/profile action paths (54 tests total).
+  - Covered validation/auth/API availability branches, rate-limit blocked + development bypass paths, success orchestration side effects, and classified AI error handling.
+  - Verified profile mutation/cache side effects (`revalidateTag`) and goal date transform paths (`dateAchieved` null/undefined/valid).
+- **Verification:**
+  - `npm run test -- src/app/analysis/actions.test.ts`
+  - `npm run test -- src/app/profile/actions.test.ts`
+  - `npm run test:ci` (269 passing)
+  - `npm run typecheck`
+- **Remaining risk:** full Phase 2 coverage for remaining server action suites (`src/app/prs/actions.ts`, `src/app/plan/actions.ts`) is still pending and tracked in Priority item 5.
+
+### Phase 2 Remaining Checklist (Not Yet Done)
+- [ ] `src/app/prs/actions.test.ts` (new suite)
+- [ ] `src/app/plan/actions.test.ts` (new suite)
+- [ ] Expand `src/app/history/actions.test.ts` from current baseline (6 tests) to planned Phase 2 depth
 
 ## Performance Bottlenecks
 
@@ -116,22 +172,57 @@ Note: sections below (`Tech Debt`, `Performance Bottlenecks`, `Fragile Areas`, `
 - Safe modification: (1) Create a shared type definition that both types implement or extend. (2) Add Zod schema validation for ExerciseDocument at Firebase fetch time. (3) Create a type guard function `isExerciseWithStandards()` used before accessing strengthStandards field.
 - Test coverage: No validation that ExerciseDocument structure matches type definition when fetched from Firebase.
 
-### ✅ PARTIAL RESOLUTION: Hardcoded Analysis Configurations
-- **Status:** Guardrails implemented as of 2026-02-14; source-of-truth migration still pending
-- **Files:** `src/analysis/analysis.config.ts`, `src/components/analysis/StrengthBalanceCard.tsx`, `src/lib/logging/health-check.ts`, `src/app/api/health/route.ts`
+### ✅ RESOLVED: Hardcoded Analysis Configurations (Primary Source Migration)
+- **Status:** Primary source migration completed on 2026-02-14
+- **Files:** `src/analysis/analysis.config.ts`, `src/lib/imbalance-config-types.ts`, `src/lib/imbalance-config.server.ts`, `src/analysis/imbalance-matcher.ts`, `src/analysis/strength-balance.utils.ts`, `src/hooks/useStrengthBalanceData.ts`, `src/components/analysis/StrengthBalanceCard.tsx`, `src/components/analysis/StrengthBalanceFindingCard.tsx`, `src/lib/firestore.service.ts`, `src/app/analysis/actions.ts`, `src/app/analysis/page.tsx`, `src/lib/logging/health-check.ts`, `src/app/api/health/route.ts`
 - **What was fixed:**
   - Added runtime validation of `IMBALANCE_CONFIG` exercise names against the active exercise library (`validateImbalanceConfigExercises`).
   - Added explicit surfacing in analysis UI when config/library mismatch exists (warning banner instead of silent no-findings behavior).
-  - Added health-check validation (`analysisConfig`) so drift is operationally visible in `/api/health`.
+  - Added Firestore-backed imbalance config loader with schema + validation issue handling and fallback to static config.
+  - Added ID-based imbalance pair matching (canonical exercise IDs) to avoid fragile string-option matching in the primary path.
+  - Added health-check validation (`analysisConfig` + `imbalanceConfig`) so drift and fallback state are operationally visible in `/api/health`.
   - Added degraded-state mismatch details to server logs only (count + sample mismatches), without expanding health API response payload.
 - **Test coverage added:**
   - `src/analysis/analysis.config.validation.test.ts` verifies match/mismatch detection + deduplicated reporting.
   - `src/lib/logging/health-check.test.ts` verifies `analysisConfig` health status and mismatch metadata behavior.
-- **In progress (Step 1 + Step 2):**
+- **Completed (Step 1 + Step 2):**
   - Shared 6-week lift metrics aggregation extracted and wired into Lift Progression path to reduce duplicate recomputation.
+    - `src/analysis/six-week-lift-metrics.ts`
+    - `src/hooks/useSixWeekLiftMetrics.ts`
+    - `src/hooks/useLiftProgression.ts`
+    - `src/hooks/useLiftTrends.ts`
+    - `src/components/analysis/LiftProgressionCard.tsx`
   - Lift Progression e1RM header unit label now uses computed unit output instead of hardcoded `lbs`.
-- **Remaining risk:** `IMBALANCE_CONFIG` is still hardcoded; adding/changing imbalance definitions still requires code deploys.
+    - `src/components/analysis/LiftProgressionChart.tsx`
+  - Added focused aggregation tests:
+    - `src/analysis/six-week-lift-metrics.test.ts`
+- **Residual risk:** static `IMBALANCE_CONFIG` remains as fallback/disaster-recovery path only; stale fallback definitions can still degrade behavior if Firestore config is unavailable, but this now surfaces via `imbalanceConfig` health status.
 - **Execution reference:** sequencing and implementation details are tracked in `## Priority Order (Execution + Dependencies)` and `/.planning/codebase/imbalance-config.md`.
+
+### ✅ RESOLVED: Imbalance Config Operational Sync (Data)
+- **Status:** Resolved on 2026-02-15
+- **What is out of sync:** Firestore imbalance pair definitions (canonical IDs) are not fully aligned with currently active exercises, which can trigger degraded/fallback warnings and partial findings.
+- **Where it surfaces:**
+  - Strength Balance warning banner in `src/components/analysis/StrengthBalanceCard.tsx`
+  - `/api/health` via `checks.imbalanceConfig` from `src/lib/logging/health-check.ts` and `src/app/api/health/route.ts`
+- **Fix stage:** Priority item 5 in this file (completed).
+- **Completion criteria:**
+  - Firestore `config/imbalanceConfig` pairs all reference valid active exercise IDs
+  - no avoidable validation issues in loader result
+  - warning no longer appears in steady-state healthy config
+
+### ✅ RESOLVED: StrengthBalanceCard Rewire + Refactor Phase 4
+- **Status:** Completed and verified on 2026-02-14
+- **Files:** `src/analysis/strength-balance.utils.ts`, `src/analysis/strength-balance.utils.test.ts`, `src/hooks/useStrengthBalanceData.ts`, `src/components/analysis/StrengthBalanceFindingCard.tsx`, `src/components/analysis/StrengthBalanceCard.tsx`, `src/analysis/analysis.utils.ts`, `src/analysis/badge-utils.ts`, `src/lib/types.ts`, `src/ai/flows/strength-imbalance-analyzer.ts`, `src/ai/flows/weekly-workout-planner.ts`
+- **What was fixed:**
+  - Extracted and tested reusable strength-balance utility logic; rewired card orchestration to shared six-week metrics path.
+  - Removed dead `Level Imbalance` handling from analysis utilities, shared types, AI flow schema/constants, and weekly planner prompt contract.
+  - Removed deterministic `explicitActionPrefix` prepending from recommendation output to prevent duplicate action lines while retaining `directivePrefix` on `insight`.
+- **Verification:**
+  - `npm run typecheck`
+  - `npm run test:ci -- src/analysis/strength-balance.utils.test.ts src/analysis/six-week-lift-metrics.test.ts src/analysis/analysis.config.validation.test.ts src/app/analysis/actions.test.ts`
+  - `npm run test:ci -- src/hooks/use-strength-balance-data.test.tsx src/components/analysis/strength-balance-finding-card.test.tsx src/analysis/strength-balance.utils.test.ts src/analysis/six-week-lift-metrics.test.ts src/analysis/analysis.config.validation.test.ts`
+  - Manual verification completed: AI "Get AI Insights" recommendation text no longer duplicates the deterministic action line.
 
 ### Error Classification Hardcoded Rules
 - Files: `src/lib/logging/error-classifier.ts` (classifyAIError function with hardcoded error message patterns)
@@ -187,4 +278,4 @@ Note: sections below (`Tech Debt`, `Performance Bottlenecks`, `Fragile Areas`, `
 - Problem: If exercise library needs update (e.g., rename "bench press" to "barbell bench press"), must be done one exercise at a time through admin UI or scripts. No batch import/export.
 - Blocks: Scaling exercise library efficiently is not possible. Data migrations are manual and error-prone.
 
-*Concerns audit: Updated 2026-02-14 - Verified current baseline: typecheck clean and 179/179 tests passing in CI mode. Key resolved items are logged in `docs/changelog.md`; concise resolved context may remain here when useful for risk tracking. Priority order is dependency-aware and de-risked for bottlenecks: Imbalance Step 1/2, targeted Phase 2 subset (analysis/profile), Imbalance Step 3/4, remaining Phase 2 suites, then Phase 3 data-layer testing, Phase 4 integration testing, and post-phase performance/scaling work.*
+*Concerns audit: Updated 2026-02-14 (revised 2026-02-14) - Verified current baseline with refactor closure updates logged in `docs/changelog.md`. Priority order now reflects Step 1/2 and Step 3 + Phase 4 closure as resolved; next execution sequence is targeted Phase 2 subset, Steps 4/5, Phase 2 full, Phase 3, Phase 4, then post-phase performance work.*

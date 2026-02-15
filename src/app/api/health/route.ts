@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 
 import { logger } from "@/lib/logging/logger";
 import { createRequestContext } from "@/lib/logging/request-context";
-import { checkAIConfig, checkFirestore, checkRedis, getAnalysisConfigHealthDetails } from "@/lib/logging/health-check";
+import {
+  checkAIConfig,
+  checkFirestore,
+  checkRedis,
+  getAnalysisConfigHealthDetails,
+  getImbalanceConfigHealthDetails,
+} from "@/lib/logging/health-check";
 
 export const runtime = "nodejs";
 
@@ -10,6 +16,7 @@ export async function GET(request: Request) {
   const traceHeader = request.headers.get("x-cloud-trace-context") ?? undefined;
   const context = createRequestContext({ route: "/api/health", feature: "healthCheck" });
   const analysisConfigDetails = await getAnalysisConfigHealthDetails();
+  const imbalanceConfigDetails = await getImbalanceConfigHealthDetails();
 
   const checks = {
     status: "ok" as const,
@@ -18,6 +25,7 @@ export async function GET(request: Request) {
       ai: await checkAIConfig(),
       redis: await checkRedis(),
       analysisConfig: analysisConfigDetails.status,
+      imbalanceConfig: imbalanceConfigDetails.status,
     },
     timestamp: new Date().toISOString(),
   };
@@ -26,14 +34,21 @@ export async function GET(request: Request) {
     checks.checks.database === "ok" &&
     checks.checks.ai === "ok" &&
     checks.checks.redis === "ok" &&
-    checks.checks.analysisConfig === "ok";
+    checks.checks.analysisConfig === "ok" &&
+    checks.checks.imbalanceConfig === "ok";
 
-  const logPayload = checks.checks.analysisConfig === "degraded"
+  const hasDegradedConfigCheck =
+    checks.checks.analysisConfig === "degraded" || checks.checks.imbalanceConfig === "degraded";
+
+  const logPayload = hasDegradedConfigCheck
     ? {
         ...context,
         ...checks,
         analysisConfigMismatchCount: analysisConfigDetails.mismatchCount,
         analysisConfigSampleMismatches: analysisConfigDetails.sampleMismatches,
+        imbalanceConfigSource: imbalanceConfigDetails.source,
+        imbalanceConfigVersion: imbalanceConfigDetails.version,
+        imbalanceConfigValidationIssueCount: imbalanceConfigDetails.validationIssueCount,
       }
     : { ...context, ...checks };
 

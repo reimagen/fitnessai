@@ -1,6 +1,7 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import { Redis } from "@upstash/redis";
 import { getActiveExercises } from "@/lib/exercise-registry.server";
+import { getImbalanceConfig } from "@/lib/imbalance-config.server";
 import { validateImbalanceConfigExercises } from "@/analysis/analysis.config";
 import type { ImbalanceConfigValidationIssue } from "@/analysis/analysis.config";
 
@@ -44,6 +45,13 @@ export type AnalysisConfigHealthDetails = {
   sampleMismatches: ImbalanceConfigValidationIssue[];
 };
 
+export type ImbalanceConfigHealthDetails = {
+  status: "ok" | "degraded";
+  source: "firestore" | "fallback" | "unknown";
+  version: number | null;
+  validationIssueCount: number;
+};
+
 export async function getAnalysisConfigHealthDetails(): Promise<AnalysisConfigHealthDetails> {
   try {
     const exercises = await getActiveExercises();
@@ -66,6 +74,33 @@ export async function getAnalysisConfigHealthDetails(): Promise<AnalysisConfigHe
       status: "degraded",
       mismatchCount: 0,
       sampleMismatches: [],
+    };
+  }
+}
+
+export async function checkImbalanceConfig(): Promise<"ok" | "degraded"> {
+  const details = await getImbalanceConfigHealthDetails();
+  return details.status;
+}
+
+export async function getImbalanceConfigHealthDetails(): Promise<ImbalanceConfigHealthDetails> {
+  try {
+    const result = await getImbalanceConfig();
+    const status =
+      result.source === "firestore" && result.validationIssueCount === 0 ? "ok" : "degraded";
+
+    return {
+      status,
+      source: result.source,
+      version: result.version,
+      validationIssueCount: result.validationIssueCount,
+    };
+  } catch {
+    return {
+      status: "degraded",
+      source: "unknown",
+      version: null,
+      validationIssueCount: 0,
     };
   }
 }

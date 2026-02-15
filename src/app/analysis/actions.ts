@@ -12,6 +12,8 @@ import { classifyAIError } from "@/lib/logging/error-classifier";
 import type { GetLiftStrengthLevelInput, PersonalRecord, StoredStrengthAnalysis, StrengthLevel, UserProfile } from "@/lib/types";
 import { checkRateLimit } from "@/app/prs/rate-limiting";
 import { areAPIKeysAvailable, API_UNAVAILABLE_ERROR } from "@/lib/env-validation";
+import { getImbalanceConfig } from '@/lib/imbalance-config.server';
+import type { ImbalanceConfigLoadResult } from '@/lib/imbalance-config-types';
 
 // Zod schemas for input validation
 const StrengthImbalanceInputValidationSchema = z.object({
@@ -210,6 +212,32 @@ export async function saveStrengthAnalysisAction(
       return {
         success: false,
         error: error instanceof Error ? error.message : "Failed to save strength analysis"
+      };
+    }
+  });
+}
+
+export async function getImbalanceConfigAction(
+  userId: string
+): Promise<{ success: boolean; data?: ImbalanceConfigLoadResult; error?: string }> {
+  const context = createRequestContext({
+    userId,
+    route: 'analysis/getImbalanceConfigAction',
+    feature: 'analysisConfig',
+  });
+
+  return withServerActionLogging(context, async () => {
+    if (!userId) {
+      return { success: false, error: 'User not authenticated.' };
+    }
+
+    try {
+      const config = await getImbalanceConfig();
+      return { success: true, data: config };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to fetch imbalance config',
       };
     }
   });

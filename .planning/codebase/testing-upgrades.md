@@ -1,6 +1,6 @@
 # Testing Upgrades Plan
 
-**Last Updated:** 2026-02-14
+**Last Updated:** 2026-02-14 (Step 4-5 aligned checkpoint)
 
 ## Objective
 
@@ -8,7 +8,7 @@ Track testing implementation work beyond the current baseline.
 
 Current baseline (already passing):
 - `npm run typecheck`
-- `npm run test:ci` with 179 passing tests
+- `npm run test:ci` with 269 passing tests
 
 ## Phase Summary
 
@@ -18,7 +18,7 @@ Current baseline (already passing):
      - `src/lib/logging/data-redactor.test.ts` (46)
      - `src/lib/exercise-normalization.test.ts` (38)
      - `src/app/prs/rate-limiting.test.ts` (26)
-2. **Phase 2 (Planned): Server Actions**
+2. **Phase 2 (In Progress): Server Actions**
    - Deterministic unit coverage across `src/app/*/actions.ts`
 3. **Phase 3 (Planned): Firestore Layer**
    - Converter + query reliability tests
@@ -29,19 +29,50 @@ Current baseline (already passing):
 
 **Goal:** Add deterministic unit tests for all server actions in `src/app/*/actions.ts`, focusing on input validation, auth gating, rate-limit behavior, and side effects.
 
-**Status:** Ready for implementation
+**Status:** In progress (dependency-driven subset complete; Step 4-5 dependency resolved)
 **Estimated Duration:** 4-5 hours
 **Target Size:** ~95-110 tests
 
-### Optimal Path
+### Phase 2 Subset Checkpoint (Completed 2026-02-14)
+
+Context: due to Step 3/4 imbalance dependencies, the highest-risk server action paths were implemented first.
+
+Completed files:
+1. `src/app/analysis/actions.test.ts` (20 tests)
+2. `src/app/profile/actions.test.ts` (36 tests)
+
+Completed scope highlights:
+1. Validation/auth/API availability gates
+2. Rate-limit blocked branches + `NODE_ENV=development` bypass branches
+3. Success side effects:
+   - persistence delegation
+   - `incrementUsageCounter`
+   - `revalidateTag('user-profile-${userId}', 'max')` where expected
+4. Classified AI error handling + user-facing error propagation
+5. Goal date transform coverage (`dateAchieved` as null/undefined/valid date)
+
+Verification completed:
+1. `npm run test -- src/app/analysis/actions.test.ts`
+2. `npm run test -- src/app/profile/actions.test.ts`
+3. `npm run test:ci` (269 passing)
+4. `npm run typecheck`
+
+Harness update delivered:
+1. Added `src/test/fixtures.ts` for shared deterministic test fixtures/builders.
+
+Remaining for full Phase 2 completion:
+1. `src/app/prs/actions.ts` tests
+2. `src/app/plan/actions.ts` tests
+3. `src/app/history/actions.ts` expansion from current baseline depth
+4. Any additional shared fixture consolidation (if adopted later)
+
+### Optimal Path (Remaining Work)
 
 1. Create shared fixtures and mocks first.
 2. Implement action tests in dependency-light order:
    1. `src/app/prs/actions.ts`
    2. `src/app/history/actions.ts`
-   3. `src/app/analysis/actions.ts`
-   4. `src/app/plan/actions.ts`
-   5. `src/app/profile/actions.ts`
+   3. `src/app/plan/actions.ts`
 3. Run targeted suite after each file, then full `test:ci` + `typecheck` at the end.
 
 ### Action Matrix (exported functions only)

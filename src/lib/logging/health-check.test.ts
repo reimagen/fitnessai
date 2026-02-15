@@ -8,9 +8,19 @@ vi.mock('@/analysis/analysis.config', () => ({
   validateImbalanceConfigExercises: vi.fn(),
 }));
 
+vi.mock('@/lib/imbalance-config.server', () => ({
+  getImbalanceConfig: vi.fn(),
+}));
+
 import { getActiveExercises } from '@/lib/exercise-registry.server';
 import { validateImbalanceConfigExercises } from '@/analysis/analysis.config';
-import { checkAnalysisConfig, getAnalysisConfigHealthDetails } from './health-check';
+import { getImbalanceConfig } from '@/lib/imbalance-config.server';
+import {
+  checkAnalysisConfig,
+  checkImbalanceConfig,
+  getAnalysisConfigHealthDetails,
+  getImbalanceConfigHealthDetails,
+} from './health-check';
 
 describe('checkAnalysisConfig', () => {
   beforeEach(() => {
@@ -84,6 +94,56 @@ describe('getAnalysisConfigHealthDetails', () => {
           resolvedExerciseName: 'bad exercise 2',
         },
       ],
+    });
+  });
+});
+
+describe('checkImbalanceConfig', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns ok for firestore source with zero validation issues', async () => {
+    vi.mocked(getImbalanceConfig).mockResolvedValue({
+      pairs: [],
+      source: 'firestore',
+      version: 1,
+      validationIssueCount: 0,
+    });
+
+    await expect(checkImbalanceConfig()).resolves.toBe('ok');
+  });
+
+  it('returns degraded for fallback source', async () => {
+    vi.mocked(getImbalanceConfig).mockResolvedValue({
+      pairs: [],
+      source: 'fallback',
+      version: null,
+      validationIssueCount: 0,
+    });
+
+    await expect(checkImbalanceConfig()).resolves.toBe('degraded');
+  });
+});
+
+describe('getImbalanceConfigHealthDetails', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns metadata for firestore config', async () => {
+    vi.mocked(getImbalanceConfig).mockResolvedValue({
+      pairs: [],
+      source: 'firestore',
+      version: 12,
+      validationIssueCount: 2,
+    });
+
+    await expect(getImbalanceConfigHealthDetails()).resolves.toEqual({
+      status: 'degraded',
+      source: 'firestore',
+      version: 12,
+      validationIssueCount: 2,
     });
   });
 });

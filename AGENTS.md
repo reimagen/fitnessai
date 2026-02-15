@@ -39,6 +39,10 @@
 
 ### Closeout protocol (required for every completed work item)
 1. **Update CONCERNS.md**: set status to `RESOLVED` (or `PARTIAL RESOLUTION` with remaining risk noted) and add a resolution summary.
+   - When editing CONCERNS.md, always update both:
+     - `## Priority Order (Execution + Dependencies)` (top-level sequencing/status)
+     - the corresponding detailed concern section (status, scope, verification)
+   - Do both updates in the same change so Priority Order and detail sections never drift.
 2. **Add changelog entry**: dated entry in `docs/changelog.md` with area, summary, files changed, and verification performed.
 3. **Update adjacent docs**: if architecture, testing, or workflow changed, update the relevant `.planning/codebase` docs (e.g., `TESTING.md`, `STRUCTURE.md`, `ARCHITECTURE.md`) in the same workstream.
 
