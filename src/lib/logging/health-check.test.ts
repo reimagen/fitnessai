@@ -28,7 +28,17 @@ describe('checkAnalysisConfig', () => {
   });
 
   it('returns ok when no config issues are found', async () => {
-    vi.mocked(getActiveExercises).mockResolvedValue([]);
+    vi.mocked(getActiveExercises).mockResolvedValue([
+      {
+        id: 'exercise-1',
+        name: 'Bench Press',
+        normalizedName: 'bench press',
+        equipment: 'barbell',
+        category: 'Upper Body',
+        type: 'strength',
+        isActive: true,
+      },
+    ]);
     vi.mocked(validateImbalanceConfigExercises).mockReturnValue([]);
 
     await expect(checkAnalysisConfig()).resolves.toBe('ok');
@@ -61,7 +71,17 @@ describe('getAnalysisConfigHealthDetails', () => {
   });
 
   it('returns mismatch metadata when degraded', async () => {
-    vi.mocked(getActiveExercises).mockResolvedValue([]);
+    vi.mocked(getActiveExercises).mockResolvedValue([
+      {
+        id: 'exercise-1',
+        name: 'Bench Press',
+        normalizedName: 'bench press',
+        equipment: 'barbell',
+        category: 'Upper Body',
+        type: 'strength',
+        isActive: true,
+      },
+    ]);
     vi.mocked(validateImbalanceConfigExercises).mockReturnValue([
       {
         imbalanceType: 'Horizontal Push vs. Pull',
@@ -80,6 +100,7 @@ describe('getAnalysisConfigHealthDetails', () => {
     await expect(getAnalysisConfigHealthDetails()).resolves.toEqual({
       status: 'degraded',
       mismatchCount: 2,
+      exerciseCount: 1,
       sampleMismatches: [
         {
           imbalanceType: 'Horizontal Push vs. Pull',
@@ -94,6 +115,18 @@ describe('getAnalysisConfigHealthDetails', () => {
           resolvedExerciseName: 'bad exercise 2',
         },
       ],
+    });
+  });
+
+  it('returns degraded when exercise registry is empty', async () => {
+    vi.mocked(getActiveExercises).mockResolvedValue([]);
+    vi.mocked(validateImbalanceConfigExercises).mockReturnValue([]);
+
+    await expect(getAnalysisConfigHealthDetails()).resolves.toEqual({
+      status: 'degraded',
+      mismatchCount: 0,
+      exerciseCount: 0,
+      sampleMismatches: [],
     });
   });
 });

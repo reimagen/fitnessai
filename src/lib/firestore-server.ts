@@ -7,6 +7,7 @@ import type { WorkoutLog, PersonalRecord, UserProfile, StoredStrengthAnalysis, E
 import { format } from 'date-fns';
 import { getStrengthLevel, getNormalizedExerciseName } from './strength-standards.server';
 import { cache } from 'react';
+import { performance } from 'node:perf_hooks';
 import { logger } from '@/lib/logging/logger';
 import { redactPII } from '@/lib/logging/data-redactor';
 
@@ -362,6 +363,7 @@ export const getWorkoutLogs = async (userId: string, options?: { startDate?: Dat
   const adminDb = getAdminDb();
   const workoutLogsCollection = adminDb.collection(`users/${userId}/workoutLogs`).withConverter(workoutLogConverter) as FirebaseFirestore.CollectionReference<WorkoutLog>;
   let q: FirebaseFirestore.Query<WorkoutLog>;
+  const start = performance.now();
 
   const baseQuery = workoutLogsCollection;
 
@@ -382,6 +384,18 @@ export const getWorkoutLogs = async (userId: string, options?: { startDate?: Dat
   
   try {
     const snapshot = await q.get();
+    if (process.env.PERF_BASELINE_LOGS === '1') {
+      await logger.info(
+        'Perf baseline: getWorkoutLogs read summary',
+        redactPII({
+          route: 'firestore/getWorkoutLogs',
+          feature: 'workoutLogs',
+          userId,
+          readCount: snapshot.size,
+          durationMs: Math.round(performance.now() - start),
+        }) as Record<string, unknown>
+      );
+    }
     return snapshot.docs.map(doc => doc.data());
   } catch (error: unknown) {
     if (error && typeof error === 'object' && 'code' in error && (error as { code?: number }).code === 5 && 'details' in error && typeof (error as { details?: string }).details === 'string' && (error as { details?: string }).details?.includes('requires an index')) {
@@ -493,11 +507,24 @@ export const deleteWorkoutLog = async (userId: string, id: string): Promise<void
 
 // Personal Records
 export const getPersonalRecords = cache(async (userId: string): Promise<PersonalRecord[]> => {
+  const start = performance.now();
   try {
     const adminDb = getAdminDb();
     const personalRecordsCollection = adminDb.collection(`users/${userId}/personalRecords`).withConverter(personalRecordConverter) as FirebaseFirestore.CollectionReference<PersonalRecord>;
     // No ordering needed as we just want all records for client-side processing
     const snapshot = await personalRecordsCollection.get();
+    if (process.env.PERF_BASELINE_LOGS === '1') {
+      await logger.info(
+        'Perf baseline: getPersonalRecords read summary',
+        redactPII({
+          route: 'firestore/getPersonalRecords',
+          feature: 'personalRecords',
+          userId,
+          readCount: snapshot.size,
+          durationMs: Math.round(performance.now() - start),
+        }) as Record<string, unknown>
+      );
+    }
     return snapshot.docs.map(doc => doc.data());
   } catch (error) {
     await logger.error(

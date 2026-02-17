@@ -61,20 +61,36 @@ export default function AnalysisPage() {
   const isProfileNotFound = profileResult?.notFound === true;
 
   const enableDataFetching = !isLoadingProfile && !!userProfile;
+  const isShortRangeView = timeRange === 'weekly' || timeRange === 'monthly';
   const dateRange = getDateRangeForFilter(timeRange);
-  const { data: workoutLogs, isLoading: isLoadingWorkouts, isError: isErrorWorkouts } = useWorkouts(dateRange, enableDataFetching);
+  const { data: primaryWorkoutLogs, isLoading: isLoadingPrimaryWorkouts, isError: isErrorPrimaryWorkouts } = useWorkouts(
+    dateRange,
+    enableDataFetching && !isShortRangeView
+  );
 
   // Fetch 6-week data independently for lift progression (not affected by time range selector)
   const sixWeeksAgo = new Date();
   sixWeeksAgo.setDate(sixWeeksAgo.getDate() - 42);
   const sixWeekDateRange = { start: sixWeeksAgo, end: new Date() };
-  const { data: workoutLogsForLiftProgression } = useWorkouts(sixWeekDateRange, enableDataFetching);
+  const {
+    data: workoutLogsForLiftProgression,
+    isLoading: isLoadingSixWeekWorkouts,
+    isError: isErrorSixWeekWorkouts,
+  } = useWorkouts(sixWeekDateRange, enableDataFetching);
 
   const { data: personalRecords, isLoading: isLoadingPrs, isError: isErrorPrs } = usePersonalRecords(enableDataFetching);
   const { data: exercises = [] } = useExercises(enableDataFetching);
   const { data: strengthAnalysis } = useStrengthAnalysis(enableDataFetching);
   const { data: fitnessGoals = [] } = useGoals(enableDataFetching);
   const { data: imbalanceConfig } = useImbalanceConfig(enableDataFetching);
+
+  // Weekly/monthly views can derive filtered data from the 6-week dataset and avoid an extra Firestore read.
+  const workoutLogs = useMemo(() => {
+    if (isShortRangeView) {
+      return workoutLogsForLiftProgression;
+    }
+    return primaryWorkoutLogs;
+  }, [isShortRangeView, workoutLogsForLiftProgression, primaryWorkoutLogs]);
 
   // Custom hooks for data processing
   const filteredData = useFilteredData(timeRange, workoutLogs, personalRecords, fitnessGoals);
@@ -105,8 +121,16 @@ export default function AnalysisPage() {
   const resolvedSelectedLift = selectedLift || frequentlyLoggedLifts[0] || '';
 
   // Loading and error states
-  const isLoading = isLoadingProfile || (enableDataFetching && (isLoadingWorkouts || isLoadingPrs));
-  const isError = isErrorProfile || (enableDataFetching && (isErrorWorkouts || isErrorPrs));
+  const isLoading = isLoadingProfile || (enableDataFetching && (
+    isLoadingPrs ||
+    isLoadingSixWeekWorkouts ||
+    (!isShortRangeView && isLoadingPrimaryWorkouts)
+  ));
+  const isError = isErrorProfile || (enableDataFetching && (
+    isErrorPrs ||
+    isErrorSixWeekWorkouts ||
+    (!isShortRangeView && isErrorPrimaryWorkouts)
+  ));
 
   if (isLoadingProfile) {
     return <AnalysisPageSkeleton />;

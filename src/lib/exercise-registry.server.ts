@@ -1,84 +1,27 @@
 import { unstable_cache } from 'next/cache';
 import { getAdminDb, exerciseConverter, exerciseAliasConverter } from './firebase-admin';
 import type {
+  AliasDocument,
   ExerciseAliasMap,
   ExerciseCategoryMap,
+  ExerciseDocument,
   ExerciseStandardData,
   StrengthRatiosMap,
   StrengthStandardsMap,
 } from './exercise-types';
 import type { ExerciseCategory } from './types';
-import type { AliasDocument, ExerciseDocument } from './exercise-types';
 import {
-  STRENGTH_STANDARDS,
-  STRENGTH_RATIOS,
-  CARDIO_EXERCISES,
-  LIFT_NAME_ALIASES,
-} from './exercise-data';
+  buildAliasMapFromDocuments,
+  buildCardioCategoryMapFromExercises,
+  buildStrengthStandardsFromExercises,
+  normalizeExerciseName,
+} from './exercise-registry.shared';
 
 const EXERCISE_CACHE_TTL_SECONDS = 3600;
 const ALIAS_CACHE_TTL_SECONDS = 86400;
 const RATIOS_CACHE_TTL_SECONDS = 86400;
 
-export function normalizeExerciseName(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/^egym\s+/, '')
-    .replace(/[()]/g, '')
-    .replace(/\s+/g, ' ');
-}
-
-function toSlug(input: string): string {
-  return normalizeExerciseName(input).replace(/\s+/g, '-');
-}
-
-function toTitleCase(input: string): string {
-  return normalizeExerciseName(input)
-    .split(' ')
-    .map(word => (word ? word[0].toUpperCase() + word.slice(1) : ''))
-    .join(' ');
-}
-
-function buildFallbackExercises(): ExerciseDocument[] {
-  const strengthExercises: ExerciseDocument[] = Object.entries(STRENGTH_STANDARDS).map(
-    ([name, data]) => {
-      const normalizedName = normalizeExerciseName(name);
-      return {
-        id: `machine-${toSlug(name)}`,
-        name: toTitleCase(name),
-        normalizedName,
-        equipment: 'machine',
-        category: data.category,
-        type: 'strength',
-        strengthStandards: {
-          baseType: data.type,
-          standards: data.standards,
-        },
-        isActive: true,
-        legacyNames: [normalizedName],
-      };
-    }
-  );
-
-  const cardioExercises: ExerciseDocument[] = Object.entries(CARDIO_EXERCISES).map(
-    ([name, category]) => {
-      const normalizedName = normalizeExerciseName(name);
-      return {
-        id: `other-${toSlug(name)}`,
-        name: toTitleCase(name),
-        normalizedName,
-        equipment: 'other',
-        category,
-        type: 'cardio',
-        isActive: true,
-        legacyNames: [normalizedName],
-      };
-    }
-  );
-
-  return [...strengthExercises, ...cardioExercises];
-}
+export { normalizeExerciseName };
 
 const getCachedActiveExercises = unstable_cache(
   async (): Promise<ExerciseDocument[]> => {
@@ -123,37 +66,19 @@ const getCachedStrengthRatios = unstable_cache(
 export async function getActiveExercises(): Promise<ExerciseDocument[]> {
   try {
     const exercises = await getCachedActiveExercises();
-    if (exercises.length > 0) {
-      return exercises;
+    if (exercises.length === 0) {
+      console.error('Exercise registry degraded: no active exercises found in Firestore.');
     }
+    return exercises;
   } catch (error) {
     console.error('Failed to load exercises from Firestore:', error);
+    return [];
   }
-
-  return buildFallbackExercises();
 }
 
 export async function getStrengthStandards(): Promise<StrengthStandardsMap> {
   const exercises = await getActiveExercises();
-  const standards: StrengthStandardsMap = {};
-
-  exercises.forEach(exercise => {
-    if (exercise.type !== 'strength' || !exercise.strengthStandards) {
-      return;
-    }
-
-    standards[exercise.normalizedName] = {
-      type: exercise.strengthStandards.baseType,
-      category: exercise.category,
-      standards: exercise.strengthStandards.standards,
-    };
-  });
-
-  if (Object.keys(standards).length > 0) {
-    return standards;
-  }
-
-  return STRENGTH_STANDARDS;
+  return buildStrengthStandardsFromExercises(exercises);
 }
 
 export async function getExerciseStandard(
@@ -195,26 +120,14 @@ export async function getExerciseStandard(
 
 export async function getCardioExercises(): Promise<ExerciseCategoryMap> {
   const exercises = await getActiveExercises();
-  const categories: ExerciseCategoryMap = {};
-
-  exercises.forEach(exercise => {
-    if (exercise.type === 'cardio') {
-      categories[exercise.normalizedName] = exercise.category;
-    }
-  });
-
-  if (Object.keys(categories).length > 0) {
-    return categories;
-  }
-
-  return CARDIO_EXERCISES;
+  return buildCardioCategoryMapFromExercises(exercises);
 }
 
 export async function getCardioCategory(
   exerciseName: string
 ): Promise<ExerciseCategory | undefined> {
   const categories = await getCardioExercises();
-  return categories[exerciseName];
+  return categories[normalizeExerciseName(exerciseName)];
 }
 
 export async function getStrengthRatios(): Promise<StrengthRatiosMap> {
@@ -227,23 +140,20 @@ export async function getStrengthRatios(): Promise<StrengthRatiosMap> {
     console.error('Failed to load strength ratios from Firestore:', error);
   }
 
-  return STRENGTH_RATIOS;
+  return {};
 }
 
 export async function getExerciseAliases(): Promise<ExerciseAliasMap> {
   try {
     const aliasDocs = await getCachedAliases();
     if (aliasDocs.length > 0) {
-      return aliasDocs.reduce<ExerciseAliasMap>((acc, aliasDoc) => {
-        acc[aliasDoc.alias] = aliasDoc.canonicalId;
-        return acc;
-      }, {});
+      return buildAliasMapFromDocuments(aliasDocs);
     }
   } catch (error) {
     console.error('Failed to load exercise aliases from Firestore:', error);
   }
 
-  return LIFT_NAME_ALIASES;
+  return {};
 }
 
 export async function getExerciseAlias(alias: string): Promise<string | null> {

@@ -8,6 +8,72 @@ This file tracks shipped fixes and notable technical changes.
   - Files: `path/a.ts`, `path/b.ts`
   - Verification: command/tests/behavior checked
 
+## 2026-02-17
+
+- `2026-02-17` - `Planning Queue Cleanup`: Streamlined active concern queue by moving full resolved item detail (items 2-6) to archive entries and leaving concise archive pointers in `CONCERNS.md` so next promotion work focuses on active items.
+  - Files: `.planning/codebase/CONCERNS.md`, `.planning/codebase/CONCERNS-ARCHIVE.md`, `docs/changelog.md`
+  - Verification: planning-doc consistency review (`Priority Order` pointers in `CONCERNS.md` map to detailed entries in `CONCERNS-ARCHIVE.md`)
+
+- `2026-02-17` - `Planning Queue Renumber`: Removed resolved priorities from `CONCERNS.md` active queue and renumbered remaining active items for execution focus.
+  - Files: `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: active priority review (`CONCERNS.md` now only lists active items 1-3; resolved details retained in archive)
+
+- `2026-02-17` - `Stale Concern Cleanup`: Removed resolved/stale backlog sections from `CONCERNS.md` (`Exercise Registry Migration Incomplete`, `Dual Data Sources for Strength Standards`, and `Hardcoded Exercise Data Cannot Scale`) after migration closure and archive transfer.
+  - Files: `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: backlog section review (removed items are already reflected in `.planning/codebase/CONCERNS-ARCHIVE.md` and prior changelog entries)
+
+- `2026-02-17` - `Item 7 Closeout (Targeted Render Remediation)`: Closed render-remediation scope after landing targeted watcher/memoization fixes and accepting current profiler state as non-blocking for this phase; deferred speculative subtree/memo-boundary refactors pending future evidence.
+  - Files: `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: targeted fix verification previously completed (`npm run typecheck`, targeted tests) plus manual acceptance of current interaction performance
+
+- `2026-02-17` - `Planning Queue Cleanup (Item 7 Archive Move)`: Removed resolved item 7 detail from active `CONCERNS.md`, renumbered active priorities, and moved item 7 full resolution detail into `CONCERNS-ARCHIVE.md`.
+  - Files: `.planning/codebase/CONCERNS.md`, `.planning/codebase/CONCERNS-ARCHIVE.md`, `docs/changelog.md`
+  - Verification: queue sanity review (`CONCERNS.md` now active-only priorities; item 7 detail present in archive)
+
+- `2026-02-17` - `Next-Set Promotion Plan`: Promoted next backlog execution set into active priority order with explicit dependency sequencing and per-item overengineering-risk flags (type convergence -> measurement-gated query optimization, parallel quota observability, then rate-limit design spike).
+  - Files: `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: priority/dependency review (`CONCERNS.md` ordering and dependency notes align with sequential + parallel execution intent)
+
+- `2026-02-17` - `Profiler Comparison Capture (Item 7 + Item 2 Gate Closeout)`: Recorded item 7 after-profiler snapshots and finalized the item 2 baseline/comparison gate; results were mixed (`WeeklyCardioTargetsCard` improved, `WorkoutLogForm` and `StrengthBalanceCard` above baseline), so item 7 remains partial for further remediation.
+  - Files: `docs/performance-baseline.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: React Profiler snapshots (`WorkoutLogForm: 31.4ms`, `StrengthBalanceCard: 6.1ms`, `WeeklyCardioTargetsCard: 6.4ms`) compared against documented baseline values
+
+- `2026-02-17` - `Render Churn Remediation (Item 7, Partial)`: Reduced two identified render hot paths by replacing per-row form subscriptions in `WorkoutLogForm` with array-scoped `useWatch`, and memoizing `WeeklyCardioTargetsCard` auto-target display calculations behind auto-mode gating.
+  - Files: `src/components/history/WorkoutLogForm.tsx`, `src/components/profile/WeeklyCardioTargetsCard.tsx`, `.planning/codebase/CONCERNS.md`, `docs/performance-baseline.md`, `docs/changelog.md`
+  - Verification: `npm run typecheck`, `npm run test -- src/lib/exercise-load-semantics.test.ts src/lib/logging/health-check.test.ts`
+
+- `2026-02-17` - `Performance Baseline Gate (Item 2, Phase 2 for Items 4-6)`: Finalized before/after comparison for completed optimization scope, documenting no-material-change analysis action latency, improved chart switch scripting, and improved representative analysis network timing; carried item 7 render-baseline comparison forward as remaining scope.
+  - Files: `docs/performance-baseline.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: baseline comparison review in `docs/performance-baseline.md` (`analysis/analyzeStrengthAction`, chart performance, network timing), instrumentation evidence review (`PERF_BASELINE_LOGS`)
+
+- `2026-02-17` - `Exercise Registry No-Fallback Convergence (Item 6 Final)`: Removed runtime static exercise-data fallback behavior in registry paths, enforced Firebase metadata as the runtime source-of-truth (with explicit degraded behavior instead of silent substitution), and surfaced empty-registry degraded status in health observability.
+  - Files: `src/lib/exercise-registry.server.ts`, `src/lib/exercise-registry.ts`, `src/lib/exercise-registry.shared.ts`, `src/lib/logging/health-check.ts`, `src/lib/logging/health-check.test.ts`, `src/app/api/health/route.ts`, `src/lib/exercise-registry.test.ts`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/logging/health-check.test.ts src/lib/exercise-registry.test.ts src/lib/exercise-load-semantics.test.ts`, `npm run typecheck`
+
+- `2026-02-17` - `Exercise Load Semantics Cleanup (Item 6, Slice 3)`: Removed runtime local semantics map fallback and switched hint logic to strict Firebase metadata resolution (`loadSemantics`), with `unknown` fallback only when metadata is absent/invalid.
+  - Files: `src/lib/exercise-load-semantics.ts`, `src/components/history/WorkoutLogForm.tsx`, `src/components/prs/ManualPrForm.tsx`, `src/lib/exercise-registry.shared.ts`, `scripts/migrate-exercises.ts`, `scripts/add-exercises.ts`, `scripts/backfill-exercise-load-semantics.ts`, `src/lib/exercise-load-semantics.test.ts`, `.planning/codebase/CONCERNS.md`, `docs/unilateral-load-semantics-review.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/exercise-load-semantics.test.ts src/lib/exercise-registry.shared.test.ts src/lib/exercise-registry.test.ts`, `npm run typecheck`
+
+- `2026-02-17` - `Exercise Load Semantics Firebase Promotion (Item 6, Slice 2)`: Added `loadSemantics` support to the exercise metadata contract, switched per-limb hint logic to Firebase-first resolution with compatibility fallback, and added migration/backfill tooling to write semantics into Firestore exercise docs.
+  - Files: `src/lib/exercise-types.ts`, `src/lib/exercise-load-semantics.ts`, `src/lib/firestore.service.ts`, `src/components/history/WorkoutLogForm.tsx`, `src/components/prs/ManualPrForm.tsx`, `src/lib/exercise-registry.shared.ts`, `scripts/migrate-exercises.ts`, `scripts/add-exercises.ts`, `scripts/backfill-exercise-load-semantics.ts`, `package.json`, `src/lib/exercise-load-semantics.test.ts`, `.planning/codebase/CONCERNS.md`, `docs/unilateral-load-semantics-review.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/exercise-load-semantics.test.ts src/lib/exercise-registry.shared.test.ts src/lib/exercise-registry.test.ts`, `npm run typecheck`
+
+- `2026-02-17` - `Exercise Registry Migration Hardening (Item 6, Slice 1)`: Hardened the registry migration path by removing static-registry TODO debt, introducing shared normalization/transform utilities used by both legacy and server registries, and adding regression coverage for shared registry contracts.
+  - Files: `src/lib/exercise-registry.shared.ts`, `src/lib/exercise-registry.ts`, `src/lib/exercise-registry.server.ts`, `src/lib/strength-standards.ts`, `src/lib/exercise-registry.shared.test.ts`, `src/lib/exercise-registry.test.ts`, `.planning/codebase/CONCERNS.md`, `.planning/codebase/STRUCTURE.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/lib/exercise-registry.shared.test.ts src/lib/exercise-registry.test.ts`, `npm run typecheck`
+
+- `2026-02-17` - `Unilateral Semantics + Per-Limb UX (Item 3)`: Finalized unilateral classification decisions from Firestore-backed audit, added app-local load-semantics resolver keyed by canonical normalized names, and shipped inline `Per limb` weight hints in both workout logging and PR manual entry flows.
+  - Files: `src/lib/exercise-load-semantics.ts`, `src/components/history/WorkoutLogForm.tsx`, `src/components/prs/ManualPrForm.tsx`, `docs/unilateral-load-semantics-review.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run typecheck`, manual `/history` validation (`Per limb` hint appears for unilateral mapped exercises; bilateral exercises show no hint), manual `/prs` validation of same behavior in manual PR form
+
+- `2026-02-17` - `Analysis Read-Path Optimization (Item 4)`: Eliminated duplicate weekly/monthly workout-log fetches on Analysis page by reusing the 6-week dataset for short-range views, and reduced analysis action tail time by parallelizing independent save/counter writes.
+  - Files: `src/app/analysis/page.tsx`, `src/app/analysis/actions.ts`, `src/lib/firestore-server.ts`, `docs/performance-baseline.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run test -- src/app/analysis/actions.test.ts` (20 passing), `npm run typecheck`, manual Analysis page validation across `weekly`/`monthly`/`yearly`/`all-time`
+
+- `2026-02-17` - `Chart Compute Optimization (Item 5)`: Reduced client chart computation overhead in `useChartData` by removing repeated weekly per-day filtering and eliminating repeated monthly/yearly/all-time parse-sort passes via pre-grouped, pre-sorted aggregation keys.
+  - Files: `src/hooks/useChartData.ts`, `docs/performance-baseline.md`, `.planning/codebase/CONCERNS.md`, `docs/changelog.md`
+  - Verification: `npm run typecheck`, manual Analysis page validation across `weekly`/`monthly`/`yearly`/`all-time` time-range switches, before/after perf snapshot (`weekly -> monthly` scripting `2213ms -> 1702ms`) captured in `docs/performance-baseline.md`
+
 ## 2026-02-14
 
 - `2026-02-15` - `Phase 4 Testing Closeout`: Completed cross-feature integration baseline with risk-focused deterministic coverage (write/read consistency, side effects, validation, and failure recovery) and formalized non-arbitrary Phase 4 exit criteria.

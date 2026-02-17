@@ -27,6 +27,7 @@ import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
 import { formatExerciseDisplayName } from "@/lib/exercise-display";
 import { ExerciseCombobox } from "@/components/ui/exercise-combobox";
 import { DatePicker } from "@/components/ui/date-picker";
+import { resolveExerciseLoadSemantics } from "@/lib/exercise-load-semantics";
 
 const manualPrSchema = z.object({
   exerciseName: z.string().min(1, "Please select an exercise."),
@@ -42,12 +43,20 @@ type ManualPrFormProps = {
   isSubmitting?: boolean;
 };
 
+const normalizeForLookup = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/^egym\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
+
 export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
   const { data: exerciseLibrary = [] } = useExercises();
   const { data: exerciseAliases = [] } = useExerciseAliases();
   const aliasMap = useMemo(() => {
     return exerciseAliases.reduce<Record<string, string>>((acc, alias) => {
-      acc[alias.alias.toLowerCase()] = alias.canonicalId;
+      acc[normalizeForLookup(alias.alias)] = alias.canonicalId;
       return acc;
     }, {});
   }, [exerciseAliases]);
@@ -75,10 +84,22 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
 
   const exerciseCategories = useMemo(() => {
     return exercisesForDropdown.reduce<Record<string, ExerciseCategory>>((acc, exercise) => {
-      acc[exercise.normalizedName.toLowerCase()] = exercise.category;
+      acc[normalizeForLookup(exercise.normalizedName)] = exercise.category;
       return acc;
     }, {});
   }, [exercisesForDropdown]);
+  const exerciseById = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, (typeof exerciseLibrary)[number]>>((acc, exercise) => {
+      acc[exercise.id] = exercise;
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
+  const exerciseByNormalizedName = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, (typeof exerciseLibrary)[number]>>((acc, exercise) => {
+      acc[normalizeForLookup(exercise.normalizedName)] = exercise;
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
 
   const exerciseSuggestions = useMemo(() => {
     return exercisesForDropdown.map(exercise => exercise.name);
@@ -93,6 +114,16 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
       date: new Date().toISOString().split('T')[0],
     }
   });
+  const selectedExerciseName = form.watch("exerciseName");
+  const selectedNormalized = normalizeForLookup(resolveCanonicalExerciseName(selectedExerciseName || "", exerciseLibrary));
+  const selectedCanonicalId = aliasMap[selectedNormalized];
+  const selectedCanonicalExercise =
+    (selectedCanonicalId ? exerciseById[selectedCanonicalId] : null) ||
+    exerciseByNormalizedName[selectedNormalized] ||
+    null;
+  const showPerLimbHint =
+    resolveExerciseLoadSemantics(selectedCanonicalExercise?.loadSemantics) ===
+    'per_limb';
 
   function onSubmit(values: ManualPrFormData) {
     const normalizedName = resolveCanonicalExerciseName(values.exerciseName, exerciseLibrary);
@@ -165,7 +196,14 @@ export function ManualPrForm({ onAdd, isSubmitting }: ManualPrFormProps) {
             name="weight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Weight</FormLabel>
+                <FormLabel className="flex items-center gap-2">
+                  <span>Weight</span>
+                  {showPerLimbHint && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      Per limb
+                    </span>
+                  )}
+                </FormLabel>
                 <FormControl>
                   <StepperInput {...field} onChange={field.onChange} step={1} />
                 </FormControl>

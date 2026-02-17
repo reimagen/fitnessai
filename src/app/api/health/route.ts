@@ -45,6 +45,7 @@ export async function GET(request: Request) {
         ...context,
         ...checks,
         analysisConfigMismatchCount: analysisConfigDetails.mismatchCount,
+        analysisConfigExerciseCount: analysisConfigDetails.exerciseCount,
         analysisConfigSampleMismatches: analysisConfigDetails.sampleMismatches,
         imbalanceConfigSource: imbalanceConfigDetails.source,
         imbalanceConfigVersion: imbalanceConfigDetails.version,

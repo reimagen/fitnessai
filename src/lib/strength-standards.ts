@@ -15,6 +15,7 @@ import {
   getStrengthRatioStandards as getStrengthRatioStandardsFromRegistry,
   getAllStrengthExerciseNames,
 } from './exercise-registry';
+import { normalizeExerciseName } from './exercise-registry.shared';
 
 /**
  * Normalizes an exercise name by converting it to lowercase and checking for aliases.
@@ -23,8 +24,8 @@ import {
  */
 export function getNormalizedExerciseName(name: string): string {
   if (!name) return "";
-  const lowerCaseName = name.trim().toLowerCase();
-  return getExerciseAlias(lowerCaseName) || lowerCaseName;
+  const normalizedName = normalizeExerciseName(name);
+  return getExerciseAlias(normalizedName) || normalizedName;
 }
 
 /**

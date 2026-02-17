@@ -1,36 +1,32 @@
 /**
- * Exercise Registry - Abstraction layer for exercise data
+ * Exercise Registry (degraded sync fallback)
  *
- * This module abstracts exercise data access, allowing seamless migration
- * from hardcoded data (exercise-data.ts) to a Firebase collection.
- *
- * Future migration: Replace these implementations to fetch from Firebase
- * instead of local data without changing any consuming code.
+ * Runtime source-of-truth is Firebase exercise metadata. This synchronous module
+ * intentionally does not return static exercise data to avoid dual-source drift.
  */
 
 import type { ExerciseCategory, StrengthLevel } from './types';
 import type {
   StrengthStandardsMap,
-  StrengthRatiosMap,
   ExerciseCategoryMap,
-  ExerciseAliasMap,
   ExerciseStandardData,
   StrengthRatioStandards,
+  StrengthRatiosMap,
+  ExerciseAliasMap,
 } from './exercise-types';
-import {
-  STRENGTH_STANDARDS,
-  STRENGTH_RATIOS,
-  CARDIO_EXERCISES,
-  LIFT_NAME_ALIASES,
-} from './exercise-data';
+import { normalizeExerciseName } from './exercise-registry.shared';
+
+const EMPTY_STRENGTH_STANDARDS: StrengthStandardsMap = {};
+const EMPTY_STRENGTH_RATIOS: StrengthRatiosMap = {};
+const EMPTY_CARDIO_EXERCISES: ExerciseCategoryMap = {};
+const EMPTY_EXERCISE_ALIASES: ExerciseAliasMap = {};
 
 /**
  * Get all strength exercise standards
  * @returns Map of exercise names to their strength standards
  */
 export function getStrengthStandards(): StrengthStandardsMap {
-  // TODO: Replace with Firebase collection fetch
-  return STRENGTH_STANDARDS;
+  return EMPTY_STRENGTH_STANDARDS;
 }
 
 /**
@@ -41,8 +37,7 @@ export function getStrengthStandards(): StrengthStandardsMap {
 export function getExerciseStandard(
   exerciseName: string
 ): ExerciseStandardData | undefined {
-  // TODO: Replace with Firebase query
-  return STRENGTH_STANDARDS[exerciseName];
+  return EMPTY_STRENGTH_STANDARDS[normalizeExerciseName(exerciseName)];
 }
 
 /**
@@ -50,8 +45,7 @@ export function getExerciseStandard(
  * @returns Map of cardio exercise names to their category
  */
 export function getCardioExercises(): ExerciseCategoryMap {
-  // TODO: Replace with Firebase collection fetch
-  return CARDIO_EXERCISES;
+  return EMPTY_CARDIO_EXERCISES;
 }
 
 /**
@@ -59,8 +53,7 @@ export function getCardioExercises(): ExerciseCategoryMap {
  * @returns Map of ratio types to gender/level standards
  */
 export function getStrengthRatios(): StrengthRatiosMap {
-  // TODO: Replace with Firebase collection fetch
-  return STRENGTH_RATIOS;
+  return EMPTY_STRENGTH_RATIOS;
 }
 
 /**
@@ -75,8 +68,7 @@ export function getStrengthRatioStandards(
   gender: 'Male' | 'Female',
   level: StrengthLevel
 ): StrengthRatioStandards | null {
-  // TODO: Replace with Firebase query
-  const standards = STRENGTH_RATIOS[ratioType];
+  const standards = EMPTY_STRENGTH_RATIOS[ratioType];
   if (!standards) return null;
 
   const genderStandards = standards[gender];
@@ -91,8 +83,7 @@ export function getStrengthRatioStandards(
  * @returns Map of alias names to canonical names
  */
 export function getExerciseAliases(): ExerciseAliasMap {
-  // TODO: Replace with Firebase collection fetch or config
-  return LIFT_NAME_ALIASES;
+  return EMPTY_EXERCISE_ALIASES;
 }
 
 /**
@@ -101,8 +92,7 @@ export function getExerciseAliases(): ExerciseAliasMap {
  * @returns Canonical exercise name or undefined if not an alias
  */
 export function getExerciseAlias(alias: string): string | undefined {
-  // TODO: Replace with Firebase query
-  return LIFT_NAME_ALIASES[alias];
+  return EMPTY_EXERCISE_ALIASES[normalizeExerciseName(alias)];
 }
 
 /**
@@ -111,8 +101,7 @@ export function getExerciseAlias(alias: string): string | undefined {
  * @returns Exercise category or undefined if not found
  */
 export function getCardioCategory(exerciseName: string): ExerciseCategory | undefined {
-  // TODO: Replace with Firebase query
-  return CARDIO_EXERCISES[exerciseName];
+  return EMPTY_CARDIO_EXERCISES[normalizeExerciseName(exerciseName)];
 }
 
 /**
@@ -121,8 +110,7 @@ export function getCardioCategory(exerciseName: string): ExerciseCategory | unde
  * @returns True if exercise has strength standards
  */
 export function hasStrengthStandard(exerciseName: string): boolean {
-  // TODO: Replace with Firebase query
-  return exerciseName in STRENGTH_STANDARDS;
+  return normalizeExerciseName(exerciseName) in EMPTY_STRENGTH_STANDARDS;
 }
 
 /**
@@ -130,6 +118,5 @@ export function hasStrengthStandard(exerciseName: string): boolean {
  * @returns Array of normalized exercise names
  */
 export function getAllStrengthExerciseNames(): string[] {
-  // TODO: Replace with Firebase collection fetch
-  return Object.keys(STRENGTH_STANDARDS).sort();
+  return Object.keys(EMPTY_STRENGTH_STANDARDS).sort();
 }

@@ -115,11 +115,12 @@ project-root/
 │   │   │   └── firestore-server.ts      # Server-side Firestore operations + converters
 │   │   │
 │   │   ├── Exercise Data & Normalization
-│   │   │   ├── exercise-types.ts        # ExerciseDocument, AliasDocument types
-│   │   │   ├── exercise-data.ts         # LIFT_NAME_ALIASES static data
+│   │   │   ├── exercise-types.ts        # ExerciseDocument, AliasDocument, LoadSemantics types
+│   │   │   ├── exercise-data.ts         # Static dataset used by migration/bootstrap scripts (not runtime source-of-truth)
 │   │   │   ├── exercise-normalization.ts # resolveCanonicalExerciseName(), normalizeForLookup()
-│   │   │   ├── exercise-registry.ts     # Client-side exercise lookups
-│   │   │   ├── exercise-registry.server.ts
+│   │   │   ├── exercise-registry.shared.ts # Shared normalization/transforms for registry data
+│   │   │   ├── exercise-registry.ts     # Synchronous degraded/no-data lookups for legacy client callers
+│   │   │   ├── exercise-registry.server.ts # Firestore-backed runtime registry (no static fallback)
 │   │   │   ├── exercise-display.ts      # Display helpers
 │   │   │   └── fuzzy-match.ts           # Fuzzy matching for exercise names
 │   │   │

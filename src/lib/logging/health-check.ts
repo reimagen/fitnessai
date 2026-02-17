@@ -43,6 +43,7 @@ export type AnalysisConfigHealthDetails = {
   status: "ok" | "degraded";
   mismatchCount: number;
   sampleMismatches: ImbalanceConfigValidationIssue[];
+  exerciseCount: number;
 };
 
 export type ImbalanceConfigHealthDetails = {
@@ -55,12 +56,22 @@ export type ImbalanceConfigHealthDetails = {
 export async function getAnalysisConfigHealthDetails(): Promise<AnalysisConfigHealthDetails> {
   try {
     const exercises = await getActiveExercises();
+    if (exercises.length === 0) {
+      return {
+        status: "degraded",
+        mismatchCount: 0,
+        sampleMismatches: [],
+        exerciseCount: 0,
+      };
+    }
+
     const issues = validateImbalanceConfigExercises(exercises);
     if (issues.length === 0) {
       return {
         status: "ok",
         mismatchCount: 0,
         sampleMismatches: [],
+        exerciseCount: exercises.length,
       };
     }
 
@@ -68,12 +79,14 @@ export async function getAnalysisConfigHealthDetails(): Promise<AnalysisConfigHe
       status: "degraded",
       mismatchCount: issues.length,
       sampleMismatches: issues.slice(0, 3),
+      exerciseCount: exercises.length,
     };
   } catch {
     return {
       status: "degraded",
       mismatchCount: 0,
       sampleMismatches: [],
+      exerciseCount: 0,
     };
   }
 }

@@ -109,10 +109,16 @@ export function useChartData(
         const weekStart = startOfWeek(today, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
         const daysInWeek = eachDayOfInterval({ start: weekStart, end: weekEnd });
+        const logsByDateKey = logsForPeriod.reduce<Record<string, WorkoutLog[]>>((acc, log) => {
+          const key = format(log.date, 'yyyy-MM-dd');
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(log);
+          return acc;
+        }, {});
 
         workoutFrequencyData = daysInWeek.map((day: Date) => {
           const dateKey = format(day, 'yyyy-MM-dd');
-          const logsForDay = logsForPeriod.filter((log: WorkoutLog) => format(log.date, 'yyyy-MM-dd') === dateKey);
+          const logsForDay = logsByDateKey[dateKey] ?? [];
           const counts = getUniqueExerciseCounts(logsForDay);
           return {
             date: dateKey,
@@ -137,8 +143,10 @@ export function useChartData(
           aggregatedData[dateKey].push(log);
         });
 
-        workoutFrequencyData = Object.entries(aggregatedData)
-          .map(([dateKey, logs]: [string, WorkoutLog[]]) => {
+        const sortedWeekKeys = Object.keys(aggregatedData).sort();
+        workoutFrequencyData = sortedWeekKeys
+          .map((dateKey: string) => {
+            const logs = aggregatedData[dateKey];
             const weekStart = parse(dateKey, 'yyyy-MM-dd', new Date());
             const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
             const dateLabel = `${format(weekStart, 'MMM d')}-${format(weekEnd, 'd')}`;
@@ -153,8 +161,7 @@ export function useChartData(
               fullBody: counts.fullBody || 0,
               other: counts.other || 0,
             };
-          })
-          .sort((a: ChartDataPoint, b: ChartDataPoint) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          });
         break;
       }
 
@@ -165,8 +172,10 @@ export function useChartData(
           if (!aggregatedData[dateKey]) aggregatedData[dateKey] = [];
           aggregatedData[dateKey].push(log);
         });
-        workoutFrequencyData = Object.entries(aggregatedData)
-          .map(([dateKey, logs]: [string, WorkoutLog[]]) => {
+        const sortedMonthKeys = Object.keys(aggregatedData).sort();
+        workoutFrequencyData = sortedMonthKeys
+          .map((dateKey: string) => {
+            const logs = aggregatedData[dateKey];
             const dateLabel = format(parse(dateKey, 'yyyy-MM', new Date()), 'MMM');
             const counts = getUniqueExerciseCounts(logs);
             return {
@@ -179,10 +188,7 @@ export function useChartData(
               fullBody: counts.fullBody || 0,
               other: counts.other || 0,
             };
-          })
-          .sort((a: ChartDataPoint, b: ChartDataPoint) =>
-            parse(a.date, 'yyyy-MM', new Date()).getTime() - parse(b.date, 'yyyy-MM', new Date()).getTime()
-          );
+          });
         break;
       }
 
@@ -193,8 +199,10 @@ export function useChartData(
           if (!aggregatedData[dateKey]) aggregatedData[dateKey] = [];
           aggregatedData[dateKey].push(log);
         });
-        workoutFrequencyData = Object.entries(aggregatedData)
-          .map(([dateKey, logs]: [string, WorkoutLog[]]) => {
+        const sortedYearKeys = Object.keys(aggregatedData).sort();
+        workoutFrequencyData = sortedYearKeys
+          .map((dateKey: string) => {
+            const logs = aggregatedData[dateKey];
             const counts = getUniqueExerciseCounts(logs);
             return {
               date: dateKey,
@@ -206,8 +214,7 @@ export function useChartData(
               fullBody: counts.fullBody || 0,
               other: counts.other || 0,
             };
-          })
-          .sort((a: ChartDataPoint, b: ChartDataPoint) => parseInt(a.date) - parseInt(b.date));
+          });
         break;
       }
       }

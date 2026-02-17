@@ -75,11 +75,11 @@ export async function analyzeStrengthAction(
         generatedDate: new Date(),
       };
 
-      // Save analysis to subcollection
-      await saveStrengthAnalysis(userId, storedAnalysis);
-
-      // Increment usage counter on success
-      await incrementUsageCounter(userId, 'strengthAnalyses');
+      // Save analysis and increment usage in parallel to reduce end-to-end latency.
+      await Promise.all([
+        saveStrengthAnalysis(userId, storedAnalysis),
+        incrementUsageCounter(userId, 'strengthAnalyses'),
+      ]);
 
       return { success: true, data: analysisData };
     } catch (error) {
