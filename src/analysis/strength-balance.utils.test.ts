@@ -244,7 +244,7 @@ describe('buildClientSideFindings', () => {
 
     if (horizontal && !('hasData' in horizontal)) {
       expect(horizontal.lift1Name).toContain('Machine Chest Press');
-      expect(horizontal.imbalanceFocus).toBe('Ratio Imbalance');
+      expect(horizontal.imbalanceFocus).toBe('Balanced');
       expect(horizontal.lift1SessionCount).toBe(1);
     }
 
@@ -310,7 +310,7 @@ describe('buildClientSideFindings', () => {
     expect(finding && 'hasData' in finding).toBe(false);
     if (finding && !('hasData' in finding)) {
       expect(finding.imbalanceType).toBe('Horizontal Push vs. Pull');
-      expect(finding.imbalanceFocus).toBe('Ratio Imbalance');
+      expect(finding.imbalanceFocus).toBe('Balanced');
     }
 
     vi.useRealTimers();

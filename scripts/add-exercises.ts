@@ -421,7 +421,7 @@ const NEW_EXERCISES: NewExercise[] = [
     },
   },
   {
-    name: 'Cable Kickback',
+    name: 'Cable Kickback (Per Leg)',
     normalizedName: 'cable kickback',
     equipment: 'cable',
     category: 'Lower Body',
@@ -567,6 +567,7 @@ async function main() {
       category: exercise.category,
       type: exercise.type,
       strengthStandards: exercise.strengthStandards,
+      loadSemantics: 'unknown',
       isActive: true,
       legacyNames: [exercise.normalizedName],
       createdAt: now,

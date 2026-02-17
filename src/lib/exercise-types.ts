@@ -1,5 +1,7 @@
 import type { ExerciseCategory, StrengthLevel } from './types';
 
+export type LoadSemantics = 'per_limb' | 'total_load' | 'unknown';
+
 /**
  * Standard ratios for a strength exercise at different proficiency levels
  */
@@ -80,6 +82,7 @@ export type ExerciseDocument = {
     standards: GenderStandards;
   };
   isActive: boolean;
+  loadSemantics?: LoadSemantics;
   createdAt?: Date;
   updatedAt?: Date;
   legacyNames?: string[];

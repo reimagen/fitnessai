@@ -164,13 +164,21 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
 
   const renderGoalValue = (value?: number) => (value !== undefined ? `${value.toLocaleString()} kcal` : "Not set");
 
-  const renderAutoTargets = () => {
+  const autoDisplay = useMemo(() => {
+    if (targets.cardioCalculationMethod !== "auto") {
+      return {
+        base: "Not set",
+        stretch: "Not set",
+      };
+    }
+
     if (!targets.experienceLevel || !targets.activityLevel || !targets.weightGoal) {
       return {
         base: "Not set",
         stretch: "Not set",
       };
     }
+
     const calculated = calculateWeeklyCardioTargets({
       experienceLevel: targets.experienceLevel,
       activityLevel: targets.activityLevel,
@@ -178,13 +186,19 @@ export function WeeklyCardioTargetsCard({ targets, onUpdate }: WeeklyCardioTarge
       weightValue: targets.weightValue,
       weightUnit: targets.weightUnit,
     } as UserProfile);
+
     return {
       base: renderGoalValue(calculated.baseGoal),
       stretch: renderGoalValue(calculated.stretchGoal),
     };
-  };
-
-  const autoDisplay = renderAutoTargets();
+  }, [
+    targets.cardioCalculationMethod,
+    targets.experienceLevel,
+    targets.activityLevel,
+    targets.weightGoal,
+    targets.weightValue,
+    targets.weightUnit,
+  ]);
 
   return (
     <Card className="shadow-lg">

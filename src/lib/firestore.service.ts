@@ -29,6 +29,7 @@ import { getGoalAnalysisAction, saveGoalAnalysisAction, getLiftProgressionAnalys
 import type { WorkoutLog, PersonalRecord, UserProfile, AnalyzeLiftProgressionInput, StrengthImbalanceInput, AnalyzeFitnessGoalsInput, ExerciseCategory, GetLiftStrengthLevelInput, StrengthLevel, StoredWeeklyPlan, StoredStrengthAnalysis, StoredGoalAnalysis, StoredLiftProgressionAnalysis, FitnessGoal } from './types';
 import type { AliasDocument, ExerciseDocument, EquipmentType } from './exercise-types';
 import type { ImbalanceConfigLoadResult } from './imbalance-config-types';
+import { isLoadSemantics } from './exercise-load-semantics';
 import { useAuth } from './auth.service';
 import { format, isSameMonth, getWeek, getYear, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { useToast } from '@/hooks/useToast';
@@ -142,6 +143,7 @@ export function useExercises(enabled: boolean = true) {
           type,
           strengthStandards,
           isActive: data.isActive !== false,
+          loadSemantics: isLoadSemantics(data.loadSemantics) ? data.loadSemantics : undefined,
           legacyNames: Array.isArray(data.legacyNames) ? data.legacyNames : undefined,
         };
       });

@@ -2,7 +2,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,8 +28,16 @@ import { getExerciseCategory, getNormalizedExerciseName, classifiedExercises as 
 import { useExerciseAliases, useExercises } from "@/lib/firestore.service";
 import { formatExerciseDisplayName } from "@/lib/exercise-display";
 import { calculateExerciseCalories } from "@/lib/calorie-calculator";
+import { resolveExerciseLoadSemantics } from "@/lib/exercise-load-semantics";
 
 const CATEGORY_OPTIONS = ['Cardio', 'Lower Body', 'Upper Body', 'Full Body', 'Core', 'Other'] as const;
+const normalizeForLookup = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/^egym\s+/, '')
+    .replace(/[()]/g, '')
+    .replace(/\s+/g, ' ');
 
 const exerciseSchema = z.object({
   id: z.string().optional(),
@@ -85,7 +93,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   const { data: exerciseAliases = [] } = useExerciseAliases();
   const aliasMap = useMemo(() => {
     return exerciseAliases.reduce<Record<string, string>>((acc, alias) => {
-      acc[alias.alias.toLowerCase()] = alias.canonicalId;
+      acc[normalizeForLookup(alias.alias)] = alias.canonicalId;
       return acc;
     }, {});
   }, [exerciseAliases]);
@@ -97,7 +105,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   }, [exerciseLibrary]);
   const canonicalNameByNormalized = useMemo(() => {
     return exerciseLibrary.reduce<Record<string, string>>((acc, exercise) => {
-      acc[exercise.normalizedName.toLowerCase()] = formatExerciseDisplayName(exercise.name);
+      acc[normalizeForLookup(exercise.normalizedName)] = formatExerciseDisplayName(exercise.name);
       return acc;
     }, {});
   }, [exerciseLibrary]);
@@ -126,7 +134,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   }, [exerciseLibrary, aliasMap]);
   const exerciseCategories = useMemo(() => {
     return exerciseLibrary.reduce<Record<string, ExerciseCategory>>((acc, exercise) => {
-      acc[exercise.normalizedName.toLowerCase()] = exercise.category;
+      acc[normalizeForLookup(exercise.normalizedName)] = exercise.category;
       return acc;
     }, {});
   }, [exerciseLibrary]);
@@ -137,6 +145,13 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
     canonicalNameById,
     canonicalNameByNormalized
   );
+  const exerciseLoadSemanticsByNormalized = useMemo(() => {
+    return exerciseLibrary.reduce<Record<string, ReturnType<typeof resolveExerciseLoadSemantics>>>((acc, exercise) => {
+      const normalized = normalizeForLookup(exercise.normalizedName);
+      acc[normalized] = resolveExerciseLoadSemantics(exercise.loadSemantics);
+      return acc;
+    }, {});
+  }, [exerciseLibrary]);
   const [autoFocusIndex, setAutoFocusIndex] = useState(0);
 
   const form = useForm<WorkoutLogFormData>({
@@ -149,6 +164,10 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   });
 
   const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "exercises",
+  });
+  const watchedExercises = useWatch({
     control: form.control,
     name: "exercises",
   });
@@ -190,14 +209,6 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
   function onSubmit(values: WorkoutLogFormData) {
     // Use replace() to hint local timezone parsing, then startOfDay to normalize
     const normalizedDate = startOfDay(new Date(values.date.replace(/-/g, '/')));
-
-    const normalizeForLookup = (value: string) =>
-      value
-        .trim()
-        .toLowerCase()
-        .replace(/^egym\s+/, '')
-        .replace(/[()]/g, '')
-        .replace(/\s+/g, ' ');
 
     // Normalize exercise names and track calorie source
     const normalizedExercises = values.exercises.map(ex => {
@@ -277,6 +288,17 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
         <div>
           <h3 className="mb-3 text-lg font-medium">Exercises</h3>
           {fields.map((field, index) => {
+            const enteredName = watchedExercises?.[index]?.name || "";
+            const normalizedEnteredName = normalizeForLookup(getNormalizedExerciseName(enteredName));
+            const canonicalId = aliasMap[normalizedEnteredName];
+            const canonicalExercise = canonicalId ? exerciseById[canonicalId] : null;
+            const canonicalNormalizedName = canonicalExercise?.normalizedName
+              ? normalizeForLookup(canonicalExercise.normalizedName)
+              : normalizedEnteredName;
+            const loadSemantics =
+              exerciseLoadSemanticsByNormalized[canonicalNormalizedName] ||
+              resolveExerciseLoadSemantics();
+            const showPerLimbHint = loadSemantics === 'per_limb';
             return (
               <Card key={field.id} className="mb-4 p-4 border rounded-2xl shadow-sm relative">
                 <Button
@@ -301,7 +323,7 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                             value={field.value}
                             onChange={(value) => {
                               field.onChange(value);
-                              const normalizedValue = getNormalizedExerciseName(value).toLowerCase();
+                              const normalizedValue = normalizeForLookup(getNormalizedExerciseName(value));
                               const canonicalId = aliasMap[normalizedValue];
                               const canonicalExercise = canonicalId ? exerciseById[canonicalId] : null;
                               const mappedCategory =
@@ -381,7 +403,14 @@ export function WorkoutLogForm({ onSubmitLog, initialData, editingLogId, onCance
                     name={`exercises.${index}.weight`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Weight</FormLabel>
+                        <FormLabel className="flex items-center gap-2">
+                          <span>Weight</span>
+                          {showPerLimbHint && (
+                            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                              Per limb
+                            </span>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <StepperInput {...field} onChange={field.onChange} step={1} />
                         </FormControl>

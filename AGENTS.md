@@ -50,3 +50,4 @@
 - Don't reformat or change copy unless asked.
 - Avoid new deps; use existing UI primitives first.
 - Keep mobile layouts in mind (`grid` and responsive cols).
+- **Plan approval gate**: before running implementation commands or editing files, propose the plan and wait for explicit user approval in chat.
